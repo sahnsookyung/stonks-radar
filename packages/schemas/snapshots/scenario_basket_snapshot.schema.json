@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    { "$ref": "./_envelope.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "object_type": { "const": "scenario_basket" },
+        "data": {
+          "type": "object",
+          "required": ["key", "name", "thesis", "methodology", "included_objects", "risk_summary", "freshness_timestamp", "data_delay_warning", "disclaimer", "approval_status"],
+          "properties": {
+            "key": { "type": "string" },
+            "name": { "type": "string" },
+            "thesis": { "type": "string" },
+            "methodology": { "type": "string" },
+            "included_objects": { "type": "array" },
+            "risk_summary": { "type": "string" },
+            "freshness_timestamp": { "type": "string" },
+            "data_delay_warning": { "type": "string" },
+            "disclaimer": { "type": "string" },
+            "approval_status": { "const": "approved" }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

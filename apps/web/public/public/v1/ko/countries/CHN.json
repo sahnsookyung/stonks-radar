@@ -1,0 +1,392 @@
+{
+  "schema_version": "1.0",
+  "snapshot_version": 1,
+  "locale": "ko",
+  "generated_at": "2026-05-24T20:54:12Z",
+  "stale_after": "2026-05-25T08:54:12Z",
+  "hard_expires_at": "2026-05-31T20:54:12Z",
+  "object_type": "country_region",
+  "object_key": "CHN",
+  "content_hash": "sha256:a6130a98b6bc05e7ddeaa0270f7685838a8c642862d4d76f87540be33a83e6b2",
+  "source_policy_versions": [
+    {
+      "source_key": "federal_reserve",
+      "policy_version": 1
+    },
+    {
+      "source_key": "sec_edgar",
+      "policy_version": 1
+    },
+    {
+      "source_key": "eia",
+      "policy_version": 1
+    },
+    {
+      "source_key": "world_bank",
+      "policy_version": 1
+    }
+  ],
+  "data": {
+    "key": "CHN",
+    "name": "중국",
+    "type": "country",
+    "overview": "중국 커버리지는 공식 거시 일정, 섹터 노출, 출처 강도 라벨, 승인 이벤트를 결합합니다.",
+    "source_strength": "official_or_reviewed_seed",
+    "freshness": "fresh",
+    "monitored_sectors": [
+      {
+        "key": "space",
+        "name": "우주",
+        "summary": "5개 객체를 승인 이벤트 및 일정과 함께 모니터링합니다.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 5,
+        "event_count": 0
+      },
+      {
+        "key": "quantum",
+        "name": "양자",
+        "summary": "5개 객체를 승인 이벤트 및 일정과 함께 모니터링합니다.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 5,
+        "event_count": 0
+      },
+      {
+        "key": "semiconductors",
+        "name": "반도체",
+        "summary": "9개 객체를 승인 이벤트 및 일정과 함께 모니터링합니다.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 9,
+        "event_count": 2
+      },
+      {
+        "key": "oil-energy",
+        "name": "석유/에너지",
+        "summary": "6개 객체를 승인 이벤트 및 일정과 함께 모니터링합니다.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 6,
+        "event_count": 2
+      },
+      {
+        "key": "big-tech",
+        "name": "빅테크",
+        "summary": "7개 객체를 승인 이벤트 및 일정과 함께 모니터링합니다.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 7,
+        "event_count": 2
+      }
+    ],
+    "recent_events": [
+      {
+        "id": "event_semis_export_controls_seed",
+        "title": "반도체 수출통제 모니터링 강도 유지",
+        "summary": "승인된 시드 이벤트가 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
+        "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다.",
+        "occurred_at": "2026-05-24T20:54:12Z",
+        "published_at": "2026-05-24T20:54:12Z",
+        "country_region_keys": [
+          "USA",
+          "TWN",
+          "KOR",
+          "CHN",
+          "JPN"
+        ],
+        "sector_keys": [
+          "semiconductors",
+          "big-tech"
+        ],
+        "event_type": "policy_risk",
+        "severity": "medium",
+        "confidence": 0.74,
+        "source_strength": "reviewed_structured_seed",
+        "freshness": "fresh",
+        "evidence_count": 2,
+        "latitude": 23.7,
+        "longitude": 121.0,
+        "affected_objects": [
+          "NVIDIA",
+          "TSMC",
+          "Samsung Electronics",
+          "SK Hynix",
+          "ASML"
+        ],
+        "source_links": [
+          {
+            "label": "Source policy seed",
+            "url": "/en/source-policy",
+            "source_key": "sec_edgar",
+            "policy_version": 1
+          }
+        ],
+        "correction_status": "none"
+      }
+    ],
+    "calendar_items": [
+      {
+        "id": "cal_fomc",
+        "title": "FOMC 정책 결정",
+        "country_region_key": "USA",
+        "release_type": "central_bank",
+        "scheduled_at": "2026-06-17T12:00:00Z",
+        "scheduled_local_date": "2026-06-17",
+        "timezone": "America/New_York",
+        "time_precision": "time_estimated",
+        "status": "scheduled",
+        "expectation_type": "official_projection",
+        "expectation_value": "policy path not a consensus",
+        "actual_value": null,
+        "previous_value": null,
+        "surprise": null,
+        "source": "Federal Reserve",
+        "freshness": "fresh"
+      },
+      {
+        "id": "cal_ecb",
+        "title": "ECB 통화정책 결정",
+        "country_region_key": "EUROZONE",
+        "release_type": "central_bank",
+        "scheduled_at": "2026-06-04T12:00:00Z",
+        "scheduled_local_date": "2026-06-04",
+        "timezone": "Europe/Frankfurt",
+        "time_precision": "time_estimated",
+        "status": "scheduled",
+        "expectation_type": "official_projection",
+        "expectation_value": "staff projections where published",
+        "actual_value": null,
+        "previous_value": null,
+        "surprise": null,
+        "source": "ECB",
+        "freshness": "fresh"
+      }
+    ],
+    "indicators": [
+      {
+        "key": "nasdaq_composite",
+        "label": "나스닥 종합",
+        "value": "Pending",
+        "source": "Nasdaq / licensed market feed",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "points": [
+          {
+            "date": "T-3",
+            "value": 100
+          },
+          {
+            "date": "T-2",
+            "value": 101.4
+          },
+          {
+            "date": "T-1",
+            "value": 100.8
+          },
+          {
+            "date": "T",
+            "value": 102.1
+          }
+        ]
+      },
+      {
+        "key": "nasdaq_100_futures",
+        "label": "나스닥 100 선물",
+        "value": "Pending",
+        "source": "CME / licensed futures feed",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "points": [
+          {
+            "date": "T-3",
+            "value": 100
+          },
+          {
+            "date": "T-2",
+            "value": 100.6
+          },
+          {
+            "date": "T-1",
+            "value": 99.8
+          },
+          {
+            "date": "T",
+            "value": 101.2
+          }
+        ]
+      },
+      {
+        "key": "kospi",
+        "label": "코스피",
+        "value": "Pending",
+        "source": "KRX / licensed market feed",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "points": [
+          {
+            "date": "T-3",
+            "value": 100
+          },
+          {
+            "date": "T-2",
+            "value": 99.7
+          },
+          {
+            "date": "T-1",
+            "value": 100.9
+          },
+          {
+            "date": "T",
+            "value": 101.1
+          }
+        ]
+      },
+      {
+        "key": "kodex_200",
+        "label": "KODEX 200 ETF",
+        "value": "Pending",
+        "source": "KRX / Samsung AM",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "kospi_200_futures",
+        "label": "코스피 200 선물",
+        "value": "Pending",
+        "source": "KRX derivatives feed",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "wti_crude",
+        "label": "WTI 원유",
+        "value": "Pending",
+        "source": "EIA / exchange reference",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "vix",
+        "label": "VIX",
+        "value": "Pending",
+        "source": "Cboe / licensed market feed",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "usd_krw",
+        "label": "달러/원",
+        "value": "Pending",
+        "source": "BOK / licensed FX feed",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "usd_jpy",
+        "label": "달러/엔",
+        "value": "Pending",
+        "source": "BoJ / licensed FX feed",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "us_2y",
+        "label": "미국 국채 2년",
+        "value": "Reference",
+        "source": "US Treasury",
+        "freshness": "fresh",
+        "delay_label": "공식 참조",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "us_3y",
+        "label": "미국 국채 3년",
+        "value": "Reference",
+        "source": "US Treasury",
+        "freshness": "fresh",
+        "delay_label": "공식 참조",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "us_5y",
+        "label": "미국 국채 5년",
+        "value": "Reference",
+        "source": "US Treasury",
+        "freshness": "fresh",
+        "delay_label": "공식 참조",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "us_10y",
+        "label": "미국 국채 10년",
+        "value": "Reference",
+        "source": "US Treasury",
+        "freshness": "fresh",
+        "delay_label": "공식 참조",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "japan_policy_rate",
+        "label": "일본은행 정책금리",
+        "value": "Reference",
+        "source": "Bank of Japan",
+        "freshness": "fresh",
+        "delay_label": "공식 참조",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "japan_2y",
+        "label": "일본 국채 2년",
+        "value": "Reference",
+        "source": "Japan MOF / BoJ",
+        "freshness": "fresh",
+        "delay_label": "공식 참조",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "japan_5y",
+        "label": "일본 국채 5년",
+        "value": "Reference",
+        "source": "Japan MOF / BoJ",
+        "freshness": "fresh",
+        "delay_label": "공식 참조",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "japan_10y",
+        "label": "일본 국채 10년",
+        "value": "Reference",
+        "source": "Japan MOF / BoJ",
+        "freshness": "fresh",
+        "delay_label": "공식 참조",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      }
+    ]
+  },
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "시장 지표는 라이선스가 없는 한 지연/참조 데이터입니다.",
+      "severity": "info"
+    }
+  ],
+  "corrections": []
+}

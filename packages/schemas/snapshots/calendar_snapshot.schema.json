@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    { "$ref": "./_envelope.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "object_type": { "const": "calendar_upcoming" },
+        "data": {
+          "type": "object",
+          "required": ["items", "central_banks", "methodology"],
+          "properties": {
+            "items": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/calendarItem" } },
+            "central_banks": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/calendarItem" } },
+            "methodology": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

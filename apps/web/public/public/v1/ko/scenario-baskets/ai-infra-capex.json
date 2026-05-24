@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0",
+  "snapshot_version": 1,
+  "locale": "ko",
+  "generated_at": "2026-05-24T20:54:12Z",
+  "stale_after": "2026-05-25T08:54:12Z",
+  "hard_expires_at": "2026-05-31T20:54:12Z",
+  "object_type": "scenario_basket",
+  "object_key": "ai-infra-capex",
+  "content_hash": "sha256:6c90f8770504c503d9ede7eaf9ac684c4655844d182f3ec82e6271fa6037c021",
+  "source_policy_versions": [
+    {
+      "source_key": "federal_reserve",
+      "policy_version": 1
+    },
+    {
+      "source_key": "sec_edgar",
+      "policy_version": 1
+    },
+    {
+      "source_key": "eia",
+      "policy_version": 1
+    },
+    {
+      "source_key": "world_bank",
+      "policy_version": 1
+    }
+  ],
+  "data": {
+    "key": "ai-infra-capex",
+    "name": "AI 인프라 투자",
+    "thesis": "승인된 공개 사실을 기반으로 데이터센터, 가속기, 메모리, 전력, 클라우드 투자 경로를 추적합니다.",
+    "methodology": "예시 비중은 편집 승인 방법론 데이터 수집 전까지 동일가중 시드 placeholder입니다. 포함 기준은 테마 노출과 검토된 공개 사실입니다.",
+    "included_objects": [
+      {
+        "name": "NVIDIA",
+        "object_key": "NVIDIA",
+        "reason": "모니터링 시나리오에 대한 테마 노출.",
+        "illustrative_weight": "equal-weight seed"
+      },
+      {
+        "name": "Microsoft",
+        "object_key": "MICROSOFT",
+        "reason": "모니터링 시나리오에 대한 테마 노출.",
+        "illustrative_weight": "equal-weight seed"
+      },
+      {
+        "name": "TSMC",
+        "object_key": "TSMC",
+        "reason": "모니터링 시나리오에 대한 테마 노출.",
+        "illustrative_weight": "equal-weight seed"
+      },
+      {
+        "name": "Samsung Electronics",
+        "object_key": "SAMSUNG_ELECTRONICS",
+        "reason": "모니터링 시나리오에 대한 테마 노출.",
+        "illustrative_weight": "equal-weight seed"
+      },
+      {
+        "name": "SK Hynix",
+        "object_key": "SK_HYNIX",
+        "reason": "모니터링 시나리오에 대한 테마 노출.",
+        "illustrative_weight": "equal-weight seed"
+      },
+      {
+        "name": "ASML",
+        "object_key": "ASML",
+        "reason": "모니터링 시나리오에 대한 테마 노출.",
+        "illustrative_weight": "equal-weight seed"
+      }
+    ],
+    "risk_summary": "출처 데이터가 오래되거나 정책 리스크가 반전되거나 섹터 노출이 예상보다 약하면 시나리오가 실패할 수 있습니다.",
+    "freshness_timestamp": "2026-05-24T20:54:12Z",
+    "data_delay_warning": "지연/참조 지표만 사용하며 증권사 연결이나 주문 실행은 없습니다.",
+    "disclaimer": "리서치 목적입니다. 개인화 금융 조언이 아니며 매수, 매도, 배분 추천으로 해석하지 마십시오.",
+    "approval_status": "approved"
+  },
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "시장 지표는 라이선스가 없는 한 지연/참조 데이터입니다.",
+      "severity": "info"
+    }
+  ],
+  "corrections": []
+}

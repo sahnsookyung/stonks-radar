@@ -1,0 +1,31 @@
+central_banks:
+  - key: FOMC
+    country_region_key: USA
+    name_en: Federal Open Market Committee
+    name_ko: 미국 연방공개시장위원회
+    source_key: federal_reserve
+  - key: ECB
+    country_region_key: EUROZONE
+    name_en: European Central Bank
+    name_ko: 유럽중앙은행
+    source_key: ecb
+  - key: BOE
+    country_region_key: GBR
+    name_en: Bank of England MPC
+    name_ko: 영란은행 통화정책위원회
+    source_key: boe
+  - key: BOJ
+    country_region_key: JPN
+    name_en: Bank of Japan
+    name_ko: 일본은행
+    source_key: boj
+  - key: BOK
+    country_region_key: KOR
+    name_en: Bank of Korea
+    name_ko: 한국은행
+    source_key: bok
+  - key: COPOM
+    country_region_key: BRA
+    name_en: Brazil COPOM
+    name_ko: 브라질 COPOM
+    source_key: bcb

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    { "$ref": "./_envelope.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "object_type": { "const": "country_region" },
+        "data": {
+          "type": "object",
+          "required": ["key", "name", "type", "overview", "source_strength", "freshness", "monitored_sectors", "recent_events", "calendar_items", "indicators"],
+          "properties": {
+            "key": { "type": "string" },
+            "name": { "type": "string" },
+            "type": { "enum": ["country", "region"] },
+            "overview": { "type": "string" },
+            "source_strength": { "type": "string" },
+            "freshness": { "enum": ["fresh", "watch", "stale", "unsupported"] },
+            "monitored_sectors": { "type": "array" },
+            "recent_events": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/event" } },
+            "calendar_items": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/calendarItem" } },
+            "indicators": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/metricTile" } }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

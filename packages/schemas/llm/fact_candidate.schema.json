@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["fact_type", "predicate", "object_json", "evidence_ids", "confidence"],
+  "properties": {
+    "fact_type": { "type": "string" },
+    "predicate": { "type": "string" },
+    "object_json": { "type": "object" },
+    "evidence_ids": { "type": "array", "items": { "type": "string" } },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+  },
+  "additionalProperties": false
+}

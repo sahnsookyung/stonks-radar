@@ -1,0 +1,9 @@
+node_modules/
+dist/
+build/
+coverage/
+.venv/
+artifacts/
+apps/web/public/public/v*/
+apps/web/public/public/latest/
+*.log

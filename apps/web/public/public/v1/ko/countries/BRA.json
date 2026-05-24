@@ -1,0 +1,377 @@
+{
+  "schema_version": "1.0",
+  "snapshot_version": 1,
+  "locale": "ko",
+  "generated_at": "2026-05-24T20:54:12Z",
+  "stale_after": "2026-05-25T08:54:12Z",
+  "hard_expires_at": "2026-05-31T20:54:12Z",
+  "object_type": "country_region",
+  "object_key": "BRA",
+  "content_hash": "sha256:be93cea086954b53c37ee109b7797619e6c38373c0a578f9250f2f71253c59d7",
+  "source_policy_versions": [
+    {
+      "source_key": "federal_reserve",
+      "policy_version": 1
+    },
+    {
+      "source_key": "sec_edgar",
+      "policy_version": 1
+    },
+    {
+      "source_key": "eia",
+      "policy_version": 1
+    },
+    {
+      "source_key": "world_bank",
+      "policy_version": 1
+    }
+  ],
+  "data": {
+    "key": "BRA",
+    "name": "브라질",
+    "type": "country",
+    "overview": "브라질 커버리지는 공식 거시 일정, 섹터 노출, 출처 강도 라벨, 승인 이벤트를 결합합니다.",
+    "source_strength": "official_or_reviewed_seed",
+    "freshness": "fresh",
+    "monitored_sectors": [
+      {
+        "key": "space",
+        "name": "우주",
+        "summary": "5개 객체를 승인 이벤트 및 일정과 함께 모니터링합니다.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 5,
+        "event_count": 0
+      },
+      {
+        "key": "quantum",
+        "name": "양자",
+        "summary": "5개 객체를 승인 이벤트 및 일정과 함께 모니터링합니다.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 5,
+        "event_count": 0
+      },
+      {
+        "key": "semiconductors",
+        "name": "반도체",
+        "summary": "9개 객체를 승인 이벤트 및 일정과 함께 모니터링합니다.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 9,
+        "event_count": 2
+      },
+      {
+        "key": "oil-energy",
+        "name": "석유/에너지",
+        "summary": "6개 객체를 승인 이벤트 및 일정과 함께 모니터링합니다.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 6,
+        "event_count": 2
+      },
+      {
+        "key": "big-tech",
+        "name": "빅테크",
+        "summary": "7개 객체를 승인 이벤트 및 일정과 함께 모니터링합니다.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 7,
+        "event_count": 2
+      }
+    ],
+    "recent_events": [
+      {
+        "id": "event_central_bank_seed",
+        "title": "6개 중앙은행 정책회의 일정 시드 적용",
+        "summary": "FOMC, ECB, BoE, BoJ, BoK, 브라질 COPOM이 명시적 예상치 라벨과 함께 표시됩니다.",
+        "why_it_matters": "캘린더 가시성은 미지원 범위를 숨기지 않고 오래된 정책 데이터를 드러냅니다.",
+        "occurred_at": "2026-05-24T20:54:12Z",
+        "published_at": "2026-05-24T20:54:12Z",
+        "country_region_keys": [
+          "USA",
+          "EUROZONE",
+          "GBR",
+          "JPN",
+          "KOR",
+          "BRA"
+        ],
+        "sector_keys": [
+          "big-tech",
+          "semiconductors",
+          "oil-energy"
+        ],
+        "event_type": "central_bank_calendar",
+        "severity": "low",
+        "confidence": 0.78,
+        "source_strength": "official_calendar_seed",
+        "freshness": "fresh",
+        "evidence_count": 6,
+        "latitude": 51.5,
+        "longitude": 0.0,
+        "affected_objects": [
+          "FOMC",
+          "ECB",
+          "BoE",
+          "BoJ",
+          "BoK",
+          "COPOM"
+        ],
+        "source_links": [
+          {
+            "label": "Federal Reserve",
+            "url": "https://www.federalreserve.gov",
+            "source_key": "federal_reserve",
+            "policy_version": 1
+          }
+        ],
+        "correction_status": "none"
+      }
+    ],
+    "calendar_items": [
+      {
+        "id": "cal_copom",
+        "title": "브라질 COPOM 결정",
+        "country_region_key": "BRA",
+        "release_type": "central_bank",
+        "scheduled_at": "2026-06-17T12:00:00Z",
+        "scheduled_local_date": "2026-06-17",
+        "timezone": "America/Sao_Paulo",
+        "time_precision": "time_estimated",
+        "status": "scheduled",
+        "expectation_type": "unknown",
+        "expectation_value": null,
+        "actual_value": null,
+        "previous_value": null,
+        "surprise": null,
+        "source": "BCB",
+        "freshness": "watch"
+      }
+    ],
+    "indicators": [
+      {
+        "key": "nasdaq_composite",
+        "label": "나스닥 종합",
+        "value": "Pending",
+        "source": "Nasdaq / licensed market feed",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "points": [
+          {
+            "date": "T-3",
+            "value": 100
+          },
+          {
+            "date": "T-2",
+            "value": 101.4
+          },
+          {
+            "date": "T-1",
+            "value": 100.8
+          },
+          {
+            "date": "T",
+            "value": 102.1
+          }
+        ]
+      },
+      {
+        "key": "nasdaq_100_futures",
+        "label": "나스닥 100 선물",
+        "value": "Pending",
+        "source": "CME / licensed futures feed",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "points": [
+          {
+            "date": "T-3",
+            "value": 100
+          },
+          {
+            "date": "T-2",
+            "value": 100.6
+          },
+          {
+            "date": "T-1",
+            "value": 99.8
+          },
+          {
+            "date": "T",
+            "value": 101.2
+          }
+        ]
+      },
+      {
+        "key": "kospi",
+        "label": "코스피",
+        "value": "Pending",
+        "source": "KRX / licensed market feed",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "points": [
+          {
+            "date": "T-3",
+            "value": 100
+          },
+          {
+            "date": "T-2",
+            "value": 99.7
+          },
+          {
+            "date": "T-1",
+            "value": 100.9
+          },
+          {
+            "date": "T",
+            "value": 101.1
+          }
+        ]
+      },
+      {
+        "key": "kodex_200",
+        "label": "KODEX 200 ETF",
+        "value": "Pending",
+        "source": "KRX / Samsung AM",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "kospi_200_futures",
+        "label": "코스피 200 선물",
+        "value": "Pending",
+        "source": "KRX derivatives feed",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "wti_crude",
+        "label": "WTI 원유",
+        "value": "Pending",
+        "source": "EIA / exchange reference",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "vix",
+        "label": "VIX",
+        "value": "Pending",
+        "source": "Cboe / licensed market feed",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "usd_krw",
+        "label": "달러/원",
+        "value": "Pending",
+        "source": "BOK / licensed FX feed",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "usd_jpy",
+        "label": "달러/엔",
+        "value": "Pending",
+        "source": "BoJ / licensed FX feed",
+        "freshness": "watch",
+        "delay_label": "출처 게이트 시장 피드",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "us_2y",
+        "label": "미국 국채 2년",
+        "value": "Reference",
+        "source": "US Treasury",
+        "freshness": "fresh",
+        "delay_label": "공식 참조",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "us_3y",
+        "label": "미국 국채 3년",
+        "value": "Reference",
+        "source": "US Treasury",
+        "freshness": "fresh",
+        "delay_label": "공식 참조",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "us_5y",
+        "label": "미국 국채 5년",
+        "value": "Reference",
+        "source": "US Treasury",
+        "freshness": "fresh",
+        "delay_label": "공식 참조",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "us_10y",
+        "label": "미국 국채 10년",
+        "value": "Reference",
+        "source": "US Treasury",
+        "freshness": "fresh",
+        "delay_label": "공식 참조",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "japan_policy_rate",
+        "label": "일본은행 정책금리",
+        "value": "Reference",
+        "source": "Bank of Japan",
+        "freshness": "fresh",
+        "delay_label": "공식 참조",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "japan_2y",
+        "label": "일본 국채 2년",
+        "value": "Reference",
+        "source": "Japan MOF / BoJ",
+        "freshness": "fresh",
+        "delay_label": "공식 참조",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "japan_5y",
+        "label": "일본 국채 5년",
+        "value": "Reference",
+        "source": "Japan MOF / BoJ",
+        "freshness": "fresh",
+        "delay_label": "공식 참조",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "japan_10y",
+        "label": "일본 국채 10년",
+        "value": "Reference",
+        "source": "Japan MOF / BoJ",
+        "freshness": "fresh",
+        "delay_label": "공식 참조",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      }
+    ]
+  },
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "시장 지표는 라이선스가 없는 한 지연/참조 데이터입니다.",
+      "severity": "info"
+    }
+  ],
+  "corrections": []
+}

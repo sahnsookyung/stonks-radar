@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0",
+  "snapshot_version": 1,
+  "locale": "en",
+  "generated_at": "2026-05-24T20:54:12Z",
+  "stale_after": "2026-05-25T08:54:12Z",
+  "hard_expires_at": "2026-05-31T20:54:12Z",
+  "object_type": "scenario_basket",
+  "object_key": "asia-semiconductor-risk",
+  "content_hash": "sha256:98702b201c4b3cafd3b69ddfcff142b7f0b07a8f94a6cb10f157bc218af1fb34",
+  "source_policy_versions": [
+    {
+      "source_key": "federal_reserve",
+      "policy_version": 1
+    },
+    {
+      "source_key": "sec_edgar",
+      "policy_version": 1
+    },
+    {
+      "source_key": "eia",
+      "policy_version": 1
+    },
+    {
+      "source_key": "world_bank",
+      "policy_version": 1
+    }
+  ],
+  "data": {
+    "key": "asia-semiconductor-risk",
+    "name": "Asia Semiconductor Risk",
+    "thesis": "Maps Taiwan, Korea, Japan, export-control, memory, and foundry risk channels.",
+    "methodology": "Illustrative weights are equal-weight seed placeholders until editor-approved methodology data is ingested. Inclusion is based on thematic exposure and reviewed public facts.",
+    "included_objects": [
+      {
+        "name": "TSMC",
+        "object_key": "TSMC",
+        "reason": "Thematic exposure under monitored scenario.",
+        "illustrative_weight": "equal-weight seed"
+      },
+      {
+        "name": "Samsung Electronics",
+        "object_key": "SAMSUNG_ELECTRONICS",
+        "reason": "Thematic exposure under monitored scenario.",
+        "illustrative_weight": "equal-weight seed"
+      },
+      {
+        "name": "SK Hynix",
+        "object_key": "SK_HYNIX",
+        "reason": "Thematic exposure under monitored scenario.",
+        "illustrative_weight": "equal-weight seed"
+      },
+      {
+        "name": "ASML",
+        "object_key": "ASML",
+        "reason": "Thematic exposure under monitored scenario.",
+        "illustrative_weight": "equal-weight seed"
+      },
+      {
+        "name": "NVIDIA",
+        "object_key": "NVIDIA",
+        "reason": "Thematic exposure under monitored scenario.",
+        "illustrative_weight": "equal-weight seed"
+      }
+    ],
+    "risk_summary": "Scenario can fail if source data is stale, policy risk reverses, or sector exposure is weaker than expected.",
+    "freshness_timestamp": "2026-05-24T20:54:12Z",
+    "data_delay_warning": "Uses delayed/reference indicators only; no brokerage connection or trade execution.",
+    "disclaimer": "Research only. Not personalized financial advice. Do not treat this as a buy, sell, or allocation recommendation.",
+    "approval_status": "approved"
+  },
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "Market indicators are delayed/reference unless licensed.",
+      "severity": "info"
+    }
+  ],
+  "corrections": []
+}

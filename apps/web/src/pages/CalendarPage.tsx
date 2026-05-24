@@ -1,0 +1,37 @@
+import { useQuery } from "@tanstack/react-query";
+import { CalendarClock } from "lucide-react";
+import { CalendarTable } from "../components/CalendarTable";
+import { ErrorState, LoadingState } from "../components/LoadingState";
+import { SnapshotBanner } from "../components/SnapshotBanner";
+import { useLocale } from "../lib/locale";
+import { snapshotQueries } from "../lib/snapshots";
+
+export function CalendarPage({ centralBanksOnly = false }: { centralBanksOnly?: boolean }) {
+  const locale = useLocale();
+  const query = useQuery({
+    queryKey: ["snapshot", "calendar", locale],
+    queryFn: () => snapshotQueries.calendar(locale)
+  });
+
+  if (query.isLoading) return <LoadingState />;
+  if (query.isError || !query.data) return <ErrorState error={query.error} />;
+
+  const items = centralBanksOnly ? query.data.data.central_banks : query.data.data.items;
+
+  return (
+    <div className="grid gap-6">
+      <SnapshotBanner snapshot={query.data} />
+      <section>
+        <div className="flex items-center gap-2 text-sm font-semibold text-accent">
+          <CalendarClock className="h-4 w-4" />
+          Expectations are labeled by taxonomy
+        </div>
+        <h1 className="mt-2 text-4xl font-bold">
+          {centralBanksOnly ? "Central-bank Calendar" : "Economic Calendar"}
+        </h1>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">{query.data.data.methodology}</p>
+      </section>
+      <CalendarTable items={items} />
+    </div>
+  );
+}

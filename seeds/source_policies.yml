@@ -1,0 +1,31 @@
+policies:
+  - source_key: bls
+    policy_version: 1
+    allowed_acquisition_modes: [official_api]
+    allowed_retention_classes: [structured_fact_only]
+    public_display_policy: facts_with_attribution
+    llm_allowed_classes: [PUBLIC_FACTS_ONLY]
+  - source_key: fred
+    policy_version: 1
+    allowed_acquisition_modes: [official_api]
+    allowed_retention_classes: [structured_fact_only]
+    public_display_policy: facts_with_attribution
+    llm_allowed_classes: [PUBLIC_FACTS_ONLY]
+  - source_key: federal_reserve
+    policy_version: 1
+    allowed_acquisition_modes: [official_page, public_web_fetch]
+    allowed_retention_classes: [full_text_open, structured_fact_only]
+    public_display_policy: facts_with_attribution
+    llm_allowed_classes: [PUBLIC_FACTS_ONLY, PUBLIC_SOURCE_TEXT]
+  - source_key: sec_edgar
+    policy_version: 1
+    allowed_acquisition_modes: [filing, official_api]
+    allowed_retention_classes: [full_text_open, structured_fact_only]
+    public_display_policy: facts_with_attribution
+    llm_allowed_classes: [PUBLIC_FACTS_ONLY, PUBLIC_SOURCE_TEXT]
+  - source_key: gdelt
+    policy_version: 1
+    allowed_acquisition_modes: [metadata_only]
+    allowed_retention_classes: [metadata_only]
+    public_display_policy: discovery_only
+    llm_allowed_classes: [PUBLIC_FACTS_ONLY]

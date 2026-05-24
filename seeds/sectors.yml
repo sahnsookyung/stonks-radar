@@ -1,0 +1,58 @@
+sectors:
+  - key: space
+    object_key: sector:SPACE
+    name_en: Space
+    name_ko: 우주
+    entities:
+      - Rocket Lab
+      - Intuitive Machines
+      - AST SpaceMobile
+      - Redwire
+      - SpaceX (private/reference)
+  - key: quantum
+    object_key: sector:QUANTUM
+    name_en: Quantum
+    name_ko: 양자
+    entities:
+      - IONQ
+      - Rigetti
+      - D-Wave
+      - Quantum Computing Inc.
+      - Big Tech quantum divisions
+  - key: semiconductors
+    object_key: sector:SEMICONDUCTORS
+    name_en: Semiconductors
+    name_ko: 반도체
+    entities:
+      - NVIDIA
+      - AMD
+      - Intel
+      - TSMC
+      - Samsung Electronics
+      - SK Hynix
+      - ASML
+      - Micron
+      - Broadcom
+  - key: oil-energy
+    object_key: sector:OIL_ENERGY
+    name_en: Oil/Energy
+    name_ko: 석유/에너지
+    entities:
+      - Brent reference series
+      - WTI reference series
+      - Chevron
+      - ExxonMobil
+      - OPEC+
+      - EIA
+  - key: big-tech
+    object_key: sector:BIG_TECH
+    name_en: Big Tech
+    name_ko: 빅테크
+    entities:
+      - Alphabet
+      - Microsoft
+      - Apple
+      - Amazon
+      - Meta
+      - NVIDIA
+      - Tesla

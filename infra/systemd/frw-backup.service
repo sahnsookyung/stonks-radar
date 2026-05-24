@@ -1,0 +1,8 @@
+[Unit]
+Description=Financial Research Workbench PostgreSQL backup
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/financial-research-workbench
+EnvironmentFile=/opt/financial-research-workbench/.env
+ExecStart=/opt/financial-research-workbench/scripts/backup_pg.sh

@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "snapshot_version": 1,
+  "locale": "en",
+  "generated_at": "2026-05-24T20:54:12Z",
+  "stale_after": "2026-05-25T08:54:12Z",
+  "hard_expires_at": "2026-05-31T20:54:12Z",
+  "object_type": "correction_log",
+  "object_key": "corrections",
+  "content_hash": "sha256:e3eb12da99e044ecc7d50cea407bf17f33c546e5309aa7ee661234baed2b7750",
+  "source_policy_versions": [
+    {
+      "source_key": "federal_reserve",
+      "policy_version": 1
+    },
+    {
+      "source_key": "sec_edgar",
+      "policy_version": 1
+    },
+    {
+      "source_key": "eia",
+      "policy_version": 1
+    },
+    {
+      "source_key": "world_bank",
+      "policy_version": 1
+    }
+  ],
+  "data": {
+    "entries": []
+  },
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "Market indicators are delayed/reference unless licensed.",
+      "severity": "info"
+    }
+  ],
+  "corrections": []
+}

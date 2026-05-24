@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    { "$ref": "./_envelope.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "object_type": { "const": "sector_page" },
+        "data": {
+          "type": "object",
+          "required": ["key", "name", "overview", "monitored_entities", "monitored_instruments", "country_region_exposure", "recent_events", "upcoming_calendar_items", "macro_geopolitical_drivers", "reference_indicators", "scenario_baskets", "risks_and_caveats", "freshness", "source_strength"],
+          "properties": {
+            "key": { "type": "string" },
+            "name": { "type": "string" },
+            "overview": { "type": "string" },
+            "monitored_entities": { "type": "array", "items": { "type": "string" } },
+            "monitored_instruments": { "type": "array", "items": { "type": "string" } },
+            "country_region_exposure": { "type": "array", "items": { "type": "string" } },
+            "recent_events": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/event" } },
+            "upcoming_calendar_items": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/calendarItem" } },
+            "macro_geopolitical_drivers": { "type": "array", "items": { "type": "string" } },
+            "reference_indicators": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/metricTile" } },
+            "scenario_baskets": { "type": "array" },
+            "risks_and_caveats": { "type": "array", "items": { "type": "string" } },
+            "freshness": { "enum": ["fresh", "watch", "stale", "unsupported"] },
+            "source_strength": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

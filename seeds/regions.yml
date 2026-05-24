@@ -1,0 +1,18 @@
+regions:
+  - key: EUROZONE
+    name_en: Eurozone
+    name_ko: 유로존
+    methodology_key: euro_area_membership_ecb
+  - key: EU
+    name_en: European Union
+    name_ko: 유럽연합
+    methodology_key: eu_membership_official
+  - key: MIDDLE_EAST_OPEC_GCC
+    name_en: Middle East / OPEC+ / GCC
+    name_ko: 중동 / OPEC+ / GCC
+    methodology_key: custom_energy_geopolitics_region
+  - key: TOP10_GDP_2026_WORLD_BANK
+    name_en: Dynamic Top-10 Economies
+    name_ko: 동적 GDP 상위 10개 경제권
+    methodology_key: world_bank_gdp_current_usd
+    methodology_year: 2026

@@ -1,0 +1,134 @@
+data_sources:
+  - source_key: bls
+    display_name: U.S. Bureau of Labor Statistics
+    source_type: official_api
+    base_url: https://api.bls.gov/publicAPI/v2
+    public_display_policy: facts_with_attribution
+    raw_retention_policy: structured_fact_only
+    redistribution_risk: low
+  - source_key: fred
+    display_name: FRED/ALFRED
+    source_type: official_api
+    base_url: https://api.stlouisfed.org/fred
+    public_display_policy: facts_with_attribution
+    raw_retention_policy: structured_fact_only
+    redistribution_risk: low
+  - source_key: federal_reserve
+    display_name: Federal Reserve
+    source_type: official_page
+    base_url: https://www.federalreserve.gov
+    public_display_policy: facts_with_attribution
+    raw_retention_policy: full_text_open
+    redistribution_risk: low
+  - source_key: sec_edgar
+    display_name: SEC EDGAR
+    source_type: filing
+    base_url: https://data.sec.gov
+    public_display_policy: facts_with_attribution
+    raw_retention_policy: full_text_open
+    redistribution_risk: low
+  - source_key: trump_filings
+    display_name: Trump-related public filings
+    source_type: filing
+    base_url: https://data.sec.gov
+    public_display_policy: facts_with_attribution
+    raw_retention_policy: structured_fact_only
+    redistribution_risk: medium
+  - source_key: eia
+    display_name: U.S. Energy Information Administration
+    source_type: official_api
+    base_url: https://api.eia.gov
+    public_display_policy: facts_with_attribution
+    raw_retention_policy: structured_fact_only
+    redistribution_risk: low
+  - source_key: ecb
+    display_name: ECB Data Portal
+    source_type: official_api
+    base_url: https://data-api.ecb.europa.eu
+    public_display_policy: facts_with_attribution
+    raw_retention_policy: structured_fact_only
+    redistribution_risk: low
+  - source_key: world_bank
+    display_name: World Bank
+    source_type: official_api
+    base_url: https://api.worldbank.org/v2
+    public_display_policy: facts_with_attribution
+    raw_retention_policy: structured_fact_only
+    redistribution_risk: low
+  - source_key: gdelt
+    display_name: GDELT
+    source_type: aggregator
+    base_url: https://api.gdeltproject.org
+    public_display_policy: discovery_only
+    raw_retention_policy: metadata_only
+    redistribution_risk: medium
+  - source_key: natural_earth
+    display_name: Natural Earth
+    source_type: public_web
+    base_url: https://www.naturalearthdata.com
+    public_display_policy: open_geodata_attribution
+    raw_retention_policy: full_text_open
+    redistribution_risk: low
+  - source_key: finra_short_interest
+    display_name: FINRA Short Interest
+    source_type: official_api
+    base_url: https://www.finra.org/filing-reporting/regulatory-filing-systems/short-interest
+    public_display_policy: facts_with_attribution
+    raw_retention_policy: structured_fact_only
+    redistribution_risk: low
+  - source_key: finra_reg_sho_short_volume
+    display_name: FINRA Reg SHO Daily Short Sale Volume
+    source_type: official_api
+    base_url: https://api.finra.org
+    public_display_policy: facts_with_attribution
+    raw_retention_policy: structured_fact_only
+    redistribution_risk: low
+  - source_key: twelve_data
+    display_name: Twelve Data
+    source_type: market_data
+    base_url: https://api.twelvedata.com
+    public_display_policy: derived_metrics_with_delay_label
+    raw_retention_policy: structured_fact_only
+    redistribution_risk: medium
+  - source_key: alpha_vantage
+    display_name: Alpha Vantage
+    source_type: market_data
+    base_url: https://www.alphavantage.co
+    public_display_policy: derived_metrics_with_delay_label
+    raw_retention_policy: structured_fact_only
+    redistribution_risk: medium
+  - source_key: fmp
+    display_name: Financial Modeling Prep
+    source_type: market_data
+    base_url: https://financialmodelingprep.com
+    public_display_policy: derived_metrics_with_delay_label
+    raw_retention_policy: structured_fact_only
+    redistribution_risk: medium
+  - source_key: public_short_research
+    display_name: Public short-research publishers
+    source_type: public_web
+    base_url: https://muddywatersresearch.com/research/
+    public_display_policy: metadata_and_short_excerpt_only
+    raw_retention_policy: metadata_only
+    redistribution_risk: medium
+  - source_key: pentagon_pizza
+    display_name: Pentagon.Pizza
+    source_type: public_web
+    base_url: https://pentagon.pizza
+    public_display_policy: discovery_only
+    raw_retention_policy: metadata_only
+    redistribution_risk: high
+  - source_key: defense_contracts
+    display_name: U.S. Defense contract announcements
+    source_type: official_page
+    base_url: https://www.defense.gov/News/Contracts/
+    public_display_policy: facts_with_attribution
+    raw_retention_policy: structured_fact_only
+    redistribution_risk: low
+  - source_key: nasa_firms
+    display_name: NASA FIRMS
+    source_type: official_api
+    base_url: https://firms.modaps.eosdis.nasa.gov
+    public_display_policy: facts_with_attribution
+    raw_retention_policy: structured_fact_only
+    redistribution_risk: low

@@ -1,0 +1,420 @@
+{
+  "schema_version": "1.0",
+  "snapshot_version": 1,
+  "locale": "en",
+  "generated_at": "2026-05-24T20:54:12Z",
+  "stale_after": "2026-05-25T08:54:12Z",
+  "hard_expires_at": "2026-05-31T20:54:12Z",
+  "object_type": "country_region",
+  "object_key": "KOR",
+  "content_hash": "sha256:2741481b7bf9039c6ed324717b8d1f8072503e04497934e32131ec69e2f6da10",
+  "source_policy_versions": [
+    {
+      "source_key": "federal_reserve",
+      "policy_version": 1
+    },
+    {
+      "source_key": "sec_edgar",
+      "policy_version": 1
+    },
+    {
+      "source_key": "eia",
+      "policy_version": 1
+    },
+    {
+      "source_key": "world_bank",
+      "policy_version": 1
+    }
+  ],
+  "data": {
+    "key": "KOR",
+    "name": "South Korea",
+    "type": "country",
+    "overview": "South Korea coverage combines official macro calendars, sector exposure, source-strength labels, and approved events.",
+    "source_strength": "official_or_reviewed_seed",
+    "freshness": "fresh",
+    "monitored_sectors": [
+      {
+        "key": "space",
+        "name": "Space",
+        "summary": "Monitoring 5 entities with approved event and calendar links.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 5,
+        "event_count": 0
+      },
+      {
+        "key": "quantum",
+        "name": "Quantum",
+        "summary": "Monitoring 5 entities with approved event and calendar links.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 5,
+        "event_count": 0
+      },
+      {
+        "key": "semiconductors",
+        "name": "Semiconductors",
+        "summary": "Monitoring 9 entities with approved event and calendar links.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 9,
+        "event_count": 2
+      },
+      {
+        "key": "oil-energy",
+        "name": "Oil/Energy",
+        "summary": "Monitoring 6 entities with approved event and calendar links.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 6,
+        "event_count": 2
+      },
+      {
+        "key": "big-tech",
+        "name": "Big Tech",
+        "summary": "Monitoring 7 entities with approved event and calendar links.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 7,
+        "event_count": 2
+      }
+    ],
+    "recent_events": [
+      {
+        "id": "event_semis_export_controls_seed",
+        "title": "Semiconductor export-control monitoring remains elevated",
+        "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
+        "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
+        "occurred_at": "2026-05-24T20:54:12Z",
+        "published_at": "2026-05-24T20:54:12Z",
+        "country_region_keys": [
+          "USA",
+          "TWN",
+          "KOR",
+          "CHN",
+          "JPN"
+        ],
+        "sector_keys": [
+          "semiconductors",
+          "big-tech"
+        ],
+        "event_type": "policy_risk",
+        "severity": "medium",
+        "confidence": 0.74,
+        "source_strength": "reviewed_structured_seed",
+        "freshness": "fresh",
+        "evidence_count": 2,
+        "latitude": 23.7,
+        "longitude": 121.0,
+        "affected_objects": [
+          "NVIDIA",
+          "TSMC",
+          "Samsung Electronics",
+          "SK Hynix",
+          "ASML"
+        ],
+        "source_links": [
+          {
+            "label": "Source policy seed",
+            "url": "/en/source-policy",
+            "source_key": "sec_edgar",
+            "policy_version": 1
+          }
+        ],
+        "correction_status": "none"
+      },
+      {
+        "id": "event_central_bank_seed",
+        "title": "Central-bank calendar coverage seeded across six policy committees",
+        "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
+        "why_it_matters": "Calendar visibility reduces silent unsupported coverage and makes stale policy data visible.",
+        "occurred_at": "2026-05-24T20:54:12Z",
+        "published_at": "2026-05-24T20:54:12Z",
+        "country_region_keys": [
+          "USA",
+          "EUROZONE",
+          "GBR",
+          "JPN",
+          "KOR",
+          "BRA"
+        ],
+        "sector_keys": [
+          "big-tech",
+          "semiconductors",
+          "oil-energy"
+        ],
+        "event_type": "central_bank_calendar",
+        "severity": "low",
+        "confidence": 0.78,
+        "source_strength": "official_calendar_seed",
+        "freshness": "fresh",
+        "evidence_count": 6,
+        "latitude": 51.5,
+        "longitude": 0.0,
+        "affected_objects": [
+          "FOMC",
+          "ECB",
+          "BoE",
+          "BoJ",
+          "BoK",
+          "COPOM"
+        ],
+        "source_links": [
+          {
+            "label": "Federal Reserve",
+            "url": "https://www.federalreserve.gov",
+            "source_key": "federal_reserve",
+            "policy_version": 1
+          }
+        ],
+        "correction_status": "none"
+      }
+    ],
+    "calendar_items": [
+      {
+        "id": "cal_bok",
+        "title": "Bank of Korea decision",
+        "country_region_key": "KOR",
+        "release_type": "central_bank",
+        "scheduled_at": "2026-05-28T12:00:00Z",
+        "scheduled_local_date": "2026-05-28",
+        "timezone": "Asia/Seoul",
+        "time_precision": "time_estimated",
+        "status": "scheduled",
+        "expectation_type": "unknown",
+        "expectation_value": null,
+        "actual_value": null,
+        "previous_value": null,
+        "surprise": null,
+        "source": "BoK",
+        "freshness": "watch"
+      }
+    ],
+    "indicators": [
+      {
+        "key": "nasdaq_composite",
+        "label": "Nasdaq Composite",
+        "value": "Pending",
+        "source": "Nasdaq / licensed market feed",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "points": [
+          {
+            "date": "T-3",
+            "value": 100
+          },
+          {
+            "date": "T-2",
+            "value": 101.4
+          },
+          {
+            "date": "T-1",
+            "value": 100.8
+          },
+          {
+            "date": "T",
+            "value": 102.1
+          }
+        ]
+      },
+      {
+        "key": "nasdaq_100_futures",
+        "label": "Nasdaq 100 futures",
+        "value": "Pending",
+        "source": "CME / licensed futures feed",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "points": [
+          {
+            "date": "T-3",
+            "value": 100
+          },
+          {
+            "date": "T-2",
+            "value": 100.6
+          },
+          {
+            "date": "T-1",
+            "value": 99.8
+          },
+          {
+            "date": "T",
+            "value": 101.2
+          }
+        ]
+      },
+      {
+        "key": "kospi",
+        "label": "KOSPI",
+        "value": "Pending",
+        "source": "KRX / licensed market feed",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "points": [
+          {
+            "date": "T-3",
+            "value": 100
+          },
+          {
+            "date": "T-2",
+            "value": 99.7
+          },
+          {
+            "date": "T-1",
+            "value": 100.9
+          },
+          {
+            "date": "T",
+            "value": 101.1
+          }
+        ]
+      },
+      {
+        "key": "kodex_200",
+        "label": "KODEX 200 ETF",
+        "value": "Pending",
+        "source": "KRX / Samsung AM",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "kospi_200_futures",
+        "label": "KOSPI 200 futures",
+        "value": "Pending",
+        "source": "KRX derivatives feed",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "wti_crude",
+        "label": "WTI crude oil",
+        "value": "Pending",
+        "source": "EIA / exchange reference",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "vix",
+        "label": "VIX",
+        "value": "Pending",
+        "source": "Cboe / licensed market feed",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "usd_krw",
+        "label": "USD/KRW",
+        "value": "Pending",
+        "source": "BOK / licensed FX feed",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "usd_jpy",
+        "label": "USD/JPY",
+        "value": "Pending",
+        "source": "BoJ / licensed FX feed",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "us_2y",
+        "label": "US Treasury 2Y",
+        "value": "Reference",
+        "source": "US Treasury",
+        "freshness": "fresh",
+        "delay_label": "official reference",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "us_3y",
+        "label": "US Treasury 3Y",
+        "value": "Reference",
+        "source": "US Treasury",
+        "freshness": "fresh",
+        "delay_label": "official reference",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "us_5y",
+        "label": "US Treasury 5Y",
+        "value": "Reference",
+        "source": "US Treasury",
+        "freshness": "fresh",
+        "delay_label": "official reference",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "us_10y",
+        "label": "US Treasury 10Y",
+        "value": "Reference",
+        "source": "US Treasury",
+        "freshness": "fresh",
+        "delay_label": "official reference",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "japan_policy_rate",
+        "label": "BoJ policy rate",
+        "value": "Reference",
+        "source": "Bank of Japan",
+        "freshness": "fresh",
+        "delay_label": "official reference",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "japan_2y",
+        "label": "Japan govt 2Y",
+        "value": "Reference",
+        "source": "Japan MOF / BoJ",
+        "freshness": "fresh",
+        "delay_label": "official reference",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "japan_5y",
+        "label": "Japan govt 5Y",
+        "value": "Reference",
+        "source": "Japan MOF / BoJ",
+        "freshness": "fresh",
+        "delay_label": "official reference",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "japan_10y",
+        "label": "Japan govt 10Y",
+        "value": "Reference",
+        "source": "Japan MOF / BoJ",
+        "freshness": "fresh",
+        "delay_label": "official reference",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      }
+    ]
+  },
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "Market indicators are delayed/reference unless licensed.",
+      "severity": "info"
+    }
+  ],
+  "corrections": []
+}

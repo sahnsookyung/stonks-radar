@@ -1,0 +1,786 @@
+{
+  "schema_version": "1.0",
+  "snapshot_version": 1,
+  "locale": "en",
+  "generated_at": "2026-05-24T20:54:12Z",
+  "stale_after": "2026-05-25T08:54:12Z",
+  "hard_expires_at": "2026-05-31T20:54:12Z",
+  "object_type": "home",
+  "object_key": "home",
+  "content_hash": "sha256:d3d5c1b34c5f415cbec52f7e48331d763bca77371357c985c2733a662c802974",
+  "source_policy_versions": [
+    {
+      "source_key": "federal_reserve",
+      "policy_version": 1
+    },
+    {
+      "source_key": "sec_edgar",
+      "policy_version": 1
+    },
+    {
+      "source_key": "eia",
+      "policy_version": 1
+    },
+    {
+      "source_key": "world_bank",
+      "policy_version": 1
+    }
+  ],
+  "data": {
+    "headline": "Global market intelligence dashboard",
+    "summary": "Snapshot-first research dashboard for public, source-gated intelligence. It highlights monitored sectors, central-bank calendars, scenario baskets, and approved events without personalized advice.",
+    "generated_label": "2026-05-24T20:54:12Z",
+    "snapshot_health": {
+      "status": "fresh",
+      "age_minutes": 0,
+      "stale_after": "2026-05-25T08:54:12Z",
+      "backend_dependency": "none_for_public_pages"
+    },
+    "top_events": [
+      {
+        "id": "event_semis_export_controls_seed",
+        "title": "Semiconductor export-control monitoring remains elevated",
+        "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
+        "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
+        "occurred_at": "2026-05-24T20:54:12Z",
+        "published_at": "2026-05-24T20:54:12Z",
+        "country_region_keys": [
+          "USA",
+          "TWN",
+          "KOR",
+          "CHN",
+          "JPN"
+        ],
+        "sector_keys": [
+          "semiconductors",
+          "big-tech"
+        ],
+        "event_type": "policy_risk",
+        "severity": "medium",
+        "confidence": 0.74,
+        "source_strength": "reviewed_structured_seed",
+        "freshness": "fresh",
+        "evidence_count": 2,
+        "latitude": 23.7,
+        "longitude": 121.0,
+        "affected_objects": [
+          "NVIDIA",
+          "TSMC",
+          "Samsung Electronics",
+          "SK Hynix",
+          "ASML"
+        ],
+        "source_links": [
+          {
+            "label": "Source policy seed",
+            "url": "/en/source-policy",
+            "source_key": "sec_edgar",
+            "policy_version": 1
+          }
+        ],
+        "correction_status": "none"
+      },
+      {
+        "id": "event_energy_inventory_seed",
+        "title": "Energy inventory calendar is active for oil supply monitoring",
+        "summary": "EIA-linked inventory releases are tracked as official structured data before publication.",
+        "why_it_matters": "Inventory surprises can affect energy equities, inflation inputs, and geopolitical risk interpretation.",
+        "occurred_at": "2026-05-24T20:54:12Z",
+        "published_at": "2026-05-24T20:54:12Z",
+        "country_region_keys": [
+          "USA",
+          "MIDDLE_EAST_OPEC_GCC"
+        ],
+        "sector_keys": [
+          "oil-energy"
+        ],
+        "event_type": "official_calendar",
+        "severity": "low",
+        "confidence": 0.82,
+        "source_strength": "official_structured",
+        "freshness": "fresh",
+        "evidence_count": 1,
+        "latitude": 38.9,
+        "longitude": -77.0,
+        "affected_objects": [
+          "WTI reference",
+          "Brent reference",
+          "Chevron",
+          "ExxonMobil"
+        ],
+        "source_links": [
+          {
+            "label": "EIA",
+            "url": "https://www.eia.gov",
+            "source_key": "eia",
+            "policy_version": 1
+          }
+        ],
+        "correction_status": "none"
+      },
+      {
+        "id": "event_central_bank_seed",
+        "title": "Central-bank calendar coverage seeded across six policy committees",
+        "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
+        "why_it_matters": "Calendar visibility reduces silent unsupported coverage and makes stale policy data visible.",
+        "occurred_at": "2026-05-24T20:54:12Z",
+        "published_at": "2026-05-24T20:54:12Z",
+        "country_region_keys": [
+          "USA",
+          "EUROZONE",
+          "GBR",
+          "JPN",
+          "KOR",
+          "BRA"
+        ],
+        "sector_keys": [
+          "big-tech",
+          "semiconductors",
+          "oil-energy"
+        ],
+        "event_type": "central_bank_calendar",
+        "severity": "low",
+        "confidence": 0.78,
+        "source_strength": "official_calendar_seed",
+        "freshness": "fresh",
+        "evidence_count": 6,
+        "latitude": 51.5,
+        "longitude": 0.0,
+        "affected_objects": [
+          "FOMC",
+          "ECB",
+          "BoE",
+          "BoJ",
+          "BoK",
+          "COPOM"
+        ],
+        "source_links": [
+          {
+            "label": "Federal Reserve",
+            "url": "https://www.federalreserve.gov",
+            "source_key": "federal_reserve",
+            "policy_version": 1
+          }
+        ],
+        "correction_status": "none"
+      }
+    ],
+    "macro_tiles": [
+      {
+        "key": "nasdaq_composite",
+        "label": "Nasdaq Composite",
+        "value": "Pending",
+        "source": "Nasdaq / licensed market feed",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "points": [
+          {
+            "date": "T-3",
+            "value": 100
+          },
+          {
+            "date": "T-2",
+            "value": 101.4
+          },
+          {
+            "date": "T-1",
+            "value": 100.8
+          },
+          {
+            "date": "T",
+            "value": 102.1
+          }
+        ]
+      },
+      {
+        "key": "nasdaq_100_futures",
+        "label": "Nasdaq 100 futures",
+        "value": "Pending",
+        "source": "CME / licensed futures feed",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "points": [
+          {
+            "date": "T-3",
+            "value": 100
+          },
+          {
+            "date": "T-2",
+            "value": 100.6
+          },
+          {
+            "date": "T-1",
+            "value": 99.8
+          },
+          {
+            "date": "T",
+            "value": 101.2
+          }
+        ]
+      },
+      {
+        "key": "kospi",
+        "label": "KOSPI",
+        "value": "Pending",
+        "source": "KRX / licensed market feed",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "points": [
+          {
+            "date": "T-3",
+            "value": 100
+          },
+          {
+            "date": "T-2",
+            "value": 99.7
+          },
+          {
+            "date": "T-1",
+            "value": 100.9
+          },
+          {
+            "date": "T",
+            "value": 101.1
+          }
+        ]
+      },
+      {
+        "key": "kodex_200",
+        "label": "KODEX 200 ETF",
+        "value": "Pending",
+        "source": "KRX / Samsung AM",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "kospi_200_futures",
+        "label": "KOSPI 200 futures",
+        "value": "Pending",
+        "source": "KRX derivatives feed",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "wti_crude",
+        "label": "WTI crude oil",
+        "value": "Pending",
+        "source": "EIA / exchange reference",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "vix",
+        "label": "VIX",
+        "value": "Pending",
+        "source": "Cboe / licensed market feed",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "usd_krw",
+        "label": "USD/KRW",
+        "value": "Pending",
+        "source": "BOK / licensed FX feed",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "usd_jpy",
+        "label": "USD/JPY",
+        "value": "Pending",
+        "source": "BoJ / licensed FX feed",
+        "freshness": "watch",
+        "delay_label": "source-gated market feed",
+        "updated_at": "2026-05-24T20:54:12Z"
+      },
+      {
+        "key": "us_2y",
+        "label": "US Treasury 2Y",
+        "value": "Reference",
+        "source": "US Treasury",
+        "freshness": "fresh",
+        "delay_label": "official reference",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "us_3y",
+        "label": "US Treasury 3Y",
+        "value": "Reference",
+        "source": "US Treasury",
+        "freshness": "fresh",
+        "delay_label": "official reference",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "us_5y",
+        "label": "US Treasury 5Y",
+        "value": "Reference",
+        "source": "US Treasury",
+        "freshness": "fresh",
+        "delay_label": "official reference",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "us_10y",
+        "label": "US Treasury 10Y",
+        "value": "Reference",
+        "source": "US Treasury",
+        "freshness": "fresh",
+        "delay_label": "official reference",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "japan_policy_rate",
+        "label": "BoJ policy rate",
+        "value": "Reference",
+        "source": "Bank of Japan",
+        "freshness": "fresh",
+        "delay_label": "official reference",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "japan_2y",
+        "label": "Japan govt 2Y",
+        "value": "Reference",
+        "source": "Japan MOF / BoJ",
+        "freshness": "fresh",
+        "delay_label": "official reference",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "japan_5y",
+        "label": "Japan govt 5Y",
+        "value": "Reference",
+        "source": "Japan MOF / BoJ",
+        "freshness": "fresh",
+        "delay_label": "official reference",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      },
+      {
+        "key": "japan_10y",
+        "label": "Japan govt 10Y",
+        "value": "Reference",
+        "source": "Japan MOF / BoJ",
+        "freshness": "fresh",
+        "delay_label": "official reference",
+        "updated_at": "2026-05-24T20:54:12Z",
+        "unit": "%"
+      }
+    ],
+    "alternative_signals": [
+      {
+        "key": "highest_short_interest",
+        "title": "Highest short interest",
+        "summary": "Ranks securities by reported short interest once official/vendor float data is connected.",
+        "value": "ranking pending",
+        "cadence": "FINRA short interest is bi-monthly; ranking needs float/share data.",
+        "source": "FINRA short interest + licensed float feed",
+        "source_url": "https://www.finra.org/filing-reporting/regulatory-filing-systems/short-interest",
+        "freshness": "watch",
+        "severity": "medium",
+        "refresh_seconds": 43200,
+        "items": [
+          {
+            "key": "highest_short_interest_method",
+            "label": "Short interest is not short volume",
+            "value": "guardrail",
+            "detail": "Short interest is open short positions. Daily short sale volume is transaction flow and can be much larger.",
+            "source": "FINRA",
+            "freshness": "fresh",
+            "severity": "medium",
+            "updated_at": "2026-05-24T20:54:12Z",
+            "source_url": "https://www.finra.org/investors/insights/short-interest"
+          }
+        ]
+      },
+      {
+        "key": "short_volume_monitor",
+        "title": "Short volume monitor",
+        "summary": "Ticker-level daily short sale volume for monitored symbols after FINRA publishes same-day files.",
+        "value": "DJT / TSLA / NVDA",
+        "cadence": "Daily after FINRA posts files, no later than 6:00 p.m. ET.",
+        "source": "FINRA Reg SHO Daily Short Sale Volume",
+        "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume",
+        "freshness": "watch",
+        "severity": "medium",
+        "refresh_seconds": 900,
+        "items": [
+          {
+            "key": "short_volume_monitor_monitored",
+            "label": "Monitored tickers",
+            "value": "DJT, TSLA, NVDA",
+            "detail": "Configurable via SHORT_VOLUME_MONITORED_TICKERS.",
+            "source": "configuration",
+            "freshness": "watch",
+            "severity": "medium",
+            "updated_at": "2026-05-24T20:54:12Z"
+          }
+        ]
+      },
+      {
+        "key": "short_research_reports",
+        "title": "Public short research",
+        "summary": "Tracks public reports from activist short sellers and forensic research publishers.",
+        "value": "8 sources",
+        "cadence": "15-minute source checks once live ingestion is enabled.",
+        "source": "public research websites/RSS/news",
+        "freshness": "watch",
+        "severity": "high",
+        "refresh_seconds": 900,
+        "items": [
+          {
+            "key": "short_research_reports_hindenburg",
+            "label": "Hindenburg Research",
+            "value": "archived",
+            "detail": "Founder announced shutdown; keep archive/news monitoring for follow-through.",
+            "source": "Hindenburg/news",
+            "freshness": "watch",
+            "severity": "high",
+            "updated_at": "2026-05-24T20:54:12Z",
+            "source_url": "https://hindenburgresearch.com/"
+          },
+          {
+            "key": "short_research_reports_muddy_waters",
+            "label": "Muddy Waters",
+            "value": "active watch",
+            "detail": "Known for public short theses and forensic reports.",
+            "source": "Muddy Waters",
+            "freshness": "watch",
+            "severity": "high",
+            "updated_at": "2026-05-24T20:54:12Z",
+            "source_url": "https://www.muddywatersresearch.com/"
+          },
+          {
+            "key": "short_research_reports_viceroy",
+            "label": "Viceroy Research",
+            "value": "active watch",
+            "detail": "Known public activist short research publisher.",
+            "source": "Viceroy",
+            "freshness": "watch",
+            "severity": "medium",
+            "updated_at": "2026-05-24T20:54:12Z",
+            "source_url": "https://viceroyresearch.org/"
+          },
+          {
+            "key": "short_research_reports_spruce_point",
+            "label": "Spruce Point",
+            "value": "active watch",
+            "detail": "Public forensic short research source.",
+            "source": "Spruce Point",
+            "freshness": "watch",
+            "severity": "medium",
+            "updated_at": "2026-05-24T20:54:12Z",
+            "source_url": "https://www.sprucepointcap.com/"
+          },
+          {
+            "key": "short_research_reports_kerrisdale",
+            "label": "Kerrisdale Capital",
+            "value": "active watch",
+            "detail": "Publishes short and long research letters.",
+            "source": "Kerrisdale",
+            "freshness": "watch",
+            "severity": "medium",
+            "updated_at": "2026-05-24T20:54:12Z",
+            "source_url": "https://www.kerrisdalecap.com/"
+          },
+          {
+            "key": "short_research_reports_culper",
+            "label": "Culper Research",
+            "value": "active watch",
+            "detail": "Public short research publisher.",
+            "source": "Culper",
+            "freshness": "watch",
+            "severity": "medium",
+            "updated_at": "2026-05-24T20:54:12Z",
+            "source_url": "https://culperresearch.com/"
+          },
+          {
+            "key": "short_research_reports_blue_orca",
+            "label": "Blue Orca Capital",
+            "value": "active watch",
+            "detail": "Known for public short reports.",
+            "source": "Blue Orca",
+            "freshness": "watch",
+            "severity": "medium",
+            "updated_at": "2026-05-24T20:54:12Z",
+            "source_url": "https://www.blueorcacapital.com/"
+          },
+          {
+            "key": "short_research_reports_grizzly",
+            "label": "Grizzly Research",
+            "value": "active watch",
+            "detail": "Public short research source.",
+            "source": "Grizzly",
+            "freshness": "watch",
+            "severity": "medium",
+            "updated_at": "2026-05-24T20:54:12Z",
+            "source_url": "https://grizzlyreports.com/"
+          }
+        ]
+      },
+      {
+        "key": "pentagon_pizza_index",
+        "title": "Pentagon pizza index",
+        "summary": "OSINT-style activity monitor; useful as weak context, never a standalone market signal.",
+        "value": "external live source",
+        "cadence": "5-minute polling target; weak-source label required.",
+        "source": "Pentagon.Pizza",
+        "source_url": "https://pentagon.pizza/",
+        "freshness": "watch",
+        "severity": "low",
+        "refresh_seconds": 300,
+        "items": [
+          {
+            "key": "pentagon_pizza_index_method",
+            "label": "Weak OSINT context",
+            "value": "watch only",
+            "detail": "Collate with geopolitical news; do not publish as a causal claim.",
+            "source": "source policy",
+            "freshness": "watch",
+            "severity": "low",
+            "updated_at": "2026-05-24T20:54:12Z",
+            "source_url": "https://pentagon.pizza/"
+          }
+        ]
+      },
+      {
+        "key": "trump_filings",
+        "title": "Trump-family filings",
+        "summary": "Monitors public SEC/ethics filings for named entities; family-office 13F scope must be explicitly resolved.",
+        "value": "entity resolution required",
+        "cadence": "SEC polling every 15 minutes after entity list is approved.",
+        "source": "SEC EDGAR / OGE disclosures",
+        "source_url": "https://www.sec.gov/search-filings",
+        "freshness": "watch",
+        "severity": "medium",
+        "refresh_seconds": 900,
+        "items": [
+          {
+            "key": "trump_filings_djt",
+            "label": "Trump Media & Technology Group",
+            "value": "SEC monitor",
+            "detail": "Track DJT issuer filings and insider Forms 3/4/5.",
+            "source": "SEC EDGAR",
+            "freshness": "watch",
+            "severity": "medium",
+            "updated_at": "2026-05-24T20:54:12Z",
+            "source_url": "https://www.sec.gov/edgar/browse/?CIK=1849635"
+          },
+          {
+            "key": "trump_filings_trust",
+            "label": "Donald J. Trump Revocable Trust",
+            "value": "SEC monitor",
+            "detail": "Track beneficial-ownership filings where present; this is not automatically a 13F manager.",
+            "source": "SEC EDGAR",
+            "freshness": "watch",
+            "severity": "medium",
+            "updated_at": "2026-05-24T20:54:12Z"
+          }
+        ]
+      }
+    ],
+    "sector_tiles": [
+      {
+        "key": "space",
+        "name": "Space",
+        "summary": "Monitoring 5 entities with approved event and calendar links.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 5,
+        "event_count": 0
+      },
+      {
+        "key": "quantum",
+        "name": "Quantum",
+        "summary": "Monitoring 5 entities with approved event and calendar links.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 5,
+        "event_count": 0
+      },
+      {
+        "key": "semiconductors",
+        "name": "Semiconductors",
+        "summary": "Monitoring 9 entities with approved event and calendar links.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 9,
+        "event_count": 2
+      },
+      {
+        "key": "oil-energy",
+        "name": "Oil/Energy",
+        "summary": "Monitoring 6 entities with approved event and calendar links.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 6,
+        "event_count": 2
+      },
+      {
+        "key": "big-tech",
+        "name": "Big Tech",
+        "summary": "Monitoring 7 entities with approved event and calendar links.",
+        "source_strength": "seeded_review_policy",
+        "freshness": "fresh",
+        "monitored_count": 7,
+        "event_count": 2
+      }
+    ],
+    "calendar_preview": [
+      {
+        "id": "cal_fomc",
+        "title": "FOMC policy decision",
+        "country_region_key": "USA",
+        "release_type": "central_bank",
+        "scheduled_at": "2026-06-17T12:00:00Z",
+        "scheduled_local_date": "2026-06-17",
+        "timezone": "America/New_York",
+        "time_precision": "time_estimated",
+        "status": "scheduled",
+        "expectation_type": "official_projection",
+        "expectation_value": "policy path not a consensus",
+        "actual_value": null,
+        "previous_value": null,
+        "surprise": null,
+        "source": "Federal Reserve",
+        "freshness": "fresh"
+      },
+      {
+        "id": "cal_ecb",
+        "title": "ECB monetary-policy decision",
+        "country_region_key": "EUROZONE",
+        "release_type": "central_bank",
+        "scheduled_at": "2026-06-04T12:00:00Z",
+        "scheduled_local_date": "2026-06-04",
+        "timezone": "Europe/Frankfurt",
+        "time_precision": "time_estimated",
+        "status": "scheduled",
+        "expectation_type": "official_projection",
+        "expectation_value": "staff projections where published",
+        "actual_value": null,
+        "previous_value": null,
+        "surprise": null,
+        "source": "ECB",
+        "freshness": "fresh"
+      },
+      {
+        "id": "cal_boe",
+        "title": "BoE MPC decision",
+        "country_region_key": "GBR",
+        "release_type": "central_bank",
+        "scheduled_at": "2026-06-18T12:00:00Z",
+        "scheduled_local_date": "2026-06-18",
+        "timezone": "Europe/London",
+        "time_precision": "time_estimated",
+        "status": "scheduled",
+        "expectation_type": "unknown",
+        "expectation_value": null,
+        "actual_value": null,
+        "previous_value": null,
+        "surprise": null,
+        "source": "BoE",
+        "freshness": "watch"
+      },
+      {
+        "id": "cal_boj",
+        "title": "BoJ monetary-policy meeting",
+        "country_region_key": "JPN",
+        "release_type": "central_bank",
+        "scheduled_at": "2026-06-16T12:00:00Z",
+        "scheduled_local_date": "2026-06-16",
+        "timezone": "Asia/Tokyo",
+        "time_precision": "time_estimated",
+        "status": "scheduled",
+        "expectation_type": "unknown",
+        "expectation_value": null,
+        "actual_value": null,
+        "previous_value": null,
+        "surprise": null,
+        "source": "BoJ",
+        "freshness": "watch"
+      },
+      {
+        "id": "cal_bok",
+        "title": "Bank of Korea decision",
+        "country_region_key": "KOR",
+        "release_type": "central_bank",
+        "scheduled_at": "2026-05-28T12:00:00Z",
+        "scheduled_local_date": "2026-05-28",
+        "timezone": "Asia/Seoul",
+        "time_precision": "time_estimated",
+        "status": "scheduled",
+        "expectation_type": "unknown",
+        "expectation_value": null,
+        "actual_value": null,
+        "previous_value": null,
+        "surprise": null,
+        "source": "BoK",
+        "freshness": "watch"
+      },
+      {
+        "id": "cal_copom",
+        "title": "Brazil COPOM decision",
+        "country_region_key": "BRA",
+        "release_type": "central_bank",
+        "scheduled_at": "2026-06-17T12:00:00Z",
+        "scheduled_local_date": "2026-06-17",
+        "timezone": "America/Sao_Paulo",
+        "time_precision": "time_estimated",
+        "status": "scheduled",
+        "expectation_type": "unknown",
+        "expectation_value": null,
+        "actual_value": null,
+        "previous_value": null,
+        "surprise": null,
+        "source": "BCB",
+        "freshness": "watch"
+      }
+    ],
+    "scenario_baskets": [
+      {
+        "key": "ai-infra-capex",
+        "name": "AI Infrastructure Capex",
+        "thesis": "Tracks data-center, accelerator, memory, power, and cloud capex channels using approved public facts.",
+        "risk_summary": "Illustrative only; risk factors and data delays must remain visible.",
+        "freshness": "fresh"
+      },
+      {
+        "key": "energy-supply-shock",
+        "name": "Energy Supply Shock Watchlist",
+        "thesis": "Monitors inventories, OPEC+ meetings, sanctions, chokepoints, and integrated energy companies.",
+        "risk_summary": "Illustrative only; risk factors and data delays must remain visible.",
+        "freshness": "fresh"
+      },
+      {
+        "key": "asia-semiconductor-risk",
+        "name": "Asia Semiconductor Risk",
+        "thesis": "Maps Taiwan, Korea, Japan, export-control, memory, and foundry risk channels.",
+        "risk_summary": "Illustrative only; risk factors and data delays must remain visible.",
+        "freshness": "fresh"
+      }
+    ]
+  },
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "Market indicators are delayed/reference unless licensed.",
+      "severity": "info"
+    }
+  ],
+  "corrections": []
+}

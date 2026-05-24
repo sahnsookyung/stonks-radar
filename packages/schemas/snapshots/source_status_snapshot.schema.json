@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    { "$ref": "./_envelope.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "object_type": { "const": "source_status" },
+        "data": {
+          "type": "object",
+          "required": ["snapshot_age_minutes", "degraded_mode", "backend_required_for_public_pages", "providers", "operations"],
+          "properties": {
+            "snapshot_age_minutes": { "type": "integer" },
+            "degraded_mode": { "type": "boolean" },
+            "backend_required_for_public_pages": { "const": false },
+            "providers": { "type": "array" },
+            "operations": { "type": "object" }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

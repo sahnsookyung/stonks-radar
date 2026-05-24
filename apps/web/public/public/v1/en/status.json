@@ -1,0 +1,154 @@
+{
+  "schema_version": "1.0",
+  "snapshot_version": 1,
+  "locale": "en",
+  "generated_at": "2026-05-24T20:54:12Z",
+  "stale_after": "2026-05-25T08:54:12Z",
+  "hard_expires_at": "2026-05-31T20:54:12Z",
+  "object_type": "source_status",
+  "object_key": "status",
+  "content_hash": "sha256:17fb12382022aa6b4a34e51d52f36b5abe1365ea31c98ebf14862d247775b70b",
+  "source_policy_versions": [
+    {
+      "source_key": "federal_reserve",
+      "policy_version": 1
+    },
+    {
+      "source_key": "sec_edgar",
+      "policy_version": 1
+    },
+    {
+      "source_key": "eia",
+      "policy_version": 1
+    },
+    {
+      "source_key": "world_bank",
+      "policy_version": 1
+    }
+  ],
+  "data": {
+    "snapshot_age_minutes": 0,
+    "degraded_mode": false,
+    "backend_required_for_public_pages": false,
+    "providers": [
+      {
+        "provider_key": "fred",
+        "provider_type": "official_api",
+        "status": "missing_credentials",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": "FRED_API_KEY required for live ingest"
+      },
+      {
+        "provider_key": "bls",
+        "provider_type": "official_api",
+        "status": "ready",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": null
+      },
+      {
+        "provider_key": "eia",
+        "provider_type": "official_api",
+        "status": "missing_credentials",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": "EIA_API_KEY required for live ingest"
+      },
+      {
+        "provider_key": "sec_edgar",
+        "provider_type": "filing",
+        "status": "ready",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": "SEC_USER_AGENT must contain contact in production"
+      },
+      {
+        "provider_key": "twelve_data",
+        "provider_type": "market_data",
+        "status": "missing_credentials",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": "TWELVE_DATA_API_KEY enables portfolio history primary"
+      },
+      {
+        "provider_key": "alpha_vantage",
+        "provider_type": "market_data",
+        "status": "missing_credentials",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": "ALPHA_VANTAGE_API_KEY enables portfolio history fallback"
+      },
+      {
+        "provider_key": "fmp",
+        "provider_type": "market_data",
+        "status": "missing_credentials",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": "FMP_API_KEY enables EOD/fundamental fallback"
+      },
+      {
+        "provider_key": "finra",
+        "provider_type": "official_api",
+        "status": "missing_credentials",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": "FINRA_API_TOKEN required for short interest and Reg SHO short volume ingest"
+      },
+      {
+        "provider_key": "pentagon_pizza",
+        "provider_type": "weak_osint",
+        "status": "degraded",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": "Weak OSINT only; cannot publish standalone high-confidence events"
+      },
+      {
+        "provider_key": "public_short_research",
+        "provider_type": "public_web",
+        "status": "degraded",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": "Public short-report monitors need source-specific parser review"
+      },
+      {
+        "provider_key": "gemini",
+        "provider_type": "llm_provider",
+        "status": "missing_credentials",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": "GEMINI_API_KEY optional; public facts only"
+      },
+      {
+        "provider_key": "groq",
+        "provider_type": "llm_provider",
+        "status": "missing_credentials",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": "GROQ_API_KEY optional; public facts only"
+      },
+      {
+        "provider_key": "local",
+        "provider_type": "llm_provider",
+        "status": "ready",
+        "mode": "LOCAL_ONLY",
+        "last_verified_at": null,
+        "warning": "LOCAL_LLM_BASE_URL used for private research"
+      }
+    ],
+    "operations": {
+      "disk_watermark": "unknown_until_monitor_runs",
+      "snapshot_storage_status": "local_seed",
+      "backup_status": "local_encrypted_backups_not_configured",
+      "restore_drill_at": null
+    }
+  },
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "Market indicators are delayed/reference unless licensed.",
+      "severity": "info"
+    }
+  ],
+  "corrections": []
+}

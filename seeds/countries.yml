@@ -1,0 +1,41 @@
+countries:
+  - key: USA
+    name_en: United States
+    name_ko: 미국
+    iso_alpha2: US
+    iso_alpha3: USA
+  - key: BRA
+    name_en: Brazil
+    name_ko: 브라질
+    iso_alpha2: BR
+    iso_alpha3: BRA
+  - key: KOR
+    name_en: South Korea
+    name_ko: 대한민국
+    iso_alpha2: KR
+    iso_alpha3: KOR
+  - key: GBR
+    name_en: United Kingdom
+    name_ko: 영국
+    iso_alpha2: GB
+    iso_alpha3: GBR
+  - key: DEU
+    name_en: Germany
+    name_ko: 독일
+    iso_alpha2: DE
+    iso_alpha3: DEU
+  - key: CHN
+    name_en: China
+    name_ko: 중국
+    iso_alpha2: CN
+    iso_alpha3: CHN
+  - key: TWN
+    name_en: Taiwan
+    name_ko: 대만
+    iso_alpha2: TW
+    iso_alpha3: TWN
+  - key: JPN
+    name_en: Japan
+    name_ko: 일본
+    iso_alpha2: JP
+    iso_alpha3: JPN

@@ -1,0 +1,110 @@
+{
+  "current_version": 1,
+  "generated_at": "2026-05-24T20:54:12Z",
+  "locales": [
+    "en",
+    "ko"
+  ],
+  "objects": {
+    "home": {
+      "en": "public/v1/en/home.json",
+      "ko": "public/v1/ko/home.json"
+    },
+    "map_events": {
+      "en": "public/v1/en/map/events.json",
+      "ko": "public/v1/ko/map/events.json"
+    },
+    "calendar_upcoming": {
+      "en": "public/v1/en/calendar/upcoming.json",
+      "ko": "public/v1/ko/calendar/upcoming.json"
+    },
+    "country_USA": {
+      "en": "public/v1/en/countries/USA.json",
+      "ko": "public/v1/ko/countries/USA.json"
+    },
+    "country_BRA": {
+      "en": "public/v1/en/countries/BRA.json",
+      "ko": "public/v1/ko/countries/BRA.json"
+    },
+    "country_KOR": {
+      "en": "public/v1/en/countries/KOR.json",
+      "ko": "public/v1/ko/countries/KOR.json"
+    },
+    "country_GBR": {
+      "en": "public/v1/en/countries/GBR.json",
+      "ko": "public/v1/ko/countries/GBR.json"
+    },
+    "country_DEU": {
+      "en": "public/v1/en/countries/DEU.json",
+      "ko": "public/v1/ko/countries/DEU.json"
+    },
+    "country_CHN": {
+      "en": "public/v1/en/countries/CHN.json",
+      "ko": "public/v1/ko/countries/CHN.json"
+    },
+    "country_TWN": {
+      "en": "public/v1/en/countries/TWN.json",
+      "ko": "public/v1/ko/countries/TWN.json"
+    },
+    "country_JPN": {
+      "en": "public/v1/en/countries/JPN.json",
+      "ko": "public/v1/ko/countries/JPN.json"
+    },
+    "region_EUROZONE": {
+      "en": "public/v1/en/countries/EUROZONE.json",
+      "ko": "public/v1/ko/countries/EUROZONE.json"
+    },
+    "region_EU": {
+      "en": "public/v1/en/countries/EU.json",
+      "ko": "public/v1/ko/countries/EU.json"
+    },
+    "region_MIDDLE_EAST_OPEC_GCC": {
+      "en": "public/v1/en/countries/MIDDLE_EAST_OPEC_GCC.json",
+      "ko": "public/v1/ko/countries/MIDDLE_EAST_OPEC_GCC.json"
+    },
+    "region_TOP10_GDP_2026_WORLD_BANK": {
+      "en": "public/v1/en/countries/TOP10_GDP_2026_WORLD_BANK.json",
+      "ko": "public/v1/ko/countries/TOP10_GDP_2026_WORLD_BANK.json"
+    },
+    "sector_space": {
+      "en": "public/v1/en/sectors/space.json",
+      "ko": "public/v1/ko/sectors/space.json"
+    },
+    "sector_quantum": {
+      "en": "public/v1/en/sectors/quantum.json",
+      "ko": "public/v1/ko/sectors/quantum.json"
+    },
+    "sector_semiconductors": {
+      "en": "public/v1/en/sectors/semiconductors.json",
+      "ko": "public/v1/ko/sectors/semiconductors.json"
+    },
+    "sector_oil-energy": {
+      "en": "public/v1/en/sectors/oil-energy.json",
+      "ko": "public/v1/ko/sectors/oil-energy.json"
+    },
+    "sector_big-tech": {
+      "en": "public/v1/en/sectors/big-tech.json",
+      "ko": "public/v1/ko/sectors/big-tech.json"
+    },
+    "scenario_basket_ai-infra-capex": {
+      "en": "public/v1/en/scenario-baskets/ai-infra-capex.json",
+      "ko": "public/v1/ko/scenario-baskets/ai-infra-capex.json"
+    },
+    "scenario_basket_energy-supply-shock": {
+      "en": "public/v1/en/scenario-baskets/energy-supply-shock.json",
+      "ko": "public/v1/ko/scenario-baskets/energy-supply-shock.json"
+    },
+    "scenario_basket_asia-semiconductor-risk": {
+      "en": "public/v1/en/scenario-baskets/asia-semiconductor-risk.json",
+      "ko": "public/v1/ko/scenario-baskets/asia-semiconductor-risk.json"
+    },
+    "source_status": {
+      "en": "public/v1/en/status.json",
+      "ko": "public/v1/ko/status.json"
+    },
+    "correction_log": {
+      "en": "public/v1/en/corrections.json",
+      "ko": "public/v1/ko/corrections.json"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+[
+  {
+    "question": "What is the latest CPI value?",
+    "must_refuse_if_snapshot_stale": true
+  }
+]

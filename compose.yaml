@@ -1,0 +1,87 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-frw}
+      POSTGRES_USER: ${POSTGRES_USER:-frw}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-frw}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U frw -d frw"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    command: ["valkey-server", "--save", "", "--appendonly", "no", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-frw}:${POSTGRES_PASSWORD:-frw}@postgres:5432/${POSTGRES_DB:-frw}
+      REDIS_URL: redis://valkey:6379/0
+      SNAPSHOT_ARTIFACT_DIR: /app/artifacts/snapshots
+      PUBLISHED_SNAPSHOT_DIR: /app/published-public
+    volumes:
+      - snapshot-artifacts:/app/artifacts/snapshots
+      - published-snapshots:/app/published-public
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_started
+    security_opt:
+      - no-new-privileges:true
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-frw}:${POSTGRES_PASSWORD:-frw}@postgres:5432/${POSTGRES_DB:-frw}
+      REDIS_URL: redis://valkey:6379/0
+      SNAPSHOT_ARTIFACT_DIR: /app/artifacts/snapshots
+      PUBLISHED_SNAPSHOT_DIR: /app/published-public
+    volumes:
+      - snapshot-artifacts:/app/artifacts/snapshots
+      - published-snapshots:/app/published-public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+
+  fetch-sandbox:
+    build:
+      context: .
+      dockerfile: apps/fetch-sandbox/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    depends_on:
+      - api
+
+volumes:
+  postgres-data:
+  snapshot-artifacts:
+  published-snapshots:

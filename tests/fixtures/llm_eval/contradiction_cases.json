@@ -1,0 +1,6 @@
+[
+  {
+    "facts": ["rate unchanged", "rate cut"],
+    "expected": "conflict_present"
+  }
+]

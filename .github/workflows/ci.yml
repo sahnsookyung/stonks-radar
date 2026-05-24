@@ -1,0 +1,53 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  web-and-schemas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v5
+      - run: npm install
+      - run: npm run seed:snapshots
+      - run: npm run check:schemas
+      - run: npm run web:test
+      - run: npm run web:build
+      - run: npm run api:test
+      - run: npm run web:e2e
+      - run: npm run api:compile
+      - run: uv run --project . alembic -c alembic.ini upgrade head --sql
+        working-directory: apps/api
+
+  build-api-linux-arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - run: docker buildx build --platform linux/arm64 -f apps/api/Dockerfile .
+
+  build-worker-linux-arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - run: docker buildx build --platform linux/arm64 -f apps/worker/Dockerfile .
+
+  build-fetch-sandbox-linux-arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - run: docker buildx build --platform linux/arm64 -f apps/fetch-sandbox/Dockerfile .

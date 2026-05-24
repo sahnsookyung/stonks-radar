@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0",
+  "snapshot_version": 1,
+  "locale": "en",
+  "generated_at": "2026-05-24T20:54:12Z",
+  "stale_after": "2026-05-25T08:54:12Z",
+  "hard_expires_at": "2026-05-31T20:54:12Z",
+  "object_type": "scenario_basket",
+  "object_key": "energy-supply-shock",
+  "content_hash": "sha256:b217cdc8aae2f776d321946224f551bd62ba842655115d1ad391213f630589b5",
+  "source_policy_versions": [
+    {
+      "source_key": "federal_reserve",
+      "policy_version": 1
+    },
+    {
+      "source_key": "sec_edgar",
+      "policy_version": 1
+    },
+    {
+      "source_key": "eia",
+      "policy_version": 1
+    },
+    {
+      "source_key": "world_bank",
+      "policy_version": 1
+    }
+  ],
+  "data": {
+    "key": "energy-supply-shock",
+    "name": "Energy Supply Shock Watchlist",
+    "thesis": "Monitors inventories, OPEC+ meetings, sanctions, chokepoints, and integrated energy companies.",
+    "methodology": "Illustrative weights are equal-weight seed placeholders until editor-approved methodology data is ingested. Inclusion is based on thematic exposure and reviewed public facts.",
+    "included_objects": [
+      {
+        "name": "OPEC+",
+        "object_key": "OPEC+",
+        "reason": "Thematic exposure under monitored scenario.",
+        "illustrative_weight": "equal-weight seed"
+      },
+      {
+        "name": "Chevron",
+        "object_key": "CHEVRON",
+        "reason": "Thematic exposure under monitored scenario.",
+        "illustrative_weight": "equal-weight seed"
+      },
+      {
+        "name": "ExxonMobil",
+        "object_key": "EXXONMOBIL",
+        "reason": "Thematic exposure under monitored scenario.",
+        "illustrative_weight": "equal-weight seed"
+      },
+      {
+        "name": "WTI reference",
+        "object_key": "WTI_REFERENCE",
+        "reason": "Thematic exposure under monitored scenario.",
+        "illustrative_weight": "equal-weight seed"
+      },
+      {
+        "name": "Brent reference",
+        "object_key": "BRENT_REFERENCE",
+        "reason": "Thematic exposure under monitored scenario.",
+        "illustrative_weight": "equal-weight seed"
+      }
+    ],
+    "risk_summary": "Scenario can fail if source data is stale, policy risk reverses, or sector exposure is weaker than expected.",
+    "freshness_timestamp": "2026-05-24T20:54:12Z",
+    "data_delay_warning": "Uses delayed/reference indicators only; no brokerage connection or trade execution.",
+    "disclaimer": "Research only. Not personalized financial advice. Do not treat this as a buy, sell, or allocation recommendation.",
+    "approval_status": "approved"
+  },
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "Market indicators are delayed/reference unless licensed.",
+      "severity": "info"
+    }
+  ],
+  "corrections": []
+}

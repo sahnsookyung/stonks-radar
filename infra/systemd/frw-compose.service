@@ -1,0 +1,14 @@
+[Unit]
+Description=Financial Research Workbench Compose Stack
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/stonks-radar
+ExecStart=/usr/bin/docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d
+ExecStop=/usr/bin/docker compose -f compose.yaml -f infra/docker-compose.prod.yml down
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

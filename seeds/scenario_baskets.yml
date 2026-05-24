@@ -1,0 +1,19 @@
+scenario_baskets:
+  - key: ai-infra-capex
+    object_key: scenario_basket:AI_INFRA_CAPEX
+    name_en: AI Infrastructure Capex
+    name_ko: AI 인프라 투자
+    thesis_en: Tracks companies and macro drivers exposed to data-center, accelerator, memory, power, and cloud capex cycles.
+    thesis_ko: 데이터센터, 가속기, 메모리, 전력, 클라우드 투자 사이클에 노출된 기업과 거시 동인을 추적합니다.
+  - key: energy-supply-shock
+    object_key: scenario_basket:ENERGY_SUPPLY_SHOCK
+    name_en: Energy Supply Shock Watchlist
+    name_ko: 에너지 공급 충격 워치리스트
+    thesis_en: Monitors OPEC+, inventories, chokepoints, sanctions, and large integrated energy companies.
+    thesis_ko: OPEC+, 재고, 해상 요충지, 제재, 대형 통합 에너지 기업을 모니터링합니다.
+  - key: asia-semiconductor-risk
+    object_key: scenario_basket:ASIA_SEMICONDUCTOR_RISK
+    name_en: Asia Semiconductor Risk
+    name_ko: 아시아 반도체 리스크
+    thesis_en: Maps Taiwan, Korea, Japan, export-control, memory, and foundry risk channels.
+    thesis_ko: 대만, 한국, 일본, 수출통제, 메모리, 파운드리 리스크 경로를 매핑합니다.

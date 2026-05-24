@@ -1,0 +1,57 @@
+services:
+  postgres:
+    mem_limit: 4g
+    cpus: 1.0
+    restart: unless-stopped
+
+  valkey:
+    mem_limit: 512m
+    cpus: 0.25
+    restart: unless-stopped
+
+  api:
+    mem_limit: 1536m
+    cpus: 0.75
+    restart: unless-stopped
+
+  worker:
+    mem_limit: 2g
+    cpus: 0.75
+    restart: unless-stopped
+
+  fetch-sandbox:
+    mem_limit: 512m
+    cpus: 0.25
+    restart: "no"
+
+  web:
+    mem_limit: 256m
+    cpus: 0.25
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    env_file:
+      - path: .env
+        required: false
+    mem_limit: 256m
+    cpus: 0.25
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./apps/web/dist:/srv/web:ro
+      - published-snapshots:/srv/web/public:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  caddy-data:
+  caddy-config:
+  published-snapshots:

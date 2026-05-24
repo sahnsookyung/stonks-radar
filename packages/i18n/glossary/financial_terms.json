@@ -1,0 +1,11 @@
+{
+  "version": "2026-05-24",
+  "terms": [
+    { "en": "scenario basket", "ko": "시나리오 바스켓" },
+    { "en": "model watchlist", "ko": "모델 워치리스트" },
+    { "en": "source strength", "ko": "출처 강도" },
+    { "en": "delayed/reference data", "ko": "지연/참조 데이터" },
+    { "en": "central-bank decision", "ko": "중앙은행 결정" },
+    { "en": "expectation type", "ko": "예상치 유형" }
+  ]
+}

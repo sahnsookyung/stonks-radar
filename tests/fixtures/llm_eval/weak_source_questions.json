@@ -1,0 +1,6 @@
+[
+  {
+    "claim": "A single aggregator signal says a critical event happened.",
+    "expected_gate": "manual_review_required"
+  }
+]

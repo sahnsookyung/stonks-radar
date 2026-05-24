@@ -1,0 +1,16 @@
+.git
+.gitnexus
+node_modules
+dist
+build
+coverage
+artifacts
+.venv
+__pycache__
+*.pyc
+*.egg-info
+.env
+.secrets
+.DS_Store
+playwright-report
+test-results

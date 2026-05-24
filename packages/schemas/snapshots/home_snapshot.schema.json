@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    { "$ref": "./_envelope.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "object_type": { "const": "home" },
+        "data": {
+          "type": "object",
+          "required": ["headline", "summary", "generated_label", "snapshot_health", "top_events", "macro_tiles", "alternative_signals", "sector_tiles", "calendar_preview", "scenario_baskets"],
+          "properties": {
+            "headline": { "type": "string" },
+            "summary": { "type": "string" },
+            "generated_label": { "type": "string" },
+            "snapshot_health": { "type": "object" },
+            "top_events": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/event" } },
+            "macro_tiles": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/metricTile" } },
+            "alternative_signals": {
+              "type": "array",
+              "items": { "$ref": "./_envelope.schema.json#/$defs/alternativeSignalLane" }
+            },
+            "sector_tiles": { "type": "array" },
+            "calendar_preview": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/calendarItem" } },
+            "scenario_baskets": { "type": "array" }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  valkey:
+    ports:
+      - "6379:6379"
+
+  api:
+    ports:
+      - "8000:8000"
+
+  web:
+    ports:
+      - "5173:80"

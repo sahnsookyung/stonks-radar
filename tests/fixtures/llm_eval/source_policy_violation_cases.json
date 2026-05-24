@@ -1,0 +1,7 @@
+[
+  {
+    "input_class": "PRIVATE_RESEARCH",
+    "provider_privacy_class": "PUBLIC_FACTS_ONLY",
+    "expected": "blocked"
+  }
+]

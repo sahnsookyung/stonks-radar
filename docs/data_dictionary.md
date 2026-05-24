@@ -1,0 +1,25 @@
+# Data Dictionary
+
+- `canonical_object`: stable object registry for cross-domain links.
+- `data_source`: source profile, retention, robots/rate limits, display policy.
+- `source_policy_decision`: versioned source-policy approvals used by publication.
+- `job_queue`: durable jobs with leases, heartbeats, retries, dead letters.
+- `series`: time-series metadata with latency, stale threshold, revision policy.
+- `observation_candidate`: partitioned provider observations before arbitration.
+- `canonical_observation`: versioned accepted observations with one active row per series/time.
+- `latest_series_state`: rebuildable read model for dashboards.
+- `source_document`: fetched or manually entered source metadata and retention class.
+- `source_health_status`: durable adapter/source health used by admin and status snapshots.
+- `source_evidence`: minimal hashable evidence excerpts.
+- `source_fact`: typed candidate/approved facts tied to evidence.
+- `fact_type_registry`: ontology and JSON schema for fact shapes.
+- `economic_release`: calendar/release workflow object.
+- `expectation_value`: explicit expectation taxonomy and review state.
+- `geo_event`: reviewed geopolitical/financial event object.
+- `content_translation`: translation state with source hash and stale blocking.
+- `publication_snapshot`: immutable snapshot publication history and source-policy versions.
+- `publication_manifest`: durable candidate/published manifest pointer history for publish and rollback.
+- `operation_status`: disk, backup, local snapshot storage, provider, and monitor status rows surfaced to admin/status snapshots.
+- `content_summary`: generated bilingual summaries tied to cited public facts.
+- `llm_invocation`: hashed LLM metadata, status, prompt version, schema key.
+- `audit_log`: mutation audit trail with hashes instead of raw sensitive data.

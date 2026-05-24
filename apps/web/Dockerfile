@@ -1,0 +1,14 @@
+FROM node:22-alpine AS build
+WORKDIR /app
+RUN apk add --no-cache python3
+COPY package.json package-lock*.json ./
+COPY apps/web/package.json apps/web/package.json
+COPY packages/shared-types/package.json packages/shared-types/package.json
+RUN npm install
+COPY . .
+RUN npm run seed:snapshots && npm run web:build
+
+FROM caddy:2-alpine
+COPY --from=build /app/apps/web/dist /srv
+EXPOSE 80
+CMD ["caddy", "file-server", "--root", "/srv", "--listen", ":80"]

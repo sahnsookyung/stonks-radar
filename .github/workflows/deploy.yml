@@ -1,0 +1,96 @@
+name: deploy
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: stonks-radar-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Verify
+        run: npm run test:all
+
+      - name: Build web assets
+        run: npm run build
+
+      - name: Prepare SSH
+        env:
+          STONKS_DEPLOY_KEY: ${{ secrets.STONKS_DEPLOY_KEY }}
+          STONKS_HOST: ${{ secrets.STONKS_HOST }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$STONKS_DEPLOY_KEY" > ~/.ssh/stonks_deploy_key
+          chmod 600 ~/.ssh/stonks_deploy_key
+          ssh-keyscan -H "$STONKS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Sync release to OCI
+        env:
+          STONKS_HOST: ${{ secrets.STONKS_HOST }}
+          STONKS_USER: ${{ secrets.STONKS_USER }}
+        run: |
+          set -euo pipefail
+          rsync -az --delete \
+            --exclude '.git' \
+            --exclude '.gitnexus' \
+            --exclude '.secrets' \
+            --exclude '.env' \
+            --exclude '.env.*' \
+            --exclude 'node_modules' \
+            --exclude 'artifacts' \
+            --exclude 'playwright-report' \
+            --exclude 'test-results' \
+            -e "ssh -i ~/.ssh/stonks_deploy_key" \
+            ./ "$STONKS_USER@$STONKS_HOST:/opt/stonks-radar/"
+
+      - name: Write production env
+        env:
+          STONKS_HOST: ${{ secrets.STONKS_HOST }}
+          STONKS_USER: ${{ secrets.STONKS_USER }}
+          STONKS_PRODUCTION_ENV_B64: ${{ secrets.STONKS_PRODUCTION_ENV_B64 }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$STONKS_PRODUCTION_ENV_B64" | base64 -d > /tmp/stonks-production.env
+          scp -i ~/.ssh/stonks_deploy_key /tmp/stonks-production.env "$STONKS_USER@$STONKS_HOST:/tmp/stonks-production.env"
+          ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+            'sudo install -m 600 -o ubuntu -g ubuntu /tmp/stonks-production.env /opt/stonks-radar/.env && rm /tmp/stonks-production.env'
+
+      - name: Deploy compose stack
+        env:
+          STONKS_HOST: ${{ secrets.STONKS_HOST }}
+          STONKS_USER: ${{ secrets.STONKS_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+            'cd /opt/stonks-radar && docker compose -f compose.yaml -f infra/docker-compose.prod.yml build --pull && docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d'
+
+      - name: Verify origin health
+        env:
+          STONKS_HOST: ${{ secrets.STONKS_HOST }}
+          STONKS_USER: ${{ secrets.STONKS_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+            'curl -fsS http://127.0.0.1/api/public/health >/dev/null && curl -fsS http://127.0.0.1/public/latest/manifest.json | python3 -c "import json, sys; data=json.load(sys.stdin); assert data.get(\"current_version\") and data.get(\"objects\")"'

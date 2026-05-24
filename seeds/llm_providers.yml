@@ -1,0 +1,41 @@
+providers:
+  - provider_key: local
+    provider_type: llm_provider
+    billing_mode: always_free
+    routing_mode: LOCAL_ONLY
+    paid_allowed: false
+    model_key: llama3.1-json
+    privacy_class: LOCAL_ONLY
+    enabled: true
+  - provider_key: gemini
+    provider_type: llm_provider
+    billing_mode: free_quota
+    routing_mode: FREE_ONLY
+    paid_allowed: false
+    model_key: gemini-1.5-flash
+    privacy_class: PUBLIC_FACTS_ONLY
+    enabled: false
+  - provider_key: groq
+    provider_type: llm_provider
+    billing_mode: free_quota
+    routing_mode: FREE_ONLY
+    paid_allowed: false
+    model_key: llama-3.1-8b-instant
+    privacy_class: PUBLIC_FACTS_ONLY
+    enabled: false
+  - provider_key: mistral
+    provider_type: llm_provider
+    billing_mode: free_quota
+    routing_mode: FREE_ONLY
+    paid_allowed: false
+    model_key: mistral-small-latest
+    privacy_class: PUBLIC_FACTS_ONLY
+    enabled: false
+  - provider_key: openrouter
+    provider_type: llm_provider
+    billing_mode: free_quota
+    routing_mode: FREE_ONLY
+    paid_allowed: false
+    model_key: openrouter/auto
+    privacy_class: PUBLIC_FACTS_ONLY
+    enabled: false

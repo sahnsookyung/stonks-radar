@@ -1,0 +1,256 @@
+export type Locale = "en" | "ko";
+
+export type Freshness = "fresh" | "watch" | "stale" | "unsupported";
+export type Severity = "low" | "medium" | "high" | "critical";
+
+export interface SnapshotEnvelope<T> {
+  schema_version: string;
+  snapshot_version: number;
+  locale: Locale;
+  generated_at: string;
+  stale_after: string;
+  hard_expires_at: string;
+  object_type: string;
+  object_key: string;
+  content_hash: string;
+  source_policy_versions: SourcePolicyVersion[];
+  data: T;
+  warnings: SnapshotWarning[];
+  corrections: CorrectionEntry[];
+}
+
+export interface SourcePolicyVersion {
+  source_key: string;
+  policy_version: number;
+}
+
+export interface SnapshotWarning {
+  code: string;
+  message: string;
+  severity: "info" | "warning" | "critical";
+}
+
+export interface CorrectionEntry {
+  id: string;
+  title: string;
+  status: "correction" | "retraction" | "clarification";
+  published_at: string;
+  summary: string;
+}
+
+export interface ManifestObjectPaths {
+  [locale: string]: string;
+}
+
+export interface SnapshotManifest {
+  current_version: number;
+  generated_at: string;
+  locales: Locale[];
+  objects: Record<string, ManifestObjectPaths>;
+}
+
+export interface PublicEvent {
+  id: string;
+  title: string;
+  summary: string;
+  why_it_matters: string;
+  occurred_at: string;
+  published_at: string;
+  country_region_keys: string[];
+  sector_keys: string[];
+  event_type: string;
+  severity: Severity;
+  confidence: number;
+  source_strength: string;
+  freshness: Freshness;
+  evidence_count: number;
+  latitude: number;
+  longitude: number;
+  affected_objects: string[];
+  source_links: SourceLink[];
+  correction_status: string;
+}
+
+export interface SourceLink {
+  label: string;
+  url: string;
+  source_key: string;
+  policy_version: number;
+}
+
+export interface HomeSnapshotData {
+  headline: string;
+  summary: string;
+  generated_label: string;
+  snapshot_health: {
+    status: Freshness;
+    age_minutes: number;
+    stale_after: string;
+    backend_dependency: "none_for_public_pages";
+  };
+  top_events: PublicEvent[];
+  macro_tiles: MetricTile[];
+  alternative_signals: AlternativeSignalLane[];
+  sector_tiles: SectorTile[];
+  calendar_preview: CalendarItem[];
+  scenario_baskets: ScenarioBasketSummary[];
+}
+
+export interface MetricTile {
+  key: string;
+  label: string;
+  value: string;
+  unit?: string;
+  source: string;
+  freshness: Freshness;
+  delay_label: string;
+  updated_at: string;
+  points?: { date: string; value: number }[];
+}
+
+export interface AlternativeSignalLane {
+  key: string;
+  title: string;
+  summary: string;
+  value: string;
+  cadence: string;
+  source: string;
+  source_url?: string;
+  freshness: Freshness;
+  severity: Severity;
+  refresh_seconds: number;
+  items: AlternativeSignalItem[];
+}
+
+export interface AlternativeSignalItem {
+  key: string;
+  label: string;
+  value: string;
+  detail: string;
+  source: string;
+  source_url?: string;
+  freshness: Freshness;
+  severity: Severity;
+  updated_at: string;
+}
+
+export interface SectorTile {
+  key: string;
+  name: string;
+  summary: string;
+  source_strength: string;
+  freshness: Freshness;
+  monitored_count: number;
+  event_count: number;
+}
+
+export interface CalendarItem {
+  id: string;
+  title: string;
+  country_region_key: string;
+  release_type: string;
+  scheduled_at: string | null;
+  scheduled_local_date: string;
+  timezone: string;
+  time_precision: "date_only" | "time_confirmed" | "time_estimated";
+  status: string;
+  expectation_type: string;
+  expectation_value: string | null;
+  actual_value: string | null;
+  previous_value: string | null;
+  surprise: string | null;
+  source: string;
+  freshness: Freshness;
+}
+
+export interface ScenarioBasketSummary {
+  key: string;
+  name: string;
+  thesis: string;
+  risk_summary: string;
+  freshness: Freshness;
+}
+
+export interface MapEventsData {
+  events: PublicEvent[];
+  filters: {
+    countries_regions: string[];
+    sectors: string[];
+    severities: Severity[];
+    event_types: string[];
+  };
+}
+
+export interface CalendarSnapshotData {
+  items: CalendarItem[];
+  central_banks: CalendarItem[];
+  methodology: string;
+}
+
+export interface CountryRegionSnapshotData {
+  key: string;
+  name: string;
+  type: "country" | "region";
+  overview: string;
+  source_strength: string;
+  freshness: Freshness;
+  monitored_sectors: SectorTile[];
+  recent_events: PublicEvent[];
+  calendar_items: CalendarItem[];
+  indicators: MetricTile[];
+}
+
+export interface SectorSnapshotData {
+  key: string;
+  name: string;
+  overview: string;
+  monitored_entities: string[];
+  monitored_instruments: string[];
+  country_region_exposure: string[];
+  recent_events: PublicEvent[];
+  upcoming_calendar_items: CalendarItem[];
+  macro_geopolitical_drivers: string[];
+  reference_indicators: MetricTile[];
+  scenario_baskets: ScenarioBasketSummary[];
+  risks_and_caveats: string[];
+  freshness: Freshness;
+  source_strength: string;
+}
+
+export interface ScenarioBasketSnapshotData {
+  key: string;
+  name: string;
+  thesis: string;
+  methodology: string;
+  included_objects: {
+    name: string;
+    object_key: string;
+    reason: string;
+    illustrative_weight: string;
+  }[];
+  risk_summary: string;
+  freshness_timestamp: string;
+  data_delay_warning: string;
+  disclaimer: string;
+  approval_status: "approved";
+}
+
+export interface SourceStatusSnapshotData {
+  snapshot_age_minutes: number;
+  degraded_mode: boolean;
+  backend_required_for_public_pages: false;
+  providers: {
+    provider_key: string;
+    provider_type: string;
+    status: string;
+    mode: string;
+    last_verified_at: string | null;
+    warning: string | null;
+  }[];
+  operations: {
+    disk_watermark: string;
+    snapshot_storage_status: string;
+    backup_status: string;
+    restore_drill_at: string | null;
+  };
+}
