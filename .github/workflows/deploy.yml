@@ -60,6 +60,8 @@ jobs:
           STONKS_USER: ${{ secrets.STONKS_USER }}
         run: |
           set -euo pipefail
+          ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+            'rm -rf /tmp/stonks-radar-old-assets && mkdir -p /tmp/stonks-radar-old-assets && if [ -d /opt/stonks-radar/apps/web/dist/assets ]; then cp -an /opt/stonks-radar/apps/web/dist/assets/. /tmp/stonks-radar-old-assets/; fi'
           rsync -az --delete \
             --exclude '.git' \
             --exclude '.gitnexus' \
@@ -72,6 +74,8 @@ jobs:
             --exclude 'test-results' \
             -e "ssh -i ~/.ssh/stonks_deploy_key" \
             ./ "$STONKS_USER@$STONKS_HOST:/opt/stonks-radar/"
+          ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+            'mkdir -p /opt/stonks-radar/apps/web/dist/assets && cp -an /tmp/stonks-radar-old-assets/. /opt/stonks-radar/apps/web/dist/assets/ || true && rm -rf /tmp/stonks-radar-old-assets'
 
       - name: Write production env
         env:

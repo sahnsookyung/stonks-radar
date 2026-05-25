@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-25T14:46:42Z",
-  "stale_after": "2026-05-26T02:46:42Z",
-  "hard_expires_at": "2026-06-01T14:46:42Z",
+  "generated_at": "2026-05-25T15:26:16Z",
+  "stale_after": "2026-05-26T03:26:16Z",
+  "hard_expires_at": "2026-06-01T15:26:16Z",
   "object_type": "home",
   "object_key": "home",
-  "content_hash": "sha256:414edb9518c3eb6107c0e73f84c13c7901fdd366cb52dd8aa20bb5e869880f6c",
+  "content_hash": "sha256:ed908555674ac1d18c769aad46e5d5a8ba6b4c4f803b88870a834eb8456309fd",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -24,16 +24,28 @@
     {
       "source_key": "world_bank",
       "policy_version": 1
+    },
+    {
+      "source_key": "gdelt",
+      "policy_version": 1
+    },
+    {
+      "source_key": "google_news_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_rss",
+      "policy_version": 1
     }
   ],
   "data": {
     "headline": "Global market intelligence dashboard",
     "summary": "Snapshot-first research dashboard for public, source-gated intelligence. It highlights monitored sectors, central-bank calendars, scenario baskets, and approved events without personalized advice.",
-    "generated_label": "2026-05-25T14:46:42Z",
+    "generated_label": "2026-05-25T15:26:16Z",
     "snapshot_health": {
       "status": "fresh",
       "age_minutes": 0,
-      "stale_after": "2026-05-26T02:46:42Z",
+      "stale_after": "2026-05-26T03:26:16Z",
       "backend_dependency": "none_for_public_pages"
     },
     "top_events": [
@@ -42,8 +54,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-25T14:46:42Z",
-        "published_at": "2026-05-25T14:46:42Z",
+        "occurred_at": "2026-05-25T15:26:16Z",
+        "published_at": "2026-05-25T15:26:16Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -85,8 +97,8 @@
         "title": "Energy inventory calendar is active for oil supply monitoring",
         "summary": "EIA-linked inventory releases are tracked as official structured data before publication.",
         "why_it_matters": "Inventory surprises can affect energy equities, inflation inputs, and geopolitical risk interpretation.",
-        "occurred_at": "2026-05-25T14:46:42Z",
-        "published_at": "2026-05-25T14:46:42Z",
+        "occurred_at": "2026-05-25T15:26:16Z",
+        "published_at": "2026-05-25T15:26:16Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -123,8 +135,8 @@
         "title": "Central-bank calendar coverage seeded across six policy committees",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
         "why_it_matters": "Calendar visibility reduces silent coverage gaps and makes stale policy data visible.",
-        "occurred_at": "2026-05-25T14:46:42Z",
-        "published_at": "2026-05-25T14:46:42Z",
+        "occurred_at": "2026-05-25T15:26:16Z",
+        "published_at": "2026-05-25T15:26:16Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -203,8 +215,9 @@
         "source": "FRED / Nasdaq",
         "freshness": "fresh",
         "delay_label": "FRED NASDAQCOM actual through 2026-05-22",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
+        "source_url": "https://fred.stlouisfed.org/series/NASDAQCOM",
         "points": [
           {
             "date": "2026-05-19",
@@ -231,7 +244,7 @@
         "source": "CME / licensed futures feed",
         "freshness": "watch",
         "delay_label": "No always-free licensed futures API is configured",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -241,8 +254,9 @@
         "source": "FRED / OECD Korea share prices",
         "freshness": "fresh",
         "delay_label": "FRED SPASTT01KRM661N actual through 2026-04-01",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
+        "source_url": "https://fred.stlouisfed.org/series/SPASTT01KRM661N",
         "points": [
           {
             "date": "2026-01-01",
@@ -269,7 +283,7 @@
         "source": "KRX / Samsung AM",
         "freshness": "watch",
         "delay_label": "No always-free redistributable ETF feed is configured",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -279,7 +293,7 @@
         "source": "KRX derivatives feed",
         "freshness": "watch",
         "delay_label": "No always-free licensed derivatives API is configured",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -289,9 +303,10 @@
         "source": "FRED / EIA",
         "freshness": "fresh",
         "delay_label": "FRED DCOILWTICO actual through 2026-05-18",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "$",
+        "source_url": "https://fred.stlouisfed.org/series/DCOILWTICO",
         "points": [
           {
             "date": "2026-05-13",
@@ -318,8 +333,9 @@
         "source": "FRED / Cboe",
         "freshness": "fresh",
         "delay_label": "FRED VIXCLS actual through 2026-05-21",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
+        "source_url": "https://fred.stlouisfed.org/series/VIXCLS",
         "points": [
           {
             "date": "2026-05-18",
@@ -346,9 +362,10 @@
         "source": "FRED / Federal Reserve H.10",
         "freshness": "fresh",
         "delay_label": "FRED DEXKOUS actual through 2026-05-15",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "KRW",
+        "source_url": "https://fred.stlouisfed.org/series/DEXKOUS",
         "points": [
           {
             "date": "2026-05-12",
@@ -375,9 +392,10 @@
         "source": "FRED / Federal Reserve H.10",
         "freshness": "fresh",
         "delay_label": "FRED DEXJPUS actual through 2026-05-15",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "JPY",
+        "source_url": "https://fred.stlouisfed.org/series/DEXJPUS",
         "points": [
           {
             "date": "2026-05-12",
@@ -404,9 +422,10 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS2 actual through 2026-05-21",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "%",
+        "source_url": "https://fred.stlouisfed.org/series/DGS2",
         "points": [
           {
             "date": "2026-05-18",
@@ -439,9 +458,10 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS3 actual through 2026-05-21",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "%",
+        "source_url": "https://fred.stlouisfed.org/series/DGS3",
         "points": [
           {
             "date": "2026-05-18",
@@ -474,9 +494,10 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS5 actual through 2026-05-21",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "%",
+        "source_url": "https://fred.stlouisfed.org/series/DGS5",
         "points": [
           {
             "date": "2026-05-18",
@@ -509,9 +530,10 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS10 actual through 2026-05-21",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "%",
+        "source_url": "https://fred.stlouisfed.org/series/DGS10",
         "points": [
           {
             "date": "2026-05-18",
@@ -544,9 +566,10 @@
         "source": "FRED / OECD Japan central bank rate",
         "freshness": "fresh",
         "delay_label": "FRED IRSTCB01JPM156N actual through 2023-12-01",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "%",
+        "source_url": "https://fred.stlouisfed.org/series/IRSTCB01JPM156N",
         "points": [
           {
             "date": "2023-09-01",
@@ -579,7 +602,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "watch",
         "delay_label": "Always-free 2Y JGB API source is not configured",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -589,7 +612,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "watch",
         "delay_label": "Always-free 5Y JGB API source is not configured",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -599,9 +622,10 @@
         "source": "FRED / OECD Japan 10Y yield",
         "freshness": "fresh",
         "delay_label": "FRED IRLTLT01JPM156N actual through 2026-04-01",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "%",
+        "source_url": "https://fred.stlouisfed.org/series/IRLTLT01JPM156N",
         "points": [
           {
             "date": "2026-01-01",
@@ -649,7 +673,7 @@
             "source": "FINRA consolidated short interest",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
           },
           {
@@ -660,7 +684,7 @@
             "source": "FINRA consolidated short interest",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
           },
           {
@@ -671,7 +695,7 @@
             "source": "FINRA consolidated short interest",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
           },
           {
@@ -682,7 +706,7 @@
             "source": "FINRA",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://www.finra.org/investors/insights/short-interest"
           }
         ]
@@ -707,7 +731,7 @@
             "source": "FINRA Reg SHO daily short sale volume",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
           },
           {
@@ -718,7 +742,7 @@
             "source": "FINRA Reg SHO daily short sale volume",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
           },
           {
@@ -729,8 +753,88 @@
             "source": "FINRA Reg SHO daily short sale volume",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
+          }
+        ]
+      },
+      {
+        "key": "breaking_market_news",
+        "title": "Breaking market news",
+        "summary": "GDELT and public RSS headline metadata for geopolitical chokepoints, sanctions, export controls, and tracked ticker catalysts.",
+        "value": "8 headlines",
+        "cadence": "5-minute target for breaking-news metadata; source pages remain one click away.",
+        "source": "GDELT Doc API",
+        "source_url": "https://www.gdeltproject.org/",
+        "freshness": "fresh",
+        "severity": "high",
+        "refresh_seconds": 300,
+        "items": [
+          {
+            "key": "breaking_market_news_google_geopolitical_744354e817b0",
+            "label": "Why Restricting US Oil Exports Would Backfire - CGEP",
+            "value": "headline",
+            "detail": "Geopolitical market risk; news.google.com; seen Wed, 18 Mar 2026 21:12:56 GMT",
+            "source": "Google News RSS",
+            "freshness": "fresh",
+            "severity": "high",
+            "updated_at": "2026-05-25T15:26:16Z",
+            "source_url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxPZUd6bnFNNjVRbkc3dXpYZE9nSHhYdUdJZGIxQk93alNIQTF0QUlmNHUwZ0VVS2s4Q1ROcHJYT1RidnFjOWRGUHA1T2hZNW02QzdMVXNJeTBBRUZ1YmhJajFUYmNkazhYRm1vRzdjdjNkY0twQXMza01UalMwa050bkp0a0I0bk82UVhfOQ?oc=5"
+          },
+          {
+            "key": "breaking_market_news_google_geopolitical_31273ec57522",
+            "label": "China, Iran weaponized the global economy to beat the U.S. at its own game - The Washington Post",
+            "value": "headline",
+            "detail": "Geopolitical market risk; news.google.com; seen Sun, 12 Apr 2026 07:00:00 GMT",
+            "source": "Google News RSS",
+            "freshness": "fresh",
+            "severity": "high",
+            "updated_at": "2026-05-25T15:26:16Z",
+            "source_url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNaGlTTTRONFFaYWx2MV9NZ0ZJdVJySUhqbkJwWlZ3Nk04STZLdDhiRFlfUVJYYVdXQkJzS25aMGI4X2I4LUxFbnZXdXo1VThqTFRXc0JtVzFaMnBjWXp3UkhzYmlPaXVobzhnNk40OXlibHRZQkVHRVMtQzNWTm9icg?oc=5"
+          },
+          {
+            "key": "breaking_market_news_google_geopolitical_1b47bc1e4591",
+            "label": "The Iran War Doesn’t Have to Be a Rerun of ‘That ’70s Show’ - Cato Institute",
+            "value": "headline",
+            "detail": "Geopolitical market risk; news.google.com; seen Tue, 31 Mar 2026 07:00:00 GMT",
+            "source": "Google News RSS",
+            "freshness": "fresh",
+            "severity": "high",
+            "updated_at": "2026-05-25T15:26:16Z",
+            "source_url": "https://news.google.com/rss/articles/CBMiekFVX3lxTFAyYmZ0ZjdUN0lLWmZ0X0QtQktHa1FrVnFUbG9PdlBiNmJzNGw3UkZERHdXTlhVaUg2MXV3LXJ1cE4tVk4zMjlQQmo4cGllTmdKUXo0RGtKOFZEdHJUY2pfemQyeUZOc3VKNWpIdmNndVNObU9wbm5CNXVB?oc=5"
+          },
+          {
+            "key": "breaking_market_news_google_geopolitical_3215bc151932",
+            "label": "Iran’s Control of Hormuz Means It’s Exporting More Oil Today Than Before the War - WSJ",
+            "value": "headline",
+            "detail": "Geopolitical market risk; news.google.com; seen Tue, 10 Mar 2026 07:00:00 GMT",
+            "source": "Google News RSS",
+            "freshness": "fresh",
+            "severity": "high",
+            "updated_at": "2026-05-25T15:26:16Z",
+            "source_url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxPMlpRdWM1U2diVnItMTdlbUY3NVFYZVpnRHlSVTRsX0NEV0UxUW5TNEE5TnNXUHlZaXZuQlFOMXUwa1g0VzVIbC1oTWtfcUxBRWpvUmhHYVlxREk3UHV3UWxkbElNWksxSHVTVnVnZTE4ejd4NW5sVG9kZWNwdWcxTDFqVVZGbVBwTzkzS2x0WFdLQjZiVzFYa2FqRFlDYzAyRU01SUwtZER0Q2ZEWXFZdFY4NElSdE02MjNBdndBdVhDRk0?oc=5"
+          },
+          {
+            "key": "breaking_market_news_yahoo_tickers_dcbb61376695",
+            "label": "S&P 500 Dividends Just Hit an All-Time Low Going Back to the 1800s — Here’s What Retirees Need to Know",
+            "value": "headline",
+            "detail": "Tracked ticker headlines; 247wallst.com; seen Mon, 25 May 2026 15:05:10 +0000",
+            "source": "Yahoo Finance RSS",
+            "freshness": "fresh",
+            "severity": "medium",
+            "updated_at": "2026-05-25T15:26:16Z",
+            "source_url": "https://247wallst.com/personal-finance/2026/05/25/sp-500-dividends-just-hit-an-all-time-low-going-back-to-the-1800s-heres-what-retirees-need-to-know/?.tsrc=rss"
+          },
+          {
+            "key": "breaking_market_news_yahoo_tickers_8ff4f76328c8",
+            "label": "Gain Exposure to Innovative AI Chipmaker Cerebras With Less Risk Through These ETFs",
+            "value": "headline",
+            "detail": "Tracked ticker headlines; www.fool.com; seen Mon, 25 May 2026 14:50:00 +0000",
+            "source": "Yahoo Finance RSS",
+            "freshness": "fresh",
+            "severity": "medium",
+            "updated_at": "2026-05-25T15:26:16Z",
+            "source_url": "https://www.fool.com/investing/2026/05/25/gain-exposure-to-ai-leader-cerebras-with-less-risk/?.tsrc=rss"
           }
         ]
       },
@@ -753,7 +857,7 @@
             "source": "Hindenburg/news",
             "freshness": "watch",
             "severity": "high",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://hindenburgresearch.com/"
           },
           {
@@ -764,7 +868,7 @@
             "source": "Muddy Waters",
             "freshness": "watch",
             "severity": "high",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://www.muddywatersresearch.com/"
           },
           {
@@ -775,7 +879,7 @@
             "source": "Viceroy",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://viceroyresearch.org/"
           },
           {
@@ -786,7 +890,7 @@
             "source": "LLM router",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z"
+            "updated_at": "2026-05-25T15:26:16Z"
           },
           {
             "key": "short_research_reports_spruce_point",
@@ -796,7 +900,7 @@
             "source": "Spruce Point",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://www.sprucepointcap.com/"
           },
           {
@@ -807,7 +911,7 @@
             "source": "Kerrisdale",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://www.kerrisdalecap.com/"
           },
           {
@@ -818,7 +922,7 @@
             "source": "Culper",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://culperresearch.com/"
           },
           {
@@ -829,7 +933,7 @@
             "source": "Blue Orca",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://www.blueorcacapital.com/"
           },
           {
@@ -840,7 +944,7 @@
             "source": "Grizzly",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://grizzlyreports.com/"
           }
         ]
@@ -865,7 +969,7 @@
             "source": "Pentagon.Pizza",
             "freshness": "fresh",
             "severity": "low",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://pentagon.pizza/"
           },
           {
@@ -876,7 +980,7 @@
             "source": "source policy",
             "freshness": "watch",
             "severity": "low",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://pentagon.pizza/"
           }
         ]
@@ -901,7 +1005,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000114036126022487/xslF345X06/form4.xml"
           },
           {
@@ -912,7 +1016,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000192109426000535/xsl144X01/primary_doc.xml"
           },
           {
@@ -923,7 +1027,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z",
+            "updated_at": "2026-05-25T15:26:16Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000192109426000474/xsl144X01/primary_doc.xml"
           },
           {
@@ -934,7 +1038,7 @@
             "source": "SEC EDGAR",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z"
+            "updated_at": "2026-05-25T15:26:16Z"
           },
           {
             "key": "trump_filings_ai_summary",
@@ -944,7 +1048,7 @@
             "source": "LLM router",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:46:42Z"
+            "updated_at": "2026-05-25T15:26:16Z"
           }
         ]
       }

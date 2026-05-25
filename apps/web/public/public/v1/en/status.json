@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-25T14:46:42Z",
-  "stale_after": "2026-05-26T02:46:42Z",
-  "hard_expires_at": "2026-06-01T14:46:42Z",
+  "generated_at": "2026-05-25T15:26:16Z",
+  "stale_after": "2026-05-26T03:26:16Z",
+  "hard_expires_at": "2026-06-01T15:26:16Z",
   "object_type": "source_status",
   "object_key": "status",
-  "content_hash": "sha256:02a81359bd13b9b9bd4c1fd20d91b9049939b5ad7069082d2b3c68cc698ab335",
+  "content_hash": "sha256:511af5595934eb51dbaa01cf20573d79c8acd9f9680dea27a7a4b78f3fa0ab71",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -23,6 +23,18 @@
     },
     {
       "source_key": "world_bank",
+      "policy_version": 1
+    },
+    {
+      "source_key": "gdelt",
+      "policy_version": 1
+    },
+    {
+      "source_key": "google_news_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_rss",
       "policy_version": 1
     }
   ],
@@ -106,6 +118,30 @@
       {
         "provider_key": "finra",
         "provider_type": "official_api",
+        "status": "ready",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": null
+      },
+      {
+        "provider_key": "gdelt",
+        "provider_type": "news_metadata",
+        "status": "ready",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": null
+      },
+      {
+        "provider_key": "google_news_rss",
+        "provider_type": "news_metadata",
+        "status": "ready",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": null
+      },
+      {
+        "provider_key": "yahoo_finance_rss",
+        "provider_type": "news_metadata",
         "status": "ready",
         "mode": "FREE_ONLY",
         "last_verified_at": null,

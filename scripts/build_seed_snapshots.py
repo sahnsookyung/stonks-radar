@@ -11,17 +11,23 @@ from html import unescape
 from pathlib import Path
 from typing import Any
 from urllib import parse, request
+from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_ROOT = ROOT / "apps" / "web" / "public" / "public"
 VERSION = 1
 LOCALES = ["en", "ko"]
 FRED_API_BASE_URL = "https://api.stlouisfed.org/fred"
+FRED_SERIES_BASE_URL = "https://fred.stlouisfed.org/series"
+GDELT_DOC_API_URL = "https://api.gdeltproject.org/api/v2/doc/doc"
+GOOGLE_NEWS_RSS_URL = "https://news.google.com/rss/search"
+YAHOO_FINANCE_RSS_URL = "https://feeds.finance.yahoo.com/rss/2.0/headline"
 FRED_REQUEST_MIN_INTERVAL_SECONDS = 0.55
 FINRA_API_BASE_URL = "https://api.finra.org"
 FINRA_OAUTH_TOKEN_URL = "https://ews.fip.finra.org/fip/rest/ews/oauth2/access_token?grant_type=client_credentials"
 FINRA_REQUEST_MIN_INTERVAL_SECONDS = 0.25
 DEFAULT_SHORT_TICKERS = "DJT,TSLA,NVDA"
+DEFAULT_NEWS_TICKERS = "RKLB,TSLA,NVDA,DJT"
 DEFAULT_TRUMP_CIKS = {"DJT": "0001849635"}
 PENTAGON_PIZZA_URL = "https://pentagon.pizza/"
 OFFICIAL_POLICY_CALENDAR_URLS = {
@@ -38,6 +44,8 @@ _FINRA_TOKEN_CACHE: dict[str, Any] = {"token": None, "expires_at": 0.0}
 _FINRA_ROWS_CACHE: dict[str, list[dict[str, Any]]] = {}
 _SEC_SUBMISSIONS_CACHE: dict[str, dict[str, Any] | None] = {}
 _WEB_METADATA_CACHE: dict[str, dict[str, str] | None] = {}
+_GDELT_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
+_RSS_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
 _LAST_FRED_REQUEST_AT = 0.0
 _LAST_FINRA_REQUEST_AT = 0.0
 
@@ -552,6 +560,92 @@ def _web_metadata(url: str) -> dict[str, str] | None:
     return _WEB_METADATA_CACHE[url]
 
 
+def _gdelt_articles(query: str, *, maxrecords: int = 5) -> list[dict[str, str]]:
+    cache_key = f"{query}:{maxrecords}"
+    if cache_key in _GDELT_ARTICLE_CACHE:
+        return _GDELT_ARTICLE_CACHE[cache_key]
+    params = parse.urlencode(
+        {
+            "query": query,
+            "mode": "artlist",
+            "format": "json",
+            "sort": "hybridrel",
+            "maxrecords": str(maxrecords),
+        }
+    )
+    try:
+        payload = _http_json(f"{GDELT_DOC_API_URL}?{params}", headers={"Accept": "application/json"}, timeout=8)
+    except Exception:
+        _GDELT_ARTICLE_CACHE[cache_key] = []
+        return []
+    articles = payload.get("articles") if isinstance(payload, dict) else []
+    rows: list[dict[str, str]] = []
+    for index, article in enumerate(articles if isinstance(articles, list) else []):
+        if not isinstance(article, dict):
+            continue
+        title = str(article.get("title") or "").strip()
+        url = str(article.get("url") or "").strip()
+        if not title or not url:
+            continue
+        rows.append(
+            {
+                "key": hashlib.sha1(f"{query}:{index}:{url}".encode()).hexdigest()[:12],
+                "title": title[:140],
+                "url": url,
+                "domain": str(article.get("domain") or parse.urlparse(url).netloc or "news").strip()[:80],
+                "seen_date": str(article.get("seendate") or "")[:14],
+                "language": str(article.get("language") or "").strip()[:24],
+            }
+        )
+    _GDELT_ARTICLE_CACHE[cache_key] = rows
+    return rows
+
+
+def _rss_articles(url: str, *, cache_key: str, maxrecords: int = 5) -> list[dict[str, str]]:
+    if cache_key in _RSS_ARTICLE_CACHE:
+        return _RSS_ARTICLE_CACHE[cache_key]
+    user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
+    try:
+        req = request.Request(url, headers={"User-Agent": user_agent, "Accept": "application/rss+xml, application/xml"})
+        with request.urlopen(req, timeout=8) as response:
+            xml_text = response.read(800_000).decode("utf-8", errors="ignore")
+    except Exception:
+        _RSS_ARTICLE_CACHE[cache_key] = []
+        return []
+    try:
+        root = ElementTree.fromstring(xml_text)
+    except ElementTree.ParseError:
+        _RSS_ARTICLE_CACHE[cache_key] = []
+        return []
+    rows: list[dict[str, str]] = []
+    for index, item in enumerate(root.findall(".//item")):
+        title = _xml_text(item, "title")
+        link = _xml_text(item, "link")
+        if not title or not link:
+            continue
+        domain = parse.urlparse(link).netloc or _xml_text(item, "source") or "rss"
+        rows.append(
+            {
+                "key": hashlib.sha1(f"{cache_key}:{index}:{link}".encode()).hexdigest()[:12],
+                "title": title[:140],
+                "url": link,
+                "domain": domain[:80],
+                "seen_date": _xml_text(item, "pubDate")[:32],
+            }
+        )
+        if len(rows) >= maxrecords:
+            break
+    _RSS_ARTICLE_CACHE[cache_key] = rows
+    return rows
+
+
+def _xml_text(item: ElementTree.Element, tag: str) -> str:
+    element = item.find(tag)
+    if element is None or element.text is None:
+        return ""
+    return unescape(element.text.strip())
+
+
 def _http_json(
     url: str,
     *,
@@ -765,6 +859,9 @@ def _envelope(
             {"source_key": "sec_edgar", "policy_version": 1},
             {"source_key": "eia", "policy_version": 1},
             {"source_key": "world_bank", "policy_version": 1},
+            {"source_key": "gdelt", "policy_version": 1},
+            {"source_key": "google_news_rss", "policy_version": 1},
+            {"source_key": "yahoo_finance_rss", "policy_version": 1},
         ],
         "data": data,
         "warnings": [
@@ -938,6 +1035,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         delay_label: str,
         freshness: str = "watch",
         unit: str | None = None,
+        source_url: str | None = None,
         points: list[dict[str, Any]] | None = None,
         coverage_status: str = "active",
         next_event: dict[str, str] | None = None,
@@ -954,6 +1052,8 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         }
         if unit:
             payload["unit"] = unit
+        if source_url:
+            payload["source_url"] = source_url
         if points:
             payload["points"] = points
         if next_event:
@@ -986,6 +1086,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
                 ),
                 "watch",
                 None,
+                f"{FRED_SERIES_BASE_URL}/{series_id}",
                 None,
                 "coverage_gap",
                 next_event,
@@ -999,6 +1100,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             _actual_delay_label(locale, source_label, series["date"]),
             "fresh",
             unit,
+            f"{FRED_SERIES_BASE_URL}/{series_id}",
             series["points"],
             "active",
             next_event,
@@ -1012,6 +1114,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         reason_en: str,
         reason_ko: str,
         unit: str | None = None,
+        source_url: str | None = None,
     ) -> dict[str, Any]:
         return tile(
             key,
@@ -1022,6 +1125,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             _unsupported_delay_label(locale, reason_en, reason_ko),
             "watch",
             None,
+            source_url,
             None,
             "coverage_gap",
             None,
@@ -1168,6 +1272,100 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
         )
     )
     summary_status = _t(locale, "ready", "준비됨") if ai_summary_ready else _t(locale, "local LLM needed", "로컬 LLM 필요")
+    news_queries = [
+        (
+            "geopolitical",
+            "Geopolitical market risk",
+            "지정학 시장 리스크",
+            '(Iran OR Hormuz OR "Strait of Hormuz" OR "Red Sea" OR Taiwan OR "export controls") '
+            '(oil OR shipping OR sanctions OR markets OR stocks)',
+        ),
+        (
+            "tracked_tickers",
+            "Tracked ticker headlines",
+            "추적 티커 헤드라인",
+            '("Rocket Lab" OR RKLB OR NVDA OR NVIDIA OR TSLA OR Tesla OR DJT OR "stock offering" OR "share issuance")',
+        ),
+    ]
+    market_news_items: list[dict[str, Any]] = []
+    for query_key, label_en, label_ko, query in news_queries:
+        for article in _gdelt_articles(query, maxrecords=4):
+            seen = article["seen_date"][:8]
+            market_news_items.append(
+                item(
+                    "breaking_market_news",
+                    f"{query_key}_{article['key']}",
+                    article["title"],
+                    article["title"],
+                    _t(locale, "headline", "헤드라인"),
+                    f"{label_en}; {article['domain']}" + (f"; seen {seen}" if seen else ""),
+                    f"{label_ko}; {article['domain']}" + (f"; 관측 {seen}" if seen else ""),
+                    "GDELT Doc API",
+                    "high" if query_key == "geopolitical" else "medium",
+                    "fresh",
+                    article["url"],
+                )
+            )
+    ticker_watchlist = ",".join(_symbol_list(env.get("NEWS_TICKER_WATCHLIST") or DEFAULT_NEWS_TICKERS))
+    yahoo_url = f"{YAHOO_FINANCE_RSS_URL}?{parse.urlencode({'s': ticker_watchlist, 'region': 'US', 'lang': 'en-US'})}"
+    rss_sources = [
+        (
+            "google_geopolitical",
+            "Geopolitical market risk",
+            "지정학 시장 리스크",
+            "Google News RSS",
+            f"{GOOGLE_NEWS_RSS_URL}?{parse.urlencode({'q': 'Iran OR Hormuz OR Taiwan export controls oil markets', 'hl': 'en-US', 'gl': 'US', 'ceid': 'US:en'})}",
+            "high",
+        ),
+        (
+            "yahoo_tickers",
+            "Tracked ticker headlines",
+            "추적 티커 헤드라인",
+            "Yahoo Finance RSS",
+            yahoo_url,
+            "medium",
+        ),
+    ]
+    seen_news_urls = {str(item.get("source_url") or "") for item in market_news_items}
+    for source_key, label_en, label_ko, source_name, url, severity in rss_sources:
+        for article in _rss_articles(url, cache_key=source_key, maxrecords=4):
+            if article["url"] in seen_news_urls:
+                continue
+            seen_news_urls.add(article["url"])
+            market_news_items.append(
+                item(
+                    "breaking_market_news",
+                    f"{source_key}_{article['key']}",
+                    article["title"],
+                    article["title"],
+                    _t(locale, "headline", "헤드라인"),
+                    f"{label_en}; {article['domain']}" + (f"; seen {article['seen_date']}" if article["seen_date"] else ""),
+                    f"{label_ko}; {article['domain']}" + (f"; 관측 {article['seen_date']}" if article["seen_date"] else ""),
+                    source_name,
+                    severity,
+                    "fresh",
+                    article["url"],
+                )
+            )
+    if not market_news_items:
+        market_news_article_count = 0
+        market_news_items = [
+            item(
+                "breaking_market_news",
+                "watchlist",
+                "Breaking-news watchlist",
+                "속보 워치리스트",
+                _t(locale, "watch", "감시"),
+                "GDELT and public RSS metadata are queried for geopolitical shocks and tracked ticker headlines when snapshots build.",
+                "스냅샷 빌드 시 GDELT와 공개 RSS 메타데이터로 지정학 충격 및 추적 티커 헤드라인을 조회합니다.",
+                "GDELT/RSS",
+                "high",
+                "watch",
+                "https://www.gdeltproject.org/",
+            )
+        ]
+    else:
+        market_news_article_count = len(market_news_items)
 
     short_interest_items = [
         item(
@@ -1386,6 +1584,25 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
             "items": short_volume_items,
         },
         {
+            "key": "breaking_market_news",
+            "title": _t(locale, "Breaking market news", "시장 속보"),
+            "summary": _t(
+                locale,
+                "GDELT and public RSS headline metadata for geopolitical chokepoints, sanctions, export controls, and tracked ticker catalysts.",
+                "지정학 요충지, 제재, 수출통제, 추적 티커 촉매에 대한 GDELT 및 공개 RSS 헤드라인 메타데이터입니다.",
+            ),
+            "value": _t(locale, f"{market_news_article_count} headlines", f"헤드라인 {market_news_article_count}개")
+            if market_news_article_count
+            else _t(locale, "watchlist ready", "워치리스트 준비"),
+            "cadence": _t(locale, "5-minute target for breaking-news metadata; source pages remain one click away.", "속보 메타데이터 5분 목표; 원문은 한 번의 클릭으로 이동합니다."),
+            "source": "GDELT Doc API",
+            "source_url": "https://www.gdeltproject.org/",
+            "freshness": "fresh" if market_news_article_count else "watch",
+            "severity": "high",
+            "refresh_seconds": 300,
+            "items": market_news_items[:6],
+        },
+        {
             "key": "short_research_reports",
             "title": _t(locale, "Public short research", "공개 숏 리서치"),
             "summary": _t(
@@ -1594,6 +1811,9 @@ def _source_status() -> dict[str, Any]:
         ("finnhub", "market_data", finnhub_status, "FREE_ONLY", finnhub_warning),
         ("nasdaq_data_link", "market_data", nasdaq_status, "FREE_ONLY", nasdaq_warning),
         ("finra", "official_api", finra_status, "FREE_ONLY", finra_warning),
+        ("gdelt", "news_metadata", "ready", "FREE_ONLY", None),
+        ("google_news_rss", "news_metadata", "ready", "FREE_ONLY", None),
+        ("yahoo_finance_rss", "news_metadata", "ready", "FREE_ONLY", None),
         ("pentagon_pizza", "weak_osint", "degraded", "FREE_ONLY", "Weak OSINT only; cannot publish standalone high-confidence events"),
         ("public_short_research", "public_web", "degraded", "FREE_ONLY", "Public short-report monitors need source-specific parser review"),
         ("gemini", "llm_provider", gemini_status, "FREE_ONLY", gemini_warning),

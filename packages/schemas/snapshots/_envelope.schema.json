@@ -141,6 +141,7 @@
         "value": { "type": "string" },
         "unit": { "type": "string" },
         "source": { "type": "string" },
+        "source_url": { "type": "string" },
         "freshness": { "enum": ["fresh", "watch", "stale", "unsupported"] },
         "delay_label": { "type": "string" },
         "updated_at": { "type": "string" },

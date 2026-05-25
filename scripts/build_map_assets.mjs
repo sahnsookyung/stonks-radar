@@ -9,6 +9,7 @@ const world = JSON.parse(await readFile(source, "utf8"));
 const countries = feature(world, world.objects.countries);
 
 repairAntimeridianFeatures(countries);
+dropKnownAntimeridianFragments(countries);
 markAntimeridianFeatures(countries);
 
 countries.metadata = {
@@ -30,6 +31,46 @@ function repairAntimeridianFeatures(collection) {
     item.properties = item.properties ?? {};
     item.properties.antimeridianRepaired = true;
   }
+}
+
+function dropKnownAntimeridianFragments(collection) {
+  for (const item of collection.features ?? []) {
+    if (item.properties?.name !== "Russia" || item.geometry?.type !== "MultiPolygon") continue;
+    const originalCount = item.geometry.coordinates.length;
+    const coordinates = item.geometry.coordinates.filter((polygon) => !isWesternAntimeridianFragment(polygon));
+    if (coordinates.length === originalCount || coordinates.length === 0) continue;
+    item.geometry = { ...item.geometry, coordinates };
+    item.properties = item.properties ?? {};
+    item.properties.antimeridianFragmentDropped = true;
+  }
+}
+
+function isWesternAntimeridianFragment(polygon) {
+  const bounds = polygonBounds(polygon);
+  if (!bounds) return false;
+  const [minLng, minLat, maxLng, maxLat] = bounds;
+  const width = maxLng - minLng;
+  const height = maxLat - minLat;
+  return maxLng <= -170 && width <= 20 && height <= 20;
+}
+
+function polygonBounds(polygon) {
+  let minLng = Infinity;
+  let minLat = Infinity;
+  let maxLng = -Infinity;
+  let maxLat = -Infinity;
+  for (const ring of polygon ?? []) {
+    for (const point of ring ?? []) {
+      const [lng, lat] = point;
+      if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
+      minLng = Math.min(minLng, lng);
+      minLat = Math.min(minLat, lat);
+      maxLng = Math.max(maxLng, lng);
+      maxLat = Math.max(maxLat, lat);
+    }
+  }
+  if (!Number.isFinite(minLng)) return null;
+  return [minLng, minLat, maxLng, maxLat];
 }
 
 function repairAntimeridianGeometry(geometry) {

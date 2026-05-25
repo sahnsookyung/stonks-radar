@@ -66,6 +66,32 @@ textarea {
   display: none;
 }
 
+.stonks-map-popup .maplibregl-popup-content {
+  overflow: hidden;
+  border: 1px solid #2a3b50;
+  border-radius: 8px;
+  background: #101823;
+  color: #e7edf5;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.38);
+  padding: 0;
+}
+
+.stonks-map-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+  border-top-color: #2a3b50;
+}
+
+.stonks-map-popup.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+  border-bottom-color: #2a3b50;
+}
+
+.stonks-map-popup.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: #2a3b50;
+}
+
+.stonks-map-popup.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: #2a3b50;
+}
+
 @layer components {
   .focus-ring {
     @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-paper;

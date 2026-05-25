@@ -30,6 +30,31 @@ const resources = {
       admin: "Admin",
       login: "Login",
       publicSnapshot: "Public snapshot",
+      snapshotFirst: "snapshot-first",
+      approvedPublicData: "static approved public data",
+      eventGeography: "Event geography",
+      eventMapFooter: "Approved event geography. Boundaries are vendored locally; markers use reviewed public snapshot events.",
+      marketPulse: "Market pulse",
+      marketPulseSummary: "Delayed/reference values. Cards link to source pages; update times show the snapshot age.",
+      scrollLeft: "Scroll left",
+      scrollRight: "Scroll right",
+      priorityEvent: "Priority event",
+      evidenceItems: "{{count}} evidence items",
+      shortsEventRadar: "Shorts & event radar",
+      shortsEventRadarSummary: "FINRA short interest, daily short-volume flow, breaking-news metadata, public short research, weak OSINT, and SEC filing digests are rendered here so source links are supporting evidence, not the primary workflow.",
+      approvedEvents: "Approved Events",
+      freshnessStates: {
+        fresh: "fresh",
+        watch: "watch",
+        stale: "stale",
+        unsupported: "unsupported"
+      },
+      severityStates: {
+        low: "low",
+        medium: "medium",
+        high: "high",
+        critical: "critical"
+      },
       legal: {
         terms: "Terms",
         privacy: "Privacy",
@@ -67,6 +92,31 @@ const resources = {
       admin: "관리자",
       login: "로그인",
       publicSnapshot: "공개 스냅샷",
+      snapshotFirst: "스냅샷 우선",
+      approvedPublicData: "승인된 공개 데이터",
+      eventGeography: "이벤트 지리",
+      eventMapFooter: "승인된 이벤트 지리입니다. 경계 데이터는 로컬에 포함되어 있으며 마커는 검토된 공개 스냅샷 이벤트를 사용합니다.",
+      marketPulse: "시장 펄스",
+      marketPulseSummary: "지연/참조 값입니다. 카드는 출처 페이지로 연결되며 갱신 시각은 스냅샷 기준 경과 시간을 표시합니다.",
+      scrollLeft: "왼쪽으로 스크롤",
+      scrollRight: "오른쪽으로 스크롤",
+      priorityEvent: "우선 이벤트",
+      evidenceItems: "근거 {{count}}개",
+      shortsEventRadar: "공매도 및 이벤트 레이더",
+      shortsEventRadarSummary: "FINRA 공매도 잔고, 일별 공매도 거래량, 속보 메타데이터, 공개 숏 리서치, 약한 OSINT, SEC 공시 요약을 직접 표시해 출처 링크가 보조 근거로만 쓰이도록 합니다.",
+      approvedEvents: "승인된 이벤트",
+      freshnessStates: {
+        fresh: "갱신됨",
+        watch: "감시",
+        stale: "오래됨",
+        unsupported: "미지원"
+      },
+      severityStates: {
+        low: "낮음",
+        medium: "중간",
+        high: "높음",
+        critical: "위험"
+      },
       legal: {
         terms: "이용약관",
         privacy: "개인정보 처리방침",

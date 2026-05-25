@@ -4,6 +4,8 @@ import {
   Activity,
   ArrowRight,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   DatabaseZap,
   ExternalLink,
   Layers3,
@@ -11,12 +13,12 @@ import {
   Radar,
   TrendingUp
 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AlternativeSignalLane, CalendarItem, MetricTile, PublicEvent } from "@frw/shared-types";
 import { FreshnessBadge, SeverityBadge, SourceBadge } from "../components/Badge";
 import { EventList } from "../components/EventList";
 import { EventMap } from "../components/EventMap";
-import { LineChart } from "../components/LineChart";
 import { ErrorState, LoadingState } from "../components/LoadingState";
 import { SnapshotBanner } from "../components/SnapshotBanner";
 import { useLocale } from "../lib/locale";
@@ -40,21 +42,6 @@ const marketOrder = [
   "japan_2y",
   "japan_5y",
   "japan_10y"
-];
-
-const marketGroups = [
-  {
-    title: "Equity / volatility",
-    keys: ["nasdaq_composite", "nasdaq_100_futures", "kospi", "kodex_200", "kospi_200_futures", "vix"]
-  },
-  {
-    title: "FX / commodities",
-    keys: ["usd_krw", "usd_jpy", "wti_crude"]
-  },
-  {
-    title: "Rates",
-    keys: ["us_2y", "us_3y", "us_5y", "us_10y", "japan_policy_rate", "japan_2y", "japan_5y", "japan_10y"]
-  }
 ];
 
 export function HomePage() {
@@ -92,34 +79,30 @@ export function HomePage() {
         </div>
         <div className="flex min-w-0 flex-wrap gap-2.5">
           <FreshnessBadge value={data.snapshot_health.status} />
-          <SourceBadge label="snapshot-first" />
-          <SourceBadge label="static approved public data" />
+          <SourceBadge label={t("snapshotFirst")} />
+          <SourceBadge label={t("approvedPublicData")} />
         </div>
       </section>
 
-      <section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(430px,0.95fr)_minmax(0,1.05fr)]">
-        <section className="order-2 min-w-0 xl:order-1" aria-labelledby="event-geography-title">
+      <MarketPulse tiles={marketTiles} />
+
+      <section className="min-w-0" aria-labelledby="event-geography-title">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 id="event-geography-title" className="flex items-center gap-2 text-sm font-semibold text-accent">
               <MapPinned className="h-4 w-4" />
-              Event geography
+              {t("eventGeography")}
             </h2>
             <Link to="/$locale/map" params={{ locale }} className="secondary-action min-h-11 py-2">
-              Map
+              {t("map")}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
           <EventMap
             events={data.top_events}
-            heightClass="h-[500px] md:h-[680px] xl:h-[720px]"
-            footer="Approved event geography. Boundaries are vendored locally; markers use reviewed public snapshot events."
+            heightClass="h-[540px] md:h-[720px] xl:h-[760px]"
+            footer={t("eventMapFooter")}
             loadStrategy="idle-visible"
           />
-        </section>
-
-        <div className="order-1 min-w-0 xl:order-2">
-          <MarketPulse tiles={marketTiles} />
-        </div>
       </section>
 
       <AlternativeSignalRadar lanes={data.alternative_signals} />
@@ -136,7 +119,7 @@ export function HomePage() {
               <div key={item.id} className="rounded-md border border-line bg-panelAlt px-4 py-3">
                 <div className="text-sm font-semibold leading-5">{item.title}</div>
                 <div className="mt-1.5 text-xs leading-5 text-muted">
-                  {item.scheduled_local_date} · {item.source} · {calendarExpectationLabel(item.expectation_type)}
+                  {item.scheduled_local_date} · {item.source} · {calendarExpectationLabel(item.expectation_type, locale)}
                 </div>
               </div>
             ))}
@@ -174,7 +157,7 @@ export function HomePage() {
 
       <section className="grid min-w-0 gap-4 lg:grid-cols-[1fr_0.55fr]">
         <div className="min-w-0">
-          <h2 className="mb-3 text-xl font-bold">Approved Events</h2>
+          <h2 className="mb-3 text-xl font-bold">{t("approvedEvents")}</h2>
           <EventList events={data.top_events} />
         </div>
         <div className="min-w-0">
@@ -211,25 +194,26 @@ function sortCalendarItems(items: CalendarItem[]) {
   return [...items].sort((left, right) => left.scheduled_local_date.localeCompare(right.scheduled_local_date));
 }
 
-function calendarExpectationLabel(expectationType: string) {
-  if (expectationType === "official_projection") return "official projections";
-  if (expectationType === "official_calendar") return "official calendar";
-  if (expectationType === "manual_estimate") return "manual estimate";
-  return "watch";
+function calendarExpectationLabel(expectationType: string, locale: "en" | "ko") {
+  if (expectationType === "official_projection") return locale === "ko" ? "공식 전망" : "official projections";
+  if (expectationType === "official_calendar") return locale === "ko" ? "공식 일정" : "official calendar";
+  if (expectationType === "manual_estimate") return locale === "ko" ? "수동 추정" : "manual estimate";
+  return locale === "ko" ? "감시" : "watch";
 }
 
 function PriorityEvent({ event }: { event: PublicEvent }) {
+  const { t } = useTranslation();
   return (
     <section className="panel-raised p-5">
       <div className="flex items-center gap-2 text-sm font-semibold text-warning">
         <Activity className="h-4 w-4" />
-        Priority event
+        {t("priorityEvent")}
       </div>
       <h2 className="mt-2 text-xl font-semibold leading-7">{event.title}</h2>
       <p className="mt-2 text-sm leading-6 text-muted">{event.why_it_matters}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         <SourceBadge label={event.source_strength} />
-        <SourceBadge label={`${event.evidence_count} evidence items`} />
+        <SourceBadge label={t("evidenceItems", { count: event.evidence_count })} />
       </div>
     </section>
   );
@@ -238,92 +222,98 @@ function PriorityEvent({ event }: { event: PublicEvent }) {
 function MarketPulse({ tiles }: { tiles: MetricTile[] }) {
   const unavailableTiles = tiles.filter(isUnavailableTile);
   const activeTiles = tiles.filter((tile) => !isUnavailableTile(tile));
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const locale = useLocale();
+  const { t } = useTranslation();
+  const [now, setNow] = useState(() => Date.now());
+  const visibleTiles = [...activeTiles, ...unavailableTiles];
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
+  const scroll = (direction: -1 | 1) => {
+    const container = scrollRef.current;
+    if (!container) return;
+    container.scrollBy({
+      left: direction * Math.max(320, container.clientWidth * 0.75),
+      behavior: "smooth"
+    });
+  };
+
   return (
-    <section aria-labelledby="market-pulse-title">
+    <section className="panel min-w-0 overflow-hidden p-4" aria-labelledby="market-pulse-title">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 id="market-pulse-title" className="flex items-center gap-2 text-sm font-semibold text-accent">
             <TrendingUp className="h-4 w-4" />
-            Market pulse
+            {t("marketPulse")}
           </h2>
-          <p className="mt-1 text-sm leading-6 text-muted">
-            Delayed/reference snapshot until licensed market-data redistribution is configured.
-          </p>
+          <p className="mt-1 text-sm leading-6 text-muted">{t("marketPulseSummary")}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button type="button" className="secondary-action h-10 min-h-10 w-10 p-0" onClick={() => scroll(-1)} aria-label={t("scrollLeft")}>
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button type="button" className="secondary-action h-10 min-h-10 w-10 p-0" onClick={() => scroll(1)} aria-label={t("scrollRight")}>
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
       </div>
-      <div className="grid gap-5">
-        {marketGroups.map((group) => {
-          const groupTiles = activeTiles.filter((tile) => group.keys.includes(tile.key));
-          if (groupTiles.length === 0) return null;
-          const compact = group.title !== "Equity / volatility";
-          return (
-            <section key={group.title}>
-              <h3 className="mb-2 text-xs font-semibold uppercase text-muted">{group.title}</h3>
-              <div className={`grid gap-3 sm:grid-cols-2 ${compact ? "xl:grid-cols-3" : "xl:grid-cols-3"}`}>
-                {groupTiles.map((tile) => (
-                  <MarketTile key={tile.key} tile={tile} compact={compact} />
-                ))}
-              </div>
-            </section>
-          );
-        })}
-        {unavailableTiles.length ? <CoverageQueue tiles={unavailableTiles} /> : null}
-      </div>
-    </section>
-  );
-}
-
-function MarketTile({ tile, compact = false }: { tile: MetricTile; compact?: boolean }) {
-  return (
-    <article className={`panel flex flex-col p-4 ${compact ? "min-h-[150px]" : "min-h-[168px]"}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-sm leading-5 text-muted">{tile.label}</div>
-          <div className={`${compact ? "text-xl" : "text-2xl"} mt-1 font-bold leading-8 text-ink`}>
-            {tile.value}
-            {tile.unit ? <span className="ml-1 text-sm font-semibold text-muted">{tile.unit}</span> : null}
-          </div>
-        </div>
-        <FreshnessBadge value={tile.freshness} />
-      </div>
-      <div className="mt-3 text-xs leading-5 text-muted">
-        {tile.source} · {tile.delay_label}
-      </div>
-      {tile.next_event ? (
-        <div className="mt-auto flex items-start gap-2 pt-3 text-xs leading-5 text-muted">
-          <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
-          <span className="min-w-0">
-            <span className="font-semibold text-ink">Next:</span> {tile.next_event.title} · {tile.next_event.date}
-          </span>
-        </div>
-      ) : null}
-      {!compact && tile.points ? <LineChart points={tile.points} label={tile.label} /> : null}
-    </article>
-  );
-}
-
-function CoverageQueue({ tiles }: { tiles: MetricTile[] }) {
-  return (
-    <section className="panel p-4" aria-label="Coverage gaps">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-xs font-semibold uppercase text-muted">Coverage gaps</h3>
-        <SourceBadge label={`${tiles.length} source gaps`} />
-      </div>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        {tiles.map((tile) => (
-          <div key={tile.key} className="rounded-md border border-line bg-paper/45 px-3 py-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0 truncate text-sm font-semibold text-ink">{tile.label}</div>
-              <FreshnessBadge value={tile.freshness} />
-            </div>
-            <div className="mt-1 truncate text-xs leading-5 text-muted">
-              {tile.source} · {tile.delay_label}
-            </div>
-          </div>
+      <div
+        ref={scrollRef}
+        className="-mx-1 flex max-w-full snap-x gap-3 overflow-x-auto px-1 pb-2"
+        data-testid="market-pulse-strip"
+      >
+        {visibleTiles.map((tile) => (
+          <MarketTile key={tile.key} tile={tile} locale={locale} now={now} />
         ))}
       </div>
     </section>
   );
+}
+
+function MarketTile({ tile, locale, now }: { tile: MetricTile; locale: "en" | "ko"; now: number }) {
+  const unavailable = isUnavailableTile(tile);
+  const className =
+    "panel focus-ring flex min-h-[164px] w-[220px] shrink-0 snap-start flex-col p-4 transition-colors hover:border-accent md:w-[240px]";
+  const body = (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-sm leading-5 text-muted">{tile.label}</div>
+          <div className="mt-1 text-2xl font-bold leading-8 text-ink">
+            {tile.value}
+            {tile.unit ? <span className="ml-1 text-sm font-semibold text-muted">{tile.unit}</span> : null}
+          </div>
+        </div>
+        {unavailable ? (
+          <span className="rounded border border-warning/40 bg-warning/10 px-2 py-1 text-[11px] font-semibold uppercase leading-4 text-warning">
+            {locale === "ko" ? "공백" : "gap"}
+          </span>
+        ) : null}
+      </div>
+      <div className="mt-3 text-xs font-semibold leading-5 text-accent">{formatMetricUpdate(tile.updated_at, locale, now)}</div>
+      {tile.next_event ? (
+        <div className="mt-auto flex items-start gap-2 pt-3 text-xs leading-5 text-muted">
+          <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+          <span className="min-w-0">
+            <span className="font-semibold text-ink">{locale === "ko" ? "다음:" : "Next:"}</span> {tile.next_event.title} ·{" "}
+            {tile.next_event.date}
+          </span>
+        </div>
+      ) : null}
+    </>
+  );
+
+  if (tile.source_url) {
+    return (
+      <a className={className} href={tile.source_url} target="_blank" rel="noreferrer" aria-label={`${tile.label} source`}>
+        {body}
+      </a>
+    );
+  }
+
+  return <article className={className}>{body}</article>;
 }
 
 function isUnavailableTile(tile: MetricTile) {
@@ -334,19 +324,29 @@ function isUnavailableTile(tile: MetricTile) {
   );
 }
 
+function formatMetricUpdate(value: string, locale: "en" | "ko", now: number) {
+  const updatedAt = Date.parse(value);
+  if (!Number.isFinite(updatedAt)) return locale === "ko" ? "갱신 시각 불명" : "Updated time unknown";
+  const elapsedMinutes = Math.max(0, Math.floor((now - updatedAt) / 60_000));
+  if (elapsedMinutes < 1) return locale === "ko" ? "방금 갱신" : "Updated just now";
+  if (elapsedMinutes < 60) return locale === "ko" ? `${elapsedMinutes}분 전 갱신` : `Updated ${elapsedMinutes}m ago`;
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 48) return locale === "ko" ? `${elapsedHours}시간 전 갱신` : `Updated ${elapsedHours}h ago`;
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  return locale === "ko" ? `${elapsedDays}일 전 갱신` : `Updated ${elapsedDays}d ago`;
+}
+
 function AlternativeSignalRadar({ lanes }: { lanes: AlternativeSignalLane[] }) {
+  const { t } = useTranslation();
   return (
     <section aria-labelledby="shorts-risk-title">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 id="shorts-risk-title" className="flex items-center gap-2 text-sm font-semibold text-warning">
             <Radar className="h-4 w-4" />
-            Shorts & event radar
+            {t("shortsEventRadar")}
           </h2>
-          <p className="mt-1 max-w-4xl text-sm leading-6 text-muted">
-            FINRA short interest, daily short-volume flow, public short research, weak OSINT, and SEC filing digests
-            are rendered here so source links are supporting evidence, not the primary workflow.
-          </p>
+          <p className="mt-1 max-w-4xl text-sm leading-6 text-muted">{t("shortsEventRadarSummary")}</p>
         </div>
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -359,6 +359,7 @@ function AlternativeSignalRadar({ lanes }: { lanes: AlternativeSignalLane[] }) {
 }
 
 function AlternativeSignalCard({ lane }: { lane: AlternativeSignalLane }) {
+  const { t } = useTranslation();
   const visibleItems = lane.items.slice(0, 4);
   return (
     <article className="panel flex min-h-[280px] flex-col p-4">
@@ -372,17 +373,32 @@ function AlternativeSignalCard({ lane }: { lane: AlternativeSignalLane }) {
       <p className="mt-2 text-xs leading-5 text-muted">{lane.summary}</p>
       {visibleItems.length ? (
         <div className="mt-3 grid gap-2">
-          {visibleItems.map((item) => (
-            <div key={item.key} className="rounded-md border border-line bg-panelAlt px-3 py-2">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 text-xs font-semibold leading-5 text-ink">{item.label}</div>
-                <div className="max-w-[45%] shrink-0 text-right text-xs font-semibold leading-5 text-accent">
-                  {item.value}
+          {visibleItems.map((item) => {
+            const content = (
+              <>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 text-xs font-semibold leading-5 text-ink">{item.label}</div>
+                  <div className="max-w-[45%] shrink-0 text-right text-xs font-semibold leading-5 text-accent">
+                    {item.value}
+                  </div>
                 </div>
+                <p className="mt-1 text-xs leading-5 text-muted">{item.detail}</p>
+              </>
+            );
+            const itemClass = "focus-ring rounded-md border border-line bg-panelAlt px-3 py-2 hover:border-accent";
+            if (item.source_url) {
+              return (
+                <a key={item.key} className={itemClass} href={item.source_url} target="_blank" rel="noreferrer">
+                  {content}
+                </a>
+              );
+            }
+            return (
+              <div key={item.key} className={itemClass}>
+                {content}
               </div>
-              <p className="mt-1 text-xs leading-5 text-muted">{item.detail}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : null}
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-3 text-xs leading-5 text-muted">
@@ -394,7 +410,7 @@ function AlternativeSignalCard({ lane }: { lane: AlternativeSignalLane }) {
             target="_blank"
             rel="noreferrer"
           >
-            source
+            {t("source")}
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
         ) : null}

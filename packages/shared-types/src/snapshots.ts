@@ -102,6 +102,7 @@ export interface MetricTile {
   value: string;
   unit?: string;
   source: string;
+  source_url?: string;
   freshness: Freshness;
   delay_label: string;
   updated_at: string;

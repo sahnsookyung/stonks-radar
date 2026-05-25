@@ -1,4 +1,5 @@
 import type { Freshness, Severity } from "@frw/shared-types";
+import { useTranslation } from "react-i18next";
 
 const freshnessClass: Record<Freshness, string> = {
   fresh: "border-success/40 bg-success/10 text-success",
@@ -15,11 +16,13 @@ const severityClass: Record<Severity, string> = {
 };
 
 export function FreshnessBadge({ value }: { value: Freshness }) {
-  return <span className={`badge ${freshnessClass[value]}`}>{value}</span>;
+  const { t } = useTranslation();
+  return <span className={`badge ${freshnessClass[value]}`}>{t(`freshnessStates.${value}`)}</span>;
 }
 
 export function SeverityBadge({ value }: { value: Severity }) {
-  return <span className={`badge ${severityClass[value]}`}>{value}</span>;
+  const { t } = useTranslation();
+  return <span className={`badge ${severityClass[value]}`}>{t(`severityStates.${value}`)}</span>;
 }
 
 export function SourceBadge({ label }: { label: string }) {

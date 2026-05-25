@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-25T14:46:42Z",
-  "stale_after": "2026-05-26T02:46:42Z",
-  "hard_expires_at": "2026-06-01T14:46:42Z",
+  "generated_at": "2026-05-25T15:26:16Z",
+  "stale_after": "2026-05-26T03:26:16Z",
+  "hard_expires_at": "2026-06-01T15:26:16Z",
   "object_type": "sector_page",
   "object_key": "quantum",
-  "content_hash": "sha256:8bcd2f79c6e7dd230e2a1ca24fcc001b02c32fcc5330b2677c6c36bd8b251098",
+  "content_hash": "sha256:e17e03b0a5e6588f33c79db25156fa82ee8b3d9dd846428deb24bb322cc6ffab",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -23,6 +23,18 @@
     },
     {
       "source_key": "world_bank",
+      "policy_version": 1
+    },
+    {
+      "source_key": "gdelt",
+      "policy_version": 1
+    },
+    {
+      "source_key": "google_news_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_rss",
       "policy_version": 1
     }
   ],
@@ -54,8 +66,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-25T14:46:42Z",
-        "published_at": "2026-05-25T14:46:42Z",
+        "occurred_at": "2026-05-25T15:26:16Z",
+        "published_at": "2026-05-25T15:26:16Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -180,8 +192,9 @@
         "source": "FRED / Nasdaq",
         "freshness": "fresh",
         "delay_label": "FRED NASDAQCOM actual through 2026-05-22",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
+        "source_url": "https://fred.stlouisfed.org/series/NASDAQCOM",
         "points": [
           {
             "date": "2026-05-19",
@@ -208,7 +221,7 @@
         "source": "CME / licensed futures feed",
         "freshness": "watch",
         "delay_label": "No always-free licensed futures API is configured",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "coverage_gap"
       }
     ],

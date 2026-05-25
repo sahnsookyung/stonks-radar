@@ -326,7 +326,35 @@ function syncMarkers(
     el.appendChild(dot);
     return new maplibre.Marker({ element: el })
       .setLngLat([event.longitude, event.latitude])
-      .setPopup(new maplibre.Popup({ closeButton: false }).setText(event.title))
+      .setPopup(
+        new maplibre.Popup({
+          closeButton: false,
+          className: "stonks-map-popup",
+          maxWidth: "300px"
+        }).setDOMContent(createEventPopup(event))
+      )
       .addTo(map);
   });
+}
+
+function createEventPopup(event: PublicEvent) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "grid gap-1.5 p-3 text-left";
+
+  const title = document.createElement("div");
+  title.className = "text-sm font-semibold leading-5 text-ink";
+  title.textContent = event.title;
+  wrapper.appendChild(title);
+
+  const summary = document.createElement("p");
+  summary.className = "text-xs leading-5 text-muted";
+  summary.textContent = event.summary || event.why_it_matters;
+  wrapper.appendChild(summary);
+
+  const meta = document.createElement("div");
+  meta.className = "text-[11px] font-semibold uppercase leading-4 text-accent";
+  meta.textContent = `${event.severity} · ${event.evidence_count} evidence`;
+  wrapper.appendChild(meta);
+
+  return wrapper;
 }

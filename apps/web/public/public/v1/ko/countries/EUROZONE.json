@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-25T14:46:42Z",
-  "stale_after": "2026-05-26T02:46:42Z",
-  "hard_expires_at": "2026-06-01T14:46:42Z",
+  "generated_at": "2026-05-25T15:26:16Z",
+  "stale_after": "2026-05-26T03:26:16Z",
+  "hard_expires_at": "2026-06-01T15:26:16Z",
   "object_type": "country_region",
   "object_key": "EUROZONE",
-  "content_hash": "sha256:def4b239b062a03076705605cc62caff27c128812a6968d0350b585f6efd3e25",
+  "content_hash": "sha256:ee35b7b008010e53ad2105aa225b73d2a8f036365fda778a4fc2ea0a090e2cdd",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -23,6 +23,18 @@
     },
     {
       "source_key": "world_bank",
+      "policy_version": 1
+    },
+    {
+      "source_key": "gdelt",
+      "policy_version": 1
+    },
+    {
+      "source_key": "google_news_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_rss",
       "policy_version": 1
     }
   ],
@@ -86,8 +98,8 @@
         "title": "6개 중앙은행 정책회의 일정 시드 적용",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, 브라질 COPOM이 명시적 예상치 라벨과 함께 표시됩니다.",
         "why_it_matters": "캘린더 가시성은 커버리지 공백을 숨기지 않고 오래된 정책 데이터를 드러냅니다.",
-        "occurred_at": "2026-05-25T14:46:42Z",
-        "published_at": "2026-05-25T14:46:42Z",
+        "occurred_at": "2026-05-25T15:26:16Z",
+        "published_at": "2026-05-25T15:26:16Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -186,8 +198,9 @@
         "source": "FRED / Nasdaq",
         "freshness": "fresh",
         "delay_label": "FRED NASDAQCOM 실제값, 2026-05-22까지",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
+        "source_url": "https://fred.stlouisfed.org/series/NASDAQCOM",
         "points": [
           {
             "date": "2026-05-19",
@@ -214,7 +227,7 @@
         "source": "CME / licensed futures feed",
         "freshness": "watch",
         "delay_label": "상시 무료 라이선스 선물 API가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -224,8 +237,9 @@
         "source": "FRED / OECD Korea share prices",
         "freshness": "fresh",
         "delay_label": "FRED SPASTT01KRM661N 실제값, 2026-04-01까지",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
+        "source_url": "https://fred.stlouisfed.org/series/SPASTT01KRM661N",
         "points": [
           {
             "date": "2026-01-01",
@@ -252,7 +266,7 @@
         "source": "KRX / Samsung AM",
         "freshness": "watch",
         "delay_label": "상시 무료 재배포 가능 ETF 피드가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -262,7 +276,7 @@
         "source": "KRX derivatives feed",
         "freshness": "watch",
         "delay_label": "상시 무료 라이선스 파생상품 API가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -272,9 +286,10 @@
         "source": "FRED / EIA",
         "freshness": "fresh",
         "delay_label": "FRED DCOILWTICO 실제값, 2026-05-18까지",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "$",
+        "source_url": "https://fred.stlouisfed.org/series/DCOILWTICO",
         "points": [
           {
             "date": "2026-05-13",
@@ -301,8 +316,9 @@
         "source": "FRED / Cboe",
         "freshness": "fresh",
         "delay_label": "FRED VIXCLS 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
+        "source_url": "https://fred.stlouisfed.org/series/VIXCLS",
         "points": [
           {
             "date": "2026-05-18",
@@ -329,9 +345,10 @@
         "source": "FRED / Federal Reserve H.10",
         "freshness": "fresh",
         "delay_label": "FRED DEXKOUS 실제값, 2026-05-15까지",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "KRW",
+        "source_url": "https://fred.stlouisfed.org/series/DEXKOUS",
         "points": [
           {
             "date": "2026-05-12",
@@ -358,9 +375,10 @@
         "source": "FRED / Federal Reserve H.10",
         "freshness": "fresh",
         "delay_label": "FRED DEXJPUS 실제값, 2026-05-15까지",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "JPY",
+        "source_url": "https://fred.stlouisfed.org/series/DEXJPUS",
         "points": [
           {
             "date": "2026-05-12",
@@ -387,9 +405,10 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS2 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "%",
+        "source_url": "https://fred.stlouisfed.org/series/DGS2",
         "points": [
           {
             "date": "2026-05-18",
@@ -422,9 +441,10 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS3 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "%",
+        "source_url": "https://fred.stlouisfed.org/series/DGS3",
         "points": [
           {
             "date": "2026-05-18",
@@ -457,9 +477,10 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS5 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "%",
+        "source_url": "https://fred.stlouisfed.org/series/DGS5",
         "points": [
           {
             "date": "2026-05-18",
@@ -492,9 +513,10 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS10 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "%",
+        "source_url": "https://fred.stlouisfed.org/series/DGS10",
         "points": [
           {
             "date": "2026-05-18",
@@ -527,9 +549,10 @@
         "source": "FRED / OECD Japan central bank rate",
         "freshness": "fresh",
         "delay_label": "FRED IRSTCB01JPM156N 실제값, 2023-12-01까지",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "%",
+        "source_url": "https://fred.stlouisfed.org/series/IRSTCB01JPM156N",
         "points": [
           {
             "date": "2023-09-01",
@@ -562,7 +585,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "watch",
         "delay_label": "상시 무료 2년 JGB API 출처가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -572,7 +595,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "watch",
         "delay_label": "상시 무료 5년 JGB API 출처가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -582,9 +605,10 @@
         "source": "FRED / OECD Japan 10Y yield",
         "freshness": "fresh",
         "delay_label": "FRED IRLTLT01JPM156N 실제값, 2026-04-01까지",
-        "updated_at": "2026-05-25T14:46:42Z",
+        "updated_at": "2026-05-25T15:26:16Z",
         "coverage_status": "active",
         "unit": "%",
+        "source_url": "https://fred.stlouisfed.org/series/IRLTLT01JPM156N",
         "points": [
           {
             "date": "2026-01-01",

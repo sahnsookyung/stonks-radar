@@ -48,4 +48,15 @@
 		try_files {path} /index.html
 		file_server
 	}
+
+	handle_errors {
+		@missing_js path /assets/*.js
+		handle @missing_js {
+			root * /srv/web
+			header Cache-Control "no-cache, max-age=0, must-revalidate"
+			header Content-Type "application/javascript; charset=utf-8"
+			rewrite * /assets/missing-chunk-reload.js
+			file_server
+		}
+	}
 }
