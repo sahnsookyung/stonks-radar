@@ -93,6 +93,7 @@ export function EventMap({
               id: "countries-fill",
               type: "fill",
               source: "countries",
+              filter: antimeridianSafeCountryFilter(),
               paint: {
                 "fill-color": "#152130",
                 "fill-opacity": 0.92
@@ -128,6 +129,7 @@ export function EventMap({
               id: "countries-outline",
               type: "line",
               source: "countries",
+              filter: antimeridianSafeCountryFilter(),
               paint: {
                 "line-color": "#496a82",
                 "line-width": ["interpolate", ["linear"], ["zoom"], 1, 0.65, 3, 1.1],
@@ -138,7 +140,7 @@ export function EventMap({
               id: "country-hover-fill",
               type: "fill",
               source: "countries",
-              filter: ["==", ["get", "name"], ""],
+              filter: countryHoverFilter(""),
               paint: {
                 "fill-color": "#74d8f3",
                 "fill-opacity": 0.24
@@ -148,7 +150,7 @@ export function EventMap({
               id: "country-hover-outline",
               type: "line",
               source: "countries",
-              filter: ["==", ["get", "name"], ""],
+              filter: countryHoverFilter(""),
               paint: {
                 "line-color": "#9be7ff",
                 "line-width": 1.8,
@@ -248,8 +250,8 @@ function wireCountryHover(
 
   const clearHover = () => {
     if (hoveredCountryRef.current !== null) {
-      map.setFilter("country-hover-fill", ["==", ["get", "name"], ""]);
-      map.setFilter("country-hover-outline", ["==", ["get", "name"], ""]);
+      map.setFilter("country-hover-fill", countryHoverFilter(""));
+      map.setFilter("country-hover-outline", countryHoverFilter(""));
       hoveredCountryRef.current = null;
     }
     map.getCanvas().style.cursor = "";
@@ -277,8 +279,8 @@ function wireCountryHover(
 
     if (hoveredCountryRef.current !== countryName) {
       hoveredCountryRef.current = countryName;
-      map.setFilter("country-hover-fill", ["==", ["get", "name"], countryName]);
-      map.setFilter("country-hover-outline", ["==", ["get", "name"], countryName]);
+      map.setFilter("country-hover-fill", countryHoverFilter(countryName));
+      map.setFilter("country-hover-outline", countryHoverFilter(countryName));
     }
     map.getCanvas().style.cursor = "pointer";
     setHoveredCountry({
@@ -291,6 +293,18 @@ function wireCountryHover(
   eventTarget.addEventListener("pointermove", handleMove);
   eventTarget.addEventListener("click", handleMove);
   eventTarget.addEventListener("mouseleave", clearHover);
+}
+
+function countryHoverFilter(countryName: string) {
+  return [
+    "all",
+    ["==", ["get", "name"], countryName],
+    ["!=", ["get", "crossesAntimeridian"], true]
+  ] as maplibregl.FilterSpecification;
+}
+
+function antimeridianSafeCountryFilter() {
+  return ["!=", ["get", "crossesAntimeridian"], true] as maplibregl.FilterSpecification;
 }
 
 function syncMarkers(

@@ -686,13 +686,13 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         fred_tile("us_3y", "US Treasury 3Y", "미국 국채 3년", "DGS3", "FRED / US Treasury", "FRED DGS3", "%", 2),
         fred_tile("us_5y", "US Treasury 5Y", "미국 국채 5년", "DGS5", "FRED / US Treasury", "FRED DGS5", "%", 2),
         fred_tile("us_10y", "US Treasury 10Y", "미국 국채 10년", "DGS10", "FRED / US Treasury", "FRED DGS10", "%", 2),
-        unsupported_tile(
+        fred_tile(
             "japan_policy_rate",
             "BoJ policy rate",
             "일본은행 정책금리",
-            "Bank of Japan",
-            "BoJ policy-rate API source is not configured",
-            "일본은행 정책금리 API 출처가 설정되지 않았습니다.",
+            "IRSTCB01JPM156N",
+            "FRED / OECD Japan central bank rate",
+            "FRED IRSTCB01JPM156N",
             "%",
         ),
         unsupported_tile(

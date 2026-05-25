@@ -32,8 +32,16 @@ jobs:
       - name: Verify
         run: npm run test:all
 
+      - name: Prepare production snapshot env
+        env:
+          STONKS_PRODUCTION_ENV_B64: ${{ secrets.STONKS_PRODUCTION_ENV_B64 }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$STONKS_PRODUCTION_ENV_B64" | base64 -d > /tmp/stonks-production.env
+          chmod 600 /tmp/stonks-production.env
+
       - name: Build web assets
-        run: npm run build
+        run: STONKS_SNAPSHOT_ENV_FILE=/tmp/stonks-production.env npm run build
 
       - name: Prepare SSH
         env:
@@ -69,10 +77,8 @@ jobs:
         env:
           STONKS_HOST: ${{ secrets.STONKS_HOST }}
           STONKS_USER: ${{ secrets.STONKS_USER }}
-          STONKS_PRODUCTION_ENV_B64: ${{ secrets.STONKS_PRODUCTION_ENV_B64 }}
         run: |
           set -euo pipefail
-          printf '%s' "$STONKS_PRODUCTION_ENV_B64" | base64 -d > /tmp/stonks-production.env
           scp -i ~/.ssh/stonks_deploy_key /tmp/stonks-production.env "$STONKS_USER@$STONKS_HOST:/tmp/stonks-production.env"
           ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
             'sudo install -m 600 -o ubuntu -g ubuntu /tmp/stonks-production.env /opt/stonks-radar/.env && rm /tmp/stonks-production.env'
