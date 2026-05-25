@@ -6,3 +6,4 @@ npm run deploy:preflight
 npm run build
 docker compose -f compose.yaml -f infra/docker-compose.prod.yml build --pull
 docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d
+docker builder prune -af --filter until=168h

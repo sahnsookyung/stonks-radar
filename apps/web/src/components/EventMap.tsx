@@ -198,7 +198,7 @@ export function EventMap({
 
   return (
     <div className={`relative overflow-hidden rounded-md border border-line bg-panel contain-layout ${heightClass}`}>
-      <div ref={containerRef} className="absolute inset-0" />
+      <div ref={containerRef} className="h-full w-full" data-testid="event-map-container" />
       {hoveredCountry ? (
         <div
           className="pointer-events-none absolute z-10 rounded border border-line bg-panel/95 px-3 py-2 text-xs font-semibold text-text shadow-panel"
@@ -213,8 +213,8 @@ export function EventMap({
         </div>
       ) : null}
       {!isReady ? (
-        <div className="absolute inset-0 grid place-items-center bg-panelAlt text-xs font-semibold uppercase text-muted">
-          Loading map
+        <div className="absolute inset-0 grid place-items-center bg-panelAlt text-center text-xs font-semibold uppercase text-muted">
+          <span>{shouldLoad ? "Loading map" : "Map loads on view"}</span>
         </div>
       ) : null}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-panel/90 px-5 py-3 text-xs leading-5 text-muted">
@@ -304,9 +304,12 @@ function syncMarkers(
   markerRefs.current = events.map((event) => {
     const el = document.createElement("button");
     el.type = "button";
-    el.className =
-      "h-4 w-4 rounded-full border-2 border-panel bg-accent shadow-panel focus:outline-none focus:ring-2 focus:ring-accent";
+    el.className = "grid h-11 w-11 place-items-center rounded-full bg-transparent focus:outline-none focus:ring-2 focus:ring-accent";
+    el.setAttribute("aria-label", event.title);
     el.title = event.title;
+    const dot = document.createElement("span");
+    dot.className = "h-4 w-4 rounded-full border-2 border-panel bg-accent shadow-panel";
+    el.appendChild(dot);
     return new maplibre.Marker({ element: el })
       .setLngLat([event.longitude, event.latitude])
       .setPopup(new maplibre.Popup({ closeButton: false }).setText(event.title))

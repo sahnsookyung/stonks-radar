@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import ipaddress
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -43,7 +44,7 @@ def _limit_for_request(request: Request) -> RateLimit | None:
 
 
 async def _allow(limit: RateLimit, request: Request) -> bool:
-    client_host = request.client.host if request.client else "unknown"
+    client_host = _client_identity(request)
     identity = hashlib.sha256(f"{limit.key}:{client_host}".encode()).hexdigest()
     bucket_key = f"frw:rate:{identity}:{int(time.time() // WINDOW_SECONDS)}"
     try:
@@ -61,6 +62,29 @@ def _get_redis_client() -> redis.Redis:
     if _redis_client is None:
         _redis_client = redis.from_url(get_settings().redis_url, encoding="utf-8", decode_responses=True)
     return _redis_client
+
+
+def _client_identity(request: Request) -> str:
+    cf_ip = _valid_ip(request.headers.get("cf-connecting-ip"))
+    if cf_ip:
+        return cf_ip
+
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    for candidate in forwarded_for.split(","):
+        forwarded_ip = _valid_ip(candidate.strip())
+        if forwarded_ip:
+            return forwarded_ip
+
+    return request.client.host if request.client else "unknown"
+
+
+def _valid_ip(value: str | None) -> str | None:
+    if not value:
+        return None
+    try:
+        return str(ipaddress.ip_address(value))
+    except ValueError:
+        return None
 
 
 def _allow_memory(bucket_key: str, limit: int) -> bool:

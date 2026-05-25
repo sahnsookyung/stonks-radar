@@ -19,6 +19,18 @@ body,
   min-height: 100%;
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
+@supports (overflow: clip) {
+  html,
+  body {
+    overflow-x: clip;
+  }
+}
+
 body {
   margin: 0;
   background:
@@ -76,11 +88,11 @@ textarea {
   }
 
   .primary-action {
-    @apply focus-ring inline-flex items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-paper hover:bg-sky disabled:opacity-60;
+    @apply focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-paper hover:bg-sky disabled:opacity-60;
   }
 
   .secondary-action {
-    @apply focus-ring inline-flex items-center justify-center gap-2 rounded-md border border-line bg-panelAlt px-4 py-2.5 text-sm font-semibold text-ink hover:border-accent hover:bg-accentSoft;
+    @apply focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-line bg-panelAlt px-4 py-2.5 text-sm font-semibold text-ink hover:border-accent hover:bg-accentSoft;
   }
 
   .table-surface {

@@ -28,9 +28,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <header className="sticky top-0 z-20 border-b border-line bg-panel/95 shadow-insetLine backdrop-blur">
+      <header className="sticky top-0 z-20 overflow-x-hidden border-b border-line bg-panel/95 shadow-insetLine backdrop-blur [contain:paint]">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 lg:px-6">
-          <Link to="/$locale" params={{ locale }} className="focus-ring flex items-center gap-3">
+          <Link to="/$locale" params={{ locale }} className="focus-ring flex min-h-11 items-center gap-3">
             <div className="grid h-10 w-10 place-items-center rounded-md bg-accent text-paper shadow-insetLine">
               <SearchCheck className="h-5 w-5" />
             </div>
@@ -39,7 +39,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <div className="text-xs text-muted">{t("noAdvice")}</div>
             </div>
           </Link>
-          <nav className="-mx-1 flex max-w-full items-center gap-1 overflow-x-auto px-1 pb-1 text-sm [scrollbar-width:thin] md:flex-wrap md:overflow-visible md:pb-0">
+          <nav className="-mx-1 flex min-w-0 basis-full items-center gap-1 overflow-x-auto px-1 pb-1 text-sm [contain:paint] [scrollbar-width:thin] md:basis-auto md:flex-wrap md:overflow-visible md:pb-0">
             <NavLink to="/$locale" params={{ locale }} icon={<LayoutDashboard />} label={t("dashboard")} />
             <NavLink to="/$locale/map" params={{ locale }} icon={<Map />} label={t("map")} />
             <NavLink to="/$locale/calendar" params={{ locale }} icon={<Activity />} label={t("calendar")} />
@@ -54,32 +54,36 @@ export function Shell({ children }: { children: React.ReactNode }) {
             />
             <Link
               to="/admin/login"
-              className="focus-ring inline-flex h-9 shrink-0 items-center gap-2 rounded-md px-3 text-muted hover:bg-panelAlt hover:text-ink"
+              className="focus-ring inline-flex h-11 shrink-0 items-center gap-2 rounded-md px-3 text-muted hover:bg-panelAlt hover:text-ink"
             >
               <Lock className="h-4 w-4" />
               {t("admin")}
             </Link>
             <a
               href={alternatePath}
-            className="focus-ring inline-flex h-9 shrink-0 items-center rounded-md border border-line bg-panelAlt px-3 font-semibold text-ink hover:border-accent hover:bg-accentSoft"
+              className="focus-ring inline-flex h-11 shrink-0 items-center rounded-md border border-line bg-panelAlt px-3 font-semibold text-ink hover:border-accent hover:bg-accentSoft"
             >
               {other.toUpperCase()}
             </a>
           </nav>
         </div>
-        <div className="mx-auto flex max-w-7xl gap-4 overflow-x-auto px-4 pb-3 text-xs [scrollbar-width:thin] lg:px-6">
-          <span className="whitespace-nowrap font-semibold text-muted">{t("sectors")}</span>
+        <div className="mx-auto flex max-w-7xl min-w-0 gap-3 overflow-x-auto px-4 pb-3 text-xs [contain:paint] [scrollbar-width:thin] lg:px-6">
+          <span className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap font-semibold text-muted">
+            {t("sectors")}
+          </span>
           {sectorLinks.map(([key, labelEn, labelKo]) => (
             <Link
               key={key}
               to="/$locale/sectors/$sectorKey"
               params={{ locale, sectorKey: key }}
-              className="whitespace-nowrap hover:text-accent"
+              className="focus-ring inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap rounded-md px-2 hover:text-accent"
             >
               {locale === "ko" ? labelKo : labelEn}
             </Link>
           ))}
-          <span className="ml-3 whitespace-nowrap font-semibold text-muted">{t("countries")}</span>
+          <span className="ml-2 inline-flex min-h-11 shrink-0 items-center whitespace-nowrap font-semibold text-muted">
+            {t("countries")}
+          </span>
           {countryLinks.map(([key, labelEn, labelKo]) => {
             const route = key === "EUROZONE" ? "/$locale/regions/$objectKey" : "/$locale/countries/$objectKey";
             return (
@@ -87,7 +91,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 key={key}
                 to={route}
                 params={{ locale: asLocale(locale), objectKey: key }}
-                className="whitespace-nowrap hover:text-accent"
+                className="focus-ring inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap rounded-md px-2 hover:text-accent"
               >
                 {locale === "ko" ? labelKo : labelEn}
               </Link>
@@ -98,16 +102,16 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-6">{children}</main>
       <footer className="border-t border-line bg-panel">
         <div className="mx-auto grid max-w-7xl gap-4 px-4 py-6 text-sm text-muted md:grid-cols-4 lg:px-6">
-          <Link to="/$locale/$legalSlug" params={{ locale, legalSlug: "terms" }} className="hover:text-accent">
+          <Link to="/$locale/$legalSlug" params={{ locale, legalSlug: "terms" }} className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent">
             {t("legal.terms")}
           </Link>
-          <Link to="/$locale/$legalSlug" params={{ locale, legalSlug: "privacy" }} className="hover:text-accent">
+          <Link to="/$locale/$legalSlug" params={{ locale, legalSlug: "privacy" }} className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent">
             {t("legal.privacy")}
           </Link>
-          <Link to="/$locale/$legalSlug" params={{ locale, legalSlug: "source-policy" }} className="hover:text-accent">
+          <Link to="/$locale/$legalSlug" params={{ locale, legalSlug: "source-policy" }} className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent">
             {t("legal.source-policy")}
           </Link>
-          <Link to="/$locale/$legalSlug" params={{ locale, legalSlug: "contact" }} className="hover:text-accent">
+          <Link to="/$locale/$legalSlug" params={{ locale, legalSlug: "contact" }} className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent">
             {t("legal.contact")}
           </Link>
         </div>
@@ -131,7 +135,7 @@ function NavLink({
     <Link
       to={to as never}
       params={params as never}
-      className="focus-ring inline-flex h-9 shrink-0 items-center gap-2 rounded-md px-3 text-muted hover:bg-panelAlt hover:text-ink [&.active]:bg-accentSoft [&.active]:font-semibold [&.active]:text-accent"
+      className="focus-ring inline-flex h-11 shrink-0 items-center gap-2 rounded-md px-3 text-muted hover:bg-panelAlt hover:text-ink [&.active]:bg-accentSoft [&.active]:font-semibold [&.active]:text-accent"
     >
       {icon}
       {label}

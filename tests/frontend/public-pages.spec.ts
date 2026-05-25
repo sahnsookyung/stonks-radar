@@ -21,11 +21,17 @@ test("public routes render from snapshots", async ({ page }) => {
 
 test("map countries expose hover feedback", async ({ page }) => {
   await page.goto("/en/map");
+  const mapContainer = page.getByTestId("event-map-container");
+  await expect(mapContainer).toBeVisible({ timeout: 15000 });
+  const containerBox = await mapContainer.boundingBox();
+  expect(containerBox?.height).toBeGreaterThan(500);
   const canvas = page.locator(".maplibregl-canvas").first();
   await expect(canvas).toBeVisible({ timeout: 15000 });
   await expect(page.getByText("Loading map")).toBeHidden({ timeout: 15000 });
+  const canvasBox = await canvas.boundingBox();
+  expect(canvasBox?.height).toBeGreaterThan(500);
   await page.waitForFunction(() => Boolean(window.__stonksRadarMap), null, { timeout: 15000 });
-  const box = await canvas.boundingBox();
+  const box = canvasBox;
   expect(box).not.toBeNull();
   if (!box) return;
 

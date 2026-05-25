@@ -25,7 +25,7 @@ export function EventList({ events }: { events: PublicEvent[] }) {
             {event.source_links.map((source) => (
               <a
                 key={`${event.id}-${source.source_key}`}
-                className="focus-ring inline-flex items-center gap-1 text-accent hover:underline"
+                className="focus-ring inline-flex min-h-11 items-center gap-1 rounded-md px-2 text-accent hover:underline"
                 href={source.url}
                 target="_blank"
                 rel="noreferrer"

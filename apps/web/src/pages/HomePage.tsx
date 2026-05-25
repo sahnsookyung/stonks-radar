@@ -76,32 +76,32 @@ export function HomePage() {
   const priorityEvent = data.top_events[0];
 
   return (
-    <div className="grid gap-7">
+    <div className="grid min-w-0 gap-7">
       <SnapshotBanner snapshot={snapshot} />
-      <section className="flex flex-wrap items-end justify-between gap-5">
-        <div>
+      <section className="flex min-w-0 flex-wrap items-end justify-between gap-5">
+        <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-accent">
             <DatabaseZap className="h-4 w-4" />
             {t("publicSnapshot")}
           </div>
-          <h1 className="mt-3 max-w-4xl text-4xl font-bold leading-tight md:text-5xl">{data.headline}</h1>
-          <p className="mt-3 max-w-4xl text-base leading-7 text-muted md:text-lg md:leading-8">{data.summary}</p>
+          <h1 className="mt-3 max-w-4xl break-words text-4xl font-bold leading-tight md:text-5xl">{data.headline}</h1>
+          <p className="mt-3 max-w-4xl break-words text-base leading-7 text-muted md:text-lg md:leading-8">{data.summary}</p>
         </div>
-        <div className="flex flex-wrap gap-2.5">
+        <div className="flex min-w-0 flex-wrap gap-2.5">
           <FreshnessBadge value={data.snapshot_health.status} />
           <SourceBadge label="snapshot-first" />
           <SourceBadge label="static approved public data" />
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(430px,0.95fr)_minmax(0,1.05fr)]">
-        <section className="order-2 xl:order-1">
+      <section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(430px,0.95fr)_minmax(0,1.05fr)]">
+        <section className="order-2 min-w-0 xl:order-1" aria-labelledby="event-geography-title">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm font-semibold text-accent">
+            <h2 id="event-geography-title" className="flex items-center gap-2 text-sm font-semibold text-accent">
               <MapPinned className="h-4 w-4" />
               Event geography
-            </div>
-            <Link to="/$locale/map" params={{ locale }} className="secondary-action py-1.5">
+            </h2>
+            <Link to="/$locale/map" params={{ locale }} className="secondary-action min-h-11 py-2">
               Map
               <ArrowRight className="h-4 w-4" />
             </Link>
@@ -114,14 +114,14 @@ export function HomePage() {
           />
         </section>
 
-        <div className="order-1 xl:order-2">
+        <div className="order-1 min-w-0 xl:order-2">
           <MarketPulse tiles={marketTiles} />
         </div>
       </section>
 
       <AlternativeSignalRadar lanes={data.alternative_signals} />
 
-      <section className="grid gap-5 lg:grid-cols-[1fr_0.6fr]">
+      <section className="grid min-w-0 gap-5 lg:grid-cols-[1fr_0.6fr]">
         {priorityEvent ? <PriorityEvent event={priorityEvent} /> : null}
         <div className="panel p-5">
           <div className="flex items-center gap-2 font-semibold">
@@ -169,12 +169,12 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[1fr_0.55fr]">
-        <div>
+      <section className="grid min-w-0 gap-4 lg:grid-cols-[1fr_0.55fr]">
+        <div className="min-w-0">
           <h2 className="mb-3 text-xl font-bold">Approved Events</h2>
           <EventList events={data.top_events} />
         </div>
-        <div>
+        <div className="min-w-0">
           <h2 className="mb-3 text-xl font-bold">{t("scenarioBaskets")}</h2>
           <div className="grid gap-3">
             {data.scenario_baskets.map((basket) => (
@@ -222,14 +222,16 @@ function PriorityEvent({ event }: { event: PublicEvent }) {
 }
 
 function MarketPulse({ tiles }: { tiles: MetricTile[] }) {
+  const unavailableTiles = tiles.filter(isUnavailableTile);
+  const activeTiles = tiles.filter((tile) => !isUnavailableTile(tile));
   return (
-    <section>
+    <section aria-labelledby="market-pulse-title">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 text-sm font-semibold text-accent">
+          <h2 id="market-pulse-title" className="flex items-center gap-2 text-sm font-semibold text-accent">
             <TrendingUp className="h-4 w-4" />
             Market pulse
-          </div>
+          </h2>
           <p className="mt-1 text-sm leading-6 text-muted">
             Delayed/reference snapshot until licensed market-data redistribution is configured.
           </p>
@@ -237,7 +239,7 @@ function MarketPulse({ tiles }: { tiles: MetricTile[] }) {
       </div>
       <div className="grid gap-5">
         {marketGroups.map((group) => {
-          const groupTiles = tiles.filter((tile) => group.keys.includes(tile.key));
+          const groupTiles = activeTiles.filter((tile) => group.keys.includes(tile.key));
           if (groupTiles.length === 0) return null;
           const compact = group.title !== "Equity / volatility";
           return (
@@ -251,6 +253,7 @@ function MarketPulse({ tiles }: { tiles: MetricTile[] }) {
             </section>
           );
         })}
+        {unavailableTiles.length ? <CoverageQueue tiles={unavailableTiles} /> : null}
       </div>
     </section>
   );
@@ -277,15 +280,43 @@ function MarketTile({ tile, compact = false }: { tile: MetricTile; compact?: boo
   );
 }
 
+function CoverageQueue({ tiles }: { tiles: MetricTile[] }) {
+  return (
+    <section className="panel p-4" aria-label="Coverage queue">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-xs font-semibold uppercase text-muted">Coverage queue</h3>
+        <SourceBadge label={`${tiles.length} pending`} />
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        {tiles.map((tile) => (
+          <div key={tile.key} className="rounded-md border border-line bg-paper/45 px-3 py-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 truncate text-sm font-semibold text-ink">{tile.label}</div>
+              <FreshnessBadge value={tile.freshness} />
+            </div>
+            <div className="mt-1 truncate text-xs leading-5 text-muted">
+              {tile.source} · {tile.delay_label}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function isUnavailableTile(tile: MetricTile) {
+  return tile.value.trim().toLowerCase() === "not connected" || tile.freshness === "unsupported";
+}
+
 function AlternativeSignalRadar({ lanes }: { lanes: AlternativeSignalLane[] }) {
   return (
-    <section>
+    <section aria-labelledby="alternative-risk-title">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 text-sm font-semibold text-warning">
+          <h2 id="alternative-risk-title" className="flex items-center gap-2 text-sm font-semibold text-warning">
             <Radar className="h-4 w-4" />
             Alternative risk radar
-          </div>
+          </h2>
           <p className="mt-1 max-w-4xl text-sm leading-6 text-muted">
             Short-interest, short-volume, activist short research, weak OSINT, and filing monitors are collated here
             with explicit source strength.
@@ -321,7 +352,12 @@ function AlternativeSignalCard({ lane }: { lane: AlternativeSignalLane }) {
       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs leading-5 text-muted">
         <span>{lane.cadence}</span>
         {lane.source_url ? (
-          <a className="focus-ring inline-flex items-center gap-1 text-accent hover:underline" href={lane.source_url} target="_blank" rel="noreferrer">
+          <a
+            className="focus-ring inline-flex min-h-11 items-center gap-1 rounded-md px-2 text-accent hover:underline"
+            href={lane.source_url}
+            target="_blank"
+            rel="noreferrer"
+          >
             source
             <ExternalLink className="h-3.5 w-3.5" />
           </a>

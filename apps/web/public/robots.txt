@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://stonks.sookyungahn.com/sitemap.xml

@@ -17,6 +17,18 @@ def test_caddy_assets_do_not_use_spa_fallback() -> None:
     assert "max-age=31536000, immutable" in assets_handle
 
 
+def test_public_seo_files_exist_and_are_not_spa_html() -> None:
+    robots = (ROOT / "apps" / "web" / "public" / "robots.txt").read_text()
+    sitemap = (ROOT / "apps" / "web" / "public" / "sitemap.xml").read_text()
+
+    assert "User-agent: *" in robots
+    assert "Sitemap: https://stonks.sookyungahn.com/sitemap.xml" in robots
+    assert "<urlset" in sitemap
+    assert "https://stonks.sookyungahn.com/en" in sitemap
+    assert "<!doctype html>" not in robots.lower()
+    assert "<!doctype html>" not in sitemap.lower()
+
+
 def test_caddy_snapshot_and_html_cache_policies_are_explicit() -> None:
     caddyfile = (ROOT / "infra" / "Caddyfile").read_text()
 
