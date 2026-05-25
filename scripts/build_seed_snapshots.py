@@ -2032,6 +2032,7 @@ def _source_status() -> dict[str, Any]:
         ("bls", "official_api", bls_status, "FREE_ONLY", bls_warning),
         ("eia", "official_api", eia_status, "FREE_ONLY", eia_warning),
         ("sec_edgar", "filing", sec_status, "FREE_ONLY", sec_warning),
+        ("oge_disclosures", "filing", sec_status, "FREE_ONLY", sec_warning),
         ("twelve_data", "market_data", twelve_status, "FREE_ONLY", twelve_warning),
         ("alpha_vantage", "market_data", alpha_status, "FREE_ONLY", alpha_warning),
         ("fmp", "market_data", fmp_status, "FREE_ONLY", fmp_warning),

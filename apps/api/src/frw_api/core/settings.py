@@ -69,6 +69,12 @@ class Settings(BaseSettings):
     short_research_sources: str = "hindenburg,muddy_waters,viceroy,spruce_point,kerrisdale,culper,blue_orca,grizzly"
     pentagon_pizza_base_url: str | None = "https://pentagon.pizza"
     trump_filing_monitored_entities: str = "DJT,Donald J. Trump Revocable Trust"
+    oge_disclosure_api_base_url: str = "https://extapps2.oge.gov/201/Presiden.nsf/API.xsp/v2/rest"
+    oge_disclosure_search_url: str = "https://www.oge.gov/web/oge.nsf/Officials%20Individual%20Disclosures%20Search%20Collection?OpenForm="
+    oge_disclosure_page_size: int = Field(default=1000, ge=100, le=1000)
+    oge_disclosure_max_index_records: int = Field(default=5000, ge=1000, le=20000)
+    trump_disclosure_oge_pdf_limit: int = Field(default=12, ge=0, le=100)
+    trump_disclosure_sec_filing_limit: int = Field(default=50, ge=1, le=250)
     alternative_signal_refresh_seconds: int = Field(default=900, ge=60)
 
     public_api_rate_limit_per_minute: int = 60

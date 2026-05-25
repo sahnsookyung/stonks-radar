@@ -198,6 +198,16 @@ const sourceGroups: { title: string; summary: string; sources: SourceItem[] }[] 
         risk: "low"
       },
       {
+        name: "OGE public financial disclosures",
+        url: "https://www.oge.gov/web/oge.nsf/Officials%20Individual%20Disclosures%20Search%20Collection?OpenForm=",
+        category: "filings",
+        signal: "Donald J. Trump 278e and 278-T public disclosure filings with legal-use restrictions",
+        cadence: "daily; no high-frequency polling because reports are delayed",
+        access: "public portal; contact User-Agent",
+        status: "active",
+        risk: "medium"
+      },
+      {
         name: "NASA FIRMS / port and customs statistics / ADS-B candidates",
         url: "https://firms.modaps.eosdis.nasa.gov/",
         category: "supply-chain OSINT",

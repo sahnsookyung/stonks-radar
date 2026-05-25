@@ -14,6 +14,7 @@ DATA_SOURCES = [
     ("federal_reserve", "Federal Reserve", "official_page", "https://www.federalreserve.gov", "full_text_open", "low"),
     ("sec_edgar", "SEC EDGAR", "filing", "https://data.sec.gov", "full_text_open", "low"),
     ("trump_filings", "Trump-related public filings", "filing", "https://data.sec.gov", "structured_fact_only", "medium"),
+    ("oge_disclosures", "U.S. Office of Government Ethics public disclosures", "filing", "https://www.oge.gov", "structured_fact_only", "medium"),
     ("eia", "U.S. Energy Information Administration", "official_api", "https://api.eia.gov", "structured_fact_only", "low"),
     ("ecb", "ECB Data Portal", "official_api", "https://data-api.ecb.europa.eu", "structured_fact_only", "low"),
     ("world_bank", "World Bank", "official_api", "https://api.worldbank.org/v2", "structured_fact_only", "low"),

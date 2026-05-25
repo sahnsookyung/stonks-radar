@@ -46,6 +46,14 @@ The app runs with seeded snapshots without provider credentials. The following a
 Missing credentials are reported through provider budgets/status and keep the public snapshot app usable.
 Provider free-tier ceilings and refresh schedules are tracked in `docs/provider_rate_limits.md`.
 
+## OGE Public Disclosure Use Warning
+
+OGE public financial disclosure reports may not be obtained or used for unlawful
+purposes, commercial purposes other than news/media dissemination to the public,
+credit-rating purposes, or solicitation purposes. The Trump-family filings tab is
+designed as public-interest research, journalism, and accountability tooling, not
+as a paid trading-signal or copy-trading product.
+
 ## Main Commands
 
 ```bash

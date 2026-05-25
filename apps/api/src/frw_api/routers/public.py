@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Path as ApiPath, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -11,6 +11,12 @@ from frw_api.services.market_data import (
     MarketDataInputError,
     MarketDataUnavailable,
     fetch_market_history,
+)
+from frw_api.services.trump_disclosures import (
+    disclosure_summary_response,
+    entity_insiders_response,
+    filings_response,
+    transactions_response,
 )
 
 router = APIRouter()
@@ -51,6 +57,45 @@ def status(db: Session = Depends(get_db)):
 @router.get("/snapshot-manifest-proxy")
 def snapshot_manifest_proxy():
     return {"manifest_url": "/public/latest/manifest.json", "mode": "local_oci"}
+
+
+@router.get("/trump-disclosures/summary")
+def trump_disclosures_summary(
+    limit: int = Query(default=50, ge=1, le=250),
+    db: Session = Depends(get_db),
+):
+    return disclosure_summary_response(db, limit=limit)
+
+
+@router.get("/filings")
+def filings(
+    person: str | None = Query(default=None, min_length=2, max_length=120),
+    ticker: str | None = Query(default=None, min_length=1, max_length=16),
+    source: str | None = Query(default=None, pattern="^(OGE|SEC|oge|sec)$"),
+    limit: int = Query(default=100, ge=1, le=250),
+    db: Session = Depends(get_db),
+):
+    return filings_response(db, person=person, ticker=ticker, source=source, limit=limit)
+
+
+@router.get("/transactions")
+def transactions(
+    person: str | None = Query(default=None, min_length=2, max_length=120),
+    ticker: str | None = Query(default=None, min_length=1, max_length=16),
+    source: str | None = Query(default=None, pattern="^(OGE|SEC|oge|sec)$"),
+    limit: int = Query(default=100, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
+    return transactions_response(db, person=person, ticker=ticker, source=source, limit=limit)
+
+
+@router.get("/entities/{ticker}/insiders")
+def entity_insiders(
+    ticker: str = ApiPath(pattern=r"^[A-Za-z0-9.\-]{1,16}$"),
+    limit: int = Query(default=100, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
+    return entity_insiders_response(db, ticker=ticker, limit=limit)
 
 
 @router.get("/market/history")

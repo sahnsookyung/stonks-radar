@@ -535,6 +535,30 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
         "https://www.sec.gov/edgar/searchedgar/accessing-edgar-data.htm",
     ),
     _limit(
+        "sec_edgar",
+        "filing_document",
+        (_rule("request", 1, 5, "10 requests/second", "5 requests/second"),),
+        "https://www.sec.gov/edgar/searchedgar/accessing-edgar-data.htm",
+    ),
+    _limit(
+        "sec_edgar",
+        "ticker_map",
+        (_rule("request", 60, 1, "periodically updated ticker file", "1 request/minute"),),
+        "https://www.sec.gov/edgar/searchedgar/accessing-edgar-data.htm",
+    ),
+    _limit(
+        "oge_disclosures",
+        "index",
+        (_rule("request", 2, 1, "undocumented endpoint; be polite", "1 request/2 seconds"),),
+        "https://www.oge.gov/web/oge.nsf/Officials%20Individual%20Disclosures%20Search%20Collection?OpenForm=",
+    ),
+    _limit(
+        "oge_disclosures",
+        "document_pdf",
+        (_rule("request", 2, 1, "undocumented endpoint; be polite", "1 request/2 seconds"),),
+        "https://www.oge.gov/web/oge.nsf/Officials%20Individual%20Disclosures%20Search%20Collection?OpenForm=",
+    ),
+    _limit(
         "finra",
         "oauth_token",
         (_rule("request", 60, 30, "platform throttling applies", "30 requests/minute"),),

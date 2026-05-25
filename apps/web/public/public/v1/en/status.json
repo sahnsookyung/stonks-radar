@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-25T16:21:12Z",
-  "stale_after": "2026-05-26T04:21:12Z",
-  "hard_expires_at": "2026-06-01T16:21:12Z",
+  "generated_at": "2026-05-25T17:10:08Z",
+  "stale_after": "2026-05-26T05:10:08Z",
+  "hard_expires_at": "2026-06-01T17:10:08Z",
   "object_type": "source_status",
   "object_key": "status",
-  "content_hash": "sha256:1bc24ec52e675bb62a269c01f4f7d030b0f74b57de48eab2e03e462f0928ac98",
+  "content_hash": "sha256:0906b79c03e0c49e5fdad286c8d66617a1d05b08cd8acb9f564bb8850360a0e9",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -69,6 +69,14 @@
       },
       {
         "provider_key": "sec_edgar",
+        "provider_type": "filing",
+        "status": "ready",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": null
+      },
+      {
+        "provider_key": "oge_disclosures",
         "provider_type": "filing",
         "status": "ready",
         "mode": "FREE_ONLY",
