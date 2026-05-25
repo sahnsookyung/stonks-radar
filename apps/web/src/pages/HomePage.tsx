@@ -108,7 +108,7 @@ export function HomePage() {
           </div>
           <EventMap
             events={data.top_events}
-            heightClass="h-[370px] md:h-[520px]"
+            heightClass="h-[500px] md:h-[680px] xl:h-[720px]"
             footer="Approved event geography. Boundaries are vendored locally; markers use reviewed public snapshot events."
             loadStrategy="idle-visible"
           />

@@ -66,7 +66,11 @@ export function MapPage() {
           </select>
         </div>
       </section>
-      <EventMap events={events} loadStrategy="idle-visible" />
+      <EventMap
+        events={events}
+        heightClass="h-[560px] min-h-[560px] md:h-[720px] xl:h-[calc(100vh-260px)]"
+        loadStrategy="idle-visible"
+      />
       <EventList events={events} />
     </div>
   );

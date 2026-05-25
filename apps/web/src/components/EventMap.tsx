@@ -11,7 +11,7 @@ interface EventMapProps {
 
 export function EventMap({
   events,
-  heightClass = "h-[420px]",
+  heightClass = "h-[540px] md:h-[680px]",
   footer = "Static approved events only. Base boundaries: Natural Earth Admin 0, 1:110m, vendored as local GeoJSON.",
   loadStrategy = "visible"
 }: EventMapProps) {
