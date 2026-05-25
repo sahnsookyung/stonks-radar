@@ -4,6 +4,7 @@ import httpx
 
 from frw_api.adapters.base import AdapterResult
 from frw_api.core.settings import get_settings
+from frw_api.services.provider_limits import provider_request
 
 
 class SECEdgarAdapter:
@@ -14,8 +15,13 @@ class SECEdgarAdapter:
         headers = {"User-Agent": settings.sec_user_agent}
         padded = cik.zfill(10)
         async with httpx.AsyncClient(timeout=30, headers=headers) as client:
-            response = await client.get(f"https://data.sec.gov/submissions/CIK{padded}.json")
-            response.raise_for_status()
+            response = await provider_request(
+                client,
+                "GET",
+                f"https://data.sec.gov/submissions/CIK{padded}.json",
+                provider_key="sec_edgar",
+                endpoint_key="submissions",
+            )
             data = response.json()
         filings = data.get("filings", {}).get("recent", {})
         documents = []

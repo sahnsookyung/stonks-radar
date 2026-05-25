@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 from collections import OrderedDict
 from copy import deepcopy
 import re
@@ -10,8 +9,14 @@ from datetime import date
 from typing import Any
 
 import httpx
+from sqlalchemy.orm import Session
 
 from frw_api.core.settings import get_settings
+from frw_api.services.provider_limits import (
+    ERROR_RATE_LIMITED,
+    ProviderLimitError,
+    provider_request,
+)
 
 SYMBOL_RE = re.compile(r"^[A-Z0-9][A-Z0-9.\-:]{0,19}$")
 TRADING_DAYS_PER_YEAR = 252
@@ -47,6 +52,7 @@ async def fetch_market_history(
     start: date,
     end: date,
     transport: httpx.AsyncBaseTransport | None = None,
+    db: Session | None = None,
 ) -> dict[str, Any]:
     settings = get_settings()
     normalized = _normalize_symbols(symbols, settings.market_data_max_symbols)
@@ -75,7 +81,13 @@ async def fetch_market_history(
             failures.append(f"{provider}: missing API key")
             continue
         try:
-            series = await _fetch_provider(provider, key, normalized, start, end, transport)
+            series = await _fetch_provider(provider, key, normalized, start, end, transport, db)
+        except ProviderLimitError as exc:
+            detail = exc.error_class
+            if exc.retry_after_seconds is not None:
+                detail = f"{detail}; retry after {exc.retry_after_seconds}s"
+            failures.append(f"{provider}: {detail}")
+            continue
         except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
             failures.append(f"{provider}: {exc}")
             continue
@@ -168,6 +180,7 @@ async def _fetch_provider(
     start: date,
     end: date,
     transport: httpx.AsyncBaseTransport | None,
+    db: Session | None,
 ) -> list[dict[str, Any]]:
     settings = get_settings()
     timeout = httpx.Timeout(settings.market_data_timeout_seconds)
@@ -176,8 +189,10 @@ async def _fetch_provider(
         max_keepalive_connections=max(1, min(len(symbols), settings.market_data_max_symbols)),
     )
     async with httpx.AsyncClient(timeout=timeout, limits=limits, transport=transport) as client:
-        tasks = [_fetch_symbol(client, provider, key, symbol, start, end) for symbol in symbols]
-        return await asyncio.gather(*tasks)
+        series = []
+        for symbol in symbols:
+            series.append(await _fetch_symbol(client, provider, key, symbol, start, end, db))
+        return series
 
 
 async def _fetch_symbol(
@@ -187,13 +202,14 @@ async def _fetch_symbol(
     symbol: str,
     start: date,
     end: date,
+    db: Session | None,
 ) -> dict[str, Any]:
     if provider == "twelve_data":
-        points = await _fetch_twelve_data(client, key, symbol, start, end)
+        points = await _fetch_twelve_data(client, key, symbol, start, end, db)
     elif provider == "alpha_vantage":
-        points = await _fetch_alpha_vantage(client, key, symbol, start, end)
+        points = await _fetch_alpha_vantage(client, key, symbol, start, end, db)
     elif provider == "fmp":
-        points = await _fetch_fmp(client, key, symbol, start, end)
+        points = await _fetch_fmp(client, key, symbol, start, end, db)
     else:
         raise ValueError(f"unsupported market-data provider {provider}")
     return {"symbol": symbol, "points": [point.__dict__ for point in points]}
@@ -205,9 +221,15 @@ async def _fetch_twelve_data(
     symbol: str,
     start: date,
     end: date,
+    db: Session | None,
 ) -> list[HistoryPoint]:
-    response = await client.get(
+    response = await provider_request(
+        client,
+        "GET",
         "https://api.twelvedata.com/time_series",
+        provider_key="twelve_data",
+        endpoint_key="daily_prices",
+        db=db,
         params={
             "symbol": symbol,
             "interval": "1day",
@@ -218,10 +240,18 @@ async def _fetch_twelve_data(
             "apikey": key,
         },
     )
-    response.raise_for_status()
     payload = response.json()
     if payload.get("status") == "error":
-        raise ValueError(str(payload.get("message", "Twelve Data error")))
+        message = str(payload.get("message", "Twelve Data error"))
+        if "credit" in message.lower() or "rate" in message.lower():
+            raise ProviderLimitError(
+                message,
+                error_class=ERROR_RATE_LIMITED,
+                provider_key="twelve_data",
+                endpoint_key="daily_prices",
+                retry_after_seconds=60,
+            )
+        raise ValueError(message)
     values = payload.get("values")
     if not isinstance(values, list):
         raise ValueError("Twelve Data returned no values")
@@ -234,9 +264,15 @@ async def _fetch_alpha_vantage(
     symbol: str,
     start: date,
     end: date,
+    db: Session | None,
 ) -> list[HistoryPoint]:
-    response = await client.get(
+    response = await provider_request(
+        client,
+        "GET",
         "https://www.alphavantage.co/query",
+        provider_key="alpha_vantage",
+        endpoint_key="daily_prices",
+        db=db,
         params={
             "function": "TIME_SERIES_DAILY",
             "symbol": symbol,
@@ -244,10 +280,18 @@ async def _fetch_alpha_vantage(
             "apikey": key,
         },
     )
-    response.raise_for_status()
     payload = response.json()
     if "Note" in payload or "Information" in payload or "Error Message" in payload:
-        raise ValueError(str(payload.get("Note") or payload.get("Information") or payload.get("Error Message")))
+        message = str(payload.get("Note") or payload.get("Information") or payload.get("Error Message"))
+        if "rate limit" in message.lower() or "frequency" in message.lower():
+            raise ProviderLimitError(
+                message,
+                error_class=ERROR_RATE_LIMITED,
+                provider_key="alpha_vantage",
+                endpoint_key="daily_prices",
+                retry_after_seconds=86_400,
+            )
+        raise ValueError(message)
     rows = payload.get("Time Series (Daily)")
     if not isinstance(rows, dict):
         raise ValueError("Alpha Vantage returned no daily time series")
@@ -265,12 +309,18 @@ async def _fetch_fmp(
     symbol: str,
     start: date,
     end: date,
+    db: Session | None,
 ) -> list[HistoryPoint]:
-    response = await client.get(
+    response = await provider_request(
+        client,
+        "GET",
         "https://financialmodelingprep.com/stable/historical-price-eod/full",
+        provider_key="fmp",
+        endpoint_key="daily_prices",
+        db=db,
+        units={"request": 1, "byte": 500_000},
         params={"symbol": symbol, "from": start.isoformat(), "to": end.isoformat(), "apikey": key},
     )
-    response.raise_for_status()
     payload = response.json()
     rows = payload.get("historical") if isinstance(payload, dict) else payload
     if not isinstance(rows, list):

@@ -8,6 +8,7 @@ import time
 
 from frw_api.db.session import SessionLocal
 from frw_api.services.job_queue import claim_job, complete_job, fail_job, heartbeat, reap_expired_leases
+from frw_api.services.provider_limits import ProviderLimitError
 from frw_worker.tasks import handle_job
 
 logging.basicConfig(level=logging.INFO)
@@ -37,13 +38,24 @@ async def main() -> None:
             result = await handle_job(job, beat)
         except Exception as exc:  # noqa: BLE001 - worker must classify unknown failures
             logger.exception("job_failed id=%s", job["id"])
+            retry_after_seconds = None
+            status_override = None
+            retryable = True
+            error_class = exc.__class__.__name__
+            if isinstance(exc, ProviderLimitError):
+                error_class = exc.error_class
+                retry_after_seconds = exc.retry_after_seconds
+                retryable = exc.retryable
+                status_override = "quota_wait" if exc.quota_related else None
             with SessionLocal() as db:
                 fail_job(
                     db,
                     job_id=str(job["id"]),
-                    error_class=exc.__class__.__name__,
+                    error_class=error_class,
                     error_message=str(exc),
-                    retryable=True,
+                    retryable=retryable,
+                    retry_after_seconds=retry_after_seconds,
+                    status_override=status_override,
                 )
                 db.commit()
         else:

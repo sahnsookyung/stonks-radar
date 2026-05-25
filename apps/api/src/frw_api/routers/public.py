@@ -31,6 +31,12 @@ def status(db: Session = Depends(get_db)):
     metrics = {
         "snapshot_age_minutes": _scalar(db, "select extract(epoch from now() - max(generated_at))/60 from publication_snapshot", 0),
         "dead_letter_jobs": _scalar(db, "select count(*) from job_queue where status = 'dead_letter'", 0),
+        "quota_wait_jobs": _scalar(db, "select count(*) from job_queue where status = 'quota_wait'", 0),
+        "open_provider_circuits": _scalar(
+            db,
+            "select count(*) from provider_runtime_state where circuit_state = 'open'",
+            0,
+        ),
         "stale_series_count": _scalar(db, "select count(*) from latest_series_state where freshness_status = 'stale'", 0),
         "conflict_count": _scalar(db, "select count(*) from latest_series_state where conflict_present = true", 0),
     }
@@ -52,12 +58,16 @@ async def market_history(
     symbols: str = Query(min_length=1, max_length=240),
     start: date = Query(),
     end: date = Query(),
+    db: Session = Depends(get_db),
 ):
     try:
-        return await fetch_market_history(symbols=[symbols], start=start, end=end)
+        payload = await fetch_market_history(symbols=[symbols], start=start, end=end, db=db)
+        db.commit()
+        return payload
     except MarketDataInputError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except MarketDataUnavailable as exc:
+        db.commit()
         raise HTTPException(
             status_code=503,
             detail={"message": str(exc), "providers": exc.provider_status},

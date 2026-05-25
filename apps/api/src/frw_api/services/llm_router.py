@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from frw_api.core.settings import get_settings
 from frw_api.services.provider_budget import provider_is_available, record_usage
+from frw_api.services.provider_limits import ProviderLimitError, provider_request
 
 InputClass = Literal[
     "PUBLIC_FACTS_ONLY",
@@ -60,6 +61,10 @@ class LLMRouter:
             return cached
         try:
             output = await self._call_provider(profile, messages)
+        except ProviderLimitError as exc:
+            status = "quota_failed" if exc.quota_related else "provider_failed"
+            self._log_invocation(task, profile, messages, None, status, cache_hit=False, count_usage=False)
+            raise LLMRoutingError(f"Provider failed and task requires manual review: {exc}") from exc
         except Exception as exc:
             self._log_invocation(task, profile, messages, None, "provider_failed", cache_hit=False)
             raise LLMRoutingError(f"Provider failed and task requires manual review: {exc}") from exc
@@ -135,6 +140,7 @@ class LLMRouter:
         model = profile["model_key"]
         if provider == "local":
             return await self._call_openai_compatible(
+                provider,
                 self.settings.local_llm_base_url or "http://localhost:11434",
                 None,
                 model,
@@ -150,13 +156,16 @@ class LLMRouter:
             api_key = keys[provider]
             if not api_key:
                 raise LLMRoutingError(f"{provider} credential is not configured")
+            if provider == "openrouter" and not self.settings.paid_usage_allowed:
+                if not (model.endswith(":free") or model == "openrouter/free"):
+                    raise LLMRoutingError("OpenRouter requires a free model while paid usage is disabled")
             base_urls = {
                 "openrouter": "https://openrouter.ai/api/v1",
                 "groq": "https://api.groq.com/openai/v1",
                 "mistral": "https://api.mistral.ai/v1",
                 "cerebras": "https://api.cerebras.ai/v1",
             }
-            return await self._call_openai_compatible(base_urls[provider], api_key, model, messages)
+            return await self._call_openai_compatible(provider, base_urls[provider], api_key, model, messages)
         if provider == "gemini":
             if not self.settings.gemini_api_key:
                 raise LLMRoutingError("Gemini credential is not configured")
@@ -164,22 +173,40 @@ class LLMRouter:
         raise LLMRoutingError(f"Unsupported LLM provider: {provider}")
 
     async def _call_openai_compatible(
-        self, base_url: str, api_key: str | None, model: str, messages: list[dict[str, str]]
+        self,
+        provider: str,
+        base_url: str,
+        api_key: str | None,
+        model: str,
+        messages: list[dict[str, str]],
     ) -> dict[str, Any]:
         headers = {"Content-Type": "application/json"}
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
         async with httpx.AsyncClient(timeout=60) as client:
-            response = await client.post(
-                f"{base_url.rstrip('/')}/chat/completions",
-                headers=headers,
-                json={
+            kwargs = {
+                "headers": headers,
+                "json": {
                     "model": model,
                     "messages": messages,
                     "response_format": {"type": "json_object"},
                     "temperature": 0.1,
                 },
-            )
+            }
+            if provider == "local":
+                response = await client.post(f"{base_url.rstrip('/')}/chat/completions", **kwargs)
+            else:
+                response = await provider_request(
+                    client,
+                    "POST",
+                    f"{base_url.rstrip('/')}/chat/completions",
+                    provider_key=provider,
+                    endpoint_key="chat_completions",
+                    db=self.db,
+                    units={"request": 1, "token": _estimate_tokens(messages)},
+                    partition_key="llm_router",
+                    **kwargs,
+                )
             response.raise_for_status()
             data = response.json()
         content = data["choices"][0]["message"]["content"]
@@ -192,14 +219,20 @@ class LLMRouter:
             f"?key={self.settings.gemini_api_key}"
         )
         async with httpx.AsyncClient(timeout=60) as client:
-            response = await client.post(
+            response = await provider_request(
+                client,
+                "POST",
                 url,
+                provider_key="gemini",
+                endpoint_key="chat_completions",
+                db=self.db,
+                units={"request": 1, "token": _estimate_text_tokens(prompt)},
+                partition_key="llm_router",
                 json={
                     "contents": [{"parts": [{"text": prompt}]}],
                     "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1},
                 },
             )
-            response.raise_for_status()
             data = response.json()
         text_payload = data["candidates"][0]["content"]["parts"][0]["text"]
         return json.loads(text_payload)
@@ -322,4 +355,21 @@ class LLMRouter:
             },
         )
         if count_usage:
-            record_usage(self.db, provider_key=profile["provider_key"], unit="invocation", quantity=1)
+            record_usage(
+                self.db,
+                provider_key=profile["provider_key"],
+                endpoint_key="chat_completions",
+                partition_key="llm_router",
+                unit="invocation",
+                quantity=1,
+                status=status,
+                details={"cache_hit": cache_hit},
+            )
+
+
+def _estimate_tokens(messages: list[dict[str, str]]) -> int:
+    return max(1, sum(_estimate_text_tokens(message.get("content", "")) for message in messages) + 2048)
+
+
+def _estimate_text_tokens(text: str) -> int:
+    return max(1, len(text) // 4)

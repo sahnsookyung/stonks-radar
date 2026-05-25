@@ -68,7 +68,7 @@ def claim_job(db: Session, *, worker_id: str, lease_seconds: int = 120) -> dict[
                   select j.id
                   from job_queue j
                   left join job_queue dep on dep.id = j.depends_on_job_id
-                  where j.status in ('queued','retry_wait')
+                  where j.status in ('queued','retry_wait','quota_wait')
                     and j.run_after <= now()
                     and (j.depends_on_job_id is null or dep.status = 'succeeded')
                     and not exists (
@@ -160,6 +160,8 @@ def fail_job(
     error_class: str,
     error_message: str,
     retryable: bool = True,
+    retry_after_seconds: int | None = None,
+    status_override: str | None = None,
 ) -> None:
     row = db.execute(
         text("select attempt_count, max_attempts, backoff_seconds from job_queue where id = :job_id"),
@@ -167,9 +169,13 @@ def fail_job(
     ).mappings().one()
     exhausted = row["attempt_count"] >= row["max_attempts"]
     if retryable and not exhausted:
-        jitter = random.randint(0, max(1, row["backoff_seconds"]))
-        status = "retry_wait"
-        run_after = datetime.now(timezone.utc) + timedelta(seconds=row["backoff_seconds"] * 2 + jitter)
+        if retry_after_seconds is not None:
+            status = status_override or "retry_wait"
+            run_after = datetime.now(timezone.utc) + timedelta(seconds=max(1, retry_after_seconds))
+        else:
+            jitter = random.randint(0, max(1, row["backoff_seconds"]))
+            status = status_override or "retry_wait"
+            run_after = datetime.now(timezone.utc) + timedelta(seconds=row["backoff_seconds"] * 2 + jitter)
     else:
         status = "dead_letter" if exhausted else "failed_permanent"
         run_after = datetime.now(timezone.utc)

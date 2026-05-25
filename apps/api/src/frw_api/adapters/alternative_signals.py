@@ -12,6 +12,7 @@ from selectolax.parser import HTMLParser
 from frw_api.adapters.base import AdapterResult, empty_result
 from frw_api.core.settings import get_settings
 from frw_api.services.market_data import SYMBOL_RE
+from frw_api.services.provider_limits import provider_request
 
 DEFAULT_SHORT_RESEARCH_SOURCES = {
     "hindenburg": "https://hindenburgresearch.com/",
@@ -191,8 +192,13 @@ class TrumpFilingsAdapter:
             for label, cik in targets.items():
                 padded = str(cik).zfill(10)
                 try:
-                    response = await client.get(f"https://data.sec.gov/submissions/CIK{padded}.json")
-                    response.raise_for_status()
+                    response = await provider_request(
+                        client,
+                        "GET",
+                        f"https://data.sec.gov/submissions/CIK{padded}.json",
+                        provider_key="sec_edgar",
+                        endpoint_key="submissions",
+                    )
                 except httpx.HTTPError as exc:
                     unsupported.append(f"{label}: {exc}")
                     continue
@@ -219,8 +225,13 @@ async def _get_finra_rows(
     rows: list[dict[str, Any]] = []
     async with httpx.AsyncClient(timeout=20, transport=transport) as client:
         for payload in query_payloads:
-            response = await client.post(
+            response = await provider_request(
+                client,
+                "POST",
                 f"{settings.finra_api_base_url.rstrip('/')}/data/group/{group}/name/{dataset}",
+                provider_key="finra",
+                endpoint_key="query_sync",
+                units={"request": 1, "record": request_limit, "byte": 3_000_000},
                 json=payload,
                 headers={
                     "Accept": "application/json",
@@ -228,7 +239,6 @@ async def _get_finra_rows(
                     "Content-Type": "application/json",
                 },
             )
-            response.raise_for_status()
             rows.extend(_finra_rows(response.json()))
             if not symbols and len(rows) >= request_limit:
                 break
@@ -252,11 +262,14 @@ async def _finra_bearer_token(*, transport: httpx.AsyncBaseTransport | None) -> 
     credentials = f"{settings.finra_api_client_id}:{settings.finra_api_client_secret}".encode()
     authorization = base64.b64encode(credentials).decode()
     async with httpx.AsyncClient(timeout=20, transport=transport) as client:
-        response = await client.post(
+        response = await provider_request(
+            client,
+            "POST",
             settings.finra_oauth_token_url,
+            provider_key="finra",
+            endpoint_key="oauth_token",
             headers={"Accept": "application/json", "Authorization": f"Basic {authorization}"},
         )
-        response.raise_for_status()
         payload = response.json()
     token = str(payload.get("access_token") or "")
     if not token:

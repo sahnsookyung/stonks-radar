@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+from typing import Any
+
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -49,20 +52,46 @@ def record_usage(
     quantity: float,
     estimated_cost_usd: float = 0,
     job_id: str | None = None,
+    endpoint_key: str | None = None,
+    partition_key: str | None = None,
+    status: str = "succeeded",
+    error_class: str | None = None,
+    idempotency_key: str | None = None,
+    reserved_units: dict[str, float] | None = None,
+    actual_units: dict[str, float] | None = None,
+    retry_after_seconds: int | None = None,
+    details: dict[str, Any] | None = None,
 ) -> None:
     db.execute(
         text(
             """
-            insert into provider_usage_event(provider_key, unit, quantity, estimated_cost_usd, job_id)
-            values (:provider_key, :unit, :quantity, :estimated_cost_usd, :job_id)
+            insert into provider_usage_event(
+              provider_key, endpoint_key, partition_key, status, error_class, idempotency_key,
+              unit, quantity, estimated_cost_usd, job_id, reserved_units, actual_units,
+              retry_after_seconds, details
+            )
+            values (
+              :provider_key, :endpoint_key, :partition_key, :status, :error_class, :idempotency_key,
+              :unit, :quantity, :estimated_cost_usd, :job_id, cast(:reserved_units as jsonb),
+              cast(:actual_units as jsonb), :retry_after_seconds, cast(:details as jsonb)
+            )
             """
         ),
         {
             "provider_key": provider_key,
+            "endpoint_key": endpoint_key,
+            "partition_key": partition_key,
+            "status": status,
+            "error_class": error_class,
+            "idempotency_key": idempotency_key,
             "unit": unit,
             "quantity": quantity,
             "estimated_cost_usd": estimated_cost_usd,
             "job_id": job_id,
+            "reserved_units": json.dumps(reserved_units or {}),
+            "actual_units": json.dumps(actual_units or {}),
+            "retry_after_seconds": retry_after_seconds,
+            "details": json.dumps(details or {}),
         },
     )
     db.execute(

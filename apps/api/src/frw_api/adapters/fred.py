@@ -4,6 +4,7 @@ import httpx
 
 from frw_api.adapters.base import AdapterResult, empty_result
 from frw_api.core.settings import get_settings
+from frw_api.services.provider_limits import provider_request
 
 
 class FREDAdapter:
@@ -21,11 +22,14 @@ class FREDAdapter:
         if observation_start:
             params["observation_start"] = observation_start
         async with httpx.AsyncClient(timeout=30) as client:
-            response = await client.get(
+            response = await provider_request(
+                client,
+                "GET",
                 "https://api.stlouisfed.org/fred/series/observations",
+                provider_key="fred",
+                endpoint_key="series_observations",
                 params=params,
             )
-            response.raise_for_status()
             data = response.json()
         observations = [
             {

@@ -4,6 +4,7 @@ import httpx
 from selectolax.parser import HTMLParser
 
 from frw_api.adapters.base import AdapterResult
+from frw_api.services.provider_limits import provider_request
 
 
 class FederalReserveCalendarAdapter:
@@ -12,8 +13,13 @@ class FederalReserveCalendarAdapter:
 
     async def fetch(self) -> AdapterResult:
         async with httpx.AsyncClient(timeout=30, follow_redirects=False) as client:
-            response = await client.get(self.url)
-            response.raise_for_status()
+            response = await provider_request(
+                client,
+                "GET",
+                self.url,
+                provider_key="federal_reserve",
+                endpoint_key="fomc_calendar",
+            )
         parser = HTMLParser(response.text)
         releases = []
         for node in parser.css("div.panel.panel-default"):

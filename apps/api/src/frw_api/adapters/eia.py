@@ -4,6 +4,7 @@ import httpx
 
 from frw_api.adapters.base import AdapterResult, empty_result
 from frw_api.core.settings import get_settings
+from frw_api.services.provider_limits import provider_request
 
 
 class EIAAdapter:
@@ -15,8 +16,15 @@ class EIAAdapter:
             return empty_result(self.source_key, route, ["EIA_API_KEY is required"])
         query = {"api_key": settings.eia_api_key, **(params or {})}
         async with httpx.AsyncClient(timeout=30) as client:
-            response = await client.get(f"https://api.eia.gov/v2/{route.lstrip('/')}", params=query)
-            response.raise_for_status()
+            response = await provider_request(
+                client,
+                "GET",
+                f"https://api.eia.gov/v2/{route.lstrip('/')}",
+                provider_key="eia",
+                endpoint_key="v2_data",
+                units={"request": 1, "record": float(query.get("length", 5_000) or 5_000)},
+                params=query,
+            )
             data = response.json()
         observations = data.get("response", {}).get("data", [])
         return AdapterResult(self.source_key, f"eia_{route}", observations, [], [], [])

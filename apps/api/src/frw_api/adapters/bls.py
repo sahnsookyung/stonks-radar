@@ -4,6 +4,7 @@ import httpx
 
 from frw_api.adapters.base import AdapterResult
 from frw_api.core.settings import get_settings
+from frw_api.services.provider_limits import provider_request
 
 
 class BLSAdapter:
@@ -19,8 +20,14 @@ class BLSAdapter:
         if settings.bls_api_key:
             payload["registrationkey"] = settings.bls_api_key
         async with httpx.AsyncClient(timeout=30) as client:
-            response = await client.post("https://api.bls.gov/publicAPI/v2/timeseries/data/", json=payload)
-            response.raise_for_status()
+            response = await provider_request(
+                client,
+                "POST",
+                "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+                provider_key="bls",
+                endpoint_key="timeseries",
+                json=payload,
+            )
             data = response.json()
         observations = []
         for series in data.get("Results", {}).get("series", []):
