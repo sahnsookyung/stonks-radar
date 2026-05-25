@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-25T09:16:35Z",
-  "stale_after": "2026-05-25T21:16:35Z",
-  "hard_expires_at": "2026-06-01T09:16:35Z",
+  "generated_at": "2026-05-25T14:28:20Z",
+  "stale_after": "2026-05-26T02:28:20Z",
+  "hard_expires_at": "2026-06-01T14:28:20Z",
   "object_type": "sector_page",
   "object_key": "space",
-  "content_hash": "sha256:0a89fdd18189ccd566a4bb8a597ff43cdd9f6c77fa6e82eade88b30c12ecec4b",
+  "content_hash": "sha256:28323e4b487a69dccab2ad98de90b3e9043dedbca473769db50eee05a8155fd5",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -55,8 +55,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-25T09:16:35Z",
-        "published_at": "2026-05-25T09:16:35Z",
+        "occurred_at": "2026-05-25T14:28:20Z",
+        "published_at": "2026-05-25T14:28:20Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -182,7 +182,8 @@
         "source": "FRED / Nasdaq",
         "freshness": "fresh",
         "delay_label": "FRED NASDAQCOM actual through 2026-05-22",
-        "updated_at": "2026-05-25T09:16:35Z",
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "active",
         "points": [
           {
             "date": "2026-05-19",
@@ -205,11 +206,12 @@
       {
         "key": "nasdaq_100_futures",
         "label": "Nasdaq 100 futures",
-        "value": "Not connected",
+        "value": "Source gap",
         "source": "CME / licensed futures feed",
-        "freshness": "unsupported",
+        "freshness": "watch",
         "delay_label": "No always-free licensed futures API is configured",
-        "updated_at": "2026-05-25T09:16:35Z"
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "coverage_gap"
       }
     ],
     "scenario_baskets": [

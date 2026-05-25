@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-25T09:16:35Z",
-  "stale_after": "2026-05-25T21:16:35Z",
-  "hard_expires_at": "2026-06-01T09:16:35Z",
+  "generated_at": "2026-05-25T14:28:20Z",
+  "stale_after": "2026-05-26T02:28:20Z",
+  "hard_expires_at": "2026-06-01T14:28:20Z",
   "object_type": "sector_page",
   "object_key": "oil-energy",
-  "content_hash": "sha256:1dc6ff66e52a9519e37f7e1327fc8dd31defac08d361730f3d8b8f260a01f380",
+  "content_hash": "sha256:007e6bc8e3e8b4569f79300cf88014fbc0cd4b488f5006fa92a9057bad527b4b",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -56,8 +56,8 @@
         "title": "Energy inventory calendar is active for oil supply monitoring",
         "summary": "EIA-linked inventory releases are tracked as official structured data before publication.",
         "why_it_matters": "Inventory surprises can affect energy equities, inflation inputs, and geopolitical risk interpretation.",
-        "occurred_at": "2026-05-25T09:16:35Z",
-        "published_at": "2026-05-25T09:16:35Z",
+        "occurred_at": "2026-05-25T14:28:20Z",
+        "published_at": "2026-05-25T14:28:20Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -93,9 +93,9 @@
         "id": "event_central_bank_seed",
         "title": "Central-bank calendar coverage seeded across six policy committees",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
-        "why_it_matters": "Calendar visibility reduces silent unsupported coverage and makes stale policy data visible.",
-        "occurred_at": "2026-05-25T09:16:35Z",
-        "published_at": "2026-05-25T09:16:35Z",
+        "why_it_matters": "Calendar visibility reduces silent coverage gaps and makes stale policy data visible.",
+        "occurred_at": "2026-05-25T14:28:20Z",
+        "published_at": "2026-05-25T14:28:20Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -225,7 +225,8 @@
         "source": "FRED / Nasdaq",
         "freshness": "fresh",
         "delay_label": "FRED NASDAQCOM actual through 2026-05-22",
-        "updated_at": "2026-05-25T09:16:35Z",
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "active",
         "points": [
           {
             "date": "2026-05-19",
@@ -248,11 +249,12 @@
       {
         "key": "nasdaq_100_futures",
         "label": "Nasdaq 100 futures",
-        "value": "Not connected",
+        "value": "Source gap",
         "source": "CME / licensed futures feed",
-        "freshness": "unsupported",
+        "freshness": "watch",
         "delay_label": "No always-free licensed futures API is configured",
-        "updated_at": "2026-05-25T09:16:35Z"
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "coverage_gap"
       }
     ],
     "scenario_baskets": [

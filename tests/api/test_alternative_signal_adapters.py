@@ -31,7 +31,7 @@ async def test_finra_short_interest_adapter_parses_rows(monkeypatch):
         assert request.method == "POST"
         assert request.headers["authorization"] == "Bearer test-token"
         assert request.read() == (
-            b'{"limit":50,"compareFilters":[{"compareType":"equal","fieldName":"symbolCode","fieldValue":"TSLA"}]}'
+            b'{"limit":5000,"compareFilters":[{"compareType":"equal","fieldName":"symbolCode","fieldValue":"TSLA"}]}'
         )
         return httpx.Response(
             200,
@@ -53,6 +53,40 @@ async def test_finra_short_interest_adapter_parses_rows(monkeypatch):
     assert result.observations[0]["series_key"] == "FINRA_SHORT_INTEREST_TSLA"
     assert result.observations[0]["value"] == 123456
     assert result.documents[0]["row_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_finra_adapter_preserves_multi_symbol_latest_rows(monkeypatch):
+    settings = get_settings()
+    monkeypatch.setattr(settings, "finra_api_base_url", "https://api.finra.test")
+    monkeypatch.setattr(settings, "finra_api_token", "test-token")
+    seen_symbols: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        payload = json_from_request(request)
+        symbol = payload["compareFilters"][0]["fieldValue"]
+        seen_symbols.append(symbol)
+        older = {
+            "symbolCode": symbol,
+            "settlementDate": "2026-04-30",
+            "currentShortPositionQuantity": 100,
+        }
+        newer = {
+            "symbolCode": symbol,
+            "settlementDate": "2026-05-15",
+            "currentShortPositionQuantity": 200,
+        }
+        return httpx.Response(200, json=[older, newer])
+
+    result = await FINRAShortInterestAdapter().fetch(
+        symbols=["DJT", "TSLA", "NVDA"],
+        limit=3,
+        transport=httpx.MockTransport(handler),
+    )
+
+    assert seen_symbols == ["DJT", "TSLA", "NVDA"]
+    assert {row["symbol"] for row in result.observations} == {"DJT", "TSLA", "NVDA"}
+    assert {row["date"] for row in result.observations} == {"2026-05-15"}
 
 
 @pytest.mark.asyncio
@@ -192,3 +226,9 @@ async def test_trump_filings_adapter_parses_recent_sec_filings(monkeypatch):
     assert result.source_key == "trump_filings"
     assert result.documents[0]["form"] == "8-K"
     assert result.documents[0]["entity_label"] == "DJT"
+
+
+def json_from_request(request: httpx.Request):
+    import json
+
+    return json.loads(request.read().decode())

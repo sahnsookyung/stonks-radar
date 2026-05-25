@@ -144,6 +144,18 @@
         "freshness": { "enum": ["fresh", "watch", "stale", "unsupported"] },
         "delay_label": { "type": "string" },
         "updated_at": { "type": "string" },
+        "coverage_status": { "enum": ["active", "coverage_gap"] },
+        "next_event": {
+          "type": "object",
+          "required": ["title", "date", "timezone", "source"],
+          "properties": {
+            "title": { "type": "string" },
+            "date": { "type": "string" },
+            "timezone": { "type": "string" },
+            "source": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
         "points": {
           "type": "array",
           "items": {

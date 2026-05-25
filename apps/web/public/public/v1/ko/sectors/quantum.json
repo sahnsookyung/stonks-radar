@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-25T09:16:35Z",
-  "stale_after": "2026-05-25T21:16:35Z",
-  "hard_expires_at": "2026-06-01T09:16:35Z",
+  "generated_at": "2026-05-25T14:28:20Z",
+  "stale_after": "2026-05-26T02:28:20Z",
+  "hard_expires_at": "2026-06-01T14:28:20Z",
   "object_type": "sector_page",
   "object_key": "quantum",
-  "content_hash": "sha256:50fff42aebebaeb2b25a49d5f5838a07b0c2c04e3af376e28a4d64c9966eba0a",
+  "content_hash": "sha256:a8c569986815377ca77f33d3752ba10a101c3fa07dd89eeea5e065cfd40d87f1",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -54,8 +54,8 @@
         "title": "반도체 수출통제 모니터링 강도 유지",
         "summary": "승인된 시드 이벤트가 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
         "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다.",
-        "occurred_at": "2026-05-25T09:16:35Z",
-        "published_at": "2026-05-25T09:16:35Z",
+        "occurred_at": "2026-05-25T14:28:20Z",
+        "published_at": "2026-05-25T14:28:20Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -180,7 +180,8 @@
         "source": "FRED / Nasdaq",
         "freshness": "fresh",
         "delay_label": "FRED NASDAQCOM 실제값, 2026-05-22까지",
-        "updated_at": "2026-05-25T09:16:35Z",
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "active",
         "points": [
           {
             "date": "2026-05-19",
@@ -203,11 +204,12 @@
       {
         "key": "nasdaq_100_futures",
         "label": "나스닥 100 선물",
-        "value": "미연결",
+        "value": "출처 공백",
         "source": "CME / licensed futures feed",
-        "freshness": "unsupported",
+        "freshness": "watch",
         "delay_label": "상시 무료 라이선스 선물 API가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T09:16:35Z"
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "coverage_gap"
       }
     ],
     "scenario_baskets": [

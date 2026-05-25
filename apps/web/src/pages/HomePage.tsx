@@ -261,7 +261,7 @@ function MarketPulse({ tiles }: { tiles: MetricTile[] }) {
 
 function MarketTile({ tile, compact = false }: { tile: MetricTile; compact?: boolean }) {
   return (
-    <article className={`panel p-4 ${compact ? "min-h-[116px]" : "min-h-[142px]"}`}>
+    <article className={`panel flex flex-col p-4 ${compact ? "min-h-[150px]" : "min-h-[168px]"}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-sm leading-5 text-muted">{tile.label}</div>
@@ -275,6 +275,14 @@ function MarketTile({ tile, compact = false }: { tile: MetricTile; compact?: boo
       <div className="mt-3 text-xs leading-5 text-muted">
         {tile.source} · {tile.delay_label}
       </div>
+      {tile.next_event ? (
+        <div className="mt-auto flex items-start gap-2 pt-3 text-xs leading-5 text-muted">
+          <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+          <span className="min-w-0">
+            <span className="font-semibold text-ink">Next:</span> {tile.next_event.title} · {tile.next_event.date}
+          </span>
+        </div>
+      ) : null}
       {!compact && tile.points ? <LineChart points={tile.points} label={tile.label} /> : null}
     </article>
   );
@@ -282,10 +290,10 @@ function MarketTile({ tile, compact = false }: { tile: MetricTile; compact?: boo
 
 function CoverageQueue({ tiles }: { tiles: MetricTile[] }) {
   return (
-    <section className="panel p-4" aria-label="Coverage queue">
+    <section className="panel p-4" aria-label="Coverage gaps">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-xs font-semibold uppercase text-muted">Coverage queue</h3>
-        <SourceBadge label={`${tiles.length} pending`} />
+        <h3 className="text-xs font-semibold uppercase text-muted">Coverage gaps</h3>
+        <SourceBadge label={`${tiles.length} source gaps`} />
       </div>
       <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {tiles.map((tile) => (
@@ -305,25 +313,29 @@ function CoverageQueue({ tiles }: { tiles: MetricTile[] }) {
 }
 
 function isUnavailableTile(tile: MetricTile) {
-  return tile.value.trim().toLowerCase() === "not connected" || tile.freshness === "unsupported";
+  return (
+    tile.coverage_status === "coverage_gap" ||
+    tile.value.trim().toLowerCase() === "not connected" ||
+    tile.freshness === "unsupported"
+  );
 }
 
 function AlternativeSignalRadar({ lanes }: { lanes: AlternativeSignalLane[] }) {
   return (
-    <section aria-labelledby="alternative-risk-title">
+    <section aria-labelledby="shorts-risk-title">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 id="alternative-risk-title" className="flex items-center gap-2 text-sm font-semibold text-warning">
+          <h2 id="shorts-risk-title" className="flex items-center gap-2 text-sm font-semibold text-warning">
             <Radar className="h-4 w-4" />
-            Alternative risk radar
+            Shorts & event radar
           </h2>
           <p className="mt-1 max-w-4xl text-sm leading-6 text-muted">
-            Short-interest, short-volume, activist short research, weak OSINT, and filing monitors are collated here
-            with explicit source strength.
+            FINRA short interest, daily short-volume flow, public short research, weak OSINT, and SEC filing digests
+            are rendered here so source links are supporting evidence, not the primary workflow.
           </p>
         </div>
       </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {lanes.map((lane) => (
           <AlternativeSignalCard key={lane.key} lane={lane} />
         ))}
@@ -333,9 +345,9 @@ function AlternativeSignalRadar({ lanes }: { lanes: AlternativeSignalLane[] }) {
 }
 
 function AlternativeSignalCard({ lane }: { lane: AlternativeSignalLane }) {
-  const lead = lane.items[0];
+  const visibleItems = lane.items.slice(0, 4);
   return (
-    <article className="panel p-4">
+    <article className="panel flex min-h-[280px] flex-col p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-sm font-semibold leading-5">{lane.title}</h3>
@@ -343,13 +355,23 @@ function AlternativeSignalCard({ lane }: { lane: AlternativeSignalLane }) {
         </div>
         <SeverityBadge value={lane.severity} />
       </div>
-      <p className="mt-2 min-h-12 text-xs leading-5 text-muted">{lane.summary}</p>
-      {lead ? (
-        <p className="mt-3 text-xs leading-5 text-muted">
-          <span className="font-semibold text-ink">{lead.label}:</span> {lead.value}
-        </p>
+      <p className="mt-2 text-xs leading-5 text-muted">{lane.summary}</p>
+      {visibleItems.length ? (
+        <div className="mt-3 grid gap-2">
+          {visibleItems.map((item) => (
+            <div key={item.key} className="rounded-md border border-line bg-panelAlt px-3 py-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 text-xs font-semibold leading-5 text-ink">{item.label}</div>
+                <div className="max-w-[45%] shrink-0 text-right text-xs font-semibold leading-5 text-accent">
+                  {item.value}
+                </div>
+              </div>
+              <p className="mt-1 text-xs leading-5 text-muted">{item.detail}</p>
+            </div>
+          ))}
+        </div>
       ) : null}
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs leading-5 text-muted">
+      <div className="mt-auto flex flex-wrap items-center gap-2 pt-3 text-xs leading-5 text-muted">
         <span>{lane.cadence}</span>
         {lane.source_url ? (
           <a

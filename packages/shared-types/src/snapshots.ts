@@ -105,7 +105,16 @@ export interface MetricTile {
   freshness: Freshness;
   delay_label: string;
   updated_at: string;
+  coverage_status?: "active" | "coverage_gap";
+  next_event?: MetricTileEvent;
   points?: { date: string; value: number }[];
+}
+
+export interface MetricTileEvent {
+  title: string;
+  date: string;
+  timezone: string;
+  source: string;
 }
 
 export interface AlternativeSignalLane {

@@ -3,8 +3,11 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import time
+from base64 import b64encode
 from datetime import datetime, timedelta, timezone
+from html import unescape
 from pathlib import Path
 from typing import Any
 from urllib import parse, request
@@ -15,9 +18,20 @@ VERSION = 1
 LOCALES = ["en", "ko"]
 FRED_API_BASE_URL = "https://api.stlouisfed.org/fred"
 FRED_REQUEST_MIN_INTERVAL_SECONDS = 0.55
+FINRA_API_BASE_URL = "https://api.finra.org"
+FINRA_OAUTH_TOKEN_URL = "https://ews.fip.finra.org/fip/rest/ews/oauth2/access_token?grant_type=client_credentials"
+FINRA_REQUEST_MIN_INTERVAL_SECONDS = 0.25
+DEFAULT_SHORT_TICKERS = "DJT,TSLA,NVDA"
+DEFAULT_TRUMP_CIKS = {"DJT": "0001849635"}
+PENTAGON_PIZZA_URL = "https://pentagon.pizza/"
 _RUNTIME_ENV: dict[str, str] | None = None
 _FRED_CACHE: dict[str, dict[str, Any] | None] = {}
+_FINRA_TOKEN_CACHE: dict[str, Any] = {"token": None, "expires_at": 0.0}
+_FINRA_ROWS_CACHE: dict[str, list[dict[str, Any]]] = {}
+_SEC_SUBMISSIONS_CACHE: dict[str, dict[str, Any] | None] = {}
+_WEB_METADATA_CACHE: dict[str, dict[str, str] | None] = {}
 _LAST_FRED_REQUEST_AT = 0.0
+_LAST_FINRA_REQUEST_AT = 0.0
 
 SECTORS = {
     "space": {
@@ -382,6 +396,316 @@ def _fred_series(series_id: str) -> dict[str, Any] | None:
     return result
 
 
+def _finra_short_interest_rows(symbols: list[str]) -> list[dict[str, Any]]:
+    return _finra_dataset_rows(
+        "consolidatedShortInterest",
+        symbol_field="symbolCode",
+        date_field="settlementDate",
+        symbols=symbols,
+    )
+
+
+def _finra_short_volume_rows(symbols: list[str]) -> list[dict[str, Any]]:
+    return _finra_dataset_rows(
+        "regShoDaily",
+        symbol_field="securitiesInformationProcessorSymbolIdentifier",
+        date_field="tradeReportDate",
+        symbols=symbols,
+    )
+
+
+def _finra_dataset_rows(
+    dataset: str,
+    *,
+    symbol_field: str,
+    date_field: str,
+    symbols: list[str],
+) -> list[dict[str, Any]]:
+    normalized = _symbol_list(",".join(symbols))
+    cache_key = f"{dataset}:{','.join(normalized)}"
+    if cache_key in _FINRA_ROWS_CACHE:
+        return _FINRA_ROWS_CACHE[cache_key]
+    token = _finra_bearer_token()
+    if not token:
+        _FINRA_ROWS_CACHE[cache_key] = []
+        return []
+
+    start_date = (datetime.now(timezone.utc) - timedelta(days=420)).date().isoformat()
+    end_date = datetime.now(timezone.utc).date().isoformat()
+    rows: list[dict[str, Any]] = []
+    base_url = _runtime_env().get("FINRA_API_BASE_URL", FINRA_API_BASE_URL).rstrip("/")
+    for symbol in normalized:
+        payload = {
+            "limit": 5000,
+            "compareFilters": [
+                {
+                    "compareType": "equal",
+                    "fieldName": symbol_field,
+                    "fieldValue": symbol,
+                }
+            ],
+            "dateRangeFilters": [
+                {
+                    "fieldName": date_field,
+                    "startDate": start_date,
+                    "endDate": end_date,
+                }
+            ],
+        }
+        try:
+            response = _http_json(
+                f"{base_url}/data/group/otcMarket/name/{dataset}",
+                method="POST",
+                headers={
+                    "Accept": "application/json",
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                },
+                payload=payload,
+                timeout=25,
+                throttle_key="finra",
+            )
+        except Exception:
+            continue
+        rows.extend(_json_rows(response))
+    sorted_rows = sorted(rows, key=lambda row: (_row_date(row), _row_symbol(row)), reverse=True)
+    _FINRA_ROWS_CACHE[cache_key] = sorted_rows
+    return sorted_rows
+
+
+def _finra_bearer_token() -> str | None:
+    env = _runtime_env()
+    api_token = str(env.get("FINRA_API_TOKEN") or "").strip()
+    if api_token:
+        return api_token
+    client_id = str(env.get("FINRA_API_CLIENT_ID") or "").strip()
+    client_secret = str(env.get("FINRA_API_CLIENT_SECRET") or "").strip()
+    if not client_id or not client_secret:
+        return None
+    now = time.time()
+    cached = _FINRA_TOKEN_CACHE.get("token")
+    if cached and float(_FINRA_TOKEN_CACHE.get("expires_at") or 0) > now:
+        return str(cached)
+    encoded = b64encode(f"{client_id}:{client_secret}".encode()).decode()
+    token_url = str(env.get("FINRA_OAUTH_TOKEN_URL") or FINRA_OAUTH_TOKEN_URL)
+    try:
+        payload = _http_json(
+            token_url,
+            method="POST",
+            headers={"Accept": "application/json", "Authorization": f"Basic {encoded}"},
+            timeout=20,
+            throttle_key="finra",
+        )
+    except Exception:
+        return None
+    token = str(payload.get("access_token") or "").strip()
+    if not token:
+        return None
+    expires_in = int(payload.get("expires_in") or 1800)
+    _FINRA_TOKEN_CACHE.update({"token": token, "expires_at": now + max(60, min(expires_in - 60, 1800))})
+    return token
+
+
+def _sec_submissions(cik: str) -> dict[str, Any] | None:
+    padded = str(cik).zfill(10)
+    if padded in _SEC_SUBMISSIONS_CACHE:
+        return _SEC_SUBMISSIONS_CACHE[padded]
+    user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
+    try:
+        payload = _http_json(
+            f"https://data.sec.gov/submissions/CIK{padded}.json",
+            headers={"Accept": "application/json", "User-Agent": user_agent},
+            timeout=20,
+        )
+    except Exception:
+        payload = None
+    _SEC_SUBMISSIONS_CACHE[padded] = payload if isinstance(payload, dict) else None
+    return _SEC_SUBMISSIONS_CACHE[padded]
+
+
+def _web_metadata(url: str) -> dict[str, str] | None:
+    if url in _WEB_METADATA_CACHE:
+        return _WEB_METADATA_CACHE[url]
+    user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
+    try:
+        req = request.Request(url, headers={"User-Agent": user_agent, "Accept": "text/html"})
+        with request.urlopen(req, timeout=20) as response:
+            html = response.read(600_000).decode("utf-8", errors="ignore")
+    except Exception:
+        _WEB_METADATA_CACHE[url] = None
+        return None
+    title = _html_field(html, r"<title[^>]*>(.*?)</title>") or parse.urlparse(url).netloc
+    description = (
+        _html_field(html, r"<meta[^>]+name=[\"']description[\"'][^>]+content=[\"']([^\"']+)[\"']")
+        or _html_field(html, r"<meta[^>]+content=[\"']([^\"']+)[\"'][^>]+name=[\"']description[\"']")
+        or ""
+    )
+    _WEB_METADATA_CACHE[url] = {"title": title[:160], "description": description[:240]}
+    return _WEB_METADATA_CACHE[url]
+
+
+def _http_json(
+    url: str,
+    *,
+    method: str = "GET",
+    headers: dict[str, str] | None = None,
+    payload: dict[str, Any] | None = None,
+    timeout: int = 20,
+    throttle_key: str | None = None,
+) -> Any:
+    global _LAST_FINRA_REQUEST_AT
+    if throttle_key == "finra":
+        elapsed = time.monotonic() - _LAST_FINRA_REQUEST_AT
+        if elapsed < FINRA_REQUEST_MIN_INTERVAL_SECONDS:
+            time.sleep(FINRA_REQUEST_MIN_INTERVAL_SECONDS - elapsed)
+    data = json.dumps(payload).encode() if payload is not None else None
+    req = request.Request(url, data=data, headers=headers or {}, method=method)
+    try:
+        with request.urlopen(req, timeout=timeout) as response:
+            return json.loads(response.read().decode())
+    finally:
+        if throttle_key == "finra":
+            _LAST_FINRA_REQUEST_AT = time.monotonic()
+
+
+def _json_rows(payload: Any) -> list[dict[str, Any]]:
+    if isinstance(payload, list):
+        return [row for row in payload if isinstance(row, dict)]
+    if isinstance(payload, dict):
+        rows = payload.get("data") or payload.get("results") or payload.get("rows") or []
+        if isinstance(rows, list):
+            return [row for row in rows if isinstance(row, dict)]
+    return []
+
+
+def _symbol_list(raw: str | None) -> list[str]:
+    values: list[str] = []
+    for part in (raw or DEFAULT_SHORT_TICKERS).split(","):
+        symbol = part.strip().upper()
+        if symbol and re.fullmatch(r"[A-Z0-9][A-Z0-9.\-]{0,14}", symbol):
+            values.append(symbol)
+    return list(dict.fromkeys(values)) or _symbol_list(DEFAULT_SHORT_TICKERS)
+
+
+def _latest_short_interest(rows: list[dict[str, Any]], symbols: list[str]) -> list[dict[str, Any]]:
+    latest: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        symbol = _row_symbol(row)
+        value = _numeric_value(_row_value(row, ("currentShortPositionQuantity", "currentShortShareNumber", "shortInterest", "short_interest", "currentShortPositionQty")))
+        date = _row_date(row)
+        if symbol not in symbols or value is None or not date:
+            continue
+        existing = latest.get(symbol)
+        if not existing or date > existing["date"]:
+            latest[symbol] = {"symbol": symbol, "date": date, "value": value}
+    return [latest[symbol] for symbol in symbols if symbol in latest]
+
+
+def _latest_short_volume(rows: list[dict[str, Any]], symbols: list[str]) -> list[dict[str, Any]]:
+    totals: dict[tuple[str, str], float] = {}
+    for row in rows:
+        symbol = _row_symbol(row)
+        date = _row_date(row)
+        value = _numeric_value(_row_value(row, ("shortParQuantity", "shortVolume", "short_volume", "shortSaleVolume")))
+        if symbol not in symbols or value is None or not date:
+            continue
+        totals[(symbol, date)] = totals.get((symbol, date), 0.0) + value
+    latest: dict[str, dict[str, Any]] = {}
+    for (symbol, date), value in totals.items():
+        existing = latest.get(symbol)
+        if not existing or date > existing["date"]:
+            latest[symbol] = {"symbol": symbol, "date": date, "value": value}
+    return [latest[symbol] for symbol in symbols if symbol in latest]
+
+
+def _recent_sec_documents(cik: str, limit: int = 4) -> list[dict[str, str]]:
+    padded = str(cik).zfill(10)
+    payload = _sec_submissions(padded)
+    if not payload:
+        return []
+    filings = payload.get("filings", {}).get("recent", {})
+    accessions = filings.get("accessionNumber", [])
+    forms = filings.get("form", [])
+    dates = filings.get("filingDate", [])
+    primary_docs = filings.get("primaryDocument", [])
+    name = str(payload.get("name") or "SEC issuer")
+    documents: list[dict[str, str]] = []
+    for idx, accession in enumerate(accessions[:limit]):
+        accession_text = str(accession)
+        accession_no_dash = accession_text.replace("-", "")
+        form = str(_list_item(forms, idx) or "filing")
+        filing_date = str(_list_item(dates, idx) or "")
+        primary_doc = str(_list_item(primary_docs, idx) or "")
+        url = f"https://www.sec.gov/Archives/edgar/data/{int(padded)}/{accession_no_dash}/"
+        if primary_doc:
+            url = f"{url}{primary_doc}"
+        documents.append(
+            {
+                "title": f"{name} {form}",
+                "form": form,
+                "filing_date": filing_date,
+                "accession_number": accession_text,
+                "url": url,
+            }
+        )
+    return documents
+
+
+def _row_symbol(row: dict[str, Any]) -> str:
+    value = (
+        row.get("symbol")
+        or row.get("symbolCode")
+        or row.get("issueSymbolIdentifier")
+        or row.get("ticker")
+        or row.get("securitiesInformationProcessorSymbolIdentifier")
+    )
+    return str(value or "").strip().upper()
+
+
+def _row_date(row: dict[str, Any]) -> str:
+    value = row.get("settlementDate") or row.get("tradeReportDate") or row.get("date") or row.get("businessDate")
+    return str(value or "")[:10]
+
+
+def _row_value(row: dict[str, Any], keys: tuple[str, ...]) -> Any:
+    for key in keys:
+        value = row.get(key)
+        if value not in (None, ""):
+            return value
+    return None
+
+
+def _numeric_value(value: Any) -> float | None:
+    if value in (None, ""):
+        return None
+    try:
+        return float(str(value).replace(",", ""))
+    except ValueError:
+        return None
+
+
+def _format_count(value: float | int) -> str:
+    if value >= 1_000_000_000:
+        return f"{value / 1_000_000_000:.2f}B".rstrip("0").rstrip(".")
+    if value >= 1_000_000:
+        return f"{value / 1_000_000:.2f}M".rstrip("0").rstrip(".")
+    if value >= 1_000:
+        return f"{value / 1_000:.1f}K".rstrip("0").rstrip(".")
+    return f"{value:,.0f}"
+
+
+def _html_field(html: str, pattern: str) -> str | None:
+    match = re.search(pattern, html, flags=re.IGNORECASE | re.DOTALL)
+    if not match:
+        return None
+    text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", match.group(1))).strip()
+    return unescape(text) if text else None
+
+
+def _list_item(values: Any, idx: int) -> Any:
+    return values[idx] if isinstance(values, list) and idx < len(values) else None
+
+
 def _format_metric_value(value: float, decimals: int) -> str:
     text = f"{value:,.{decimals}f}"
     if "." in text:
@@ -495,7 +819,7 @@ def _events(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "id": "event_central_bank_seed",
             "title": _t(locale, "Central-bank calendar coverage seeded across six policy committees", "6개 중앙은행 정책회의 일정 시드 적용"),
             "summary": _t(locale, "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.", "FOMC, ECB, BoE, BoJ, BoK, 브라질 COPOM이 명시적 예상치 라벨과 함께 표시됩니다."),
-            "why_it_matters": _t(locale, "Calendar visibility reduces silent unsupported coverage and makes stale policy data visible.", "캘린더 가시성은 미지원 범위를 숨기지 않고 오래된 정책 데이터를 드러냅니다."),
+            "why_it_matters": _t(locale, "Calendar visibility reduces silent coverage gaps and makes stale policy data visible.", "캘린더 가시성은 커버리지 공백을 숨기지 않고 오래된 정책 데이터를 드러냅니다."),
             "occurred_at": ts,
             "published_at": ts,
             "country_region_keys": ["USA", "EUROZONE", "GBR", "JPN", "KOR", "BRA"],
@@ -553,6 +877,23 @@ def _calendar(locale: str) -> list[dict[str, Any]]:
 def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
     updated = generated_at.isoformat().replace("+00:00", "Z")
 
+    def rate_event(region: str) -> dict[str, str]:
+        events = {
+            "us": {
+                "title": _t(locale, "FOMC policy decision", "FOMC 정책 결정"),
+                "date": "2026-06-17",
+                "timezone": "America/New_York",
+                "source": "Federal Reserve calendar",
+            },
+            "japan": {
+                "title": _t(locale, "BoJ monetary-policy meeting", "일본은행 통화정책회의"),
+                "date": "2026-06-16",
+                "timezone": "Asia/Tokyo",
+                "source": "BoJ calendar seed",
+            },
+        }
+        return events[region]
+
     def tile(
         key: str,
         label_en: str,
@@ -563,6 +904,8 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         freshness: str = "watch",
         unit: str | None = None,
         points: list[dict[str, Any]] | None = None,
+        coverage_status: str = "active",
+        next_event: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "key": key,
@@ -572,11 +915,14 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "freshness": freshness,
             "delay_label": delay_label,
             "updated_at": updated,
+            "coverage_status": coverage_status,
         }
         if unit:
             payload["unit"] = unit
         if points:
             payload["points"] = points
+        if next_event:
+            payload["next_event"] = next_event
         return payload
 
     def fred_tile(
@@ -588,6 +934,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         source_label: str,
         unit: str | None = None,
         decimals: int = 2,
+        next_event: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         series = _fred_series(series_id)
         if not series:
@@ -595,15 +942,18 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
                 key,
                 label_en,
                 label_ko,
-                _not_connected_label(locale),
+                _t(locale, "Source gap", "출처 공백"),
                 source,
                 _unsupported_delay_label(
                     locale,
                     "FRED_API_KEY missing or FRED series unavailable",
                     "FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
                 ),
-                "unsupported",
-                unit,
+                "watch",
+                None,
+                None,
+                "coverage_gap",
+                next_event,
             )
         return tile(
             key,
@@ -615,9 +965,11 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "fresh",
             unit,
             series["points"],
+            "active",
+            next_event,
         )
 
-    def unsupported_tile(
+    def coverage_gap_tile(
         key: str,
         label_en: str,
         label_ko: str,
@@ -630,11 +982,14 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             key,
             label_en,
             label_ko,
-            _not_connected_label(locale),
+            _t(locale, "Source gap", "출처 공백"),
             source,
             _unsupported_delay_label(locale, reason_en, reason_ko),
-            "unsupported",
-            unit,
+            "watch",
+            None,
+            None,
+            "coverage_gap",
+            None,
         )
 
     return [
@@ -646,7 +1001,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "FRED / Nasdaq",
             "FRED NASDAQCOM",
         ),
-        unsupported_tile(
+        coverage_gap_tile(
             "nasdaq_100_futures",
             "Nasdaq 100 futures",
             "나스닥 100 선물",
@@ -662,7 +1017,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "FRED / OECD Korea share prices",
             "FRED SPASTT01KRM661N",
         ),
-        unsupported_tile(
+        coverage_gap_tile(
             "kodex_200",
             "KODEX 200 ETF",
             "KODEX 200 ETF",
@@ -670,7 +1025,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "No always-free redistributable ETF feed is configured",
             "상시 무료 재배포 가능 ETF 피드가 설정되지 않았습니다.",
         ),
-        unsupported_tile(
+        coverage_gap_tile(
             "kospi_200_futures",
             "KOSPI 200 futures",
             "코스피 200 선물",
@@ -682,10 +1037,10 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         fred_tile("vix", "VIX", "VIX", "VIXCLS", "FRED / Cboe", "FRED VIXCLS"),
         fred_tile("usd_krw", "USD/KRW", "달러/원", "DEXKOUS", "FRED / Federal Reserve H.10", "FRED DEXKOUS", "KRW", 2),
         fred_tile("usd_jpy", "USD/JPY", "달러/엔", "DEXJPUS", "FRED / Federal Reserve H.10", "FRED DEXJPUS", "JPY", 2),
-        fred_tile("us_2y", "US Treasury 2Y", "미국 국채 2년", "DGS2", "FRED / US Treasury", "FRED DGS2", "%", 2),
-        fred_tile("us_3y", "US Treasury 3Y", "미국 국채 3년", "DGS3", "FRED / US Treasury", "FRED DGS3", "%", 2),
-        fred_tile("us_5y", "US Treasury 5Y", "미국 국채 5년", "DGS5", "FRED / US Treasury", "FRED DGS5", "%", 2),
-        fred_tile("us_10y", "US Treasury 10Y", "미국 국채 10년", "DGS10", "FRED / US Treasury", "FRED DGS10", "%", 2),
+        fred_tile("us_2y", "US Treasury 2Y", "미국 국채 2년", "DGS2", "FRED / US Treasury", "FRED DGS2", "%", 2, rate_event("us")),
+        fred_tile("us_3y", "US Treasury 3Y", "미국 국채 3년", "DGS3", "FRED / US Treasury", "FRED DGS3", "%", 2, rate_event("us")),
+        fred_tile("us_5y", "US Treasury 5Y", "미국 국채 5년", "DGS5", "FRED / US Treasury", "FRED DGS5", "%", 2, rate_event("us")),
+        fred_tile("us_10y", "US Treasury 10Y", "미국 국채 10년", "DGS10", "FRED / US Treasury", "FRED DGS10", "%", 2, rate_event("us")),
         fred_tile(
             "japan_policy_rate",
             "BoJ policy rate",
@@ -694,8 +1049,10 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "FRED / OECD Japan central bank rate",
             "FRED IRSTCB01JPM156N",
             "%",
+            2,
+            rate_event("japan"),
         ),
-        unsupported_tile(
+        coverage_gap_tile(
             "japan_2y",
             "Japan govt 2Y",
             "일본 국채 2년",
@@ -704,7 +1061,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "상시 무료 2년 JGB API 출처가 설정되지 않았습니다.",
             "%",
         ),
-        unsupported_tile(
+        coverage_gap_tile(
             "japan_5y",
             "Japan govt 5Y",
             "일본 국채 5년",
@@ -722,12 +1079,14 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "FRED IRLTLT01JPM156N",
             "%",
             2,
+            rate_event("japan"),
         ),
     ]
 
 
 def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
     updated = generated_at.isoformat().replace("+00:00", "Z")
+    env = _runtime_env()
 
     def item(
         lane_key: str,
@@ -756,67 +1115,240 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
             payload["source_url"] = source_url
         return payload
 
+    symbols = _symbol_list(env.get("SHORT_VOLUME_MONITORED_TICKERS") or DEFAULT_SHORT_TICKERS)
+    short_interest = _latest_short_interest(_finra_short_interest_rows(symbols), symbols)
+    short_volume = _latest_short_volume(_finra_short_volume_rows(symbols), symbols)
+    pizza_metadata = _web_metadata(str(env.get("PENTAGON_PIZZA_BASE_URL") or PENTAGON_PIZZA_URL))
+    trump_documents = _recent_sec_documents(DEFAULT_TRUMP_CIKS["DJT"])
+    ai_summary_ready = any(
+        _env_has(env, key)
+        for key in (
+            "LOCAL_LLM_BASE_URL",
+            "GEMINI_API_KEY",
+            "GROQ_API_KEY",
+            "CEREBRAS_API_KEY",
+            "MISTRAL_API_KEY",
+            "OPENROUTER_API_KEY",
+            "HF_TOKEN",
+        )
+    )
+    summary_status = _t(locale, "ready", "준비됨") if ai_summary_ready else _t(locale, "local LLM needed", "로컬 LLM 필요")
+
+    short_interest_items = [
+        item(
+            "highest_short_interest",
+            row["symbol"].lower().replace(".", "_"),
+            f"{row['symbol']} short interest",
+            f"{row['symbol']} 공매도 잔고",
+            f"{_format_count(row['value'])} shares",
+            f"As of {row['date']}; open short positions, not daily short-sale volume.",
+            f"{row['date']} 기준 미청산 공매도 포지션이며 일별 공매도 거래량이 아닙니다.",
+            "FINRA consolidated short interest",
+            "medium",
+            "fresh",
+            "https://www.finra.org/finra-data/browse-catalog/equity-short-interest",
+        )
+        for row in short_interest
+    ]
+    if not short_interest_items:
+        short_interest_items = [
+            item(
+                "highest_short_interest",
+                "credentials",
+                "FINRA short interest",
+                "FINRA 공매도 잔고",
+                _t(locale, "waiting for rows", "행 대기"),
+                "Credentials are configured, but the latest symbol-filtered rows were not available during this snapshot build.",
+                "자격 증명은 구성되었지만 이번 스냅샷 빌드에서 최신 심볼 필터 행을 가져오지 못했습니다.",
+                "FINRA",
+                "medium",
+                "watch",
+            )
+        ]
+    short_interest_items.append(
+        item(
+            "highest_short_interest",
+            "method",
+            "Short interest is not short volume",
+            "공매도 잔고와 공매도 거래량은 다름",
+            "guardrail",
+            "Short interest is open short positions. Daily short sale volume is transaction flow and can be much larger.",
+            "공매도 잔고는 미청산 포지션입니다. 일별 공매도 거래량은 거래 흐름이며 훨씬 클 수 있습니다.",
+            "FINRA",
+            "medium",
+            "fresh",
+            "https://www.finra.org/investors/insights/short-interest",
+        )
+    )
+
+    short_volume_items = [
+        item(
+            "short_volume_monitor",
+            row["symbol"].lower().replace(".", "_"),
+            f"{row['symbol']} short volume",
+            f"{row['symbol']} 공매도 거래량",
+            f"{_format_count(row['value'])} shares",
+            f"Aggregated FINRA Reg SHO rows for trade date {row['date']}. This is flow, not outstanding short interest.",
+            f"{row['date']} 거래일의 FINRA Reg SHO 행을 합산했습니다. 이는 거래 흐름이며 잔고가 아닙니다.",
+            "FINRA Reg SHO daily short sale volume",
+            "medium",
+            "fresh",
+            "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume",
+        )
+        for row in short_volume
+    ]
+    if not short_volume_items:
+        short_volume_items = [
+            item(
+                "short_volume_monitor",
+                "monitored",
+                "Monitored tickers",
+                "모니터링 티커",
+                ", ".join(symbols),
+                "FINRA Reg SHO rows were not available during this snapshot build.",
+                "이번 스냅샷 빌드에서 FINRA Reg SHO 행을 가져오지 못했습니다.",
+                "configuration",
+                "medium",
+                "watch",
+            )
+        ]
+
+    pizza_items = [
+        item(
+            "pentagon_pizza_index",
+            "latest_page",
+            "Observed page",
+            "관측 페이지",
+            pizza_metadata["title"] if pizza_metadata else _t(locale, "unavailable", "사용 불가"),
+            pizza_metadata["description"]
+            if pizza_metadata and pizza_metadata["description"]
+            else _t(
+                locale,
+                "No direct metric was extracted; keep this as weak OSINT context only.",
+                "직접 지표를 추출하지 못했으므로 약한 OSINT 맥락으로만 유지합니다.",
+            ),
+            pizza_metadata["description"]
+            if pizza_metadata and pizza_metadata["description"]
+            else "직접 지표를 추출하지 못했으므로 약한 OSINT 맥락으로만 유지합니다.",
+            "Pentagon.Pizza",
+            "low",
+            "fresh" if pizza_metadata else "watch",
+            str(env.get("PENTAGON_PIZZA_BASE_URL") or PENTAGON_PIZZA_URL),
+        ),
+        item(
+            "pentagon_pizza_index",
+            "method",
+            "Weak OSINT context",
+            "약한 OSINT 맥락",
+            "watch only",
+            "Collate with official geopolitical news; do not publish as a causal market claim.",
+            "공식 지정학 뉴스와 함께 보되 인과적 시장 주장으로 공개하지 않습니다.",
+            "source policy",
+            "low",
+            "watch",
+            str(env.get("PENTAGON_PIZZA_BASE_URL") or PENTAGON_PIZZA_URL),
+        ),
+    ]
+
+    trump_items = [
+        item(
+            "trump_filings",
+            f"{document['form'].lower()}_{index}",
+            f"DJT {document['form']}",
+            f"DJT {document['form']}",
+            f"filed {document['filing_date']}" if document["filing_date"] else "filed",
+            f"{document['title']} · accession {document['accession_number']}",
+            f"{document['title']} · 접수번호 {document['accession_number']}",
+            "SEC EDGAR submissions API",
+            "medium",
+            "fresh",
+            document["url"],
+        )
+        for index, document in enumerate(trump_documents[:3])
+    ]
+    if not trump_items:
+        trump_items = [
+            item(
+                "trump_filings",
+                "djt",
+                "Trump Media & Technology Group",
+                "트럼프 미디어",
+                "SEC monitor",
+                "DJT issuer filings and insider Forms 3/4/5 are tracked via SEC submissions.",
+                "DJT 발행사 공시와 내부자 Form 3/4/5를 SEC submissions로 추적합니다.",
+                "SEC EDGAR",
+                "medium",
+                "watch",
+                "https://www.sec.gov/edgar/browse/?CIK=1849635",
+            )
+        ]
+    trump_items.extend(
+        [
+            item(
+                "trump_filings",
+                "trust",
+                "Donald J. Trump Revocable Trust",
+                "도널드 J. 트럼프 취소가능 신탁",
+                "entity caveat",
+                "Keep beneficial-ownership filings separate from any unconfirmed 13F manager assumption.",
+                "수익소유 공시와 확인되지 않은 13F 운용사 가정은 분리합니다.",
+                "SEC EDGAR",
+                "medium",
+                "watch",
+            ),
+            item(
+                "trump_filings",
+                "ai_summary",
+                "Long filing summaries",
+                "장문 공시 요약",
+                summary_status,
+                "AI summaries are source-bound and generated from approved public facts or extract-only local text, not from secrets.",
+                "AI 요약은 출처에 묶이며 비밀이 아니라 승인된 공개 사실 또는 추출 전용 로컬 텍스트에서 생성합니다.",
+                "LLM router",
+                "medium",
+                "fresh" if ai_summary_ready else "watch",
+            ),
+        ]
+    )
+
+    top_interest = max(short_interest, key=lambda row: row["value"], default=None)
+    top_volume = max(short_volume, key=lambda row: row["value"], default=None)
+    latest_filing = trump_documents[0] if trump_documents else None
+
     return [
         {
             "key": "highest_short_interest",
-            "title": _t(locale, "Highest short interest", "공매도 잔고 상위"),
+            "title": _t(locale, "Short interest watch", "공매도 잔고 워치"),
             "summary": _t(
                 locale,
-                "Ranks securities by reported short interest once official/vendor float data is connected.",
-                "공식/벤더 유통주식 데이터 연결 후 공매도 잔고 기준으로 종목을 랭킹합니다.",
+                "Latest FINRA short-interest rows for tracked tickers. Float-adjusted ranking remains separate until float data is approved.",
+                "추적 티커의 최신 FINRA 공매도 잔고 행입니다. 유통주식 조정 랭킹은 유통주식 데이터 승인 후 분리해 표시합니다.",
             ),
-            "value": _t(locale, "ranking pending", "랭킹 대기"),
-            "cadence": _t(locale, "FINRA short interest is bi-monthly; ranking needs float/share data.", "FINRA 공매도 잔고는 월 2회 공개되며 랭킹에는 유통주식 데이터가 필요합니다."),
-            "source": "FINRA short interest + licensed float feed",
+            "value": f"{top_interest['symbol']} {_format_count(top_interest['value'])}" if top_interest else _t(locale, "rows pending", "행 대기"),
+            "cadence": _t(locale, "FINRA short interest is published twice monthly after settlement-date reporting.", "FINRA 공매도 잔고는 결제일 보고 후 월 2회 공개됩니다."),
+            "source": "FINRA consolidated short interest",
             "source_url": "https://www.finra.org/filing-reporting/regulatory-filing-systems/short-interest",
-            "freshness": "watch",
+            "freshness": "fresh" if short_interest else "watch",
             "severity": "medium",
             "refresh_seconds": 43200,
-            "items": [
-                item(
-                    "highest_short_interest",
-                    "method",
-                    "Short interest is not short volume",
-                    "공매도 잔고와 공매도 거래량은 다름",
-                    "guardrail",
-                    "Short interest is open short positions. Daily short sale volume is transaction flow and can be much larger.",
-                    "공매도 잔고는 미청산 포지션입니다. 일별 공매도 거래량은 거래 흐름이며 훨씬 클 수 있습니다.",
-                    "FINRA",
-                    "medium",
-                    "fresh",
-                    "https://www.finra.org/investors/insights/short-interest",
-                )
-            ],
+            "items": short_interest_items,
         },
         {
             "key": "short_volume_monitor",
-            "title": _t(locale, "Short volume monitor", "공매도 거래량 모니터"),
+            "title": _t(locale, "Daily short volume", "일별 공매도 거래량"),
             "summary": _t(
                 locale,
-                "Ticker-level daily short sale volume for monitored symbols after FINRA publishes same-day files.",
-                "FINRA 당일 파일 공개 후 모니터링 티커별 일별 공매도 거래량을 표시합니다.",
+                "Aggregated FINRA Reg SHO daily short-sale volume for the tracked ticker watchlist.",
+                "추적 티커 워치리스트의 FINRA Reg SHO 일별 공매도 거래량 합산값입니다.",
             ),
-            "value": "DJT / TSLA / NVDA",
+            "value": f"{top_volume['symbol']} {_format_count(top_volume['value'])}" if top_volume else " / ".join(symbols),
             "cadence": _t(locale, "Daily after FINRA posts files, no later than 6:00 p.m. ET.", "FINRA 파일 공개 후 매일 갱신, 동부시간 오후 6시 이전 공개."),
             "source": "FINRA Reg SHO Daily Short Sale Volume",
             "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume",
-            "freshness": "watch",
+            "freshness": "fresh" if short_volume else "watch",
             "severity": "medium",
             "refresh_seconds": 900,
-            "items": [
-                item(
-                    "short_volume_monitor",
-                    "monitored",
-                    "Monitored tickers",
-                    "모니터링 티커",
-                    "DJT, TSLA, NVDA",
-                    "Configurable via SHORT_VOLUME_MONITORED_TICKERS.",
-                    "SHORT_VOLUME_MONITORED_TICKERS로 변경 가능합니다.",
-                    "configuration",
-                    "medium",
-                    "watch",
-                )
-            ],
+            "items": short_volume_items,
         },
         {
             "key": "short_research_reports",
@@ -836,6 +1368,7 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
                 item("short_research_reports", "hindenburg", "Hindenburg Research", "힌덴버그 리서치", "archived", "Founder announced shutdown; keep archive/news monitoring for follow-through.", "창업자가 폐쇄를 발표했으므로 아카이브/뉴스 후속 추적을 유지합니다.", "Hindenburg/news", "high", "watch", "https://hindenburgresearch.com/"),
                 item("short_research_reports", "muddy_waters", "Muddy Waters", "머디 워터스", "active watch", "Known for public short theses and forensic reports.", "공개 숏 논지와 포렌식 보고서로 알려진 출처입니다.", "Muddy Waters", "high", "watch", "https://www.muddywatersresearch.com/"),
                 item("short_research_reports", "viceroy", "Viceroy Research", "바이스로이 리서치", "active watch", "Known public activist short research publisher.", "공개 액티비스트 숏 리서치 발행사로 알려져 있습니다.", "Viceroy", "medium", "watch", "https://viceroyresearch.org/"),
+                item("short_research_reports", "ai_summary", "AI report summaries", "AI 보고서 요약", summary_status, "Long public reports can be summarized after source-policy review; raw restricted text is not sent to external providers.", "긴 공개 보고서는 출처 정책 검토 후 요약할 수 있으며 제한 원문은 외부 제공자에게 보내지 않습니다.", "LLM router", "medium", "fresh" if ai_summary_ready else "watch"),
                 item("short_research_reports", "spruce_point", "Spruce Point", "스프루스 포인트", "active watch", "Public forensic short research source.", "공개 포렌식 숏 리서치 출처입니다.", "Spruce Point", "medium", "watch", "https://www.sprucepointcap.com/"),
                 item("short_research_reports", "kerrisdale", "Kerrisdale Capital", "케리스데일 캐피털", "active watch", "Publishes short and long research letters.", "롱/숏 리서치 레터를 공개합니다.", "Kerrisdale", "medium", "watch", "https://www.kerrisdalecap.com/"),
                 item("short_research_reports", "culper", "Culper Research", "컬퍼 리서치", "active watch", "Public short research publisher.", "공개 숏 리서치 발행사입니다.", "Culper", "medium", "watch", "https://culperresearch.com/"),
@@ -848,39 +1381,34 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
             "title": _t(locale, "Pentagon pizza index", "펜타곤 피자 지수"),
             "summary": _t(
                 locale,
-                "OSINT-style activity monitor; useful as weak context, never a standalone market signal.",
-                "OSINT식 활동 모니터이며 단독 시장 신호가 아닌 약한 맥락 신호로만 사용합니다.",
+                "Direct weak-OSINT snapshot from Pentagon.Pizza, displayed here so users do not need to inspect another site first.",
+                "사용자가 먼저 다른 사이트를 살펴보지 않아도 되도록 Pentagon.Pizza의 약한 OSINT 스냅샷을 직접 표시합니다.",
             ),
-            "value": _t(locale, "external live source", "외부 라이브 출처"),
+            "value": _t(locale, "observed", "관측됨") if pizza_metadata else _t(locale, "source unavailable", "출처 사용 불가"),
             "cadence": _t(locale, "5-minute polling target; weak-source label required.", "5분 폴링 목표; 약한 출처 라벨 필수."),
             "source": "Pentagon.Pizza",
-            "source_url": "https://pentagon.pizza/",
-            "freshness": "watch",
+            "source_url": str(env.get("PENTAGON_PIZZA_BASE_URL") or PENTAGON_PIZZA_URL),
+            "freshness": "fresh" if pizza_metadata else "watch",
             "severity": "low",
             "refresh_seconds": 300,
-            "items": [
-                item("pentagon_pizza_index", "method", "Weak OSINT context", "약한 OSINT 맥락", "watch only", "Collate with geopolitical news; do not publish as a causal claim.", "지정학 뉴스와 함께 보되 인과 주장으로 공개하지 않습니다.", "source policy", "low", "watch", "https://pentagon.pizza/")
-            ],
+            "items": pizza_items,
         },
         {
             "key": "trump_filings",
             "title": _t(locale, "Trump-family filings", "트럼프 일가 공시"),
             "summary": _t(
                 locale,
-                "Monitors public SEC/ethics filings for named entities; family-office 13F scope must be explicitly resolved.",
-                "지정 엔티티의 SEC/윤리 공시를 추적하며 패밀리오피스 13F 범위는 명시적으로 확정해야 합니다.",
+                "Direct SEC filing digest for tracked Trump-related public entities, with unresolved entity caveats kept visible.",
+                "추적 중인 트럼프 관련 공개 엔티티의 SEC 공시 요약이며 미확정 엔티티 주의사항을 함께 표시합니다.",
             ),
-            "value": _t(locale, "entity resolution required", "엔티티 확정 필요"),
-            "cadence": _t(locale, "SEC polling every 15 minutes after entity list is approved.", "엔티티 목록 승인 후 SEC를 15분 간격으로 확인합니다."),
+            "value": f"{latest_filing['form']} {latest_filing['filing_date']}" if latest_filing else _t(locale, "SEC watch", "SEC 감시"),
+            "cadence": _t(locale, "SEC submissions snapshot; poll no faster than the configured fair-access schedule.", "SEC submissions 스냅샷이며 설정된 공정 접근 주기보다 빠르게 폴링하지 않습니다."),
             "source": "SEC EDGAR / OGE disclosures",
             "source_url": "https://www.sec.gov/search-filings",
-            "freshness": "watch",
+            "freshness": "fresh" if trump_documents else "watch",
             "severity": "medium",
             "refresh_seconds": 900,
-            "items": [
-                item("trump_filings", "djt", "Trump Media & Technology Group", "트럼프 미디어", "SEC monitor", "Track DJT issuer filings and insider Forms 3/4/5.", "DJT 발행사 공시와 내부자 Form 3/4/5를 추적합니다.", "SEC EDGAR", "medium", "watch", "https://www.sec.gov/edgar/browse/?CIK=1849635"),
-                item("trump_filings", "trust", "Donald J. Trump Revocable Trust", "도널드 J. 트럼프 취소가능 신탁", "SEC monitor", "Track beneficial-ownership filings where present; this is not automatically a 13F manager.", "존재하는 수익소유 공시를 추적합니다. 자동으로 13F 운용사라는 뜻은 아닙니다.", "SEC EDGAR", "medium", "watch"),
-            ],
+            "items": trump_items,
         },
     ]
 

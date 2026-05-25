@@ -8,8 +8,10 @@ from sqlalchemy.orm import Session
 from frw_api.auth.security import CurrentUser, require_csrf, require_role
 from frw_api.db.session import get_db
 from frw_api.services.audit import audit
+from frw_api.services.document_summary import summarize_public_url
 from frw_api.services.fact_validation import FactValidationError, validate_fact_shape
 from frw_api.services.job_queue import enqueue_job, replay_dead_letter
+from frw_api.services.llm_router import LLMRoutingError
 from frw_api.services.provider_budget import set_kill_switch
 from frw_api.services.publication_gate import EventGateInput, can_publish_event
 from frw_api.services.snapshot_service import (
@@ -34,6 +36,11 @@ class SourceCreate(BaseModel):
 class UrlIngestRequest(BaseModel):
     url: HttpUrl
     source_key: str | None = None
+
+
+class UrlSummaryRequest(BaseModel):
+    url: HttpUrl
+    locale: str = "en"
 
 
 class ReviewRequest(BaseModel):
@@ -229,6 +236,23 @@ async def admin_ingest_url(
     audit(db, user=user, action="source_document.ingest_url", target_table="source_document", target_pk=document_id)
     db.commit()
     return {"id": document_id}
+
+
+@router.post("/summaries/url")
+async def admin_summarize_url(
+    payload: UrlSummaryRequest,
+    user: CurrentUser = Depends(require_csrf),
+    db: Session = Depends(get_db),
+):
+    _assert_role(user, "owner", "admin", "editor")
+    locale = payload.locale if payload.locale in {"en", "ko"} else "en"
+    try:
+        summary = await summarize_public_url(db, url=str(payload.url), locale=locale)
+    except (SourceIngestionError, LLMRoutingError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    audit(db, user=user, action="source_document.summarize_url", target_table="source_document", target_pk=str(payload.url))
+    db.commit()
+    return summary
 
 
 @router.post("/ingest/file")

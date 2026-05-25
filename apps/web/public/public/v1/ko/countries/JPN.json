@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-25T09:16:35Z",
-  "stale_after": "2026-05-25T21:16:35Z",
-  "hard_expires_at": "2026-06-01T09:16:35Z",
+  "generated_at": "2026-05-25T14:28:20Z",
+  "stale_after": "2026-05-26T02:28:20Z",
+  "hard_expires_at": "2026-06-01T14:28:20Z",
   "object_type": "country_region",
   "object_key": "JPN",
-  "content_hash": "sha256:1c098dc048a490381896ef29d68607dd3c1c011ecd0341b3f9f18a7c8a4d9495",
+  "content_hash": "sha256:b370a02ae2c34138a9d50af1b07f86d239b908ad402553f759732a7ac73a60e0",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -86,8 +86,8 @@
         "title": "반도체 수출통제 모니터링 강도 유지",
         "summary": "승인된 시드 이벤트가 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
         "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다.",
-        "occurred_at": "2026-05-25T09:16:35Z",
-        "published_at": "2026-05-25T09:16:35Z",
+        "occurred_at": "2026-05-25T14:28:20Z",
+        "published_at": "2026-05-25T14:28:20Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -128,9 +128,9 @@
         "id": "event_central_bank_seed",
         "title": "6개 중앙은행 정책회의 일정 시드 적용",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, 브라질 COPOM이 명시적 예상치 라벨과 함께 표시됩니다.",
-        "why_it_matters": "캘린더 가시성은 미지원 범위를 숨기지 않고 오래된 정책 데이터를 드러냅니다.",
-        "occurred_at": "2026-05-25T09:16:35Z",
-        "published_at": "2026-05-25T09:16:35Z",
+        "why_it_matters": "캘린더 가시성은 커버리지 공백을 숨기지 않고 오래된 정책 데이터를 드러냅니다.",
+        "occurred_at": "2026-05-25T14:28:20Z",
+        "published_at": "2026-05-25T14:28:20Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -199,7 +199,8 @@
         "source": "FRED / Nasdaq",
         "freshness": "fresh",
         "delay_label": "FRED NASDAQCOM 실제값, 2026-05-22까지",
-        "updated_at": "2026-05-25T09:16:35Z",
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "active",
         "points": [
           {
             "date": "2026-05-19",
@@ -222,11 +223,12 @@
       {
         "key": "nasdaq_100_futures",
         "label": "나스닥 100 선물",
-        "value": "미연결",
+        "value": "출처 공백",
         "source": "CME / licensed futures feed",
-        "freshness": "unsupported",
+        "freshness": "watch",
         "delay_label": "상시 무료 라이선스 선물 API가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T09:16:35Z"
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "coverage_gap"
       },
       {
         "key": "kospi",
@@ -235,7 +237,8 @@
         "source": "FRED / OECD Korea share prices",
         "freshness": "fresh",
         "delay_label": "FRED SPASTT01KRM661N 실제값, 2026-04-01까지",
-        "updated_at": "2026-05-25T09:16:35Z",
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "active",
         "points": [
           {
             "date": "2026-01-01",
@@ -258,20 +261,22 @@
       {
         "key": "kodex_200",
         "label": "KODEX 200 ETF",
-        "value": "미연결",
+        "value": "출처 공백",
         "source": "KRX / Samsung AM",
-        "freshness": "unsupported",
+        "freshness": "watch",
         "delay_label": "상시 무료 재배포 가능 ETF 피드가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T09:16:35Z"
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "coverage_gap"
       },
       {
         "key": "kospi_200_futures",
         "label": "코스피 200 선물",
-        "value": "미연결",
+        "value": "출처 공백",
         "source": "KRX derivatives feed",
-        "freshness": "unsupported",
+        "freshness": "watch",
         "delay_label": "상시 무료 라이선스 파생상품 API가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T09:16:35Z"
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "coverage_gap"
       },
       {
         "key": "wti_crude",
@@ -280,7 +285,8 @@
         "source": "FRED / EIA",
         "freshness": "fresh",
         "delay_label": "FRED DCOILWTICO 실제값, 2026-05-18까지",
-        "updated_at": "2026-05-25T09:16:35Z",
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "active",
         "unit": "$",
         "points": [
           {
@@ -308,7 +314,8 @@
         "source": "FRED / Cboe",
         "freshness": "fresh",
         "delay_label": "FRED VIXCLS 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T09:16:35Z",
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "active",
         "points": [
           {
             "date": "2026-05-18",
@@ -335,7 +342,8 @@
         "source": "FRED / Federal Reserve H.10",
         "freshness": "fresh",
         "delay_label": "FRED DEXKOUS 실제값, 2026-05-15까지",
-        "updated_at": "2026-05-25T09:16:35Z",
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "active",
         "unit": "KRW",
         "points": [
           {
@@ -363,7 +371,8 @@
         "source": "FRED / Federal Reserve H.10",
         "freshness": "fresh",
         "delay_label": "FRED DEXJPUS 실제값, 2026-05-15까지",
-        "updated_at": "2026-05-25T09:16:35Z",
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "active",
         "unit": "JPY",
         "points": [
           {
@@ -391,7 +400,8 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS2 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T09:16:35Z",
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "active",
         "unit": "%",
         "points": [
           {
@@ -410,7 +420,13 @@
             "date": "2026-05-21",
             "value": 4.08
           }
-        ]
+        ],
+        "next_event": {
+          "title": "FOMC 정책 결정",
+          "date": "2026-06-17",
+          "timezone": "America/New_York",
+          "source": "Federal Reserve calendar"
+        }
       },
       {
         "key": "us_3y",
@@ -419,7 +435,8 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS3 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T09:16:35Z",
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "active",
         "unit": "%",
         "points": [
           {
@@ -438,7 +455,13 @@
             "date": "2026-05-21",
             "value": 4.13
           }
-        ]
+        ],
+        "next_event": {
+          "title": "FOMC 정책 결정",
+          "date": "2026-06-17",
+          "timezone": "America/New_York",
+          "source": "Federal Reserve calendar"
+        }
       },
       {
         "key": "us_5y",
@@ -447,7 +470,8 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS5 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T09:16:35Z",
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "active",
         "unit": "%",
         "points": [
           {
@@ -466,7 +490,13 @@
             "date": "2026-05-21",
             "value": 4.25
           }
-        ]
+        ],
+        "next_event": {
+          "title": "FOMC 정책 결정",
+          "date": "2026-06-17",
+          "timezone": "America/New_York",
+          "source": "Federal Reserve calendar"
+        }
       },
       {
         "key": "us_10y",
@@ -475,7 +505,8 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS10 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T09:16:35Z",
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "active",
         "unit": "%",
         "points": [
           {
@@ -494,37 +525,68 @@
             "date": "2026-05-21",
             "value": 4.57
           }
-        ]
+        ],
+        "next_event": {
+          "title": "FOMC 정책 결정",
+          "date": "2026-06-17",
+          "timezone": "America/New_York",
+          "source": "Federal Reserve calendar"
+        }
       },
       {
         "key": "japan_policy_rate",
         "label": "일본은행 정책금리",
-        "value": "미연결",
-        "source": "Bank of Japan",
-        "freshness": "unsupported",
-        "delay_label": "일본은행 정책금리 API 출처가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T09:16:35Z",
-        "unit": "%"
+        "value": "0.3",
+        "source": "FRED / OECD Japan central bank rate",
+        "freshness": "fresh",
+        "delay_label": "FRED IRSTCB01JPM156N 실제값, 2023-12-01까지",
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "active",
+        "unit": "%",
+        "points": [
+          {
+            "date": "2023-09-01",
+            "value": 0.3
+          },
+          {
+            "date": "2023-10-01",
+            "value": 0.3
+          },
+          {
+            "date": "2023-11-01",
+            "value": 0.3
+          },
+          {
+            "date": "2023-12-01",
+            "value": 0.3
+          }
+        ],
+        "next_event": {
+          "title": "일본은행 통화정책회의",
+          "date": "2026-06-16",
+          "timezone": "Asia/Tokyo",
+          "source": "BoJ calendar seed"
+        }
       },
       {
         "key": "japan_2y",
         "label": "일본 국채 2년",
-        "value": "미연결",
+        "value": "출처 공백",
         "source": "Japan MOF / BoJ",
-        "freshness": "unsupported",
+        "freshness": "watch",
         "delay_label": "상시 무료 2년 JGB API 출처가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T09:16:35Z",
-        "unit": "%"
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "coverage_gap"
       },
       {
         "key": "japan_5y",
         "label": "일본 국채 5년",
-        "value": "미연결",
+        "value": "출처 공백",
         "source": "Japan MOF / BoJ",
-        "freshness": "unsupported",
+        "freshness": "watch",
         "delay_label": "상시 무료 5년 JGB API 출처가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T09:16:35Z",
-        "unit": "%"
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "coverage_gap"
       },
       {
         "key": "japan_10y",
@@ -533,7 +595,8 @@
         "source": "FRED / OECD Japan 10Y yield",
         "freshness": "fresh",
         "delay_label": "FRED IRLTLT01JPM156N 실제값, 2026-04-01까지",
-        "updated_at": "2026-05-25T09:16:35Z",
+        "updated_at": "2026-05-25T14:28:20Z",
+        "coverage_status": "active",
         "unit": "%",
         "points": [
           {
@@ -552,7 +615,13 @@
             "date": "2026-04-01",
             "value": 2.515
           }
-        ]
+        ],
+        "next_event": {
+          "title": "일본은행 통화정책회의",
+          "date": "2026-06-16",
+          "timezone": "Asia/Tokyo",
+          "source": "BoJ calendar seed"
+        }
       }
     ]
   },

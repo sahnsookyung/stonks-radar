@@ -221,7 +221,8 @@ async def _get_finra_rows(
     if not token:
         return []
     request_limit = max(1, min(limit, 5000))
-    query_payloads = _finra_query_payloads(dataset, symbols=symbols, limit=request_limit)
+    payload_limit = 5000 if symbols else request_limit
+    query_payloads = _finra_query_payloads(dataset, symbols=symbols, limit=payload_limit)
     rows: list[dict[str, Any]] = []
     async with httpx.AsyncClient(timeout=20, transport=transport) as client:
         for payload in query_payloads:
@@ -242,7 +243,7 @@ async def _get_finra_rows(
             rows.extend(_finra_rows(response.json()))
             if not symbols and len(rows) >= request_limit:
                 break
-    return rows[:request_limit]
+    return _sort_finra_rows_latest_first(rows)[:request_limit]
 
 
 def _finra_credentials_configured(settings: Any) -> bool:
@@ -307,6 +308,10 @@ def _finra_rows(payload: Any) -> list[dict[str, Any]]:
         if isinstance(rows, list):
             return [row for row in rows if isinstance(row, dict)]
     return []
+
+
+def _sort_finra_rows_latest_first(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return sorted(rows, key=lambda row: (_row_date(row), _row_symbol(row)), reverse=True)
 
 
 def _short_interest_observation(row: dict[str, Any]) -> dict[str, Any]:
