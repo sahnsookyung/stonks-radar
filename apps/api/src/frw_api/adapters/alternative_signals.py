@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import base64
 import hashlib
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -26,6 +28,14 @@ DEFAULT_TRUMP_CIKS = {
     "DJT": "0001849635",
 }
 
+FINRA_CREDENTIALS_REQUIRED = "FINRA_API_TOKEN or FINRA_API_CLIENT_ID/FINRA_API_CLIENT_SECRET is required"
+
+_FINRA_SYMBOL_FIELDS = {
+    "consolidatedShortInterest": "symbolCode",
+    "regShoDaily": "securitiesInformationProcessorSymbolIdentifier",
+}
+_FINRA_TOKEN_CACHE: dict[str, Any] = {"token": None, "expires_at": 0.0}
+
 
 class FINRAShortInterestAdapter:
     source_key = "finra_short_interest"
@@ -38,8 +48,8 @@ class FINRAShortInterestAdapter:
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> AdapterResult:
         settings = get_settings()
-        if not settings.finra_api_token:
-            return empty_result(self.source_key, "finra_short_interest", ["FINRA_API_TOKEN is required"])
+        if not _finra_credentials_configured(settings):
+            return empty_result(self.source_key, "finra_short_interest", [FINRA_CREDENTIALS_REQUIRED])
         rows = await _get_finra_rows(
             "otcMarket",
             "consolidatedShortInterest",
@@ -75,8 +85,8 @@ class FINRAShortVolumeAdapter:
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> AdapterResult:
         settings = get_settings()
-        if not settings.finra_api_token:
-            return empty_result(self.source_key, "finra_reg_sho_short_volume", ["FINRA_API_TOKEN is required"])
+        if not _finra_credentials_configured(settings):
+            return empty_result(self.source_key, "finra_reg_sho_short_volume", [FINRA_CREDENTIALS_REQUIRED])
         rows = await _get_finra_rows(
             "otcMarket",
             "regShoDaily",
@@ -201,20 +211,82 @@ async def _get_finra_rows(
     transport: httpx.AsyncBaseTransport | None,
 ) -> list[dict[str, Any]]:
     settings = get_settings()
-    params: dict[str, str] = {"limit": str(max(1, min(limit, 5000)))}
-    if symbols:
-        params["where"] = " or ".join(f"symbol='{symbol}'" for symbol in symbols)
+    token = await _finra_bearer_token(transport=transport)
+    if not token:
+        return []
+    request_limit = max(1, min(limit, 5000))
+    query_payloads = _finra_query_payloads(dataset, symbols=symbols, limit=request_limit)
+    rows: list[dict[str, Any]] = []
     async with httpx.AsyncClient(timeout=20, transport=transport) as client:
-        response = await client.get(
-            f"{settings.finra_api_base_url.rstrip('/')}/data/group/{group}/name/{dataset}",
-            params=params,
-            headers={
-                "Accept": "application/json",
-                "Authorization": f"Bearer {settings.finra_api_token}",
-            },
+        for payload in query_payloads:
+            response = await client.post(
+                f"{settings.finra_api_base_url.rstrip('/')}/data/group/{group}/name/{dataset}",
+                json=payload,
+                headers={
+                    "Accept": "application/json",
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                },
+            )
+            response.raise_for_status()
+            rows.extend(_finra_rows(response.json()))
+            if not symbols and len(rows) >= request_limit:
+                break
+    return rows[:request_limit]
+
+
+def _finra_credentials_configured(settings: Any) -> bool:
+    return bool(settings.finra_api_token) or bool(settings.finra_api_client_id and settings.finra_api_client_secret)
+
+
+async def _finra_bearer_token(*, transport: httpx.AsyncBaseTransport | None) -> str | None:
+    settings = get_settings()
+    if settings.finra_api_token:
+        return settings.finra_api_token
+    if not settings.finra_api_client_id or not settings.finra_api_client_secret:
+        return None
+    now = time.time()
+    if transport is None and _FINRA_TOKEN_CACHE["token"] and _FINRA_TOKEN_CACHE["expires_at"] > now:
+        return str(_FINRA_TOKEN_CACHE["token"])
+
+    credentials = f"{settings.finra_api_client_id}:{settings.finra_api_client_secret}".encode()
+    authorization = base64.b64encode(credentials).decode()
+    async with httpx.AsyncClient(timeout=20, transport=transport) as client:
+        response = await client.post(
+            settings.finra_oauth_token_url,
+            headers={"Accept": "application/json", "Authorization": f"Basic {authorization}"},
         )
         response.raise_for_status()
         payload = response.json()
+    token = str(payload.get("access_token") or "")
+    if not token:
+        raise ValueError("FINRA OAuth response did not include access_token")
+    if transport is None:
+        expires_in = int(payload.get("expires_in") or 1800)
+        _FINRA_TOKEN_CACHE.update({"token": token, "expires_at": now + max(60, min(expires_in - 60, 1800))})
+    return token
+
+
+def _finra_query_payloads(dataset: str, *, symbols: list[str], limit: int) -> list[dict[str, Any]]:
+    if not symbols:
+        return [{"limit": limit}]
+    symbol_field = _FINRA_SYMBOL_FIELDS.get(dataset, "symbolCode")
+    return [
+        {
+            "limit": limit,
+            "compareFilters": [
+                {
+                    "compareType": "equal",
+                    "fieldName": symbol_field,
+                    "fieldValue": symbol,
+                }
+            ],
+        }
+        for symbol in symbols
+    ]
+
+
+def _finra_rows(payload: Any) -> list[dict[str, Any]]:
     if isinstance(payload, list):
         return [row for row in payload if isinstance(row, dict)]
     if isinstance(payload, dict):
@@ -268,7 +340,13 @@ def _symbols(symbols: list[str] | None) -> list[str]:
 
 
 def _row_symbol(row: dict[str, Any]) -> str:
-    value = row.get("symbol") or row.get("issueSymbolIdentifier") or row.get("ticker") or row.get("securitiesInformationProcessorSymbolIdentifier")
+    value = (
+        row.get("symbol")
+        or row.get("symbolCode")
+        or row.get("issueSymbolIdentifier")
+        or row.get("ticker")
+        or row.get("securitiesInformationProcessorSymbolIdentifier")
+    )
     return str(value or "").strip().upper()
 
 

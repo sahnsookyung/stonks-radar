@@ -61,6 +61,9 @@ class Settings(BaseSettings):
     finnhub_api_key: str | None = None
     nasdaq_data_link_api_key: str | None = None
     finra_api_base_url: str = "https://api.finra.org"
+    finra_oauth_token_url: str = "https://ews.fip.finra.org/fip/rest/ews/oauth2/access_token?grant_type=client_credentials"
+    finra_api_client_id: str | None = None
+    finra_api_client_secret: str | None = None
     finra_api_token: str | None = None
     short_volume_monitored_tickers: str = "DJT,TSLA,NVDA"
     short_research_sources: str = "hindenburg,muddy_waters,viceroy,spruce_point,kerrisdale,culper,blue_orca,grizzly"

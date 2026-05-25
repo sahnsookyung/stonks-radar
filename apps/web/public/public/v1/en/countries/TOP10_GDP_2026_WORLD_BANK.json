@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-25T08:23:17Z",
-  "stale_after": "2026-05-25T20:23:17Z",
-  "hard_expires_at": "2026-06-01T08:23:17Z",
+  "generated_at": "2026-05-25T09:16:35Z",
+  "stale_after": "2026-05-25T21:16:35Z",
+  "hard_expires_at": "2026-06-01T09:16:35Z",
   "object_type": "country_region",
   "object_key": "TOP10_GDP_2026_WORLD_BANK",
-  "content_hash": "sha256:1cf025467eb45442ccfff6451d668ebafdcd30585b53cbeefee29cf5da2f8f42",
+  "content_hash": "sha256:5d6776620734f921402792965e8f7e75487303ca5a93e09436257d1218e2ca80",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -86,8 +86,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-25T08:23:17Z",
-        "published_at": "2026-05-25T08:23:17Z",
+        "occurred_at": "2026-05-25T09:16:35Z",
+        "published_at": "2026-05-25T09:16:35Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -167,217 +167,364 @@
       {
         "key": "nasdaq_composite",
         "label": "Nasdaq Composite",
-        "value": "Pending",
-        "source": "Nasdaq / licensed market feed",
-        "freshness": "watch",
-        "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T08:23:17Z",
+        "value": "26,343.97",
+        "source": "FRED / Nasdaq",
+        "freshness": "fresh",
+        "delay_label": "FRED NASDAQCOM actual through 2026-05-22",
+        "updated_at": "2026-05-25T09:16:35Z",
         "points": [
           {
-            "date": "T-3",
-            "value": 100
+            "date": "2026-05-19",
+            "value": 25870.71
           },
           {
-            "date": "T-2",
-            "value": 101.4
+            "date": "2026-05-20",
+            "value": 26270.36
           },
           {
-            "date": "T-1",
-            "value": 100.8
+            "date": "2026-05-21",
+            "value": 26293.1
           },
           {
-            "date": "T",
-            "value": 102.1
+            "date": "2026-05-22",
+            "value": 26343.97
           }
         ]
       },
       {
         "key": "nasdaq_100_futures",
         "label": "Nasdaq 100 futures",
-        "value": "Pending",
+        "value": "Not connected",
         "source": "CME / licensed futures feed",
-        "freshness": "watch",
-        "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T08:23:17Z",
-        "points": [
-          {
-            "date": "T-3",
-            "value": 100
-          },
-          {
-            "date": "T-2",
-            "value": 100.6
-          },
-          {
-            "date": "T-1",
-            "value": 99.8
-          },
-          {
-            "date": "T",
-            "value": 101.2
-          }
-        ]
+        "freshness": "unsupported",
+        "delay_label": "No always-free licensed futures API is configured",
+        "updated_at": "2026-05-25T09:16:35Z"
       },
       {
         "key": "kospi",
-        "label": "KOSPI",
-        "value": "Pending",
-        "source": "KRX / licensed market feed",
-        "freshness": "watch",
-        "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T08:23:17Z",
+        "label": "Korea share price index",
+        "value": "301.39",
+        "source": "FRED / OECD Korea share prices",
+        "freshness": "fresh",
+        "delay_label": "FRED SPASTT01KRM661N actual through 2026-04-01",
+        "updated_at": "2026-05-25T09:16:35Z",
         "points": [
           {
-            "date": "T-3",
-            "value": 100
+            "date": "2026-01-01",
+            "value": 237.6905
           },
           {
-            "date": "T-2",
-            "value": 99.7
+            "date": "2026-02-01",
+            "value": 276.7081
           },
           {
-            "date": "T-1",
-            "value": 100.9
+            "date": "2026-03-01",
+            "value": 276.3034
           },
           {
-            "date": "T",
-            "value": 101.1
+            "date": "2026-04-01",
+            "value": 301.3875
           }
         ]
       },
       {
         "key": "kodex_200",
         "label": "KODEX 200 ETF",
-        "value": "Pending",
+        "value": "Not connected",
         "source": "KRX / Samsung AM",
-        "freshness": "watch",
-        "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T08:23:17Z"
+        "freshness": "unsupported",
+        "delay_label": "No always-free redistributable ETF feed is configured",
+        "updated_at": "2026-05-25T09:16:35Z"
       },
       {
         "key": "kospi_200_futures",
         "label": "KOSPI 200 futures",
-        "value": "Pending",
+        "value": "Not connected",
         "source": "KRX derivatives feed",
-        "freshness": "watch",
-        "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T08:23:17Z"
+        "freshness": "unsupported",
+        "delay_label": "No always-free licensed derivatives API is configured",
+        "updated_at": "2026-05-25T09:16:35Z"
       },
       {
         "key": "wti_crude",
         "label": "WTI crude oil",
-        "value": "Pending",
-        "source": "EIA / exchange reference",
-        "freshness": "watch",
-        "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T08:23:17Z"
+        "value": "112.25",
+        "source": "FRED / EIA",
+        "freshness": "fresh",
+        "delay_label": "FRED DCOILWTICO actual through 2026-05-18",
+        "updated_at": "2026-05-25T09:16:35Z",
+        "unit": "$",
+        "points": [
+          {
+            "date": "2026-05-13",
+            "value": 104.52
+          },
+          {
+            "date": "2026-05-14",
+            "value": 104.66
+          },
+          {
+            "date": "2026-05-15",
+            "value": 108.99
+          },
+          {
+            "date": "2026-05-18",
+            "value": 112.25
+          }
+        ]
       },
       {
         "key": "vix",
         "label": "VIX",
-        "value": "Pending",
-        "source": "Cboe / licensed market feed",
-        "freshness": "watch",
-        "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T08:23:17Z"
+        "value": "16.76",
+        "source": "FRED / Cboe",
+        "freshness": "fresh",
+        "delay_label": "FRED VIXCLS actual through 2026-05-21",
+        "updated_at": "2026-05-25T09:16:35Z",
+        "points": [
+          {
+            "date": "2026-05-18",
+            "value": 17.82
+          },
+          {
+            "date": "2026-05-19",
+            "value": 18.06
+          },
+          {
+            "date": "2026-05-20",
+            "value": 17.44
+          },
+          {
+            "date": "2026-05-21",
+            "value": 16.76
+          }
+        ]
       },
       {
         "key": "usd_krw",
         "label": "USD/KRW",
-        "value": "Pending",
-        "source": "BOK / licensed FX feed",
-        "freshness": "watch",
-        "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T08:23:17Z"
+        "value": "1,499.61",
+        "source": "FRED / Federal Reserve H.10",
+        "freshness": "fresh",
+        "delay_label": "FRED DEXKOUS actual through 2026-05-15",
+        "updated_at": "2026-05-25T09:16:35Z",
+        "unit": "KRW",
+        "points": [
+          {
+            "date": "2026-05-12",
+            "value": 1490.32
+          },
+          {
+            "date": "2026-05-13",
+            "value": 1490.11
+          },
+          {
+            "date": "2026-05-14",
+            "value": 1491.75
+          },
+          {
+            "date": "2026-05-15",
+            "value": 1499.61
+          }
+        ]
       },
       {
         "key": "usd_jpy",
         "label": "USD/JPY",
-        "value": "Pending",
-        "source": "BoJ / licensed FX feed",
-        "freshness": "watch",
-        "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T08:23:17Z"
+        "value": "158.69",
+        "source": "FRED / Federal Reserve H.10",
+        "freshness": "fresh",
+        "delay_label": "FRED DEXJPUS actual through 2026-05-15",
+        "updated_at": "2026-05-25T09:16:35Z",
+        "unit": "JPY",
+        "points": [
+          {
+            "date": "2026-05-12",
+            "value": 157.71
+          },
+          {
+            "date": "2026-05-13",
+            "value": 157.84
+          },
+          {
+            "date": "2026-05-14",
+            "value": 158.08
+          },
+          {
+            "date": "2026-05-15",
+            "value": 158.69
+          }
+        ]
       },
       {
         "key": "us_2y",
         "label": "US Treasury 2Y",
-        "value": "Reference",
-        "source": "US Treasury",
+        "value": "4.08",
+        "source": "FRED / US Treasury",
         "freshness": "fresh",
-        "delay_label": "official reference",
-        "updated_at": "2026-05-25T08:23:17Z",
-        "unit": "%"
+        "delay_label": "FRED DGS2 actual through 2026-05-21",
+        "updated_at": "2026-05-25T09:16:35Z",
+        "unit": "%",
+        "points": [
+          {
+            "date": "2026-05-18",
+            "value": 4.07
+          },
+          {
+            "date": "2026-05-19",
+            "value": 4.13
+          },
+          {
+            "date": "2026-05-20",
+            "value": 4.04
+          },
+          {
+            "date": "2026-05-21",
+            "value": 4.08
+          }
+        ]
       },
       {
         "key": "us_3y",
         "label": "US Treasury 3Y",
-        "value": "Reference",
-        "source": "US Treasury",
+        "value": "4.13",
+        "source": "FRED / US Treasury",
         "freshness": "fresh",
-        "delay_label": "official reference",
-        "updated_at": "2026-05-25T08:23:17Z",
-        "unit": "%"
+        "delay_label": "FRED DGS3 actual through 2026-05-21",
+        "updated_at": "2026-05-25T09:16:35Z",
+        "unit": "%",
+        "points": [
+          {
+            "date": "2026-05-18",
+            "value": 4.14
+          },
+          {
+            "date": "2026-05-19",
+            "value": 4.2
+          },
+          {
+            "date": "2026-05-20",
+            "value": 4.11
+          },
+          {
+            "date": "2026-05-21",
+            "value": 4.13
+          }
+        ]
       },
       {
         "key": "us_5y",
         "label": "US Treasury 5Y",
-        "value": "Reference",
-        "source": "US Treasury",
+        "value": "4.25",
+        "source": "FRED / US Treasury",
         "freshness": "fresh",
-        "delay_label": "official reference",
-        "updated_at": "2026-05-25T08:23:17Z",
-        "unit": "%"
+        "delay_label": "FRED DGS5 actual through 2026-05-21",
+        "updated_at": "2026-05-25T09:16:35Z",
+        "unit": "%",
+        "points": [
+          {
+            "date": "2026-05-18",
+            "value": 4.27
+          },
+          {
+            "date": "2026-05-19",
+            "value": 4.32
+          },
+          {
+            "date": "2026-05-20",
+            "value": 4.22
+          },
+          {
+            "date": "2026-05-21",
+            "value": 4.25
+          }
+        ]
       },
       {
         "key": "us_10y",
         "label": "US Treasury 10Y",
-        "value": "Reference",
-        "source": "US Treasury",
+        "value": "4.57",
+        "source": "FRED / US Treasury",
         "freshness": "fresh",
-        "delay_label": "official reference",
-        "updated_at": "2026-05-25T08:23:17Z",
-        "unit": "%"
+        "delay_label": "FRED DGS10 actual through 2026-05-21",
+        "updated_at": "2026-05-25T09:16:35Z",
+        "unit": "%",
+        "points": [
+          {
+            "date": "2026-05-18",
+            "value": 4.61
+          },
+          {
+            "date": "2026-05-19",
+            "value": 4.67
+          },
+          {
+            "date": "2026-05-20",
+            "value": 4.57
+          },
+          {
+            "date": "2026-05-21",
+            "value": 4.57
+          }
+        ]
       },
       {
         "key": "japan_policy_rate",
         "label": "BoJ policy rate",
-        "value": "Reference",
+        "value": "Not connected",
         "source": "Bank of Japan",
-        "freshness": "fresh",
-        "delay_label": "official reference",
-        "updated_at": "2026-05-25T08:23:17Z",
+        "freshness": "unsupported",
+        "delay_label": "BoJ policy-rate API source is not configured",
+        "updated_at": "2026-05-25T09:16:35Z",
         "unit": "%"
       },
       {
         "key": "japan_2y",
         "label": "Japan govt 2Y",
-        "value": "Reference",
+        "value": "Not connected",
         "source": "Japan MOF / BoJ",
-        "freshness": "fresh",
-        "delay_label": "official reference",
-        "updated_at": "2026-05-25T08:23:17Z",
+        "freshness": "unsupported",
+        "delay_label": "Always-free 2Y JGB API source is not configured",
+        "updated_at": "2026-05-25T09:16:35Z",
         "unit": "%"
       },
       {
         "key": "japan_5y",
         "label": "Japan govt 5Y",
-        "value": "Reference",
+        "value": "Not connected",
         "source": "Japan MOF / BoJ",
-        "freshness": "fresh",
-        "delay_label": "official reference",
-        "updated_at": "2026-05-25T08:23:17Z",
+        "freshness": "unsupported",
+        "delay_label": "Always-free 5Y JGB API source is not configured",
+        "updated_at": "2026-05-25T09:16:35Z",
         "unit": "%"
       },
       {
         "key": "japan_10y",
         "label": "Japan govt 10Y",
-        "value": "Reference",
-        "source": "Japan MOF / BoJ",
+        "value": "2.52",
+        "source": "FRED / OECD Japan 10Y yield",
         "freshness": "fresh",
-        "delay_label": "official reference",
-        "updated_at": "2026-05-25T08:23:17Z",
-        "unit": "%"
+        "delay_label": "FRED IRLTLT01JPM156N actual through 2026-04-01",
+        "updated_at": "2026-05-25T09:16:35Z",
+        "unit": "%",
+        "points": [
+          {
+            "date": "2026-01-01",
+            "value": 2.24
+          },
+          {
+            "date": "2026-02-01",
+            "value": 2.11
+          },
+          {
+            "date": "2026-03-01",
+            "value": 2.345
+          },
+          {
+            "date": "2026-04-01",
+            "value": 2.515
+          }
+        ]
       }
     ]
   },

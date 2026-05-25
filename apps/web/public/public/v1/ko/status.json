@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-25T08:23:17Z",
-  "stale_after": "2026-05-25T20:23:17Z",
-  "hard_expires_at": "2026-06-01T08:23:17Z",
+  "generated_at": "2026-05-25T09:16:35Z",
+  "stale_after": "2026-05-25T21:16:35Z",
+  "hard_expires_at": "2026-06-01T09:16:35Z",
   "object_type": "source_status",
   "object_key": "status",
-  "content_hash": "sha256:17fb12382022aa6b4a34e51d52f36b5abe1365ea31c98ebf14862d247775b70b",
+  "content_hash": "sha256:02a81359bd13b9b9bd4c1fd20d91b9049939b5ad7069082d2b3c68cc698ab335",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -34,10 +34,10 @@
       {
         "provider_key": "fred",
         "provider_type": "official_api",
-        "status": "missing_credentials",
+        "status": "ready",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": "FRED_API_KEY required for live ingest"
+        "warning": null
       },
       {
         "provider_key": "bls",
@@ -50,10 +50,10 @@
       {
         "provider_key": "eia",
         "provider_type": "official_api",
-        "status": "missing_credentials",
+        "status": "ready",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": "EIA_API_KEY required for live ingest"
+        "warning": null
       },
       {
         "provider_key": "sec_edgar",
@@ -61,23 +61,23 @@
         "status": "ready",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": "SEC_USER_AGENT must contain contact in production"
+        "warning": null
       },
       {
         "provider_key": "twelve_data",
         "provider_type": "market_data",
-        "status": "missing_credentials",
+        "status": "ready",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": "TWELVE_DATA_API_KEY enables portfolio history primary"
+        "warning": null
       },
       {
         "provider_key": "alpha_vantage",
         "provider_type": "market_data",
-        "status": "missing_credentials",
+        "status": "ready",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": "ALPHA_VANTAGE_API_KEY enables portfolio history fallback"
+        "warning": null
       },
       {
         "provider_key": "fmp",
@@ -88,12 +88,28 @@
         "warning": "FMP_API_KEY enables EOD/fundamental fallback"
       },
       {
-        "provider_key": "finra",
-        "provider_type": "official_api",
-        "status": "missing_credentials",
+        "provider_key": "finnhub",
+        "provider_type": "market_data",
+        "status": "ready",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": "FINRA_API_TOKEN required for short interest and Reg SHO short volume ingest"
+        "warning": null
+      },
+      {
+        "provider_key": "nasdaq_data_link",
+        "provider_type": "market_data",
+        "status": "ready",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": null
+      },
+      {
+        "provider_key": "finra",
+        "provider_type": "official_api",
+        "status": "ready",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": null
       },
       {
         "provider_key": "pentagon_pizza",
@@ -114,18 +130,50 @@
       {
         "provider_key": "gemini",
         "provider_type": "llm_provider",
-        "status": "missing_credentials",
+        "status": "ready",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": "GEMINI_API_KEY optional; public facts only"
+        "warning": null
       },
       {
         "provider_key": "groq",
         "provider_type": "llm_provider",
+        "status": "ready",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": null
+      },
+      {
+        "provider_key": "cerebras",
+        "provider_type": "llm_provider",
         "status": "missing_credentials",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": "GROQ_API_KEY optional; public facts only"
+        "warning": "CEREBRAS_API_KEY optional; public facts only"
+      },
+      {
+        "provider_key": "mistral",
+        "provider_type": "llm_provider",
+        "status": "missing_credentials",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": "MISTRAL_API_KEY optional; public facts only"
+      },
+      {
+        "provider_key": "openrouter",
+        "provider_type": "llm_provider",
+        "status": "missing_credentials",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": "OPENROUTER_API_KEY optional; public facts only"
+      },
+      {
+        "provider_key": "huggingface",
+        "provider_type": "llm_provider",
+        "status": "missing_credentials",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": "HF_TOKEN optional; public facts only"
       },
       {
         "provider_key": "local",
@@ -133,7 +181,7 @@
         "status": "ready",
         "mode": "LOCAL_ONLY",
         "last_verified_at": null,
-        "warning": "LOCAL_LLM_BASE_URL used for private research"
+        "warning": null
       }
     ],
     "operations": {

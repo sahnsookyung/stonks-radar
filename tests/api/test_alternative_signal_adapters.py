@@ -28,12 +28,16 @@ async def test_finra_short_interest_adapter_parses_rows(monkeypatch):
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/data/group/otcMarket/name/consolidatedShortInterest"
+        assert request.method == "POST"
         assert request.headers["authorization"] == "Bearer test-token"
+        assert request.read() == (
+            b'{"limit":50,"compareFilters":[{"compareType":"equal","fieldName":"symbolCode","fieldValue":"TSLA"}]}'
+        )
         return httpx.Response(
             200,
             json=[
                 {
-                    "symbol": "TSLA",
+                    "symbolCode": "TSLA",
                     "settlementDate": "2026-05-15",
                     "currentShortPositionQuantity": 123456,
                 }
@@ -59,6 +63,8 @@ async def test_finra_short_volume_adapter_parses_rows(monkeypatch):
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/data/group/otcMarket/name/regShoDaily"
+        assert request.method == "POST"
+        assert request.headers["authorization"] == "Bearer test-token"
         return httpx.Response(
             200,
             json={
@@ -83,12 +89,45 @@ async def test_finra_short_volume_adapter_parses_rows(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_finra_adapters_degrade_without_token():
+async def test_finra_adapter_uses_oauth_client_credentials(monkeypatch):
+    settings = get_settings()
+    monkeypatch.setattr(settings, "finra_api_base_url", "https://api.finra.test")
+    monkeypatch.setattr(settings, "finra_oauth_token_url", "https://oauth.finra.test/token")
+    monkeypatch.setattr(settings, "finra_api_token", None)
+    monkeypatch.setattr(settings, "finra_api_client_id", "client-id")
+    monkeypatch.setattr(settings, "finra_api_client_secret", "client-secret")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "oauth.finra.test":
+            assert request.method == "POST"
+            assert request.headers["authorization"].startswith("Basic ")
+            return httpx.Response(200, json={"access_token": "oauth-token", "token_type": "Bearer", "expires_in": 1800})
+        assert request.url.path == "/data/group/otcMarket/name/regShoDaily"
+        assert request.headers["authorization"] == "Bearer oauth-token"
+        return httpx.Response(
+            200,
+            json=[
+                {
+                    "securitiesInformationProcessorSymbolIdentifier": "TSLA",
+                    "tradeReportDate": "2026-05-22",
+                    "shortParQuantity": 1234,
+                }
+            ],
+        )
+
+    result = await FINRAShortVolumeAdapter().fetch(symbols=["TSLA"], transport=httpx.MockTransport(handler))
+
+    assert result.observations[0]["series_key"] == "FINRA_SHORT_VOLUME_TSLA"
+    assert result.observations[0]["value"] == 1234
+
+
+@pytest.mark.asyncio
+async def test_finra_adapters_degrade_without_credentials():
     short_interest = await FINRAShortInterestAdapter().fetch()
     short_volume = await FINRAShortVolumeAdapter().fetch()
 
-    assert short_interest.unsupported == ["FINRA_API_TOKEN is required"]
-    assert short_volume.unsupported == ["FINRA_API_TOKEN is required"]
+    assert short_interest.unsupported == ["FINRA_API_TOKEN or FINRA_API_CLIENT_ID/FINRA_API_CLIENT_SECRET is required"]
+    assert short_volume.unsupported == ["FINRA_API_TOKEN or FINRA_API_CLIENT_ID/FINRA_API_CLIENT_SECRET is required"]
 
 
 @pytest.mark.asyncio

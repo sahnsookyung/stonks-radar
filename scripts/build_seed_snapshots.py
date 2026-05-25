@@ -2,14 +2,22 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from urllib import parse, request
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_ROOT = ROOT / "apps" / "web" / "public" / "public"
 VERSION = 1
 LOCALES = ["en", "ko"]
+FRED_API_BASE_URL = "https://api.stlouisfed.org/fred"
+FRED_REQUEST_MIN_INTERVAL_SECONDS = 0.55
+_RUNTIME_ENV: dict[str, str] | None = None
+_FRED_CACHE: dict[str, dict[str, Any] | None] = {}
+_LAST_FRED_REQUEST_AT = 0.0
 
 SECTORS = {
     "space": {
@@ -288,6 +296,111 @@ def build_snapshots() -> None:
     (latest / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
 
 
+def _runtime_env() -> dict[str, str]:
+    global _RUNTIME_ENV
+    if _RUNTIME_ENV is not None:
+        return _RUNTIME_ENV
+    loaded: dict[str, str] = {}
+    default_env = ROOT / ".env"
+    if default_env.exists():
+        loaded.update(_read_env_file(default_env))
+    explicit_env = os.getenv("STONKS_SNAPSHOT_ENV_FILE")
+    if explicit_env:
+        loaded.update(_read_env_file(Path(explicit_env).expanduser()))
+    loaded.update({key: value for key, value in os.environ.items() if value})
+    _RUNTIME_ENV = loaded
+    return loaded
+
+
+def _read_env_file(path: Path) -> dict[str, str]:
+    if not path.exists():
+        return {}
+    values: dict[str, str] = {}
+    for raw_line in path.read_text().splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key.strip()] = value.strip().strip('"').strip("'")
+    return values
+
+
+def _env_has(env: dict[str, str], key: str) -> bool:
+    return bool(str(env.get(key) or "").strip())
+
+
+def _fred_series(series_id: str) -> dict[str, Any] | None:
+    if series_id in _FRED_CACHE:
+        return _FRED_CACHE[series_id]
+    env = _runtime_env()
+    api_key = env.get("FRED_API_KEY")
+    if not api_key:
+        _FRED_CACHE[series_id] = None
+        return None
+
+    global _LAST_FRED_REQUEST_AT
+    elapsed = time.monotonic() - _LAST_FRED_REQUEST_AT
+    if elapsed < FRED_REQUEST_MIN_INTERVAL_SECONDS:
+        time.sleep(FRED_REQUEST_MIN_INTERVAL_SECONDS - elapsed)
+
+    params = parse.urlencode(
+        {
+            "series_id": series_id,
+            "api_key": api_key,
+            "file_type": "json",
+            "sort_order": "desc",
+            "limit": "30",
+        }
+    )
+    try:
+        with request.urlopen(f"{FRED_API_BASE_URL}/series/observations?{params}", timeout=20) as response:
+            payload = json.loads(response.read().decode())
+    except Exception:
+        _FRED_CACHE[series_id] = None
+        return None
+    finally:
+        _LAST_FRED_REQUEST_AT = time.monotonic()
+
+    observations = [
+        item
+        for item in payload.get("observations", [])
+        if item.get("value") not in (None, "", ".") and item.get("date")
+    ]
+    points = []
+    for item in reversed(observations[:4]):
+        try:
+            value = float(item["value"])
+        except (TypeError, ValueError):
+            continue
+        points.append({"date": item["date"], "value": value})
+    if not points:
+        _FRED_CACHE[series_id] = None
+        return None
+    latest_point = points[-1]
+    result = {"date": latest_point["date"], "value": latest_point["value"], "points": points}
+    _FRED_CACHE[series_id] = result
+    return result
+
+
+def _format_metric_value(value: float, decimals: int) -> str:
+    text = f"{value:,.{decimals}f}"
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text
+
+
+def _actual_delay_label(locale: str, source: str, date: str) -> str:
+    return _t(locale, f"{source} actual through {date}", f"{source} 실제값, {date}까지")
+
+
+def _not_connected_label(locale: str) -> str:
+    return _t(locale, "Not connected", "미연결")
+
+
+def _unsupported_delay_label(locale: str, reason_en: str, reason_ko: str) -> str:
+    return _t(locale, reason_en, reason_ko)
+
+
 def _write(manifest: dict[str, Any], object_id: str, locale: str, relative_parts: list[str], payload: dict[str, Any]) -> None:
     path = PUBLIC_ROOT / f"v{VERSION}" / locale / Path(*relative_parts)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -439,8 +552,6 @@ def _calendar(locale: str) -> list[dict[str, Any]]:
 
 def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
     updated = generated_at.isoformat().replace("+00:00", "Z")
-    market_delay = _t(locale, "source-gated market feed", "출처 게이트 시장 피드")
-    official_delay = _t(locale, "official reference", "공식 참조")
 
     def tile(
         key: str,
@@ -468,48 +579,150 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             payload["points"] = points
         return payload
 
+    def fred_tile(
+        key: str,
+        label_en: str,
+        label_ko: str,
+        series_id: str,
+        source: str,
+        source_label: str,
+        unit: str | None = None,
+        decimals: int = 2,
+    ) -> dict[str, Any]:
+        series = _fred_series(series_id)
+        if not series:
+            return tile(
+                key,
+                label_en,
+                label_ko,
+                _not_connected_label(locale),
+                source,
+                _unsupported_delay_label(
+                    locale,
+                    "FRED_API_KEY missing or FRED series unavailable",
+                    "FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
+                ),
+                "unsupported",
+                unit,
+            )
+        return tile(
+            key,
+            label_en,
+            label_ko,
+            _format_metric_value(series["value"], decimals),
+            source,
+            _actual_delay_label(locale, source_label, series["date"]),
+            "fresh",
+            unit,
+            series["points"],
+        )
+
+    def unsupported_tile(
+        key: str,
+        label_en: str,
+        label_ko: str,
+        source: str,
+        reason_en: str,
+        reason_ko: str,
+        unit: str | None = None,
+    ) -> dict[str, Any]:
+        return tile(
+            key,
+            label_en,
+            label_ko,
+            _not_connected_label(locale),
+            source,
+            _unsupported_delay_label(locale, reason_en, reason_ko),
+            "unsupported",
+            unit,
+        )
+
     return [
-        tile(
+        fred_tile(
             "nasdaq_composite",
             "Nasdaq Composite",
             "나스닥 종합",
-            "Pending",
-            "Nasdaq / licensed market feed",
-            market_delay,
-            points=[{"date": "T-3", "value": 100}, {"date": "T-2", "value": 101.4}, {"date": "T-1", "value": 100.8}, {"date": "T", "value": 102.1}],
+            "NASDAQCOM",
+            "FRED / Nasdaq",
+            "FRED NASDAQCOM",
         ),
-        tile(
+        unsupported_tile(
             "nasdaq_100_futures",
             "Nasdaq 100 futures",
             "나스닥 100 선물",
-            "Pending",
             "CME / licensed futures feed",
-            market_delay,
-            points=[{"date": "T-3", "value": 100}, {"date": "T-2", "value": 100.6}, {"date": "T-1", "value": 99.8}, {"date": "T", "value": 101.2}],
+            "No always-free licensed futures API is configured",
+            "상시 무료 라이선스 선물 API가 설정되지 않았습니다.",
         ),
-        tile(
+        fred_tile(
             "kospi",
-            "KOSPI",
-            "코스피",
-            "Pending",
-            "KRX / licensed market feed",
-            market_delay,
-            points=[{"date": "T-3", "value": 100}, {"date": "T-2", "value": 99.7}, {"date": "T-1", "value": 100.9}, {"date": "T", "value": 101.1}],
+            "Korea share price index",
+            "한국 주가지수",
+            "SPASTT01KRM661N",
+            "FRED / OECD Korea share prices",
+            "FRED SPASTT01KRM661N",
         ),
-        tile("kodex_200", "KODEX 200 ETF", "KODEX 200 ETF", "Pending", "KRX / Samsung AM", market_delay),
-        tile("kospi_200_futures", "KOSPI 200 futures", "코스피 200 선물", "Pending", "KRX derivatives feed", market_delay),
-        tile("wti_crude", "WTI crude oil", "WTI 원유", "Pending", "EIA / exchange reference", market_delay),
-        tile("vix", "VIX", "VIX", "Pending", "Cboe / licensed market feed", market_delay),
-        tile("usd_krw", "USD/KRW", "달러/원", "Pending", "BOK / licensed FX feed", market_delay),
-        tile("usd_jpy", "USD/JPY", "달러/엔", "Pending", "BoJ / licensed FX feed", market_delay),
-        tile("us_2y", "US Treasury 2Y", "미국 국채 2년", "Reference", "US Treasury", official_delay, "fresh", "%"),
-        tile("us_3y", "US Treasury 3Y", "미국 국채 3년", "Reference", "US Treasury", official_delay, "fresh", "%"),
-        tile("us_5y", "US Treasury 5Y", "미국 국채 5년", "Reference", "US Treasury", official_delay, "fresh", "%"),
-        tile("us_10y", "US Treasury 10Y", "미국 국채 10년", "Reference", "US Treasury", official_delay, "fresh", "%"),
-        tile("japan_policy_rate", "BoJ policy rate", "일본은행 정책금리", "Reference", "Bank of Japan", official_delay, "fresh", "%"),
-        tile("japan_2y", "Japan govt 2Y", "일본 국채 2년", "Reference", "Japan MOF / BoJ", official_delay, "fresh", "%"),
-        tile("japan_5y", "Japan govt 5Y", "일본 국채 5년", "Reference", "Japan MOF / BoJ", official_delay, "fresh", "%"),
-        tile("japan_10y", "Japan govt 10Y", "일본 국채 10년", "Reference", "Japan MOF / BoJ", official_delay, "fresh", "%"),
+        unsupported_tile(
+            "kodex_200",
+            "KODEX 200 ETF",
+            "KODEX 200 ETF",
+            "KRX / Samsung AM",
+            "No always-free redistributable ETF feed is configured",
+            "상시 무료 재배포 가능 ETF 피드가 설정되지 않았습니다.",
+        ),
+        unsupported_tile(
+            "kospi_200_futures",
+            "KOSPI 200 futures",
+            "코스피 200 선물",
+            "KRX derivatives feed",
+            "No always-free licensed derivatives API is configured",
+            "상시 무료 라이선스 파생상품 API가 설정되지 않았습니다.",
+        ),
+        fred_tile("wti_crude", "WTI crude oil", "WTI 원유", "DCOILWTICO", "FRED / EIA", "FRED DCOILWTICO", "$", 2),
+        fred_tile("vix", "VIX", "VIX", "VIXCLS", "FRED / Cboe", "FRED VIXCLS"),
+        fred_tile("usd_krw", "USD/KRW", "달러/원", "DEXKOUS", "FRED / Federal Reserve H.10", "FRED DEXKOUS", "KRW", 2),
+        fred_tile("usd_jpy", "USD/JPY", "달러/엔", "DEXJPUS", "FRED / Federal Reserve H.10", "FRED DEXJPUS", "JPY", 2),
+        fred_tile("us_2y", "US Treasury 2Y", "미국 국채 2년", "DGS2", "FRED / US Treasury", "FRED DGS2", "%", 2),
+        fred_tile("us_3y", "US Treasury 3Y", "미국 국채 3년", "DGS3", "FRED / US Treasury", "FRED DGS3", "%", 2),
+        fred_tile("us_5y", "US Treasury 5Y", "미국 국채 5년", "DGS5", "FRED / US Treasury", "FRED DGS5", "%", 2),
+        fred_tile("us_10y", "US Treasury 10Y", "미국 국채 10년", "DGS10", "FRED / US Treasury", "FRED DGS10", "%", 2),
+        unsupported_tile(
+            "japan_policy_rate",
+            "BoJ policy rate",
+            "일본은행 정책금리",
+            "Bank of Japan",
+            "BoJ policy-rate API source is not configured",
+            "일본은행 정책금리 API 출처가 설정되지 않았습니다.",
+            "%",
+        ),
+        unsupported_tile(
+            "japan_2y",
+            "Japan govt 2Y",
+            "일본 국채 2년",
+            "Japan MOF / BoJ",
+            "Always-free 2Y JGB API source is not configured",
+            "상시 무료 2년 JGB API 출처가 설정되지 않았습니다.",
+            "%",
+        ),
+        unsupported_tile(
+            "japan_5y",
+            "Japan govt 5Y",
+            "일본 국채 5년",
+            "Japan MOF / BoJ",
+            "Always-free 5Y JGB API source is not configured",
+            "상시 무료 5년 JGB API 출처가 설정되지 않았습니다.",
+            "%",
+        ),
+        fred_tile(
+            "japan_10y",
+            "Japan govt 10Y",
+            "일본 국채 10년",
+            "IRLTLT01JPM156N",
+            "FRED / OECD Japan 10Y yield",
+            "FRED IRLTLT01JPM156N",
+            "%",
+            2,
+        ),
     ]
 
 
@@ -771,26 +984,62 @@ def _scenario_page(key: str, locale: str, generated_at: datetime) -> dict[str, A
 
 
 def _source_status() -> dict[str, Any]:
-    providers = [
-        ("fred", "official_api", "missing_credentials", "FREE_ONLY", "FRED_API_KEY required for live ingest"),
-        ("bls", "official_api", "ready", "FREE_ONLY", None),
-        ("eia", "official_api", "missing_credentials", "FREE_ONLY", "EIA_API_KEY required for live ingest"),
-        ("sec_edgar", "filing", "ready", "FREE_ONLY", "SEC_USER_AGENT must contain contact in production"),
-        ("twelve_data", "market_data", "missing_credentials", "FREE_ONLY", "TWELVE_DATA_API_KEY enables portfolio history primary"),
-        ("alpha_vantage", "market_data", "missing_credentials", "FREE_ONLY", "ALPHA_VANTAGE_API_KEY enables portfolio history fallback"),
-        ("fmp", "market_data", "missing_credentials", "FREE_ONLY", "FMP_API_KEY enables EOD/fundamental fallback"),
-        (
-            "finra",
-            "official_api",
+    env = _runtime_env()
+
+    def status_for(keys: str | tuple[str, ...], warning: str | None) -> tuple[str, str | None]:
+        if isinstance(keys, str):
+            ready = _env_has(env, keys)
+        else:
+            ready = all(_env_has(env, key) for key in keys)
+        return ("ready", None) if ready else ("missing_credentials", warning)
+
+    fred_status, fred_warning = status_for("FRED_API_KEY", "FRED_API_KEY required for live ingest")
+    bls_status, bls_warning = status_for("BLS_API_KEY", "BLS_API_KEY enables higher-limit BLS ingest")
+    eia_status, eia_warning = status_for("EIA_API_KEY", "EIA_API_KEY required for live ingest")
+    sec_user_agent = env.get("SEC_USER_AGENT", "")
+    sec_status = "ready" if "@" in sec_user_agent and "contact@example.com" not in sec_user_agent else "degraded"
+    sec_warning = None if sec_status == "ready" else "SEC_USER_AGENT must contain a real contact in production"
+    twelve_status, twelve_warning = status_for("TWELVE_DATA_API_KEY", "TWELVE_DATA_API_KEY enables portfolio history primary")
+    alpha_status, alpha_warning = status_for("ALPHA_VANTAGE_API_KEY", "ALPHA_VANTAGE_API_KEY enables portfolio history fallback")
+    fmp_status, fmp_warning = status_for("FMP_API_KEY", "FMP_API_KEY enables EOD/fundamental fallback")
+    finnhub_status, finnhub_warning = status_for("FINNHUB_API_KEY", "FINNHUB_API_KEY enables future market/fundamental fallback")
+    nasdaq_status, nasdaq_warning = status_for("NASDAQ_DATA_LINK_API_KEY", "NASDAQ_DATA_LINK_API_KEY enables future Nasdaq Data Link datasets")
+    if _env_has(env, "FINRA_API_TOKEN") or (_env_has(env, "FINRA_API_CLIENT_ID") and _env_has(env, "FINRA_API_CLIENT_SECRET")):
+        finra_status, finra_warning = "ready", None
+    else:
+        finra_status, finra_warning = (
             "missing_credentials",
-            "FREE_ONLY",
-            "FINRA_API_TOKEN required for short interest and Reg SHO short volume ingest",
-        ),
+            "FINRA_API_CLIENT_ID and FINRA_API_CLIENT_SECRET required for short interest and Reg SHO short volume ingest",
+        )
+    gemini_status, gemini_warning = status_for("GEMINI_API_KEY", "GEMINI_API_KEY optional; public facts only")
+    groq_status, groq_warning = status_for("GROQ_API_KEY", "GROQ_API_KEY optional; public facts only")
+    cerebras_status, cerebras_warning = status_for("CEREBRAS_API_KEY", "CEREBRAS_API_KEY optional; public facts only")
+    mistral_status, mistral_warning = status_for("MISTRAL_API_KEY", "MISTRAL_API_KEY optional; public facts only")
+    openrouter_status, openrouter_warning = status_for("OPENROUTER_API_KEY", "OPENROUTER_API_KEY optional; public facts only")
+    hf_status, hf_warning = status_for("HF_TOKEN", "HF_TOKEN optional; public facts only")
+    local_status = "ready" if _env_has(env, "LOCAL_LLM_BASE_URL") else "missing_credentials"
+    local_warning = None if local_status == "ready" else "LOCAL_LLM_BASE_URL enables private local research"
+
+    providers = [
+        ("fred", "official_api", fred_status, "FREE_ONLY", fred_warning),
+        ("bls", "official_api", bls_status, "FREE_ONLY", bls_warning),
+        ("eia", "official_api", eia_status, "FREE_ONLY", eia_warning),
+        ("sec_edgar", "filing", sec_status, "FREE_ONLY", sec_warning),
+        ("twelve_data", "market_data", twelve_status, "FREE_ONLY", twelve_warning),
+        ("alpha_vantage", "market_data", alpha_status, "FREE_ONLY", alpha_warning),
+        ("fmp", "market_data", fmp_status, "FREE_ONLY", fmp_warning),
+        ("finnhub", "market_data", finnhub_status, "FREE_ONLY", finnhub_warning),
+        ("nasdaq_data_link", "market_data", nasdaq_status, "FREE_ONLY", nasdaq_warning),
+        ("finra", "official_api", finra_status, "FREE_ONLY", finra_warning),
         ("pentagon_pizza", "weak_osint", "degraded", "FREE_ONLY", "Weak OSINT only; cannot publish standalone high-confidence events"),
         ("public_short_research", "public_web", "degraded", "FREE_ONLY", "Public short-report monitors need source-specific parser review"),
-        ("gemini", "llm_provider", "missing_credentials", "FREE_ONLY", "GEMINI_API_KEY optional; public facts only"),
-        ("groq", "llm_provider", "missing_credentials", "FREE_ONLY", "GROQ_API_KEY optional; public facts only"),
-        ("local", "llm_provider", "ready", "LOCAL_ONLY", "LOCAL_LLM_BASE_URL used for private research"),
+        ("gemini", "llm_provider", gemini_status, "FREE_ONLY", gemini_warning),
+        ("groq", "llm_provider", groq_status, "FREE_ONLY", groq_warning),
+        ("cerebras", "llm_provider", cerebras_status, "FREE_ONLY", cerebras_warning),
+        ("mistral", "llm_provider", mistral_status, "FREE_ONLY", mistral_warning),
+        ("openrouter", "llm_provider", openrouter_status, "FREE_ONLY", openrouter_warning),
+        ("huggingface", "llm_provider", hf_status, "FREE_ONLY", hf_warning),
+        ("local", "llm_provider", local_status, "LOCAL_ONLY", local_warning),
     ]
     return {
         "snapshot_age_minutes": 0,

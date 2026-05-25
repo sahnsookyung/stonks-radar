@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-25T08:23:17Z",
-  "stale_after": "2026-05-25T20:23:17Z",
-  "hard_expires_at": "2026-06-01T08:23:17Z",
+  "generated_at": "2026-05-25T09:16:35Z",
+  "stale_after": "2026-05-25T21:16:35Z",
+  "hard_expires_at": "2026-06-01T09:16:35Z",
   "object_type": "sector_page",
   "object_key": "semiconductors",
-  "content_hash": "sha256:8f7e79efa3ace3b1d98212df4a2833b893f05d20f880d3190bd4d7949d22ace9",
+  "content_hash": "sha256:12d545bbaf135792adfc39ea2fda8159830728d0db18fec1942ef1a6772c856f",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -60,8 +60,8 @@
         "title": "반도체 수출통제 모니터링 강도 유지",
         "summary": "승인된 시드 이벤트가 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
         "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다.",
-        "occurred_at": "2026-05-25T08:23:17Z",
-        "published_at": "2026-05-25T08:23:17Z",
+        "occurred_at": "2026-05-25T09:16:35Z",
+        "published_at": "2026-05-25T09:16:35Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -103,8 +103,8 @@
         "title": "6개 중앙은행 정책회의 일정 시드 적용",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, 브라질 COPOM이 명시적 예상치 라벨과 함께 표시됩니다.",
         "why_it_matters": "캘린더 가시성은 미지원 범위를 숨기지 않고 오래된 정책 데이터를 드러냅니다.",
-        "occurred_at": "2026-05-25T08:23:17Z",
-        "published_at": "2026-05-25T08:23:17Z",
+        "occurred_at": "2026-05-25T09:16:35Z",
+        "published_at": "2026-05-25T09:16:35Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -230,56 +230,38 @@
       {
         "key": "nasdaq_composite",
         "label": "나스닥 종합",
-        "value": "Pending",
-        "source": "Nasdaq / licensed market feed",
-        "freshness": "watch",
-        "delay_label": "출처 게이트 시장 피드",
-        "updated_at": "2026-05-25T08:23:17Z",
+        "value": "26,343.97",
+        "source": "FRED / Nasdaq",
+        "freshness": "fresh",
+        "delay_label": "FRED NASDAQCOM 실제값, 2026-05-22까지",
+        "updated_at": "2026-05-25T09:16:35Z",
         "points": [
           {
-            "date": "T-3",
-            "value": 100
+            "date": "2026-05-19",
+            "value": 25870.71
           },
           {
-            "date": "T-2",
-            "value": 101.4
+            "date": "2026-05-20",
+            "value": 26270.36
           },
           {
-            "date": "T-1",
-            "value": 100.8
+            "date": "2026-05-21",
+            "value": 26293.1
           },
           {
-            "date": "T",
-            "value": 102.1
+            "date": "2026-05-22",
+            "value": 26343.97
           }
         ]
       },
       {
         "key": "nasdaq_100_futures",
         "label": "나스닥 100 선물",
-        "value": "Pending",
+        "value": "미연결",
         "source": "CME / licensed futures feed",
-        "freshness": "watch",
-        "delay_label": "출처 게이트 시장 피드",
-        "updated_at": "2026-05-25T08:23:17Z",
-        "points": [
-          {
-            "date": "T-3",
-            "value": 100
-          },
-          {
-            "date": "T-2",
-            "value": 100.6
-          },
-          {
-            "date": "T-1",
-            "value": 99.8
-          },
-          {
-            "date": "T",
-            "value": 101.2
-          }
-        ]
+        "freshness": "unsupported",
+        "delay_label": "상시 무료 라이선스 선물 API가 설정되지 않았습니다.",
+        "updated_at": "2026-05-25T09:16:35Z"
       }
     ],
     "scenario_baskets": [

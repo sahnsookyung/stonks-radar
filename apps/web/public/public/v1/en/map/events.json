@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-25T08:23:17Z",
-  "stale_after": "2026-05-25T20:23:17Z",
-  "hard_expires_at": "2026-06-01T08:23:17Z",
+  "generated_at": "2026-05-25T09:16:35Z",
+  "stale_after": "2026-05-25T21:16:35Z",
+  "hard_expires_at": "2026-06-01T09:16:35Z",
   "object_type": "map_events",
   "object_key": "events",
-  "content_hash": "sha256:91da257a55ae2a50b1be09e8eb9ca1185a5fb7d29acdbaf8c4abf03716e2c8bc",
+  "content_hash": "sha256:146d9e3881be73ed9b4be519f65f4e9f7310aabc46fe4f853d8b8e1c21b6c3e9",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -33,8 +33,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-25T08:23:17Z",
-        "published_at": "2026-05-25T08:23:17Z",
+        "occurred_at": "2026-05-25T09:16:35Z",
+        "published_at": "2026-05-25T09:16:35Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -76,8 +76,8 @@
         "title": "Energy inventory calendar is active for oil supply monitoring",
         "summary": "EIA-linked inventory releases are tracked as official structured data before publication.",
         "why_it_matters": "Inventory surprises can affect energy equities, inflation inputs, and geopolitical risk interpretation.",
-        "occurred_at": "2026-05-25T08:23:17Z",
-        "published_at": "2026-05-25T08:23:17Z",
+        "occurred_at": "2026-05-25T09:16:35Z",
+        "published_at": "2026-05-25T09:16:35Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -114,8 +114,8 @@
         "title": "Central-bank calendar coverage seeded across six policy committees",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
         "why_it_matters": "Calendar visibility reduces silent unsupported coverage and makes stale policy data visible.",
-        "occurred_at": "2026-05-25T08:23:17Z",
-        "published_at": "2026-05-25T08:23:17Z",
+        "occurred_at": "2026-05-25T09:16:35Z",
+        "published_at": "2026-05-25T09:16:35Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",

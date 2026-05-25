@@ -107,7 +107,7 @@ const sourceGroups: { title: string; summary: string; sources: SourceItem[] }[] 
         category: "short interest",
         signal: "twice-monthly open short positions, separate from daily short volume",
         cadence: "twice monthly",
-        access: "FINRA_API_TOKEN",
+        access: "FINRA_API_CLIENT_ID + FINRA_API_CLIENT_SECRET",
         status: "candidate",
         risk: "low"
       },
@@ -117,7 +117,7 @@ const sourceGroups: { title: string; summary: string; sources: SourceItem[] }[] 
         category: "short volume",
         signal: "daily short sale volume for monitored tickers",
         cadence: "daily",
-        access: "FINRA_API_TOKEN",
+        access: "FINRA_API_CLIENT_ID + FINRA_API_CLIENT_SECRET",
         status: "candidate",
         risk: "low"
       },
