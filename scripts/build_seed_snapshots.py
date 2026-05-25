@@ -58,6 +58,7 @@ _FINRA_TOKEN_CACHE: dict[str, Any] = {"token": None, "expires_at": 0.0}
 _FINRA_ROWS_CACHE: dict[str, list[dict[str, Any]]] = {}
 _SEC_SUBMISSIONS_CACHE: dict[str, dict[str, Any] | None] = {}
 _WEB_METADATA_CACHE: dict[str, dict[str, str] | None] = {}
+_PENTAGON_PIZZA_CACHE: dict[str, dict[str, Any] | None] = {}
 _GDELT_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
 _RSS_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
 _LAST_FRED_REQUEST_AT = 0.0
@@ -706,6 +707,116 @@ def _web_metadata(url: str) -> dict[str, str] | None:
     return _WEB_METADATA_CACHE[url]
 
 
+def _http_text(url: str, *, headers: dict[str, str] | None = None, timeout: int = 20, max_bytes: int = 600_000) -> str | None:
+    try:
+        req = request.Request(url, headers=headers or {})
+        with request.urlopen(req, timeout=timeout) as response:
+            return response.read(max_bytes).decode("utf-8", errors="ignore")
+    except Exception:
+        return None
+
+
+def _pentagon_pizza_payload(base_url: str) -> dict[str, Any] | None:
+    if base_url in _PENTAGON_PIZZA_CACHE:
+        return _PENTAGON_PIZZA_CACHE[base_url]
+    env = _runtime_env()
+    user_agent = env.get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
+    function_url = str(env.get("PENTAGON_PIZZA_FUNCTION_URL") or "").strip()
+    anon_key = str(env.get("PENTAGON_PIZZA_SUPABASE_ANON_KEY") or "").strip()
+    html = _http_text(base_url, headers={"User-Agent": user_agent, "Accept": "text/html"})
+    if (not function_url or not anon_key) and html:
+        discovered = _discover_pentagon_pizza_api(base_url, html, user_agent)
+        if discovered:
+            function_url, anon_key = discovered
+    if not function_url or not anon_key:
+        _PENTAGON_PIZZA_CACHE[base_url] = None
+        return None
+    try:
+        payload = _http_json(
+            function_url,
+            method="POST",
+            headers={
+                "Accept": "application/json",
+                "Authorization": f"Bearer {anon_key}",
+                "Content-Type": "application/json",
+                "User-Agent": user_agent,
+            },
+            timeout=20,
+        )
+    except Exception:
+        payload = None
+    _PENTAGON_PIZZA_CACHE[base_url] = payload if isinstance(payload, dict) else None
+    return _PENTAGON_PIZZA_CACHE[base_url]
+
+
+def _discover_pentagon_pizza_api(base_url: str, html: str, user_agent: str) -> tuple[str, str] | None:
+    script_text = ""
+    script_match = re.search(r"<script[^>]+src=[\"']([^\"']+\.js)[\"']", html, flags=re.IGNORECASE)
+    if script_match:
+        script_url = parse.urljoin(base_url.rstrip("/") + "/", script_match.group(1))
+        script_text = _http_text(script_url, headers={"User-Agent": user_agent, "Accept": "application/javascript"}) or ""
+    source = f"{html}\n{script_text}"
+    url_match = re.search(r"[\"'](https://[a-z0-9-]+\.supabase\.co)[\"']", source, flags=re.IGNORECASE)
+    key_match = re.search(r"[\"'](eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)[\"']", source)
+    if not url_match or not key_match:
+        return None
+    return f"{url_match.group(1).rstrip('/')}/functions/v1/fetch-busyness", key_match.group(1)
+
+
+def _pentagon_pizza_summary(payload: dict[str, Any] | None) -> dict[str, Any] | None:
+    readings = payload.get("readings") if isinstance(payload, dict) else None
+    values = [
+        float(reading["busyness_level"])
+        for reading in readings or []
+        if isinstance(reading, dict) and isinstance(reading.get("busyness_level"), (int, float))
+    ]
+    if not values:
+        return None
+    typical_values = [
+        float(reading["typical_level"])
+        for reading in readings or []
+        if isinstance(reading, dict) and isinstance(reading.get("typical_level"), (int, float))
+    ]
+    anomaly_count = payload.get("anomalyCount")
+    if not isinstance(anomaly_count, int):
+        anomaly_count = sum(1 for reading in readings or [] if isinstance(reading, dict) and reading.get("is_anomaly"))
+    location_count = payload.get("locationCount")
+    if not isinstance(location_count, int):
+        location_count = len(values)
+    return {
+        "activity_score": round(sum(values) / len(values), 1),
+        "typical_score": round(sum(typical_values) / len(typical_values), 1) if typical_values else None,
+        "min_activity": min(values),
+        "max_activity": max(values),
+        "values": values,
+        "timestamp": str(payload.get("timestamp") or datetime.now(timezone.utc).isoformat()),
+        "location_count": location_count,
+        "anomaly_count": anomaly_count,
+        "data_source": str(payload.get("dataSource") or "unknown"),
+    }
+
+
+def _pentagon_pizza_points(summary: dict[str, Any], generated_at: datetime) -> list[dict[str, Any]]:
+    values = sorted(float(value) for value in summary.get("values", []) if isinstance(value, (int, float)))
+    if len(values) >= 4:
+        chart_values = [values[0], values[len(values) // 3], values[(len(values) * 2) // 3], values[-1]]
+    else:
+        typical = summary.get("typical_score")
+        chart_values = [
+            float(summary["min_activity"]),
+            float(typical if isinstance(typical, (int, float)) else summary["activity_score"]),
+            float(summary["activity_score"]),
+            float(summary["max_activity"]),
+        ]
+    return [
+        {
+            "date": (generated_at - timedelta(minutes=offset)).isoformat().replace("+00:00", "Z"),
+            "value": round(value, 1),
+        }
+        for offset, value in zip((45, 30, 15, 0), chart_values, strict=True)
+    ]
+
+
 def _gdelt_articles(query: str, *, maxrecords: int = 5) -> list[dict[str, str]]:
     cache_key = f"{query}:{maxrecords}"
     if cache_key in _GDELT_ARTICLE_CACHE:
@@ -1157,6 +1268,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
     env = _runtime_env()
     pizza_url = str(env.get("PENTAGON_PIZZA_BASE_URL") or PENTAGON_PIZZA_URL)
     pizza_metadata = _web_metadata(pizza_url)
+    pizza_summary = _pentagon_pizza_summary(_pentagon_pizza_payload(pizza_url))
 
     def rate_event(region: str) -> dict[str, str]:
         events = {
@@ -1189,6 +1301,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         coverage_status: str = "active",
         next_event: dict[str, str] | None = None,
         refresh_seconds: int = 900,
+        updated_at: str | None = None,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "key": key,
@@ -1197,7 +1310,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "source": source,
             "freshness": freshness,
             "delay_label": delay_label,
-            "updated_at": updated,
+            "updated_at": updated_at or updated,
             "coverage_status": coverage_status,
             "refresh_seconds": refresh_seconds,
         }
@@ -1387,32 +1500,47 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         )
 
     def pentagon_pizza_tile() -> dict[str, Any]:
-        signal_value = 1 if pizza_metadata else 0
-        points = [
-            {
-                "date": (generated_at - timedelta(minutes=offset)).isoformat().replace("+00:00", "Z"),
-                "value": signal_value,
-            }
-            for offset in (45, 30, 15, 0)
-        ]
+        if pizza_summary:
+            source_date = pizza_summary["timestamp"][:10]
+            locations = int(pizza_summary["location_count"])
+            anomalies = int(pizza_summary["anomaly_count"])
+            anomaly_word = "anomaly" if anomalies == 1 else "anomalies"
+            detail_en = f"Pentagon.Pizza average busyness across {locations} monitored sites; {anomalies} {anomaly_word}"
+            detail_ko = f"Pentagon.Pizza 모니터링 지점 {locations}곳 평균 혼잡도; 이상치 {anomalies}건"
+            detail_en += f" through {source_date}"
+            detail_ko += f", {source_date}까지"
+            return tile(
+                "pentagon_pizza_index",
+                "Pentagon pizza index",
+                "펜타곤 피자 지수",
+                _format_metric_value(float(pizza_summary["activity_score"]), 1),
+                "Pentagon.Pizza",
+                _t(locale, detail_en, detail_ko),
+                "fresh",
+                "/100",
+                pizza_url,
+                _pentagon_pizza_points(pizza_summary, generated_at),
+                "active",
+                None,
+                300,
+                str(pizza_summary["timestamp"]),
+            )
         return tile(
             "pentagon_pizza_index",
             "Pentagon pizza index",
             "펜타곤 피자 지수",
-            _t(locale, "observed", "관측됨") if pizza_metadata else _t(locale, "watch", "감시"),
+            _t(locale, "Source gap", "출처 공백"),
             "Pentagon.Pizza",
-            _actual_delay_label(locale, "Pentagon.Pizza weak OSINT snapshot", updated[:10])
-            if pizza_metadata
-            else _unsupported_delay_label(
+            _unsupported_delay_label(
                 locale,
-                "Weak OSINT source unavailable during snapshot build",
-                "스냅샷 생성 중 약한 OSINT 출처를 사용할 수 없었습니다.",
+                "Pentagon.Pizza activity API unavailable during snapshot build",
+                "스냅샷 생성 중 Pentagon.Pizza 활동 API를 사용할 수 없었습니다.",
             ),
-            "fresh" if pizza_metadata else "watch",
-            None,
+            "watch",
+            "/100",
             pizza_url,
-            points,
-            "active",
+            None,
+            "coverage_gap" if pizza_metadata else "coverage_gap",
             None,
             300,
         )

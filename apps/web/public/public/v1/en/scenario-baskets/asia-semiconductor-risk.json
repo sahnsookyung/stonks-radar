@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-25T17:10:08Z",
-  "stale_after": "2026-05-26T05:10:08Z",
-  "hard_expires_at": "2026-06-01T17:10:08Z",
+  "generated_at": "2026-05-25T17:56:18Z",
+  "stale_after": "2026-05-26T05:56:18Z",
+  "hard_expires_at": "2026-06-01T17:56:18Z",
   "object_type": "scenario_basket",
   "object_key": "asia-semiconductor-risk",
-  "content_hash": "sha256:6995485bc69d26f074de2e8062af04ac1b060a71639b17ee218ea99ada25b2f3",
+  "content_hash": "sha256:1049dbd22b5ad06470e073984117e9f5f1267b0ec17ae38b306d59b96d4a0cf4",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -76,7 +76,7 @@
       }
     ],
     "risk_summary": "Scenario can fail if source data is stale, policy risk reverses, or sector exposure is weaker than expected.",
-    "freshness_timestamp": "2026-05-25T17:10:08Z",
+    "freshness_timestamp": "2026-05-25T17:56:18Z",
     "data_delay_warning": "Uses delayed/reference indicators only; no brokerage connection or trade execution.",
     "disclaimer": "Research only. Not personalized financial advice. Do not treat this as a buy, sell, or allocation recommendation.",
     "approval_status": "approved"

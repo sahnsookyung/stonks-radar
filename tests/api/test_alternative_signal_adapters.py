@@ -186,15 +186,50 @@ async def test_public_short_research_adapter_keeps_metadata_only():
 @pytest.mark.asyncio
 async def test_pentagon_pizza_adapter_marks_weak_osint(monkeypatch):
     monkeypatch.setattr(get_settings(), "pentagon_pizza_base_url", "https://pizza.test")
+    monkeypatch.setattr(get_settings(), "pentagon_pizza_function_url", None)
+    monkeypatch.setattr(get_settings(), "pentagon_pizza_supabase_anon_key", None)
 
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, text="<html><head><title>Pizza status</title></head></html>")
+        if request.url.host == "pizza.test" and request.url.path == "/":
+            return httpx.Response(
+                200,
+                text='<html><head><title>Pizza status</title><script src="/assets/index.js"></script></head></html>',
+            )
+        if request.url.host == "pizza.test" and request.url.path == "/assets/index.js":
+            return httpx.Response(
+                200,
+                text=(
+                    'const d_="https://pizza.supabase.co";'
+                    'const f_="eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJ0ZXN0In0.signature";'
+                ),
+            )
+        if request.url.host == "pizza.supabase.co":
+            return httpx.Response(
+                200,
+                json={
+                    "success": True,
+                    "timestamp": "2026-05-25T17:50:37.711Z",
+                    "locationCount": 2,
+                    "anomalyCount": 1,
+                    "dataSource": "pattern_model",
+                    "readings": [
+                        {"busyness_level": 60, "is_anomaly": False},
+                        {"busyness_level": 66, "is_anomaly": True},
+                    ],
+                },
+            )
+        raise AssertionError(f"unexpected request {request.url}")
 
     result = await PentagonPizzaAdapter().fetch(transport=httpx.MockTransport(handler))
 
     assert result.source_key == "pentagon_pizza"
     assert result.observations[0]["signal_class"] == "weak_osint"
     assert result.observations[0]["risk_level"] == "high"
+    assert result.observations[0]["value"] == 63.0
+    assert result.observations[0]["unit"] == "0_100_index"
+    assert result.observations[0]["status"] == "measured"
+    assert result.observations[0]["location_count"] == 2
+    assert result.observations[0]["anomaly_count"] == 1
     assert result.documents[0]["raw_retained"] is False
 
 

@@ -68,6 +68,8 @@ class Settings(BaseSettings):
     short_volume_monitored_tickers: str = "DJT,TSLA,NVDA"
     short_research_sources: str = "hindenburg,muddy_waters,viceroy,spruce_point,kerrisdale,culper,blue_orca,grizzly"
     pentagon_pizza_base_url: str | None = "https://pentagon.pizza"
+    pentagon_pizza_function_url: str | None = None
+    pentagon_pizza_supabase_anon_key: str | None = None
     trump_filing_monitored_entities: str = "DJT,Donald J. Trump Revocable Trust"
     oge_disclosure_api_base_url: str = "https://extapps2.oge.gov/201/Presiden.nsf/API.xsp/v2/rest"
     oge_disclosure_search_url: str = "https://www.oge.gov/web/oge.nsf/Officials%20Individual%20Disclosures%20Search%20Collection?OpenForm="

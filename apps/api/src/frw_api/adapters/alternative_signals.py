@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import re
 import time
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import urljoin
 
 import httpx
 from selectolax.parser import HTMLParser
@@ -36,6 +38,9 @@ _FINRA_SYMBOL_FIELDS = {
     "regShoDaily": "securitiesInformationProcessorSymbolIdentifier",
 }
 _FINRA_TOKEN_CACHE: dict[str, Any] = {"token": None, "expires_at": 0.0}
+_PENTAGON_PIZZA_SCRIPT_RE = re.compile(r"<script[^>]+src=[\"']([^\"']+\.js)[\"']", re.IGNORECASE)
+_PENTAGON_PIZZA_SUPABASE_RE = re.compile(r"[\"'](https://[a-z0-9-]+\.supabase\.co)[\"']", re.IGNORECASE)
+_PENTAGON_PIZZA_JWT_RE = re.compile(r"[\"'](eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)[\"']")
 
 
 class FINRAShortInterestAdapter:
@@ -156,23 +161,129 @@ class PentagonPizzaAdapter:
                 response.raise_for_status()
             except httpx.HTTPError as exc:
                 return empty_result(self.source_key, "pentagon_pizza", [str(exc)])
+            payload = await _pentagon_pizza_payload(client, base_url=url, html=response.text)
         observed_at = datetime.now(timezone.utc).isoformat()
         document = _html_document("pentagon_pizza", url, response.text, risk="high")
+        summary = _pentagon_pizza_summary(payload)
+        if not summary:
+            return AdapterResult(
+                self.source_key,
+                "pentagon_pizza_index",
+                [],
+                [],
+                [document],
+                ["Pentagon.Pizza activity API did not return numeric busyness readings"],
+            )
         observation = {
-            "series_key": "PENTAGON_PIZZA_WEAK_OSINT_STATUS",
-            "provider_observation_key": _stable_key("pentagon_pizza", observed_at, document["title"]),
-            "observation_timestamp": observed_at,
+            "series_key": "PENTAGON_PIZZA_ACTIVITY_SCORE",
+            "provider_observation_key": _stable_key(
+                "pentagon_pizza",
+                summary["timestamp"],
+                summary["activity_score"],
+                summary["location_count"],
+            ),
+            "observation_timestamp": summary["timestamp"],
             "publication_timestamp": observed_at,
-            "value_schema_key": "weak_osint_status_v1",
+            "value_schema_key": "weak_osint_activity_score_v1",
+            "value": summary["activity_score"],
+            "unit": "0_100_index",
             "signal_class": "weak_osint",
             "risk_level": "high",
             "source_url": url,
-            "title": document["title"],
-            "status": "observed",
+            "title": f"Pentagon.Pizza activity score {summary['activity_score']}/100",
+            "status": "measured",
+            "location_count": summary["location_count"],
+            "anomaly_count": summary["anomaly_count"],
+            "data_source": summary["data_source"],
             "raw_retained": False,
-            "parse_confidence": 0.35,
+            "parse_confidence": 0.45 if summary["data_source"] == "pattern_model" else 0.6,
         }
         return AdapterResult(self.source_key, "pentagon_pizza_index", [observation], [], [document], [])
+
+
+async def _pentagon_pizza_payload(
+    client: httpx.AsyncClient,
+    *,
+    base_url: str,
+    html: str,
+) -> dict[str, Any] | None:
+    settings = get_settings()
+    function_url = settings.pentagon_pizza_function_url
+    anon_key = settings.pentagon_pizza_supabase_anon_key
+    if not function_url or not anon_key:
+        discovered = await _discover_pentagon_pizza_api(client, base_url=base_url, html=html)
+        if discovered:
+            function_url, anon_key = discovered
+    if not function_url or not anon_key:
+        return None
+    try:
+        response = await client.post(
+            function_url,
+            headers={
+                "Accept": "application/json",
+                "Authorization": f"Bearer {anon_key}",
+                "Content-Type": "application/json",
+                "User-Agent": settings.sec_user_agent,
+            },
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except (httpx.HTTPError, ValueError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+async def _discover_pentagon_pizza_api(
+    client: httpx.AsyncClient,
+    *,
+    base_url: str,
+    html: str,
+) -> tuple[str, str] | None:
+    script_match = _PENTAGON_PIZZA_SCRIPT_RE.search(html)
+    script_text = ""
+    if script_match:
+        try:
+            script_response = await client.get(
+                urljoin(base_url.rstrip("/") + "/", script_match.group(1)),
+                headers={"User-Agent": get_settings().sec_user_agent},
+            )
+            script_response.raise_for_status()
+            script_text = script_response.text
+        except httpx.HTTPError:
+            script_text = ""
+    source = f"{html}\n{script_text}"
+    url_match = _PENTAGON_PIZZA_SUPABASE_RE.search(source)
+    key_match = _PENTAGON_PIZZA_JWT_RE.search(source)
+    if not url_match or not key_match:
+        return None
+    return f"{url_match.group(1).rstrip('/')}/functions/v1/fetch-busyness", key_match.group(1)
+
+
+def _pentagon_pizza_summary(payload: dict[str, Any] | None) -> dict[str, Any] | None:
+    readings = payload.get("readings") if isinstance(payload, dict) else None
+    values = [
+        float(reading["busyness_level"])
+        for reading in readings or []
+        if isinstance(reading, dict) and isinstance(reading.get("busyness_level"), (int, float))
+    ]
+    if not values:
+        return None
+    timestamp = str(payload.get("timestamp") or datetime.now(timezone.utc).isoformat())
+    anomaly_count = payload.get("anomalyCount")
+    if not isinstance(anomaly_count, int):
+        anomaly_count = sum(1 for reading in readings or [] if isinstance(reading, dict) and reading.get("is_anomaly"))
+    location_count = payload.get("locationCount")
+    if not isinstance(location_count, int):
+        location_count = len(values)
+    return {
+        "activity_score": round(sum(values) / len(values), 1),
+        "min_activity": min(values),
+        "max_activity": max(values),
+        "timestamp": timestamp,
+        "location_count": location_count,
+        "anomaly_count": anomaly_count,
+        "data_source": str(payload.get("dataSource") or "unknown"),
+    }
 
 
 class TrumpFilingsAdapter:
