@@ -75,6 +75,10 @@ class Settings(BaseSettings):
     oge_disclosure_max_index_records: int = Field(default=5000, ge=1000, le=20000)
     trump_disclosure_oge_pdf_limit: int = Field(default=12, ge=0, le=100)
     trump_disclosure_sec_filing_limit: int = Field(default=50, ge=1, le=250)
+    trump_disclosure_sec_poll_seconds: int = Field(default=1800, ge=900)
+    trump_disclosure_oge_poll_seconds: int = Field(default=86400, ge=21600)
+    worker_scheduler_enabled: bool = True
+    worker_scheduler_tick_seconds: int = Field(default=60, ge=10, le=3600)
     alternative_signal_refresh_seconds: int = Field(default=900, ge=60)
 
     public_api_rate_limit_per_minute: int = 60

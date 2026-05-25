@@ -7,9 +7,11 @@ import socket
 import time
 
 from frw_api.core.logging import configure_logging
+from frw_api.core.settings import get_settings
 from frw_api.db.session import SessionLocal
 from frw_api.services.job_queue import claim_job, complete_job, fail_job, heartbeat, reap_expired_leases
 from frw_api.services.provider_limits import ProviderLimitError
+from frw_worker.scheduler import schedule_due_jobs
 from frw_worker.tasks import handle_job
 
 configure_logging()
@@ -17,9 +19,22 @@ logger = logging.getLogger(__name__)
 
 
 async def main() -> None:
+    settings = get_settings()
     worker_id = f"{socket.gethostname()}:{os.getpid()}"
     logger.info("worker_started worker_id=%s", worker_id)
+    last_scheduler_tick = 0.0
     while True:
+        if settings.worker_scheduler_enabled and time.monotonic() - last_scheduler_tick >= settings.worker_scheduler_tick_seconds:
+            try:
+                with SessionLocal() as db:
+                    scheduled_job_ids = schedule_due_jobs(db, settings=settings)
+                    db.commit()
+                if scheduled_job_ids:
+                    logger.info("scheduled_recurring_jobs count=%s", len(scheduled_job_ids))
+            except Exception:  # noqa: BLE001 - scheduling should not stop the worker loop
+                logger.exception("recurring_scheduler_failed")
+            finally:
+                last_scheduler_tick = time.monotonic()
         with SessionLocal() as db:
             reaped = reap_expired_leases(db)
             if reaped:
