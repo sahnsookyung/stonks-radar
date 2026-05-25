@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-25T14:28:20Z",
-  "stale_after": "2026-05-26T02:28:20Z",
-  "hard_expires_at": "2026-06-01T14:28:20Z",
+  "generated_at": "2026-05-25T14:46:42Z",
+  "stale_after": "2026-05-26T02:46:42Z",
+  "hard_expires_at": "2026-06-01T14:46:42Z",
   "object_type": "home",
   "object_key": "home",
-  "content_hash": "sha256:7536ee05e2deb5a076d58c4febbe8747fadbcd46c4242f1180b3f1300944f0e7",
+  "content_hash": "sha256:414edb9518c3eb6107c0e73f84c13c7901fdd366cb52dd8aa20bb5e869880f6c",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -29,11 +29,11 @@
   "data": {
     "headline": "Global market intelligence dashboard",
     "summary": "Snapshot-first research dashboard for public, source-gated intelligence. It highlights monitored sectors, central-bank calendars, scenario baskets, and approved events without personalized advice.",
-    "generated_label": "2026-05-25T14:28:20Z",
+    "generated_label": "2026-05-25T14:46:42Z",
     "snapshot_health": {
       "status": "fresh",
       "age_minutes": 0,
-      "stale_after": "2026-05-26T02:28:20Z",
+      "stale_after": "2026-05-26T02:46:42Z",
       "backend_dependency": "none_for_public_pages"
     },
     "top_events": [
@@ -42,8 +42,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-25T14:28:20Z",
-        "published_at": "2026-05-25T14:28:20Z",
+        "occurred_at": "2026-05-25T14:46:42Z",
+        "published_at": "2026-05-25T14:46:42Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -85,8 +85,8 @@
         "title": "Energy inventory calendar is active for oil supply monitoring",
         "summary": "EIA-linked inventory releases are tracked as official structured data before publication.",
         "why_it_matters": "Inventory surprises can affect energy equities, inflation inputs, and geopolitical risk interpretation.",
-        "occurred_at": "2026-05-25T14:28:20Z",
-        "published_at": "2026-05-25T14:28:20Z",
+        "occurred_at": "2026-05-25T14:46:42Z",
+        "published_at": "2026-05-25T14:46:42Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -123,8 +123,8 @@
         "title": "Central-bank calendar coverage seeded across six policy committees",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
         "why_it_matters": "Calendar visibility reduces silent coverage gaps and makes stale policy data visible.",
-        "occurred_at": "2026-05-25T14:28:20Z",
-        "published_at": "2026-05-25T14:28:20Z",
+        "occurred_at": "2026-05-25T14:46:42Z",
+        "published_at": "2026-05-25T14:46:42Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -157,8 +157,38 @@
         "source_links": [
           {
             "label": "Federal Reserve",
-            "url": "https://www.federalreserve.gov",
+            "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
             "source_key": "federal_reserve",
+            "policy_version": 1
+          },
+          {
+            "label": "ECB",
+            "url": "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html",
+            "source_key": "ecb",
+            "policy_version": 1
+          },
+          {
+            "label": "Bank of England",
+            "url": "https://www.bankofengland.co.uk/news/2025/september/monetary-policy-committee-dates-for-2026",
+            "source_key": "bank_of_england",
+            "policy_version": 1
+          },
+          {
+            "label": "Bank of Japan",
+            "url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm",
+            "source_key": "bank_of_japan",
+            "policy_version": 1
+          },
+          {
+            "label": "Bank of Korea",
+            "url": "https://www.bok.or.kr/eng/main/contents.do?menuNo=400020",
+            "source_key": "bank_of_korea",
+            "policy_version": 1
+          },
+          {
+            "label": "Banco Central do Brasil",
+            "url": "https://www.bcb.gov.br/detalhenoticia/20739/nota",
+            "source_key": "bcb",
             "policy_version": 1
           }
         ],
@@ -173,7 +203,7 @@
         "source": "FRED / Nasdaq",
         "freshness": "fresh",
         "delay_label": "FRED NASDAQCOM actual through 2026-05-22",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "points": [
           {
@@ -201,7 +231,7 @@
         "source": "CME / licensed futures feed",
         "freshness": "watch",
         "delay_label": "No always-free licensed futures API is configured",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -211,7 +241,7 @@
         "source": "FRED / OECD Korea share prices",
         "freshness": "fresh",
         "delay_label": "FRED SPASTT01KRM661N actual through 2026-04-01",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "points": [
           {
@@ -239,7 +269,7 @@
         "source": "KRX / Samsung AM",
         "freshness": "watch",
         "delay_label": "No always-free redistributable ETF feed is configured",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -249,7 +279,7 @@
         "source": "KRX derivatives feed",
         "freshness": "watch",
         "delay_label": "No always-free licensed derivatives API is configured",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -259,7 +289,7 @@
         "source": "FRED / EIA",
         "freshness": "fresh",
         "delay_label": "FRED DCOILWTICO actual through 2026-05-18",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "$",
         "points": [
@@ -288,7 +318,7 @@
         "source": "FRED / Cboe",
         "freshness": "fresh",
         "delay_label": "FRED VIXCLS actual through 2026-05-21",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "points": [
           {
@@ -316,7 +346,7 @@
         "source": "FRED / Federal Reserve H.10",
         "freshness": "fresh",
         "delay_label": "FRED DEXKOUS actual through 2026-05-15",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "KRW",
         "points": [
@@ -345,7 +375,7 @@
         "source": "FRED / Federal Reserve H.10",
         "freshness": "fresh",
         "delay_label": "FRED DEXJPUS actual through 2026-05-15",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "JPY",
         "points": [
@@ -374,7 +404,7 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS2 actual through 2026-05-21",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -399,7 +429,7 @@
           "title": "FOMC policy decision",
           "date": "2026-06-17",
           "timezone": "America/New_York",
-          "source": "Federal Reserve calendar"
+          "source": "Federal Reserve FOMC calendar"
         }
       },
       {
@@ -409,7 +439,7 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS3 actual through 2026-05-21",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -434,7 +464,7 @@
           "title": "FOMC policy decision",
           "date": "2026-06-17",
           "timezone": "America/New_York",
-          "source": "Federal Reserve calendar"
+          "source": "Federal Reserve FOMC calendar"
         }
       },
       {
@@ -444,7 +474,7 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS5 actual through 2026-05-21",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -469,7 +499,7 @@
           "title": "FOMC policy decision",
           "date": "2026-06-17",
           "timezone": "America/New_York",
-          "source": "Federal Reserve calendar"
+          "source": "Federal Reserve FOMC calendar"
         }
       },
       {
@@ -479,7 +509,7 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS10 actual through 2026-05-21",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -504,7 +534,7 @@
           "title": "FOMC policy decision",
           "date": "2026-06-17",
           "timezone": "America/New_York",
-          "source": "Federal Reserve calendar"
+          "source": "Federal Reserve FOMC calendar"
         }
       },
       {
@@ -514,7 +544,7 @@
         "source": "FRED / OECD Japan central bank rate",
         "freshness": "fresh",
         "delay_label": "FRED IRSTCB01JPM156N actual through 2023-12-01",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -539,7 +569,7 @@
           "title": "BoJ monetary-policy meeting",
           "date": "2026-06-16",
           "timezone": "Asia/Tokyo",
-          "source": "BoJ calendar seed"
+          "source": "Bank of Japan MPM calendar"
         }
       },
       {
@@ -549,7 +579,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "watch",
         "delay_label": "Always-free 2Y JGB API source is not configured",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -559,7 +589,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "watch",
         "delay_label": "Always-free 5Y JGB API source is not configured",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -569,7 +599,7 @@
         "source": "FRED / OECD Japan 10Y yield",
         "freshness": "fresh",
         "delay_label": "FRED IRLTLT01JPM156N actual through 2026-04-01",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -594,7 +624,7 @@
           "title": "BoJ monetary-policy meeting",
           "date": "2026-06-16",
           "timezone": "Asia/Tokyo",
-          "source": "BoJ calendar seed"
+          "source": "Bank of Japan MPM calendar"
         }
       }
     ],
@@ -619,7 +649,7 @@
             "source": "FINRA consolidated short interest",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
           },
           {
@@ -630,7 +660,7 @@
             "source": "FINRA consolidated short interest",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
           },
           {
@@ -641,7 +671,7 @@
             "source": "FINRA consolidated short interest",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
           },
           {
@@ -652,7 +682,7 @@
             "source": "FINRA",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.finra.org/investors/insights/short-interest"
           }
         ]
@@ -677,7 +707,7 @@
             "source": "FINRA Reg SHO daily short sale volume",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
           },
           {
@@ -688,7 +718,7 @@
             "source": "FINRA Reg SHO daily short sale volume",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
           },
           {
@@ -699,7 +729,7 @@
             "source": "FINRA Reg SHO daily short sale volume",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
           }
         ]
@@ -723,7 +753,7 @@
             "source": "Hindenburg/news",
             "freshness": "watch",
             "severity": "high",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://hindenburgresearch.com/"
           },
           {
@@ -734,7 +764,7 @@
             "source": "Muddy Waters",
             "freshness": "watch",
             "severity": "high",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.muddywatersresearch.com/"
           },
           {
@@ -745,7 +775,7 @@
             "source": "Viceroy",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://viceroyresearch.org/"
           },
           {
@@ -756,7 +786,7 @@
             "source": "LLM router",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z"
+            "updated_at": "2026-05-25T14:46:42Z"
           },
           {
             "key": "short_research_reports_spruce_point",
@@ -766,7 +796,7 @@
             "source": "Spruce Point",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.sprucepointcap.com/"
           },
           {
@@ -777,7 +807,7 @@
             "source": "Kerrisdale",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.kerrisdalecap.com/"
           },
           {
@@ -788,7 +818,7 @@
             "source": "Culper",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://culperresearch.com/"
           },
           {
@@ -799,7 +829,7 @@
             "source": "Blue Orca",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.blueorcacapital.com/"
           },
           {
@@ -810,7 +840,7 @@
             "source": "Grizzly",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://grizzlyreports.com/"
           }
         ]
@@ -835,7 +865,7 @@
             "source": "Pentagon.Pizza",
             "freshness": "fresh",
             "severity": "low",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://pentagon.pizza/"
           },
           {
@@ -846,7 +876,7 @@
             "source": "source policy",
             "freshness": "watch",
             "severity": "low",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://pentagon.pizza/"
           }
         ]
@@ -871,7 +901,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000114036126022487/xslF345X06/form4.xml"
           },
           {
@@ -882,7 +912,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000192109426000535/xsl144X01/primary_doc.xml"
           },
           {
@@ -893,7 +923,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000192109426000474/xsl144X01/primary_doc.xml"
           },
           {
@@ -904,7 +934,7 @@
             "source": "SEC EDGAR",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z"
+            "updated_at": "2026-05-25T14:46:42Z"
           },
           {
             "key": "trump_filings_ai_summary",
@@ -914,7 +944,7 @@
             "source": "LLM router",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z"
+            "updated_at": "2026-05-25T14:46:42Z"
           }
         ]
       }
@@ -978,7 +1008,7 @@
         "time_precision": "time_estimated",
         "status": "scheduled",
         "expectation_type": "official_projection",
-        "expectation_value": "policy path not a consensus",
+        "expectation_value": "Summary of Economic Projections meeting",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
@@ -990,13 +1020,13 @@
         "title": "ECB monetary-policy decision",
         "country_region_key": "EUROZONE",
         "release_type": "central_bank",
-        "scheduled_at": "2026-06-04T12:00:00Z",
-        "scheduled_local_date": "2026-06-04",
+        "scheduled_at": "2026-06-11T12:00:00Z",
+        "scheduled_local_date": "2026-06-11",
         "timezone": "Europe/Frankfurt",
         "time_precision": "time_estimated",
         "status": "scheduled",
-        "expectation_type": "official_projection",
-        "expectation_value": "staff projections where published",
+        "expectation_type": "official_calendar",
+        "expectation_value": "day 2 with press conference",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
@@ -1013,13 +1043,13 @@
         "timezone": "Europe/London",
         "time_precision": "time_estimated",
         "status": "scheduled",
-        "expectation_type": "unknown",
-        "expectation_value": null,
+        "expectation_type": "official_calendar",
+        "expectation_value": "MPC announcement and minutes",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
         "source": "BoE",
-        "freshness": "watch"
+        "freshness": "fresh"
       },
       {
         "id": "cal_boj",
@@ -1031,13 +1061,13 @@
         "timezone": "Asia/Tokyo",
         "time_precision": "time_estimated",
         "status": "scheduled",
-        "expectation_type": "unknown",
-        "expectation_value": null,
+        "expectation_type": "official_calendar",
+        "expectation_value": "meeting day 2",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
         "source": "BoJ",
-        "freshness": "watch"
+        "freshness": "fresh"
       },
       {
         "id": "cal_bok",
@@ -1049,13 +1079,13 @@
         "timezone": "Asia/Seoul",
         "time_precision": "time_estimated",
         "status": "scheduled",
-        "expectation_type": "unknown",
-        "expectation_value": null,
+        "expectation_type": "official_calendar",
+        "expectation_value": "policy-setting meeting",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
         "source": "BoK",
-        "freshness": "watch"
+        "freshness": "fresh"
       },
       {
         "id": "cal_copom",
@@ -1067,13 +1097,13 @@
         "timezone": "America/Sao_Paulo",
         "time_precision": "time_estimated",
         "status": "scheduled",
-        "expectation_type": "unknown",
-        "expectation_value": null,
+        "expectation_type": "official_calendar",
+        "expectation_value": "decision day",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
         "source": "BCB",
-        "freshness": "watch"
+        "freshness": "fresh"
       }
     ],
     "scenario_baskets": [

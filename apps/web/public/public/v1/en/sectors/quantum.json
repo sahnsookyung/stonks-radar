@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-25T14:28:20Z",
-  "stale_after": "2026-05-26T02:28:20Z",
-  "hard_expires_at": "2026-06-01T14:28:20Z",
+  "generated_at": "2026-05-25T14:46:42Z",
+  "stale_after": "2026-05-26T02:46:42Z",
+  "hard_expires_at": "2026-06-01T14:46:42Z",
   "object_type": "sector_page",
   "object_key": "quantum",
-  "content_hash": "sha256:55c5e6c3caa02bc9dcbbc7af1faf550c0274a9b6e96e7bce775dcf77033afd5a",
+  "content_hash": "sha256:8bcd2f79c6e7dd230e2a1ca24fcc001b02c32fcc5330b2677c6c36bd8b251098",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -54,8 +54,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-25T14:28:20Z",
-        "published_at": "2026-05-25T14:28:20Z",
+        "occurred_at": "2026-05-25T14:46:42Z",
+        "published_at": "2026-05-25T14:46:42Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -105,7 +105,7 @@
         "time_precision": "time_estimated",
         "status": "scheduled",
         "expectation_type": "official_projection",
-        "expectation_value": "policy path not a consensus",
+        "expectation_value": "Summary of Economic Projections meeting",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
@@ -117,13 +117,13 @@
         "title": "ECB monetary-policy decision",
         "country_region_key": "EUROZONE",
         "release_type": "central_bank",
-        "scheduled_at": "2026-06-04T12:00:00Z",
-        "scheduled_local_date": "2026-06-04",
+        "scheduled_at": "2026-06-11T12:00:00Z",
+        "scheduled_local_date": "2026-06-11",
         "timezone": "Europe/Frankfurt",
         "time_precision": "time_estimated",
         "status": "scheduled",
-        "expectation_type": "official_projection",
-        "expectation_value": "staff projections where published",
+        "expectation_type": "official_calendar",
+        "expectation_value": "day 2 with press conference",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
@@ -140,13 +140,13 @@
         "timezone": "Europe/London",
         "time_precision": "time_estimated",
         "status": "scheduled",
-        "expectation_type": "unknown",
-        "expectation_value": null,
+        "expectation_type": "official_calendar",
+        "expectation_value": "MPC announcement and minutes",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
         "source": "BoE",
-        "freshness": "watch"
+        "freshness": "fresh"
       },
       {
         "id": "cal_boj",
@@ -158,13 +158,13 @@
         "timezone": "Asia/Tokyo",
         "time_precision": "time_estimated",
         "status": "scheduled",
-        "expectation_type": "unknown",
-        "expectation_value": null,
+        "expectation_type": "official_calendar",
+        "expectation_value": "meeting day 2",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
         "source": "BoJ",
-        "freshness": "watch"
+        "freshness": "fresh"
       }
     ],
     "macro_geopolitical_drivers": [
@@ -180,7 +180,7 @@
         "source": "FRED / Nasdaq",
         "freshness": "fresh",
         "delay_label": "FRED NASDAQCOM actual through 2026-05-22",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "points": [
           {
@@ -208,7 +208,7 @@
         "source": "CME / licensed futures feed",
         "freshness": "watch",
         "delay_label": "No always-free licensed futures API is configured",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "coverage_gap"
       }
     ],

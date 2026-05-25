@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-25T14:28:20Z",
-  "stale_after": "2026-05-26T02:28:20Z",
-  "hard_expires_at": "2026-06-01T14:28:20Z",
+  "generated_at": "2026-05-25T14:46:42Z",
+  "stale_after": "2026-05-26T02:46:42Z",
+  "hard_expires_at": "2026-06-01T14:46:42Z",
   "object_type": "scenario_basket",
   "object_key": "energy-supply-shock",
-  "content_hash": "sha256:a516dfa7d07c82d45044425aa7e897d83cef12dadf7f6b5f26d6822f557b8d70",
+  "content_hash": "sha256:5733787192d3a8f55ee59e648dbf00c3ebf0b114bd35f0f26e874701d0ba6225",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -64,7 +64,7 @@
       }
     ],
     "risk_summary": "Scenario can fail if source data is stale, policy risk reverses, or sector exposure is weaker than expected.",
-    "freshness_timestamp": "2026-05-25T14:28:20Z",
+    "freshness_timestamp": "2026-05-25T14:46:42Z",
     "data_delay_warning": "Uses delayed/reference indicators only; no brokerage connection or trade execution.",
     "disclaimer": "Research only. Not personalized financial advice. Do not treat this as a buy, sell, or allocation recommendation.",
     "approval_status": "approved"

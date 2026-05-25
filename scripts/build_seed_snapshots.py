@@ -24,6 +24,14 @@ FINRA_REQUEST_MIN_INTERVAL_SECONDS = 0.25
 DEFAULT_SHORT_TICKERS = "DJT,TSLA,NVDA"
 DEFAULT_TRUMP_CIKS = {"DJT": "0001849635"}
 PENTAGON_PIZZA_URL = "https://pentagon.pizza/"
+OFFICIAL_POLICY_CALENDAR_URLS = {
+    "federal_reserve": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+    "ecb": "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html",
+    "bank_of_england": "https://www.bankofengland.co.uk/news/2025/september/monetary-policy-committee-dates-for-2026",
+    "bank_of_japan": "https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm",
+    "bank_of_korea": "https://www.bok.or.kr/eng/main/contents.do?menuNo=400020",
+    "bcb": "https://www.bcb.gov.br/detalhenoticia/20739/nota",
+}
 _RUNTIME_ENV: dict[str, str] | None = None
 _FRED_CACHE: dict[str, dict[str, Any] | None] = {}
 _FINRA_TOKEN_CACHE: dict[str, Any] = {"token": None, "expires_at": 0.0}
@@ -833,7 +841,34 @@ def _events(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "latitude": 51.5,
             "longitude": 0.0,
             "affected_objects": ["FOMC", "ECB", "BoE", "BoJ", "BoK", "COPOM"],
-            "source_links": [{"label": "Federal Reserve", "url": "https://www.federalreserve.gov", "source_key": "federal_reserve", "policy_version": 1}],
+            "source_links": [
+                {
+                    "label": "Federal Reserve",
+                    "url": OFFICIAL_POLICY_CALENDAR_URLS["federal_reserve"],
+                    "source_key": "federal_reserve",
+                    "policy_version": 1,
+                },
+                {"label": "ECB", "url": OFFICIAL_POLICY_CALENDAR_URLS["ecb"], "source_key": "ecb", "policy_version": 1},
+                {
+                    "label": "Bank of England",
+                    "url": OFFICIAL_POLICY_CALENDAR_URLS["bank_of_england"],
+                    "source_key": "bank_of_england",
+                    "policy_version": 1,
+                },
+                {
+                    "label": "Bank of Japan",
+                    "url": OFFICIAL_POLICY_CALENDAR_URLS["bank_of_japan"],
+                    "source_key": "bank_of_japan",
+                    "policy_version": 1,
+                },
+                {
+                    "label": "Bank of Korea",
+                    "url": OFFICIAL_POLICY_CALENDAR_URLS["bank_of_korea"],
+                    "source_key": "bank_of_korea",
+                    "policy_version": 1,
+                },
+                {"label": "Banco Central do Brasil", "url": OFFICIAL_POLICY_CALENDAR_URLS["bcb"], "source_key": "bcb", "policy_version": 1},
+            ],
             "correction_status": "none",
         },
     ]
@@ -841,12 +876,12 @@ def _events(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
 
 def _calendar(locale: str) -> list[dict[str, Any]]:
     items = [
-        ("cal_fomc", "FOMC policy decision", "FOMC 정책 결정", "USA", "central_bank", "2026-06-17", "America/New_York", "official_projection", "policy path not a consensus", "Federal Reserve"),
-        ("cal_ecb", "ECB monetary-policy decision", "ECB 통화정책 결정", "EUROZONE", "central_bank", "2026-06-04", "Europe/Frankfurt", "official_projection", "staff projections where published", "ECB"),
-        ("cal_boe", "BoE MPC decision", "영란은행 MPC 결정", "GBR", "central_bank", "2026-06-18", "Europe/London", "unknown", None, "BoE"),
-        ("cal_boj", "BoJ monetary-policy meeting", "일본은행 통화정책회의", "JPN", "central_bank", "2026-06-16", "Asia/Tokyo", "unknown", None, "BoJ"),
-        ("cal_bok", "Bank of Korea decision", "한국은행 기준금리 결정", "KOR", "central_bank", "2026-05-28", "Asia/Seoul", "unknown", None, "BoK"),
-        ("cal_copom", "Brazil COPOM decision", "브라질 COPOM 결정", "BRA", "central_bank", "2026-06-17", "America/Sao_Paulo", "unknown", None, "BCB"),
+        ("cal_fomc", "FOMC policy decision", "FOMC 정책 결정", "USA", "central_bank", "2026-06-17", "America/New_York", "official_projection", "Summary of Economic Projections meeting", "Federal Reserve"),
+        ("cal_ecb", "ECB monetary-policy decision", "ECB 통화정책 결정", "EUROZONE", "central_bank", "2026-06-11", "Europe/Frankfurt", "official_calendar", "day 2 with press conference", "ECB"),
+        ("cal_boe", "BoE MPC decision", "영란은행 MPC 결정", "GBR", "central_bank", "2026-06-18", "Europe/London", "official_calendar", "MPC announcement and minutes", "BoE"),
+        ("cal_boj", "BoJ monetary-policy meeting", "일본은행 통화정책회의", "JPN", "central_bank", "2026-06-16", "Asia/Tokyo", "official_calendar", "meeting day 2", "BoJ"),
+        ("cal_bok", "Bank of Korea decision", "한국은행 기준금리 결정", "KOR", "central_bank", "2026-05-28", "Asia/Seoul", "official_calendar", "policy-setting meeting", "BoK"),
+        ("cal_copom", "Brazil COPOM decision", "브라질 COPOM 결정", "BRA", "central_bank", "2026-06-17", "America/Sao_Paulo", "official_calendar", "decision day", "BCB"),
         ("cal_us_cpi", "US CPI release", "미국 CPI 발표", "USA", "macro_release", "2026-06-10", "America/New_York", "manual_estimate", "manual estimate visible", "BLS"),
         ("cal_us_jobs", "US employment situation", "미국 고용보고서", "USA", "macro_release", "2026-06-05", "America/New_York", "unknown", None, "BLS"),
         ("cal_earnings_ai", "Monitored AI infrastructure earnings window", "AI 인프라 모니터링 기업 실적 구간", "USA", "earnings_window", "2026-06-30", "UTC", "unknown", None, "SEC/company IR"),
@@ -883,13 +918,13 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
                 "title": _t(locale, "FOMC policy decision", "FOMC 정책 결정"),
                 "date": "2026-06-17",
                 "timezone": "America/New_York",
-                "source": "Federal Reserve calendar",
+                "source": "Federal Reserve FOMC calendar",
             },
             "japan": {
                 "title": _t(locale, "BoJ monetary-policy meeting", "일본은행 통화정책회의"),
                 "date": "2026-06-16",
                 "timezone": "Asia/Tokyo",
-                "source": "BoJ calendar seed",
+                "source": "Bank of Japan MPM calendar",
             },
         }
         return events[region]

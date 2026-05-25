@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-25T14:28:20Z",
-  "stale_after": "2026-05-26T02:28:20Z",
-  "hard_expires_at": "2026-06-01T14:28:20Z",
+  "generated_at": "2026-05-25T14:46:42Z",
+  "stale_after": "2026-05-26T02:46:42Z",
+  "hard_expires_at": "2026-06-01T14:46:42Z",
   "object_type": "home",
   "object_key": "home",
-  "content_hash": "sha256:07137864748e4a41fa9c89a5df904fe61e6836afd68dfdb5ec8c4a777b5ee41e",
+  "content_hash": "sha256:1315812b7fb9d14a4b456591ab09c311b9a8b9be40aee70be57e64c2182b7897",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -29,11 +29,11 @@
   "data": {
     "headline": "글로벌 시장 인텔리전스 대시보드",
     "summary": "공개 출처 정책을 통과한 정보를 스냅샷 우선 방식으로 보여주는 리서치 대시보드입니다. 개인화 조언 없이 섹터, 중앙은행 일정, 시나리오 바스켓, 승인 이벤트를 표시합니다.",
-    "generated_label": "2026-05-25T14:28:20Z",
+    "generated_label": "2026-05-25T14:46:42Z",
     "snapshot_health": {
       "status": "fresh",
       "age_minutes": 0,
-      "stale_after": "2026-05-26T02:28:20Z",
+      "stale_after": "2026-05-26T02:46:42Z",
       "backend_dependency": "none_for_public_pages"
     },
     "top_events": [
@@ -42,8 +42,8 @@
         "title": "반도체 수출통제 모니터링 강도 유지",
         "summary": "승인된 시드 이벤트가 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
         "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다.",
-        "occurred_at": "2026-05-25T14:28:20Z",
-        "published_at": "2026-05-25T14:28:20Z",
+        "occurred_at": "2026-05-25T14:46:42Z",
+        "published_at": "2026-05-25T14:46:42Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -85,8 +85,8 @@
         "title": "석유 공급 모니터링을 위한 에너지 재고 일정 활성",
         "summary": "EIA 연계 재고 발표는 공개 전 공식 구조화 데이터로 추적됩니다.",
         "why_it_matters": "재고 서프라이즈는 에너지 주식, 인플레이션 입력값, 지정학 리스크 해석에 영향을 줄 수 있습니다.",
-        "occurred_at": "2026-05-25T14:28:20Z",
-        "published_at": "2026-05-25T14:28:20Z",
+        "occurred_at": "2026-05-25T14:46:42Z",
+        "published_at": "2026-05-25T14:46:42Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -123,8 +123,8 @@
         "title": "6개 중앙은행 정책회의 일정 시드 적용",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, 브라질 COPOM이 명시적 예상치 라벨과 함께 표시됩니다.",
         "why_it_matters": "캘린더 가시성은 커버리지 공백을 숨기지 않고 오래된 정책 데이터를 드러냅니다.",
-        "occurred_at": "2026-05-25T14:28:20Z",
-        "published_at": "2026-05-25T14:28:20Z",
+        "occurred_at": "2026-05-25T14:46:42Z",
+        "published_at": "2026-05-25T14:46:42Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -157,8 +157,38 @@
         "source_links": [
           {
             "label": "Federal Reserve",
-            "url": "https://www.federalreserve.gov",
+            "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
             "source_key": "federal_reserve",
+            "policy_version": 1
+          },
+          {
+            "label": "ECB",
+            "url": "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html",
+            "source_key": "ecb",
+            "policy_version": 1
+          },
+          {
+            "label": "Bank of England",
+            "url": "https://www.bankofengland.co.uk/news/2025/september/monetary-policy-committee-dates-for-2026",
+            "source_key": "bank_of_england",
+            "policy_version": 1
+          },
+          {
+            "label": "Bank of Japan",
+            "url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm",
+            "source_key": "bank_of_japan",
+            "policy_version": 1
+          },
+          {
+            "label": "Bank of Korea",
+            "url": "https://www.bok.or.kr/eng/main/contents.do?menuNo=400020",
+            "source_key": "bank_of_korea",
+            "policy_version": 1
+          },
+          {
+            "label": "Banco Central do Brasil",
+            "url": "https://www.bcb.gov.br/detalhenoticia/20739/nota",
+            "source_key": "bcb",
             "policy_version": 1
           }
         ],
@@ -173,7 +203,7 @@
         "source": "FRED / Nasdaq",
         "freshness": "fresh",
         "delay_label": "FRED NASDAQCOM 실제값, 2026-05-22까지",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "points": [
           {
@@ -201,7 +231,7 @@
         "source": "CME / licensed futures feed",
         "freshness": "watch",
         "delay_label": "상시 무료 라이선스 선물 API가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -211,7 +241,7 @@
         "source": "FRED / OECD Korea share prices",
         "freshness": "fresh",
         "delay_label": "FRED SPASTT01KRM661N 실제값, 2026-04-01까지",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "points": [
           {
@@ -239,7 +269,7 @@
         "source": "KRX / Samsung AM",
         "freshness": "watch",
         "delay_label": "상시 무료 재배포 가능 ETF 피드가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -249,7 +279,7 @@
         "source": "KRX derivatives feed",
         "freshness": "watch",
         "delay_label": "상시 무료 라이선스 파생상품 API가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -259,7 +289,7 @@
         "source": "FRED / EIA",
         "freshness": "fresh",
         "delay_label": "FRED DCOILWTICO 실제값, 2026-05-18까지",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "$",
         "points": [
@@ -288,7 +318,7 @@
         "source": "FRED / Cboe",
         "freshness": "fresh",
         "delay_label": "FRED VIXCLS 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "points": [
           {
@@ -316,7 +346,7 @@
         "source": "FRED / Federal Reserve H.10",
         "freshness": "fresh",
         "delay_label": "FRED DEXKOUS 실제값, 2026-05-15까지",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "KRW",
         "points": [
@@ -345,7 +375,7 @@
         "source": "FRED / Federal Reserve H.10",
         "freshness": "fresh",
         "delay_label": "FRED DEXJPUS 실제값, 2026-05-15까지",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "JPY",
         "points": [
@@ -374,7 +404,7 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS2 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -399,7 +429,7 @@
           "title": "FOMC 정책 결정",
           "date": "2026-06-17",
           "timezone": "America/New_York",
-          "source": "Federal Reserve calendar"
+          "source": "Federal Reserve FOMC calendar"
         }
       },
       {
@@ -409,7 +439,7 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS3 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -434,7 +464,7 @@
           "title": "FOMC 정책 결정",
           "date": "2026-06-17",
           "timezone": "America/New_York",
-          "source": "Federal Reserve calendar"
+          "source": "Federal Reserve FOMC calendar"
         }
       },
       {
@@ -444,7 +474,7 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS5 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -469,7 +499,7 @@
           "title": "FOMC 정책 결정",
           "date": "2026-06-17",
           "timezone": "America/New_York",
-          "source": "Federal Reserve calendar"
+          "source": "Federal Reserve FOMC calendar"
         }
       },
       {
@@ -479,7 +509,7 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS10 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -504,7 +534,7 @@
           "title": "FOMC 정책 결정",
           "date": "2026-06-17",
           "timezone": "America/New_York",
-          "source": "Federal Reserve calendar"
+          "source": "Federal Reserve FOMC calendar"
         }
       },
       {
@@ -514,7 +544,7 @@
         "source": "FRED / OECD Japan central bank rate",
         "freshness": "fresh",
         "delay_label": "FRED IRSTCB01JPM156N 실제값, 2023-12-01까지",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -539,7 +569,7 @@
           "title": "일본은행 통화정책회의",
           "date": "2026-06-16",
           "timezone": "Asia/Tokyo",
-          "source": "BoJ calendar seed"
+          "source": "Bank of Japan MPM calendar"
         }
       },
       {
@@ -549,7 +579,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "watch",
         "delay_label": "상시 무료 2년 JGB API 출처가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -559,7 +589,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "watch",
         "delay_label": "상시 무료 5년 JGB API 출처가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -569,7 +599,7 @@
         "source": "FRED / OECD Japan 10Y yield",
         "freshness": "fresh",
         "delay_label": "FRED IRLTLT01JPM156N 실제값, 2026-04-01까지",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -594,7 +624,7 @@
           "title": "일본은행 통화정책회의",
           "date": "2026-06-16",
           "timezone": "Asia/Tokyo",
-          "source": "BoJ calendar seed"
+          "source": "Bank of Japan MPM calendar"
         }
       }
     ],
@@ -619,7 +649,7 @@
             "source": "FINRA consolidated short interest",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
           },
           {
@@ -630,7 +660,7 @@
             "source": "FINRA consolidated short interest",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
           },
           {
@@ -641,7 +671,7 @@
             "source": "FINRA consolidated short interest",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
           },
           {
@@ -652,7 +682,7 @@
             "source": "FINRA",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.finra.org/investors/insights/short-interest"
           }
         ]
@@ -677,7 +707,7 @@
             "source": "FINRA Reg SHO daily short sale volume",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
           },
           {
@@ -688,7 +718,7 @@
             "source": "FINRA Reg SHO daily short sale volume",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
           },
           {
@@ -699,7 +729,7 @@
             "source": "FINRA Reg SHO daily short sale volume",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
           }
         ]
@@ -723,7 +753,7 @@
             "source": "Hindenburg/news",
             "freshness": "watch",
             "severity": "high",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://hindenburgresearch.com/"
           },
           {
@@ -734,7 +764,7 @@
             "source": "Muddy Waters",
             "freshness": "watch",
             "severity": "high",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.muddywatersresearch.com/"
           },
           {
@@ -745,7 +775,7 @@
             "source": "Viceroy",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://viceroyresearch.org/"
           },
           {
@@ -756,7 +786,7 @@
             "source": "LLM router",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z"
+            "updated_at": "2026-05-25T14:46:42Z"
           },
           {
             "key": "short_research_reports_spruce_point",
@@ -766,7 +796,7 @@
             "source": "Spruce Point",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.sprucepointcap.com/"
           },
           {
@@ -777,7 +807,7 @@
             "source": "Kerrisdale",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.kerrisdalecap.com/"
           },
           {
@@ -788,7 +818,7 @@
             "source": "Culper",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://culperresearch.com/"
           },
           {
@@ -799,7 +829,7 @@
             "source": "Blue Orca",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.blueorcacapital.com/"
           },
           {
@@ -810,7 +840,7 @@
             "source": "Grizzly",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://grizzlyreports.com/"
           }
         ]
@@ -835,7 +865,7 @@
             "source": "Pentagon.Pizza",
             "freshness": "fresh",
             "severity": "low",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://pentagon.pizza/"
           },
           {
@@ -846,7 +876,7 @@
             "source": "source policy",
             "freshness": "watch",
             "severity": "low",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://pentagon.pizza/"
           }
         ]
@@ -871,7 +901,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000114036126022487/xslF345X06/form4.xml"
           },
           {
@@ -882,7 +912,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000192109426000535/xsl144X01/primary_doc.xml"
           },
           {
@@ -893,7 +923,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z",
+            "updated_at": "2026-05-25T14:46:42Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000192109426000474/xsl144X01/primary_doc.xml"
           },
           {
@@ -904,7 +934,7 @@
             "source": "SEC EDGAR",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z"
+            "updated_at": "2026-05-25T14:46:42Z"
           },
           {
             "key": "trump_filings_ai_summary",
@@ -914,7 +944,7 @@
             "source": "LLM router",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T14:28:20Z"
+            "updated_at": "2026-05-25T14:46:42Z"
           }
         ]
       }
@@ -978,7 +1008,7 @@
         "time_precision": "time_estimated",
         "status": "scheduled",
         "expectation_type": "official_projection",
-        "expectation_value": "policy path not a consensus",
+        "expectation_value": "Summary of Economic Projections meeting",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
@@ -990,13 +1020,13 @@
         "title": "ECB 통화정책 결정",
         "country_region_key": "EUROZONE",
         "release_type": "central_bank",
-        "scheduled_at": "2026-06-04T12:00:00Z",
-        "scheduled_local_date": "2026-06-04",
+        "scheduled_at": "2026-06-11T12:00:00Z",
+        "scheduled_local_date": "2026-06-11",
         "timezone": "Europe/Frankfurt",
         "time_precision": "time_estimated",
         "status": "scheduled",
-        "expectation_type": "official_projection",
-        "expectation_value": "staff projections where published",
+        "expectation_type": "official_calendar",
+        "expectation_value": "day 2 with press conference",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
@@ -1013,13 +1043,13 @@
         "timezone": "Europe/London",
         "time_precision": "time_estimated",
         "status": "scheduled",
-        "expectation_type": "unknown",
-        "expectation_value": null,
+        "expectation_type": "official_calendar",
+        "expectation_value": "MPC announcement and minutes",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
         "source": "BoE",
-        "freshness": "watch"
+        "freshness": "fresh"
       },
       {
         "id": "cal_boj",
@@ -1031,13 +1061,13 @@
         "timezone": "Asia/Tokyo",
         "time_precision": "time_estimated",
         "status": "scheduled",
-        "expectation_type": "unknown",
-        "expectation_value": null,
+        "expectation_type": "official_calendar",
+        "expectation_value": "meeting day 2",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
         "source": "BoJ",
-        "freshness": "watch"
+        "freshness": "fresh"
       },
       {
         "id": "cal_bok",
@@ -1049,13 +1079,13 @@
         "timezone": "Asia/Seoul",
         "time_precision": "time_estimated",
         "status": "scheduled",
-        "expectation_type": "unknown",
-        "expectation_value": null,
+        "expectation_type": "official_calendar",
+        "expectation_value": "policy-setting meeting",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
         "source": "BoK",
-        "freshness": "watch"
+        "freshness": "fresh"
       },
       {
         "id": "cal_copom",
@@ -1067,13 +1097,13 @@
         "timezone": "America/Sao_Paulo",
         "time_precision": "time_estimated",
         "status": "scheduled",
-        "expectation_type": "unknown",
-        "expectation_value": null,
+        "expectation_type": "official_calendar",
+        "expectation_value": "decision day",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
         "source": "BCB",
-        "freshness": "watch"
+        "freshness": "fresh"
       }
     ],
     "scenario_baskets": [

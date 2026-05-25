@@ -12,7 +12,7 @@ import {
   TrendingUp
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { AlternativeSignalLane, MetricTile, PublicEvent } from "@frw/shared-types";
+import type { AlternativeSignalLane, CalendarItem, MetricTile, PublicEvent } from "@frw/shared-types";
 import { FreshnessBadge, SeverityBadge, SourceBadge } from "../components/Badge";
 import { EventList } from "../components/EventList";
 import { EventMap } from "../components/EventMap";
@@ -73,6 +73,9 @@ export function HomePage() {
   const marketTiles = [...data.macro_tiles].sort(
     (left, right) => marketRank(left.key) - marketRank(right.key)
   );
+  const policyCalendar = sortCalendarItems(
+    data.calendar_preview.filter((item) => item.release_type === "central_bank")
+  );
   const priorityEvent = data.top_events[0];
 
   return (
@@ -129,11 +132,11 @@ export function HomePage() {
             {t("calendar")}
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            {data.calendar_preview.slice(0, 4).map((item) => (
+            {policyCalendar.slice(0, 4).map((item) => (
               <div key={item.id} className="rounded-md border border-line bg-panelAlt px-4 py-3">
                 <div className="text-sm font-semibold leading-5">{item.title}</div>
                 <div className="mt-1.5 text-xs leading-5 text-muted">
-                  {item.scheduled_local_date} · {item.expectation_type}
+                  {item.scheduled_local_date} · {item.source} · {calendarExpectationLabel(item.expectation_type)}
                 </div>
               </div>
             ))}
@@ -202,6 +205,17 @@ export function HomePage() {
 function marketRank(key: string) {
   const index = marketOrder.indexOf(key);
   return index === -1 ? marketOrder.length : index;
+}
+
+function sortCalendarItems(items: CalendarItem[]) {
+  return [...items].sort((left, right) => left.scheduled_local_date.localeCompare(right.scheduled_local_date));
+}
+
+function calendarExpectationLabel(expectationType: string) {
+  if (expectationType === "official_projection") return "official projections";
+  if (expectationType === "official_calendar") return "official calendar";
+  if (expectationType === "manual_estimate") return "manual estimate";
+  return "watch";
 }
 
 function PriorityEvent({ event }: { event: PublicEvent }) {

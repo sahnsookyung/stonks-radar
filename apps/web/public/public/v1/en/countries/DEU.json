@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-25T14:28:20Z",
-  "stale_after": "2026-05-26T02:28:20Z",
-  "hard_expires_at": "2026-06-01T14:28:20Z",
+  "generated_at": "2026-05-25T14:46:42Z",
+  "stale_after": "2026-05-26T02:46:42Z",
+  "hard_expires_at": "2026-06-01T14:46:42Z",
   "object_type": "country_region",
   "object_key": "DEU",
-  "content_hash": "sha256:e36d5e4604ef2955ee467bfafaca895c1d62a8f0fd4df1ceac65f939e77d4834",
+  "content_hash": "sha256:1b886e98db854f6f315641cef702249e51dd09ae345267a43e00abb8a3023122",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -86,8 +86,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-25T14:28:20Z",
-        "published_at": "2026-05-25T14:28:20Z",
+        "occurred_at": "2026-05-25T14:46:42Z",
+        "published_at": "2026-05-25T14:46:42Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -137,7 +137,7 @@
         "time_precision": "time_estimated",
         "status": "scheduled",
         "expectation_type": "official_projection",
-        "expectation_value": "policy path not a consensus",
+        "expectation_value": "Summary of Economic Projections meeting",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
@@ -149,13 +149,13 @@
         "title": "ECB monetary-policy decision",
         "country_region_key": "EUROZONE",
         "release_type": "central_bank",
-        "scheduled_at": "2026-06-04T12:00:00Z",
-        "scheduled_local_date": "2026-06-04",
+        "scheduled_at": "2026-06-11T12:00:00Z",
+        "scheduled_local_date": "2026-06-11",
         "timezone": "Europe/Frankfurt",
         "time_precision": "time_estimated",
         "status": "scheduled",
-        "expectation_type": "official_projection",
-        "expectation_value": "staff projections where published",
+        "expectation_type": "official_calendar",
+        "expectation_value": "day 2 with press conference",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
@@ -171,7 +171,7 @@
         "source": "FRED / Nasdaq",
         "freshness": "fresh",
         "delay_label": "FRED NASDAQCOM actual through 2026-05-22",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "points": [
           {
@@ -199,7 +199,7 @@
         "source": "CME / licensed futures feed",
         "freshness": "watch",
         "delay_label": "No always-free licensed futures API is configured",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -209,7 +209,7 @@
         "source": "FRED / OECD Korea share prices",
         "freshness": "fresh",
         "delay_label": "FRED SPASTT01KRM661N actual through 2026-04-01",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "points": [
           {
@@ -237,7 +237,7 @@
         "source": "KRX / Samsung AM",
         "freshness": "watch",
         "delay_label": "No always-free redistributable ETF feed is configured",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -247,7 +247,7 @@
         "source": "KRX derivatives feed",
         "freshness": "watch",
         "delay_label": "No always-free licensed derivatives API is configured",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -257,7 +257,7 @@
         "source": "FRED / EIA",
         "freshness": "fresh",
         "delay_label": "FRED DCOILWTICO actual through 2026-05-18",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "$",
         "points": [
@@ -286,7 +286,7 @@
         "source": "FRED / Cboe",
         "freshness": "fresh",
         "delay_label": "FRED VIXCLS actual through 2026-05-21",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "points": [
           {
@@ -314,7 +314,7 @@
         "source": "FRED / Federal Reserve H.10",
         "freshness": "fresh",
         "delay_label": "FRED DEXKOUS actual through 2026-05-15",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "KRW",
         "points": [
@@ -343,7 +343,7 @@
         "source": "FRED / Federal Reserve H.10",
         "freshness": "fresh",
         "delay_label": "FRED DEXJPUS actual through 2026-05-15",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "JPY",
         "points": [
@@ -372,7 +372,7 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS2 actual through 2026-05-21",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -397,7 +397,7 @@
           "title": "FOMC policy decision",
           "date": "2026-06-17",
           "timezone": "America/New_York",
-          "source": "Federal Reserve calendar"
+          "source": "Federal Reserve FOMC calendar"
         }
       },
       {
@@ -407,7 +407,7 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS3 actual through 2026-05-21",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -432,7 +432,7 @@
           "title": "FOMC policy decision",
           "date": "2026-06-17",
           "timezone": "America/New_York",
-          "source": "Federal Reserve calendar"
+          "source": "Federal Reserve FOMC calendar"
         }
       },
       {
@@ -442,7 +442,7 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS5 actual through 2026-05-21",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -467,7 +467,7 @@
           "title": "FOMC policy decision",
           "date": "2026-06-17",
           "timezone": "America/New_York",
-          "source": "Federal Reserve calendar"
+          "source": "Federal Reserve FOMC calendar"
         }
       },
       {
@@ -477,7 +477,7 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS10 actual through 2026-05-21",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -502,7 +502,7 @@
           "title": "FOMC policy decision",
           "date": "2026-06-17",
           "timezone": "America/New_York",
-          "source": "Federal Reserve calendar"
+          "source": "Federal Reserve FOMC calendar"
         }
       },
       {
@@ -512,7 +512,7 @@
         "source": "FRED / OECD Japan central bank rate",
         "freshness": "fresh",
         "delay_label": "FRED IRSTCB01JPM156N actual through 2023-12-01",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -537,7 +537,7 @@
           "title": "BoJ monetary-policy meeting",
           "date": "2026-06-16",
           "timezone": "Asia/Tokyo",
-          "source": "BoJ calendar seed"
+          "source": "Bank of Japan MPM calendar"
         }
       },
       {
@@ -547,7 +547,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "watch",
         "delay_label": "Always-free 2Y JGB API source is not configured",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -557,7 +557,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "watch",
         "delay_label": "Always-free 5Y JGB API source is not configured",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "coverage_gap"
       },
       {
@@ -567,7 +567,7 @@
         "source": "FRED / OECD Japan 10Y yield",
         "freshness": "fresh",
         "delay_label": "FRED IRLTLT01JPM156N actual through 2026-04-01",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "unit": "%",
         "points": [
@@ -592,7 +592,7 @@
           "title": "BoJ monetary-policy meeting",
           "date": "2026-06-16",
           "timezone": "Asia/Tokyo",
-          "source": "BoJ calendar seed"
+          "source": "Bank of Japan MPM calendar"
         }
       }
     ]

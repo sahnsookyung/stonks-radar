@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-25T14:28:20Z",
-  "stale_after": "2026-05-26T02:28:20Z",
-  "hard_expires_at": "2026-06-01T14:28:20Z",
+  "generated_at": "2026-05-25T14:46:42Z",
+  "stale_after": "2026-05-26T02:46:42Z",
+  "hard_expires_at": "2026-06-01T14:46:42Z",
   "object_type": "map_events",
   "object_key": "events",
-  "content_hash": "sha256:e199834dc5211902fba294228ac966eb0e275863c4df25b31df58ffb506d7e7d",
+  "content_hash": "sha256:3b535631eba144c13b17e72374fe0aa0c35e2e377cb1535b9845374a6ae70c46",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -33,8 +33,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-25T14:28:20Z",
-        "published_at": "2026-05-25T14:28:20Z",
+        "occurred_at": "2026-05-25T14:46:42Z",
+        "published_at": "2026-05-25T14:46:42Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -76,8 +76,8 @@
         "title": "Energy inventory calendar is active for oil supply monitoring",
         "summary": "EIA-linked inventory releases are tracked as official structured data before publication.",
         "why_it_matters": "Inventory surprises can affect energy equities, inflation inputs, and geopolitical risk interpretation.",
-        "occurred_at": "2026-05-25T14:28:20Z",
-        "published_at": "2026-05-25T14:28:20Z",
+        "occurred_at": "2026-05-25T14:46:42Z",
+        "published_at": "2026-05-25T14:46:42Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -114,8 +114,8 @@
         "title": "Central-bank calendar coverage seeded across six policy committees",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
         "why_it_matters": "Calendar visibility reduces silent coverage gaps and makes stale policy data visible.",
-        "occurred_at": "2026-05-25T14:28:20Z",
-        "published_at": "2026-05-25T14:28:20Z",
+        "occurred_at": "2026-05-25T14:46:42Z",
+        "published_at": "2026-05-25T14:46:42Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -148,8 +148,38 @@
         "source_links": [
           {
             "label": "Federal Reserve",
-            "url": "https://www.federalreserve.gov",
+            "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
             "source_key": "federal_reserve",
+            "policy_version": 1
+          },
+          {
+            "label": "ECB",
+            "url": "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html",
+            "source_key": "ecb",
+            "policy_version": 1
+          },
+          {
+            "label": "Bank of England",
+            "url": "https://www.bankofengland.co.uk/news/2025/september/monetary-policy-committee-dates-for-2026",
+            "source_key": "bank_of_england",
+            "policy_version": 1
+          },
+          {
+            "label": "Bank of Japan",
+            "url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm",
+            "source_key": "bank_of_japan",
+            "policy_version": 1
+          },
+          {
+            "label": "Bank of Korea",
+            "url": "https://www.bok.or.kr/eng/main/contents.do?menuNo=400020",
+            "source_key": "bank_of_korea",
+            "policy_version": 1
+          },
+          {
+            "label": "Banco Central do Brasil",
+            "url": "https://www.bcb.gov.br/detalhenoticia/20739/nota",
+            "source_key": "bcb",
             "policy_version": 1
           }
         ],

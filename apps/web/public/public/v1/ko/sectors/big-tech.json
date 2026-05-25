@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-25T14:28:20Z",
-  "stale_after": "2026-05-26T02:28:20Z",
-  "hard_expires_at": "2026-06-01T14:28:20Z",
+  "generated_at": "2026-05-25T14:46:42Z",
+  "stale_after": "2026-05-26T02:46:42Z",
+  "hard_expires_at": "2026-06-01T14:46:42Z",
   "object_type": "sector_page",
   "object_key": "big-tech",
-  "content_hash": "sha256:adeca643af9cb96c91d2434a9b72fbcffb91fa8f90941c16fff5b14c395d6cb6",
+  "content_hash": "sha256:7cda00257b75e42dff9fef027827cb70c4859c07373844b31fa5281aa65e9efc",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -58,8 +58,8 @@
         "title": "반도체 수출통제 모니터링 강도 유지",
         "summary": "승인된 시드 이벤트가 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
         "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다.",
-        "occurred_at": "2026-05-25T14:28:20Z",
-        "published_at": "2026-05-25T14:28:20Z",
+        "occurred_at": "2026-05-25T14:46:42Z",
+        "published_at": "2026-05-25T14:46:42Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -101,8 +101,8 @@
         "title": "6개 중앙은행 정책회의 일정 시드 적용",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, 브라질 COPOM이 명시적 예상치 라벨과 함께 표시됩니다.",
         "why_it_matters": "캘린더 가시성은 커버리지 공백을 숨기지 않고 오래된 정책 데이터를 드러냅니다.",
-        "occurred_at": "2026-05-25T14:28:20Z",
-        "published_at": "2026-05-25T14:28:20Z",
+        "occurred_at": "2026-05-25T14:46:42Z",
+        "published_at": "2026-05-25T14:46:42Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -135,8 +135,38 @@
         "source_links": [
           {
             "label": "Federal Reserve",
-            "url": "https://www.federalreserve.gov",
+            "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
             "source_key": "federal_reserve",
+            "policy_version": 1
+          },
+          {
+            "label": "ECB",
+            "url": "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html",
+            "source_key": "ecb",
+            "policy_version": 1
+          },
+          {
+            "label": "Bank of England",
+            "url": "https://www.bankofengland.co.uk/news/2025/september/monetary-policy-committee-dates-for-2026",
+            "source_key": "bank_of_england",
+            "policy_version": 1
+          },
+          {
+            "label": "Bank of Japan",
+            "url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm",
+            "source_key": "bank_of_japan",
+            "policy_version": 1
+          },
+          {
+            "label": "Bank of Korea",
+            "url": "https://www.bok.or.kr/eng/main/contents.do?menuNo=400020",
+            "source_key": "bank_of_korea",
+            "policy_version": 1
+          },
+          {
+            "label": "Banco Central do Brasil",
+            "url": "https://www.bcb.gov.br/detalhenoticia/20739/nota",
+            "source_key": "bcb",
             "policy_version": 1
           }
         ],
@@ -155,7 +185,7 @@
         "time_precision": "time_estimated",
         "status": "scheduled",
         "expectation_type": "official_projection",
-        "expectation_value": "policy path not a consensus",
+        "expectation_value": "Summary of Economic Projections meeting",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
@@ -167,13 +197,13 @@
         "title": "ECB 통화정책 결정",
         "country_region_key": "EUROZONE",
         "release_type": "central_bank",
-        "scheduled_at": "2026-06-04T12:00:00Z",
-        "scheduled_local_date": "2026-06-04",
+        "scheduled_at": "2026-06-11T12:00:00Z",
+        "scheduled_local_date": "2026-06-11",
         "timezone": "Europe/Frankfurt",
         "time_precision": "time_estimated",
         "status": "scheduled",
-        "expectation_type": "official_projection",
-        "expectation_value": "staff projections where published",
+        "expectation_type": "official_calendar",
+        "expectation_value": "day 2 with press conference",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
@@ -190,13 +220,13 @@
         "timezone": "Europe/London",
         "time_precision": "time_estimated",
         "status": "scheduled",
-        "expectation_type": "unknown",
-        "expectation_value": null,
+        "expectation_type": "official_calendar",
+        "expectation_value": "MPC announcement and minutes",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
         "source": "BoE",
-        "freshness": "watch"
+        "freshness": "fresh"
       },
       {
         "id": "cal_boj",
@@ -208,13 +238,13 @@
         "timezone": "Asia/Tokyo",
         "time_precision": "time_estimated",
         "status": "scheduled",
-        "expectation_type": "unknown",
-        "expectation_value": null,
+        "expectation_type": "official_calendar",
+        "expectation_value": "meeting day 2",
         "actual_value": null,
         "previous_value": null,
         "surprise": null,
         "source": "BoJ",
-        "freshness": "watch"
+        "freshness": "fresh"
       }
     ],
     "macro_geopolitical_drivers": [
@@ -232,7 +262,7 @@
         "source": "FRED / Nasdaq",
         "freshness": "fresh",
         "delay_label": "FRED NASDAQCOM 실제값, 2026-05-22까지",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "active",
         "points": [
           {
@@ -260,7 +290,7 @@
         "source": "CME / licensed futures feed",
         "freshness": "watch",
         "delay_label": "상시 무료 라이선스 선물 API가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T14:28:20Z",
+        "updated_at": "2026-05-25T14:46:42Z",
         "coverage_status": "coverage_gap"
       }
     ],
