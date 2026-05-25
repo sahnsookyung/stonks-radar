@@ -84,7 +84,7 @@ jobs:
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
-            'cd /opt/stonks-radar && docker compose -f compose.yaml -f infra/docker-compose.prod.yml build --pull && docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d && docker builder prune -af --filter until=168h'
+            'cd /opt/stonks-radar && docker compose -f compose.yaml -f infra/docker-compose.prod.yml build --pull && docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d && docker builder prune -af'
 
       - name: Refresh published snapshots
         env:
