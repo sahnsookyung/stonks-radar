@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **finboard** (913 symbols, 2017 relationships, 66 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **stonks-radar** (913 symbols, 2017 relationships, 66 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -17,7 +17,7 @@ This project is indexed by GitNexus as **finboard** (913 symbols, 2017 relations
 
 1. `gitnexus_query({query: "<error or symptom>"})` — find execution flows related to the issue
 2. `gitnexus_context({name: "<suspect function>"})` — see all callers, callees, and process participation
-3. `READ gitnexus://repo/finboard/process/{processName}` — trace the full execution flow step by step
+3. `READ gitnexus://repo/stonks-radar/process/{processName}` — trace the full execution flow step by step
 4. For regressions: `gitnexus_detect_changes({scope: "compare", base_ref: "main"})` — see what your branch changed
 
 ## When Refactoring
@@ -56,10 +56,10 @@ This project is indexed by GitNexus as **finboard** (913 symbols, 2017 relations
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/finboard/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/finboard/clusters` | All functional areas |
-| `gitnexus://repo/finboard/processes` | All execution flows |
-| `gitnexus://repo/finboard/process/{name}` | Step-by-step execution trace |
+| `gitnexus://repo/stonks-radar/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/stonks-radar/clusters` | All functional areas |
+| `gitnexus://repo/stonks-radar/processes` | All execution flows |
+| `gitnexus://repo/stonks-radar/process/{name}` | Step-by-step execution trace |
 
 ## Self-Check Before Finishing
 
