@@ -6,12 +6,13 @@ import os
 import socket
 import time
 
+from frw_api.core.logging import configure_logging
 from frw_api.db.session import SessionLocal
 from frw_api.services.job_queue import claim_job, complete_job, fail_job, heartbeat, reap_expired_leases
 from frw_api.services.provider_limits import ProviderLimitError
 from frw_worker.tasks import handle_job
 
-logging.basicConfig(level=logging.INFO)
+configure_logging()
 logger = logging.getLogger(__name__)
 
 

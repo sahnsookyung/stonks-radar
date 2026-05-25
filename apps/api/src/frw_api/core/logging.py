@@ -2,8 +2,18 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import sys
 from typing import Any
+
+_SENSITIVE_QUERY_PARAM_RE = re.compile(
+    r"([?&](?:api[_-]?key|apikey|access[_-]?token|token|client[_-]?secret|secret|password)=)[^&\s\"']+",
+    re.IGNORECASE,
+)
+
+
+def _redact_log_message(message: str) -> str:
+    return _SENSITIVE_QUERY_PARAM_RE.sub(r"\1[REDACTED]", message)
 
 
 class JsonFormatter(logging.Formatter):
@@ -11,7 +21,7 @@ class JsonFormatter(logging.Formatter):
         payload: dict[str, Any] = {
             "level": record.levelname,
             "logger": record.name,
-            "message": record.getMessage(),
+            "message": _redact_log_message(record.getMessage()),
         }
         if hasattr(record, "request_id"):
             payload["request_id"] = record.request_id
@@ -27,3 +37,5 @@ def configure_logging() -> None:
     root.handlers.clear()
     root.addHandler(handler)
     root.setLevel(logging.INFO)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
