@@ -2,6 +2,8 @@
 
 Target shape: Ampere A1 ARM64, Ubuntu LTS, Docker Compose, no paid load balancer, no managed database assumption.
 
+Authoritative instance shape and bootstrap configuration lives in `infra/oci/terraform`. Import the existing instance before applying so Terraform reflects reality instead of replacing it.
+
 Before provisioning or deploying, run:
 
 ```bash

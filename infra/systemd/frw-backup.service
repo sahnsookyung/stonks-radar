@@ -1,8 +1,8 @@
 [Unit]
-Description=Financial Research Workbench PostgreSQL backup
+Description=Stonks Radar PostgreSQL backup
 
 [Service]
 Type=oneshot
-WorkingDirectory=/opt/financial-research-workbench
-EnvironmentFile=/opt/financial-research-workbench/.env
-ExecStart=/opt/financial-research-workbench/scripts/backup_pg.sh
+WorkingDirectory=/opt/stonks-radar
+EnvironmentFile=/opt/stonks-radar/.env
+ExecStart=/opt/stonks-radar/scripts/backup_pg.sh

@@ -18,7 +18,7 @@ SOURCES = {
 
 
 async def check(name: str, url: str) -> tuple[str, int | str]:
-    headers = {"User-Agent": "FinancialResearchWorkbench health-check contact@example.com"}
+    headers = {"User-Agent": "StonksRadar health-check contact@example.com"}
     start = time.perf_counter()
     try:
         async with httpx.AsyncClient(timeout=10, follow_redirects=False, headers=headers) as client:

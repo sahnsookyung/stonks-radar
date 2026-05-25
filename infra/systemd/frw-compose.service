@@ -1,5 +1,5 @@
 [Unit]
-Description=Financial Research Workbench Compose Stack
+Description=Stonks Radar Compose Stack
 After=docker.service network-online.target
 Requires=docker.service
 

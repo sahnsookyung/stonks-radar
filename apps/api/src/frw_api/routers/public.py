@@ -20,7 +20,7 @@ router = APIRouter()
 def health():
     return {
         "status": "ok",
-        "service": "financial-research-workbench-api",
+        "service": "stonks-radar-api",
         "public_read_path": "snapshot-first",
         "time": datetime.now(timezone.utc).isoformat(),
     }

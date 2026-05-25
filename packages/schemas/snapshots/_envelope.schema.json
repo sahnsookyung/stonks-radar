@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://financial-research-workbench.local/schemas/_envelope.schema.json",
+  "$id": "https://stonks-radar.local/schemas/_envelope.schema.json",
   "$defs": {
     "sourcePolicyVersion": {
       "type": "object",

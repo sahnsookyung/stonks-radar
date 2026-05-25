@@ -9,6 +9,8 @@ The implementation follows `/Users/sookyungahn/Downloads/financial_research_work
 - PostgreSQL is canonical state; Valkey/Redis is cache/locks/rate counters only
 - external credentials are optional at boot and required only for their matching providers
 - local publisher mode can generate snapshots without OCI
+- Cloudflare and OCI deployment state is codified in Terraform under `infra/cloudflare/terraform` and `infra/oci/terraform`
+- observability defaults to edge/server metrics without third-party analytics beacons; see `docs/observability.md`
 
 ## Quick Start
 
@@ -39,7 +41,7 @@ The app runs with seeded snapshots without provider credentials. The following a
 - `ADMIN_BOOTSTRAP_PASSWORD`, `ADMIN_TOTP_SECRET`, `SESSION_SECRET`, `PASSWORD_PEPPER`
 - provider keys: `FRED_API_KEY`, `BLS_API_KEY`, `EIA_API_KEY`, `FINRA_API_TOKEN`, plus optional market-data and LLM keys
 - `SEC_USER_AGENT` with a real contact
-- Cloudflare DNS is optional if records are managed manually; object storage is not required
+- Cloudflare Terraform requires `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`, and the OCI origin IPv4; object storage is not required
 
 Missing credentials are reported through provider budgets/status and keep the public snapshot app usable.
 

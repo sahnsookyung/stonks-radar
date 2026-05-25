@@ -1,0 +1,15 @@
+#cloud-config
+package_update: true
+package_upgrade: false
+
+packages:
+  - ca-certificates
+  - curl
+  - docker.io
+  - git
+
+runcmd:
+  - [bash, -lc, "systemctl enable --now docker"]
+  - [bash, -lc, "usermod -aG docker ubuntu"]
+  - [bash, -lc, "install -d -o ubuntu -g ubuntu /opt/stonks-radar"]
+

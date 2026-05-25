@@ -39,7 +39,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <div className="text-xs text-muted">{t("noAdvice")}</div>
             </div>
           </Link>
-          <nav className="flex flex-wrap items-center gap-1 text-sm">
+          <nav className="-mx-1 flex max-w-full items-center gap-1 overflow-x-auto px-1 pb-1 text-sm [scrollbar-width:thin] md:flex-wrap md:overflow-visible md:pb-0">
             <NavLink to="/$locale" params={{ locale }} icon={<LayoutDashboard />} label={t("dashboard")} />
             <NavLink to="/$locale/map" params={{ locale }} icon={<Map />} label={t("map")} />
             <NavLink to="/$locale/calendar" params={{ locale }} icon={<Activity />} label={t("calendar")} />
@@ -54,20 +54,20 @@ export function Shell({ children }: { children: React.ReactNode }) {
             />
             <Link
               to="/admin/login"
-              className="focus-ring inline-flex h-9 items-center gap-2 rounded-md px-3 text-muted hover:bg-panelAlt hover:text-ink"
+              className="focus-ring inline-flex h-9 shrink-0 items-center gap-2 rounded-md px-3 text-muted hover:bg-panelAlt hover:text-ink"
             >
               <Lock className="h-4 w-4" />
               {t("admin")}
             </Link>
             <a
               href={alternatePath}
-              className="focus-ring inline-flex h-9 items-center rounded-md border border-line bg-panelAlt px-3 font-semibold text-ink hover:border-accent hover:bg-accentSoft"
+            className="focus-ring inline-flex h-9 shrink-0 items-center rounded-md border border-line bg-panelAlt px-3 font-semibold text-ink hover:border-accent hover:bg-accentSoft"
             >
               {other.toUpperCase()}
             </a>
           </nav>
         </div>
-        <div className="mx-auto flex max-w-7xl gap-4 overflow-x-auto px-4 pb-3 text-xs lg:px-6">
+        <div className="mx-auto flex max-w-7xl gap-4 overflow-x-auto px-4 pb-3 text-xs [scrollbar-width:thin] lg:px-6">
           <span className="whitespace-nowrap font-semibold text-muted">{t("sectors")}</span>
           {sectorLinks.map(([key, labelEn, labelKo]) => (
             <Link
@@ -131,7 +131,7 @@ function NavLink({
     <Link
       to={to as never}
       params={params as never}
-      className="focus-ring inline-flex h-9 items-center gap-2 rounded-md px-3 text-muted hover:bg-panelAlt hover:text-ink [&.active]:bg-accentSoft [&.active]:font-semibold [&.active]:text-accent"
+      className="focus-ring inline-flex h-9 shrink-0 items-center gap-2 rounded-md px-3 text-muted hover:bg-panelAlt hover:text-ink [&.active]:bg-accentSoft [&.active]:font-semibold [&.active]:text-accent"
     >
       {icon}
       {label}

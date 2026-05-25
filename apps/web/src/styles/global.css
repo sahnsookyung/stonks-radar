@@ -91,6 +91,10 @@ textarea {
     @apply bg-panelAlt text-xs uppercase text-muted;
   }
 
+  .contain-layout {
+    contain: layout paint;
+  }
+
   .signal-warning {
     @apply rounded-md border border-warning/40 bg-warning/10 text-warning;
   }

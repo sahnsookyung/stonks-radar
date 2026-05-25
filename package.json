@@ -1,5 +1,5 @@
 {
-  "name": "financial-research-workbench",
+  "name": "stonks-radar",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -19,6 +19,7 @@
     "api:compile": "python3 -m compileall apps/api/src apps/worker/src apps/fetch-sandbox/src scripts",
     "api:test": "uv run --project apps/api --extra dev --with ./apps/fetch-sandbox pytest -q tests",
     "deploy:preflight": "python3 scripts/deploy_preflight.py",
+    "audit:delivery": "node scripts/audit_live_delivery.mjs",
     "ops:storage": "python3 scripts/monitor_storage.py",
     "test": "npm run check:schemas && npm run web:test && npm run api:compile",
     "test:all": "npm run check:schemas && npm run web:test && npm run api:test && npm run web:e2e && npm run api:compile",

@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     app_env: str = "development"
     app_base_url: str = "http://localhost:8000"
     public_base_url: str = "http://localhost:5173"
+    dev_cors_origins: str = "http://localhost:5173"
     default_locale: Literal["en", "ko"] = "en"
     supported_locales: str = "en,ko"
 
@@ -21,7 +22,7 @@ class Settings(BaseSettings):
 
     session_secret: str = "dev-session-secret-change-me"
     password_pepper: str = "dev-password-pepper-change-me"
-    totp_issuer: str = "FinancialResearchWorkbench"
+    totp_issuer: str = "StonksRadar"
     admin_email: str = "owner@example.com"
     admin_bootstrap_password: str | None = None
     admin_totp_secret: str | None = None
@@ -36,7 +37,7 @@ class Settings(BaseSettings):
 
     fred_api_key: str | None = None
     bls_api_key: str | None = None
-    sec_user_agent: str = "FinancialResearchWorkbench contact@example.com"
+    sec_user_agent: str = "StonksRadar contact@example.com"
     eia_api_key: str | None = None
     worldbank_base_url: str = "https://api.worldbank.org/v2"
     imf_base_url: str | None = None
@@ -79,6 +80,13 @@ class Settings(BaseSettings):
     @property
     def locale_list(self) -> list[str]:
         return [value.strip() for value in self.supported_locales.split(",") if value.strip()]
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        origins = [self.public_base_url]
+        if self.app_env != "production":
+            origins.extend(value.strip() for value in self.dev_cors_origins.split(",") if value.strip())
+        return list(dict.fromkeys(origins))
 
 
 @lru_cache(maxsize=1)

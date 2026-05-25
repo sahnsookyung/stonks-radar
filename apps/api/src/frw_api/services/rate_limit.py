@@ -12,6 +12,7 @@ from frw_api.core.settings import get_settings
 
 WINDOW_SECONDS = 60
 _memory_buckets: dict[str, tuple[int, float]] = {}
+_redis_client: redis.Redis | None = None
 
 
 @dataclass(frozen=True)
@@ -46,14 +47,20 @@ async def _allow(limit: RateLimit, request: Request) -> bool:
     identity = hashlib.sha256(f"{limit.key}:{client_host}".encode()).hexdigest()
     bucket_key = f"frw:rate:{identity}:{int(time.time() // WINDOW_SECONDS)}"
     try:
-        client = redis.from_url(get_settings().redis_url, encoding="utf-8", decode_responses=True)
+        client = _get_redis_client()
         count = await client.incr(bucket_key)
         if count == 1:
             await client.expire(bucket_key, WINDOW_SECONDS)
-        await client.aclose()
         return int(count) <= limit.limit
     except Exception:
         return _allow_memory(bucket_key, limit.limit)
+
+
+def _get_redis_client() -> redis.Redis:
+    global _redis_client
+    if _redis_client is None:
+        _redis_client = redis.from_url(get_settings().redis_url, encoding="utf-8", decode_responses=True)
+    return _redis_client
 
 
 def _allow_memory(bucket_key: str, limit: int) -> bool:

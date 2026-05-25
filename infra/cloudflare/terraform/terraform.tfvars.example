@@ -1,0 +1,6 @@
+cloudflare_zone_id = "00000000000000000000000000000000"
+cloudflare_account_id = "00000000000000000000000000000000"
+hostname              = "stonks.sookyungahn.com"
+origin_ipv4           = "203.0.113.10"
+proxied               = true
+manage_web_analytics  = false

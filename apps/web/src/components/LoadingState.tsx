@@ -1,6 +1,6 @@
 export function LoadingState({ label = "Loading snapshot" }: { label?: string }) {
   return (
-    <div className="grid min-h-64 place-items-center rounded-md border border-dashed border-line bg-panel text-sm text-muted">
+    <div className="grid min-h-[70vh] place-items-center rounded-md border border-dashed border-line bg-panel text-sm text-muted">
       {label}
     </div>
   );

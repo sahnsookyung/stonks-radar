@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-24T20:54:12Z",
-  "stale_after": "2026-05-25T08:54:12Z",
-  "hard_expires_at": "2026-05-31T20:54:12Z",
+  "generated_at": "2026-05-25T06:29:51Z",
+  "stale_after": "2026-05-25T18:29:51Z",
+  "hard_expires_at": "2026-06-01T06:29:51Z",
   "object_type": "country_region",
   "object_key": "CHN",
-  "content_hash": "sha256:66dd4b43d9cbf048bdcd4728b1c4b5da423a5f8b1074a86eff0f1ddff7e4360c",
+  "content_hash": "sha256:82afba1eb756718c2519c35d6de7cd7d829d72502ea2d11df6f66270828e4fcc",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -86,8 +86,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-24T20:54:12Z",
-        "published_at": "2026-05-24T20:54:12Z",
+        "occurred_at": "2026-05-25T06:29:51Z",
+        "published_at": "2026-05-25T06:29:51Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -171,7 +171,7 @@
         "source": "Nasdaq / licensed market feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-24T20:54:12Z",
+        "updated_at": "2026-05-25T06:29:51Z",
         "points": [
           {
             "date": "T-3",
@@ -198,7 +198,7 @@
         "source": "CME / licensed futures feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-24T20:54:12Z",
+        "updated_at": "2026-05-25T06:29:51Z",
         "points": [
           {
             "date": "T-3",
@@ -225,7 +225,7 @@
         "source": "KRX / licensed market feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-24T20:54:12Z",
+        "updated_at": "2026-05-25T06:29:51Z",
         "points": [
           {
             "date": "T-3",
@@ -252,7 +252,7 @@
         "source": "KRX / Samsung AM",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-24T20:54:12Z"
+        "updated_at": "2026-05-25T06:29:51Z"
       },
       {
         "key": "kospi_200_futures",
@@ -261,7 +261,7 @@
         "source": "KRX derivatives feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-24T20:54:12Z"
+        "updated_at": "2026-05-25T06:29:51Z"
       },
       {
         "key": "wti_crude",
@@ -270,7 +270,7 @@
         "source": "EIA / exchange reference",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-24T20:54:12Z"
+        "updated_at": "2026-05-25T06:29:51Z"
       },
       {
         "key": "vix",
@@ -279,7 +279,7 @@
         "source": "Cboe / licensed market feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-24T20:54:12Z"
+        "updated_at": "2026-05-25T06:29:51Z"
       },
       {
         "key": "usd_krw",
@@ -288,7 +288,7 @@
         "source": "BOK / licensed FX feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-24T20:54:12Z"
+        "updated_at": "2026-05-25T06:29:51Z"
       },
       {
         "key": "usd_jpy",
@@ -297,7 +297,7 @@
         "source": "BoJ / licensed FX feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-24T20:54:12Z"
+        "updated_at": "2026-05-25T06:29:51Z"
       },
       {
         "key": "us_2y",
@@ -306,7 +306,7 @@
         "source": "US Treasury",
         "freshness": "fresh",
         "delay_label": "official reference",
-        "updated_at": "2026-05-24T20:54:12Z",
+        "updated_at": "2026-05-25T06:29:51Z",
         "unit": "%"
       },
       {
@@ -316,7 +316,7 @@
         "source": "US Treasury",
         "freshness": "fresh",
         "delay_label": "official reference",
-        "updated_at": "2026-05-24T20:54:12Z",
+        "updated_at": "2026-05-25T06:29:51Z",
         "unit": "%"
       },
       {
@@ -326,7 +326,7 @@
         "source": "US Treasury",
         "freshness": "fresh",
         "delay_label": "official reference",
-        "updated_at": "2026-05-24T20:54:12Z",
+        "updated_at": "2026-05-25T06:29:51Z",
         "unit": "%"
       },
       {
@@ -336,7 +336,7 @@
         "source": "US Treasury",
         "freshness": "fresh",
         "delay_label": "official reference",
-        "updated_at": "2026-05-24T20:54:12Z",
+        "updated_at": "2026-05-25T06:29:51Z",
         "unit": "%"
       },
       {
@@ -346,7 +346,7 @@
         "source": "Bank of Japan",
         "freshness": "fresh",
         "delay_label": "official reference",
-        "updated_at": "2026-05-24T20:54:12Z",
+        "updated_at": "2026-05-25T06:29:51Z",
         "unit": "%"
       },
       {
@@ -356,7 +356,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "fresh",
         "delay_label": "official reference",
-        "updated_at": "2026-05-24T20:54:12Z",
+        "updated_at": "2026-05-25T06:29:51Z",
         "unit": "%"
       },
       {
@@ -366,7 +366,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "fresh",
         "delay_label": "official reference",
-        "updated_at": "2026-05-24T20:54:12Z",
+        "updated_at": "2026-05-25T06:29:51Z",
         "unit": "%"
       },
       {
@@ -376,7 +376,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "fresh",
         "delay_label": "official reference",
-        "updated_at": "2026-05-24T20:54:12Z",
+        "updated_at": "2026-05-25T06:29:51Z",
         "unit": "%"
       }
     ]

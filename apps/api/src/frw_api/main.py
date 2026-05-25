@@ -25,7 +25,7 @@ app.middleware("http")(security_headers_middleware)
 app.middleware("http")(rate_limit_middleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.public_base_url, "http://localhost:5173"],
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "x-csrf-token"],

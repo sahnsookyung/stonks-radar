@@ -2,6 +2,8 @@
 
 Cloudflare is used for DNS/proxy/TLS in front of the OCI Caddy origin. The application and snapshot JSON are served by OCI; object storage is not part of the production path.
 
+Authoritative configuration lives in `infra/cloudflare/terraform`. Apply Cloudflare changes through Terraform so DNS, HTTPS posture, Rocket Loader, and Web Analytics/RUM behavior do not drift from code.
+
 Cache rules:
 
 - static app assets: long TTL

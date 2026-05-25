@@ -1,5 +1,5 @@
 [Unit]
-Description=Nightly Financial Research Workbench backup
+Description=Nightly Stonks Radar backup
 
 [Timer]
 OnCalendar=*-*-* 03:15:00

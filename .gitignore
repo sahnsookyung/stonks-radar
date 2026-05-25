@@ -19,6 +19,9 @@ __pycache__/
 artifacts/
 tmp/
 *.log
+.terraform/
+*.tfstate
+*.tfstate.*
 playwright-report/
 test-results/
 *.tsbuildinfo
