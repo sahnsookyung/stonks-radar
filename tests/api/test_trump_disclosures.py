@@ -109,6 +109,25 @@ def test_parse_oge_text_row_with_valid_ticker_and_amount_range():
     assert transaction["amount_max"] == 250000
 
 
+def test_parse_oge_text_row_without_valid_ticker_stays_review_confidence():
+    filing = {
+        "source": "OGE",
+        "sha256": "sha256:filing",
+        "filer_name": "Trump, Donald J",
+    }
+    transaction = _oge_transaction_from_text(
+        filing,
+        "Broadcom Inc COM purchase 2/10/2028 no $1,000,001 - $5,000,000",
+        page_number=2,
+        row_number="1",
+        ticker_map={},
+    )
+
+    assert transaction is not None
+    assert transaction["ticker"] is None
+    assert str(transaction["confidence"]) == "0.72"
+
+
 def test_transactions_response_hides_low_confidence_rows_by_default():
     engine = create_engine("sqlite+pysqlite:///:memory:", future=True)
     with engine.begin() as conn:
@@ -161,7 +180,7 @@ def test_transactions_response_hides_low_confidence_rows_by_default():
                    transaction_type, transaction_code, transaction_date, confidence)
                 values
                   (1, 1, 'OGE', 'Donald J. Trump', null, 'Noisy bond row', null,
-                   'reported', null, '2036-07-01', 0.72),
+                   'purchase', null, '2036-07-01', 0.90),
                   (2, 2, 'SEC', 'Example Owner', 'Example Owner', 'Trump Media', 'DJT',
                    'purchase', 'P', '2026-05-21', 0.98)
                 """

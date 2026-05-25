@@ -321,6 +321,7 @@ def transactions_response(
     params: dict[str, Any] = {"limit": min(max(limit, 1), 500)}
     if min_confidence is not None:
         conditions.append("coalesce(st.confidence, 0) >= :min_confidence")
+        conditions.append("(st.source <> 'OGE' or st.ticker is not null)")
         params["min_confidence"] = float(min_confidence)
     if source:
         conditions.append("st.source = :source")
@@ -931,7 +932,7 @@ def _oge_transaction_from_text(
         transaction_type = "purchase"
     elif transaction_type == "sold":
         transaction_type = "sale"
-    confidence = Decimal("0.90") if amount_range and transaction_type != "reported" and (ticker_valid or ticker is None) else Decimal("0.72")
+    confidence = Decimal("0.90") if amount_range and transaction_type != "reported" and ticker_valid else Decimal("0.72")
     if ticker and not ticker_valid:
         confidence = Decimal("0.70")
     amount_min, amount_max = amount_range or (None, None)
