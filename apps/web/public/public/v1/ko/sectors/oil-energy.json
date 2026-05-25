@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-25T15:26:16Z",
-  "stale_after": "2026-05-26T03:26:16Z",
-  "hard_expires_at": "2026-06-01T15:26:16Z",
+  "generated_at": "2026-05-25T16:21:12Z",
+  "stale_after": "2026-05-26T04:21:12Z",
+  "hard_expires_at": "2026-06-01T16:21:12Z",
   "object_type": "sector_page",
   "object_key": "oil-energy",
-  "content_hash": "sha256:1ab723617eb4a71f6f21cc5caf0af7a39bf29b4e7c9e52759ea87c6e42132f82",
+  "content_hash": "sha256:44a509bbf49a6312a6a95022b0c065c5001e9cad6dcccfaa9894057f867a9c6b",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -68,8 +68,8 @@
         "title": "석유 공급 모니터링을 위한 에너지 재고 일정 활성",
         "summary": "EIA 연계 재고 발표는 공개 전 공식 구조화 데이터로 추적됩니다.",
         "why_it_matters": "재고 서프라이즈는 에너지 주식, 인플레이션 입력값, 지정학 리스크 해석에 영향을 줄 수 있습니다.",
-        "occurred_at": "2026-05-25T15:26:16Z",
-        "published_at": "2026-05-25T15:26:16Z",
+        "occurred_at": "2026-05-25T16:21:12Z",
+        "published_at": "2026-05-25T16:21:12Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -106,8 +106,8 @@
         "title": "6개 중앙은행 정책회의 일정 시드 적용",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, 브라질 COPOM이 명시적 예상치 라벨과 함께 표시됩니다.",
         "why_it_matters": "캘린더 가시성은 커버리지 공백을 숨기지 않고 오래된 정책 데이터를 드러냅니다.",
-        "occurred_at": "2026-05-25T15:26:16Z",
-        "published_at": "2026-05-25T15:26:16Z",
+        "occurred_at": "2026-05-25T16:21:12Z",
+        "published_at": "2026-05-25T16:21:12Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -267,8 +267,9 @@
         "source": "FRED / Nasdaq",
         "freshness": "fresh",
         "delay_label": "FRED NASDAQCOM 실제값, 2026-05-22까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "source_url": "https://fred.stlouisfed.org/series/NASDAQCOM",
         "points": [
           {
@@ -290,14 +291,34 @@
         ]
       },
       {
-        "key": "nasdaq_100_futures",
-        "label": "나스닥 100 선물",
-        "value": "출처 공백",
-        "source": "CME / licensed futures feed",
-        "freshness": "watch",
-        "delay_label": "상시 무료 라이선스 선물 API가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T15:26:16Z",
-        "coverage_status": "coverage_gap"
+        "key": "nasdaq_100",
+        "label": "나스닥 100",
+        "value": "29,481.64",
+        "source": "FRED / Nasdaq",
+        "freshness": "fresh",
+        "delay_label": "FRED NASDAQ100 실제값, 2026-05-22까지",
+        "updated_at": "2026-05-25T16:21:12Z",
+        "coverage_status": "active",
+        "refresh_seconds": 900,
+        "source_url": "https://fred.stlouisfed.org/series/NASDAQ100",
+        "points": [
+          {
+            "date": "2026-05-19",
+            "value": 28818.84
+          },
+          {
+            "date": "2026-05-20",
+            "value": 29297.7
+          },
+          {
+            "date": "2026-05-21",
+            "value": 29357.27
+          },
+          {
+            "date": "2026-05-22",
+            "value": 29481.64
+          }
+        ]
       }
     ],
     "scenario_baskets": [

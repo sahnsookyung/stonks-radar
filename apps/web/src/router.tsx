@@ -16,6 +16,8 @@ const CentralBanksPage = lazyRoute(async () => {
   return { default: () => <module.CalendarPage centralBanksOnly /> };
 });
 const PortfolioLabPage = lazyRoute(() => import("./pages/PortfolioLabPage"), "PortfolioLabPage");
+const ShortsPage = lazyRoute(() => import("./pages/ShortsPage"), "ShortsPage");
+const TrumpFilingsPage = lazyRoute(() => import("./pages/TrumpFilingsPage"), "TrumpFilingsPage");
 const SourcesPage = lazyRoute(() => import("./pages/SourcesPage"), "SourcesPage");
 const CountryPage = lazyRoute(async () => {
   const module = await import("./pages/CountryRegionPage");
@@ -80,6 +82,18 @@ const portfolioRoute = createRoute({
   getParentRoute: () => localeRoute,
   path: "portfolio",
   component: PortfolioLabPage
+});
+
+const shortsRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "shorts",
+  component: ShortsPage
+});
+
+const trumpFilingsRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "trump-filings",
+  component: TrumpFilingsPage
 });
 
 const sourcesRoute = createRoute({
@@ -158,6 +172,8 @@ const routeTree = rootRoute.addChildren([
     calendarRoute,
     centralBanksRoute,
     portfolioRoute,
+    shortsRoute,
+    trumpFilingsRoute,
     sourcesRoute,
     countryRoute,
     regionRoute,

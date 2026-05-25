@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-25T15:26:16Z",
-  "stale_after": "2026-05-26T03:26:16Z",
-  "hard_expires_at": "2026-06-01T15:26:16Z",
+  "generated_at": "2026-05-25T16:21:12Z",
+  "stale_after": "2026-05-26T04:21:12Z",
+  "hard_expires_at": "2026-06-01T16:21:12Z",
   "object_type": "home",
   "object_key": "home",
-  "content_hash": "sha256:c791fae9c17de23bb1e49a80fc1727f25075e6f09cdb9b1cae71177eca1ff468",
+  "content_hash": "sha256:5d85a2d161bc2801c48f50aca42bf356729cd249f890b67df84754674c1f3416",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -41,11 +41,11 @@
   "data": {
     "headline": "글로벌 시장 인텔리전스 대시보드",
     "summary": "공개 출처 정책을 통과한 정보를 스냅샷 우선 방식으로 보여주는 리서치 대시보드입니다. 개인화 조언 없이 섹터, 중앙은행 일정, 시나리오 바스켓, 승인 이벤트를 표시합니다.",
-    "generated_label": "2026-05-25T15:26:16Z",
+    "generated_label": "2026-05-25T16:21:12Z",
     "snapshot_health": {
       "status": "fresh",
       "age_minutes": 0,
-      "stale_after": "2026-05-26T03:26:16Z",
+      "stale_after": "2026-05-26T04:21:12Z",
       "backend_dependency": "none_for_public_pages"
     },
     "top_events": [
@@ -54,8 +54,8 @@
         "title": "반도체 수출통제 모니터링 강도 유지",
         "summary": "승인된 시드 이벤트가 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
         "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다.",
-        "occurred_at": "2026-05-25T15:26:16Z",
-        "published_at": "2026-05-25T15:26:16Z",
+        "occurred_at": "2026-05-25T16:21:12Z",
+        "published_at": "2026-05-25T16:21:12Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -97,8 +97,8 @@
         "title": "석유 공급 모니터링을 위한 에너지 재고 일정 활성",
         "summary": "EIA 연계 재고 발표는 공개 전 공식 구조화 데이터로 추적됩니다.",
         "why_it_matters": "재고 서프라이즈는 에너지 주식, 인플레이션 입력값, 지정학 리스크 해석에 영향을 줄 수 있습니다.",
-        "occurred_at": "2026-05-25T15:26:16Z",
-        "published_at": "2026-05-25T15:26:16Z",
+        "occurred_at": "2026-05-25T16:21:12Z",
+        "published_at": "2026-05-25T16:21:12Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -135,8 +135,8 @@
         "title": "6개 중앙은행 정책회의 일정 시드 적용",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, 브라질 COPOM이 명시적 예상치 라벨과 함께 표시됩니다.",
         "why_it_matters": "캘린더 가시성은 커버리지 공백을 숨기지 않고 오래된 정책 데이터를 드러냅니다.",
-        "occurred_at": "2026-05-25T15:26:16Z",
-        "published_at": "2026-05-25T15:26:16Z",
+        "occurred_at": "2026-05-25T16:21:12Z",
+        "published_at": "2026-05-25T16:21:12Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -215,8 +215,9 @@
         "source": "FRED / Nasdaq",
         "freshness": "fresh",
         "delay_label": "FRED NASDAQCOM 실제값, 2026-05-22까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "source_url": "https://fred.stlouisfed.org/series/NASDAQCOM",
         "points": [
           {
@@ -238,14 +239,34 @@
         ]
       },
       {
-        "key": "nasdaq_100_futures",
-        "label": "나스닥 100 선물",
-        "value": "출처 공백",
-        "source": "CME / licensed futures feed",
-        "freshness": "watch",
-        "delay_label": "상시 무료 라이선스 선물 API가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T15:26:16Z",
-        "coverage_status": "coverage_gap"
+        "key": "nasdaq_100",
+        "label": "나스닥 100",
+        "value": "29,481.64",
+        "source": "FRED / Nasdaq",
+        "freshness": "fresh",
+        "delay_label": "FRED NASDAQ100 실제값, 2026-05-22까지",
+        "updated_at": "2026-05-25T16:21:12Z",
+        "coverage_status": "active",
+        "refresh_seconds": 900,
+        "source_url": "https://fred.stlouisfed.org/series/NASDAQ100",
+        "points": [
+          {
+            "date": "2026-05-19",
+            "value": 28818.84
+          },
+          {
+            "date": "2026-05-20",
+            "value": 29297.7
+          },
+          {
+            "date": "2026-05-21",
+            "value": 29357.27
+          },
+          {
+            "date": "2026-05-22",
+            "value": 29481.64
+          }
+        ]
       },
       {
         "key": "kospi",
@@ -254,8 +275,9 @@
         "source": "FRED / OECD Korea share prices",
         "freshness": "fresh",
         "delay_label": "FRED SPASTT01KRM661N 실제값, 2026-04-01까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "source_url": "https://fred.stlouisfed.org/series/SPASTT01KRM661N",
         "points": [
           {
@@ -280,21 +302,25 @@
         "key": "kodex_200",
         "label": "KODEX 200 ETF",
         "value": "출처 공백",
-        "source": "KRX / Samsung AM",
+        "source": "KRX ETF daily trading",
         "freshness": "watch",
-        "delay_label": "상시 무료 재배포 가능 ETF 피드가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T15:26:16Z",
-        "coverage_status": "coverage_gap"
+        "delay_label": "한국거래소 공식 데이터를 가져오려면 KRX_OPEN_API_AUTH_KEY, KRX_AUTH_KEY 또는 KRX_API_KEY가 필요합니다.",
+        "updated_at": "2026-05-25T16:21:12Z",
+        "coverage_status": "coverage_gap",
+        "refresh_seconds": 900,
+        "source_url": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES003_S2.cmd?BO_ID=nrEpCLaZpoLCTzPUMxuF"
       },
       {
         "key": "kospi_200_futures",
-        "label": "코스피 200 선물",
+        "label": "코스피200 선물",
         "value": "출처 공백",
-        "source": "KRX derivatives feed",
+        "source": "KRX derivatives daily trading",
         "freshness": "watch",
-        "delay_label": "상시 무료 라이선스 파생상품 API가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T15:26:16Z",
-        "coverage_status": "coverage_gap"
+        "delay_label": "한국거래소 공식 데이터를 가져오려면 KRX_OPEN_API_AUTH_KEY, KRX_AUTH_KEY 또는 KRX_API_KEY가 필요합니다.",
+        "updated_at": "2026-05-25T16:21:12Z",
+        "coverage_status": "coverage_gap",
+        "refresh_seconds": 900,
+        "source_url": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES005_S2.cmd?BO_ID=ilaVYOabbaicHbKTsqga"
       },
       {
         "key": "wti_crude",
@@ -303,8 +329,9 @@
         "source": "FRED / EIA",
         "freshness": "fresh",
         "delay_label": "FRED DCOILWTICO 실제값, 2026-05-18까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "$",
         "source_url": "https://fred.stlouisfed.org/series/DCOILWTICO",
         "points": [
@@ -333,8 +360,9 @@
         "source": "FRED / Cboe",
         "freshness": "fresh",
         "delay_label": "FRED VIXCLS 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "source_url": "https://fred.stlouisfed.org/series/VIXCLS",
         "points": [
           {
@@ -362,8 +390,9 @@
         "source": "FRED / Federal Reserve H.10",
         "freshness": "fresh",
         "delay_label": "FRED DEXKOUS 실제값, 2026-05-15까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "KRW",
         "source_url": "https://fred.stlouisfed.org/series/DEXKOUS",
         "points": [
@@ -392,8 +421,9 @@
         "source": "FRED / Federal Reserve H.10",
         "freshness": "fresh",
         "delay_label": "FRED DEXJPUS 실제값, 2026-05-15까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "JPY",
         "source_url": "https://fred.stlouisfed.org/series/DEXJPUS",
         "points": [
@@ -422,8 +452,9 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS2 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "%",
         "source_url": "https://fred.stlouisfed.org/series/DGS2",
         "points": [
@@ -458,8 +489,9 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS3 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "%",
         "source_url": "https://fred.stlouisfed.org/series/DGS3",
         "points": [
@@ -494,8 +526,9 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS5 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "%",
         "source_url": "https://fred.stlouisfed.org/series/DGS5",
         "points": [
@@ -530,8 +563,9 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS10 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "%",
         "source_url": "https://fred.stlouisfed.org/series/DGS10",
         "points": [
@@ -566,8 +600,9 @@
         "source": "FRED / OECD Japan central bank rate",
         "freshness": "fresh",
         "delay_label": "FRED IRSTCB01JPM156N 실제값, 2023-12-01까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "%",
         "source_url": "https://fred.stlouisfed.org/series/IRSTCB01JPM156N",
         "points": [
@@ -598,50 +633,31 @@
       {
         "key": "japan_2y",
         "label": "일본 국채 2년",
-        "value": "출처 공백",
-        "source": "Japan MOF / BoJ",
-        "freshness": "watch",
-        "delay_label": "상시 무료 2년 JGB API 출처가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T15:26:16Z",
-        "coverage_status": "coverage_gap"
-      },
-      {
-        "key": "japan_5y",
-        "label": "일본 국채 5년",
-        "value": "출처 공백",
-        "source": "Japan MOF / BoJ",
-        "freshness": "watch",
-        "delay_label": "상시 무료 5년 JGB API 출처가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T15:26:16Z",
-        "coverage_status": "coverage_gap"
-      },
-      {
-        "key": "japan_10y",
-        "label": "일본 국채 10년",
-        "value": "2.52",
-        "source": "FRED / OECD Japan 10Y yield",
+        "value": "1.4",
+        "source": "Japan MOF JGB yield curve",
         "freshness": "fresh",
-        "delay_label": "FRED IRLTLT01JPM156N 실제값, 2026-04-01까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "delay_label": "MOF 2Y JGB 실제값, 2026-04-30까지",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "%",
-        "source_url": "https://fred.stlouisfed.org/series/IRLTLT01JPM156N",
+        "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
         "points": [
           {
-            "date": "2026-01-01",
-            "value": 2.24
+            "date": "2026-04-24",
+            "value": 1.363
           },
           {
-            "date": "2026-02-01",
-            "value": 2.11
+            "date": "2026-04-27",
+            "value": 1.375
           },
           {
-            "date": "2026-03-01",
-            "value": 2.345
+            "date": "2026-04-28",
+            "value": 1.389
           },
           {
-            "date": "2026-04-01",
-            "value": 2.515
+            "date": "2026-04-30",
+            "value": 1.402
           }
         ],
         "next_event": {
@@ -650,6 +666,110 @@
           "timezone": "Asia/Tokyo",
           "source": "Bank of Japan MPM calendar"
         }
+      },
+      {
+        "key": "japan_5y",
+        "label": "일본 국채 5년",
+        "value": "1.9",
+        "source": "Japan MOF JGB yield curve",
+        "freshness": "fresh",
+        "delay_label": "MOF 5Y JGB 실제값, 2026-04-30까지",
+        "updated_at": "2026-05-25T16:21:12Z",
+        "coverage_status": "active",
+        "refresh_seconds": 900,
+        "unit": "%",
+        "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
+        "points": [
+          {
+            "date": "2026-04-24",
+            "value": 1.842
+          },
+          {
+            "date": "2026-04-27",
+            "value": 1.862
+          },
+          {
+            "date": "2026-04-28",
+            "value": 1.868
+          },
+          {
+            "date": "2026-04-30",
+            "value": 1.903
+          }
+        ],
+        "next_event": {
+          "title": "일본은행 통화정책회의",
+          "date": "2026-06-16",
+          "timezone": "Asia/Tokyo",
+          "source": "Bank of Japan MPM calendar"
+        }
+      },
+      {
+        "key": "japan_10y",
+        "label": "일본 국채 10년",
+        "value": "2.52",
+        "source": "Japan MOF JGB yield curve",
+        "freshness": "fresh",
+        "delay_label": "MOF 10Y JGB 실제값, 2026-04-30까지",
+        "updated_at": "2026-05-25T16:21:12Z",
+        "coverage_status": "active",
+        "refresh_seconds": 900,
+        "unit": "%",
+        "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
+        "points": [
+          {
+            "date": "2026-04-24",
+            "value": 2.443
+          },
+          {
+            "date": "2026-04-27",
+            "value": 2.477
+          },
+          {
+            "date": "2026-04-28",
+            "value": 2.468
+          },
+          {
+            "date": "2026-04-30",
+            "value": 2.52
+          }
+        ],
+        "next_event": {
+          "title": "일본은행 통화정책회의",
+          "date": "2026-06-16",
+          "timezone": "Asia/Tokyo",
+          "source": "Bank of Japan MPM calendar"
+        }
+      },
+      {
+        "key": "pentagon_pizza_index",
+        "label": "펜타곤 피자 지수",
+        "value": "관측됨",
+        "source": "Pentagon.Pizza",
+        "freshness": "fresh",
+        "delay_label": "Pentagon.Pizza weak OSINT snapshot 실제값, 2026-05-25까지",
+        "updated_at": "2026-05-25T16:21:12Z",
+        "coverage_status": "active",
+        "refresh_seconds": 300,
+        "source_url": "https://pentagon.pizza/",
+        "points": [
+          {
+            "date": "2026-05-25T15:36:12Z",
+            "value": 1
+          },
+          {
+            "date": "2026-05-25T15:51:12Z",
+            "value": 1
+          },
+          {
+            "date": "2026-05-25T16:06:12Z",
+            "value": 1
+          },
+          {
+            "date": "2026-05-25T16:21:12Z",
+            "value": 1
+          }
+        ]
       }
     ],
     "alternative_signals": [
@@ -673,7 +793,7 @@
             "source": "FINRA consolidated short interest",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
           },
           {
@@ -684,7 +804,7 @@
             "source": "FINRA consolidated short interest",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
           },
           {
@@ -695,7 +815,7 @@
             "source": "FINRA consolidated short interest",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
           },
           {
@@ -706,7 +826,7 @@
             "source": "FINRA",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://www.finra.org/investors/insights/short-interest"
           }
         ]
@@ -731,7 +851,7 @@
             "source": "FINRA Reg SHO daily short sale volume",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
           },
           {
@@ -742,7 +862,7 @@
             "source": "FINRA Reg SHO daily short sale volume",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
           },
           {
@@ -753,7 +873,7 @@
             "source": "FINRA Reg SHO daily short sale volume",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
           }
         ]
@@ -778,7 +898,7 @@
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxPZUd6bnFNNjVRbkc3dXpYZE9nSHhYdUdJZGIxQk93alNIQTF0QUlmNHUwZ0VVS2s4Q1ROcHJYT1RidnFjOWRGUHA1T2hZNW02QzdMVXNJeTBBRUZ1YmhJajFUYmNkazhYRm1vRzdjdjNkY0twQXMza01UalMwa050bkp0a0I0bk82UVhfOQ?oc=5"
           },
           {
@@ -789,7 +909,7 @@
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNaGlTTTRONFFaYWx2MV9NZ0ZJdVJySUhqbkJwWlZ3Nk04STZLdDhiRFlfUVJYYVdXQkJzS25aMGI4X2I4LUxFbnZXdXo1VThqTFRXc0JtVzFaMnBjWXp3UkhzYmlPaXVobzhnNk40OXlibHRZQkVHRVMtQzNWTm9icg?oc=5"
           },
           {
@@ -800,7 +920,7 @@
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://news.google.com/rss/articles/CBMiekFVX3lxTFAyYmZ0ZjdUN0lLWmZ0X0QtQktHa1FrVnFUbG9PdlBiNmJzNGw3UkZERHdXTlhVaUg2MXV3LXJ1cE4tVk4zMjlQQmo4cGllTmdKUXo0RGtKOFZEdHJUY2pfemQyeUZOc3VKNWpIdmNndVNObU9wbm5CNXVB?oc=5"
           },
           {
@@ -811,30 +931,30 @@
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxPMlpRdWM1U2diVnItMTdlbUY3NVFYZVpnRHlSVTRsX0NEV0UxUW5TNEE5TnNXUHlZaXZuQlFOMXUwa1g0VzVIbC1oTWtfcUxBRWpvUmhHYVlxREk3UHV3UWxkbElNWksxSHVTVnVnZTE4ejd4NW5sVG9kZWNwdWcxTDFqVVZGbVBwTzkzS2x0WFdLQjZiVzFYa2FqRFlDYzAyRU01SUwtZER0Q2ZEWXFZdFY4NElSdE02MjNBdndBdVhDRk0?oc=5"
           },
           {
-            "key": "breaking_market_news_yahoo_tickers_dcbb61376695",
-            "label": "S&P 500 Dividends Just Hit an All-Time Low Going Back to the 1800s — Here’s What Retirees Need to Know",
+            "key": "breaking_market_news_yahoo_tickers_48049088a88b",
+            "label": "The AI Trade Might Be Grossly Underestimated — and It Could Be Time To Rethink How We View the Mag 7",
             "value": "헤드라인",
-            "detail": "추적 티커 헤드라인; 247wallst.com; 관측 Mon, 25 May 2026 15:05:10 +0000",
+            "detail": "추적 티커 헤드라인; 247wallst.com; 관측 Mon, 25 May 2026 15:53:46 +0000",
             "source": "Yahoo Finance RSS",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
-            "source_url": "https://247wallst.com/personal-finance/2026/05/25/sp-500-dividends-just-hit-an-all-time-low-going-back-to-the-1800s-heres-what-retirees-need-to-know/?.tsrc=rss"
+            "updated_at": "2026-05-25T16:21:12Z",
+            "source_url": "https://247wallst.com/investing/2026/05/25/the-ai-trade-might-be-grossly-underestimated-and-it-could-be-time-to-rethink-how-we-view-the-mag-7/?.tsrc=rss"
           },
           {
-            "key": "breaking_market_news_yahoo_tickers_8ff4f76328c8",
-            "label": "Gain Exposure to Innovative AI Chipmaker Cerebras With Less Risk Through These ETFs",
+            "key": "breaking_market_news_yahoo_tickers_e446c4048bbd",
+            "label": "SSR Mining Is Selling Its Interest in the Copler Mine for $1.5 Billion. Is This a Positive Sign for the Mining Stock?",
             "value": "헤드라인",
-            "detail": "추적 티커 헤드라인; www.fool.com; 관측 Mon, 25 May 2026 14:50:00 +0000",
+            "detail": "추적 티커 헤드라인; www.fool.com; 관측 Mon, 25 May 2026 15:50:00 +0000",
             "source": "Yahoo Finance RSS",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
-            "source_url": "https://www.fool.com/investing/2026/05/25/gain-exposure-to-ai-leader-cerebras-with-less-risk/?.tsrc=rss"
+            "updated_at": "2026-05-25T16:21:12Z",
+            "source_url": "https://www.fool.com/investing/2026/05/25/ssr-mining-is-selling-its-interest-in-the-copler/?.tsrc=rss"
           }
         ]
       },
@@ -857,7 +977,7 @@
             "source": "Hindenburg/news",
             "freshness": "watch",
             "severity": "high",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://hindenburgresearch.com/"
           },
           {
@@ -868,7 +988,7 @@
             "source": "Muddy Waters",
             "freshness": "watch",
             "severity": "high",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://www.muddywatersresearch.com/"
           },
           {
@@ -879,7 +999,7 @@
             "source": "Viceroy",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://viceroyresearch.org/"
           },
           {
@@ -890,7 +1010,7 @@
             "source": "LLM router",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z"
+            "updated_at": "2026-05-25T16:21:12Z"
           },
           {
             "key": "short_research_reports_spruce_point",
@@ -900,7 +1020,7 @@
             "source": "Spruce Point",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://www.sprucepointcap.com/"
           },
           {
@@ -911,7 +1031,7 @@
             "source": "Kerrisdale",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://www.kerrisdalecap.com/"
           },
           {
@@ -922,7 +1042,7 @@
             "source": "Culper",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://culperresearch.com/"
           },
           {
@@ -933,7 +1053,7 @@
             "source": "Blue Orca",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://www.blueorcacapital.com/"
           },
           {
@@ -944,44 +1064,8 @@
             "source": "Grizzly",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://grizzlyreports.com/"
-          }
-        ]
-      },
-      {
-        "key": "pentagon_pizza_index",
-        "title": "펜타곤 피자 지수",
-        "summary": "사용자가 먼저 다른 사이트를 살펴보지 않아도 되도록 Pentagon.Pizza의 약한 OSINT 스냅샷을 직접 표시합니다.",
-        "value": "관측됨",
-        "cadence": "5분 폴링 목표; 약한 출처 라벨 필수.",
-        "source": "Pentagon.Pizza",
-        "source_url": "https://pentagon.pizza/",
-        "freshness": "fresh",
-        "severity": "low",
-        "refresh_seconds": 300,
-        "items": [
-          {
-            "key": "pentagon_pizza_index_latest_page",
-            "label": "관측 페이지",
-            "value": "Pentagon.Pizza - OSINT Activity Monitor",
-            "detail": "Real-time intelligence on pizza activity patterns near the Pentagon. OSINT monitoring dashboard.",
-            "source": "Pentagon.Pizza",
-            "freshness": "fresh",
-            "severity": "low",
-            "updated_at": "2026-05-25T15:26:16Z",
-            "source_url": "https://pentagon.pizza/"
-          },
-          {
-            "key": "pentagon_pizza_index_method",
-            "label": "약한 OSINT 맥락",
-            "value": "watch only",
-            "detail": "공식 지정학 뉴스와 함께 보되 인과적 시장 주장으로 공개하지 않습니다.",
-            "source": "source policy",
-            "freshness": "watch",
-            "severity": "low",
-            "updated_at": "2026-05-25T15:26:16Z",
-            "source_url": "https://pentagon.pizza/"
           }
         ]
       },
@@ -1005,7 +1089,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000114036126022487/xslF345X06/form4.xml"
           },
           {
@@ -1016,7 +1100,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000192109426000535/xsl144X01/primary_doc.xml"
           },
           {
@@ -1027,7 +1111,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z",
+            "updated_at": "2026-05-25T16:21:12Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000192109426000474/xsl144X01/primary_doc.xml"
           },
           {
@@ -1038,7 +1122,7 @@
             "source": "SEC EDGAR",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z"
+            "updated_at": "2026-05-25T16:21:12Z"
           },
           {
             "key": "trump_filings_ai_summary",
@@ -1048,7 +1132,7 @@
             "source": "LLM router",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-25T15:26:16Z"
+            "updated_at": "2026-05-25T16:21:12Z"
           }
         ]
       }

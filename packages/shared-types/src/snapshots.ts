@@ -107,6 +107,7 @@ export interface MetricTile {
   delay_label: string;
   updated_at: string;
   coverage_status?: "active" | "coverage_gap";
+  refresh_seconds?: number;
   next_event?: MetricTileEvent;
   points?: { date: string; value: number }[];
 }

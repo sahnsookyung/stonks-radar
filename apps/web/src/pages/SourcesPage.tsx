@@ -40,6 +40,16 @@ const sourceGroups: { title: string; summary: string; sources: SourceItem[] }[] 
         risk: "low"
       },
       {
+        name: "Japan Ministry of Finance JGB rates",
+        url: "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
+        category: "rates",
+        signal: "2Y/5Y/10Y Japan government bond yield curve from historical official CSV",
+        cadence: "daily; 15-minute cache check is safe",
+        access: "public official CSV",
+        status: "active",
+        risk: "low"
+      },
+      {
         name: "BLS",
         url: "https://www.bls.gov/developers/",
         category: "macro",
@@ -94,6 +104,16 @@ const sourceGroups: { title: string; summary: string; sources: SourceItem[] }[] 
         access: "FMP_API_KEY",
         status: "credential_pending",
         risk: "medium"
+      },
+      {
+        name: "KRX Open API",
+        url: "https://openapi.krx.co.kr/contents/OPP/INFO/service/OPPINFO004.cmd",
+        category: "Korea market data",
+        signal: "KODEX 200 ETF daily trading rows and KOSPI 200 futures daily trading rows",
+        cadence: "daily market data; 15-minute cache check stays under free key limits",
+        access: "KRX_OPEN_API_AUTH_KEY",
+        status: "credential_pending",
+        risk: "low"
       }
     ]
   },

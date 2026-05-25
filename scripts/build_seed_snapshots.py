@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+import csv
+import io
 import json
 import os
 import re
@@ -22,7 +24,13 @@ FRED_SERIES_BASE_URL = "https://fred.stlouisfed.org/series"
 GDELT_DOC_API_URL = "https://api.gdeltproject.org/api/v2/doc/doc"
 GOOGLE_NEWS_RSS_URL = "https://news.google.com/rss/search"
 YAHOO_FINANCE_RSS_URL = "https://feeds.finance.yahoo.com/rss/2.0/headline"
+MOF_JGB_CSV_URL = "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/historical/jgbcme_all.csv"
+MOF_JGB_PAGE_URL = "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm"
+KRX_OPEN_API_BASE_URL = "https://data-dbg.krx.co.kr/svc/apis"
+KRX_ETF_DAILY_PATH = "etp/etf_bydd_trd"
+KRX_FUTURES_DAILY_PATH = "drv/fut_bydd_trd"
 FRED_REQUEST_MIN_INTERVAL_SECONDS = 0.55
+KRX_REQUEST_MIN_INTERVAL_SECONDS = 0.35
 FINRA_API_BASE_URL = "https://api.finra.org"
 FINRA_OAUTH_TOKEN_URL = "https://ews.fip.finra.org/fip/rest/ews/oauth2/access_token?grant_type=client_credentials"
 FINRA_REQUEST_MIN_INTERVAL_SECONDS = 0.25
@@ -38,8 +46,14 @@ OFFICIAL_POLICY_CALENDAR_URLS = {
     "bank_of_korea": "https://www.bok.or.kr/eng/main/contents.do?menuNo=400020",
     "bcb": "https://www.bcb.gov.br/detalhenoticia/20739/nota",
 }
+KRX_DOC_URLS = {
+    "etf_daily": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES003_S2.cmd?BO_ID=nrEpCLaZpoLCTzPUMxuF",
+    "futures_daily": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES005_S2.cmd?BO_ID=ilaVYOabbaicHbKTsqga",
+}
 _RUNTIME_ENV: dict[str, str] | None = None
 _FRED_CACHE: dict[str, dict[str, Any] | None] = {}
+_MOF_JGB_CACHE: list[dict[str, Any]] | None = None
+_KRX_ROWS_CACHE: dict[tuple[str, str], list[dict[str, Any]]] = {}
 _FINRA_TOKEN_CACHE: dict[str, Any] = {"token": None, "expires_at": 0.0}
 _FINRA_ROWS_CACHE: dict[str, list[dict[str, Any]]] = {}
 _SEC_SUBMISSIONS_CACHE: dict[str, dict[str, Any] | None] = {}
@@ -47,6 +61,7 @@ _WEB_METADATA_CACHE: dict[str, dict[str, str] | None] = {}
 _GDELT_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
 _RSS_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
 _LAST_FRED_REQUEST_AT = 0.0
+_LAST_KRX_REQUEST_AT = 0.0
 _LAST_FINRA_REQUEST_AT = 0.0
 
 SECTORS = {
@@ -410,6 +425,137 @@ def _fred_series(series_id: str) -> dict[str, Any] | None:
     result = {"date": latest_point["date"], "value": latest_point["value"], "points": points}
     _FRED_CACHE[series_id] = result
     return result
+
+
+def _mof_jgb_series(term: str) -> dict[str, Any] | None:
+    rows = _mof_jgb_rows()
+    points: list[dict[str, Any]] = []
+    for row in reversed(rows):
+        date = _iso_date(str(row.get("Date") or ""))
+        value = _numeric_value(row.get(term))
+        if not date or value is None:
+            continue
+        points.append({"date": date, "value": value})
+        if len(points) >= 4:
+            break
+    points.reverse()
+    if not points:
+        return None
+    latest_point = points[-1]
+    return {"date": latest_point["date"], "value": latest_point["value"], "points": points}
+
+
+def _mof_jgb_rows() -> list[dict[str, Any]]:
+    global _MOF_JGB_CACHE
+    if _MOF_JGB_CACHE is not None:
+        return _MOF_JGB_CACHE
+    user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
+    try:
+        req = request.Request(MOF_JGB_CSV_URL, headers={"User-Agent": user_agent, "Accept": "text/csv,*/*"})
+        with request.urlopen(req, timeout=20) as response:
+            text = response.read(2_000_000).decode("utf-8-sig", errors="ignore")
+    except Exception:
+        _MOF_JGB_CACHE = []
+        return _MOF_JGB_CACHE
+    lines = text.splitlines()
+    header_index = next((index for index, line in enumerate(lines) if line.startswith("Date,")), -1)
+    if header_index < 0:
+        _MOF_JGB_CACHE = []
+        return _MOF_JGB_CACHE
+    reader = csv.DictReader(io.StringIO("\n".join(lines[header_index:])))
+    _MOF_JGB_CACHE = [row for row in reader if row.get("Date")]
+    return _MOF_JGB_CACHE
+
+
+def _krx_series(
+    path: str,
+    generated_at: datetime,
+    *,
+    predicate: Any,
+    value_keys: tuple[str, ...],
+) -> dict[str, Any] | None:
+    if not _krx_auth_key():
+        return None
+    points: list[dict[str, Any]] = []
+    for bas_dd in _recent_krx_dates(generated_at):
+        rows = _krx_rows(path, bas_dd)
+        matches = [row for row in rows if predicate(row)]
+        for row in matches:
+            value = _numeric_value(_row_value(row, value_keys))
+            if value is None:
+                continue
+            date = _iso_date(str(row.get("BAS_DD") or bas_dd))
+            if not date:
+                continue
+            points.append({"date": date, "value": value})
+            break
+        if len(points) >= 4:
+            break
+    points.reverse()
+    if not points:
+        return None
+    latest_point = points[-1]
+    return {"date": latest_point["date"], "value": latest_point["value"], "points": points}
+
+
+def _krx_rows(path: str, bas_dd: str) -> list[dict[str, Any]]:
+    cache_key = (path, bas_dd)
+    if cache_key in _KRX_ROWS_CACHE:
+        return _KRX_ROWS_CACHE[cache_key]
+    auth_key = _krx_auth_key()
+    if not auth_key:
+        _KRX_ROWS_CACHE[cache_key] = []
+        return []
+
+    global _LAST_KRX_REQUEST_AT
+    elapsed = time.monotonic() - _LAST_KRX_REQUEST_AT
+    if elapsed < KRX_REQUEST_MIN_INTERVAL_SECONDS:
+        time.sleep(KRX_REQUEST_MIN_INTERVAL_SECONDS - elapsed)
+
+    base_url = str(_runtime_env().get("KRX_OPEN_API_BASE_URL") or KRX_OPEN_API_BASE_URL).rstrip("/")
+    params = parse.urlencode({"basDd": bas_dd})
+    try:
+        payload = _http_json(
+            f"{base_url}/{path}.json?{params}",
+            headers={"Accept": "application/json", "AUTH_KEY": auth_key},
+            timeout=20,
+        )
+    except Exception:
+        _KRX_ROWS_CACHE[cache_key] = []
+    else:
+        rows = payload.get("OutBlock_1") if isinstance(payload, dict) else []
+        _KRX_ROWS_CACHE[cache_key] = [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+    finally:
+        _LAST_KRX_REQUEST_AT = time.monotonic()
+    return _KRX_ROWS_CACHE[cache_key]
+
+
+def _krx_auth_key() -> str:
+    env = _runtime_env()
+    return str(env.get("KRX_OPEN_API_AUTH_KEY") or env.get("KRX_AUTH_KEY") or env.get("KRX_API_KEY") or "").strip()
+
+
+def _recent_krx_dates(generated_at: datetime, lookback_days: int = 12) -> list[str]:
+    korea_today = (generated_at + timedelta(hours=9)).date()
+    dates = []
+    for offset in range(lookback_days):
+        day = korea_today - timedelta(days=offset)
+        if day.weekday() >= 5:
+            continue
+        dates.append(day.strftime("%Y%m%d"))
+    return dates
+
+
+def _iso_date(value: str) -> str | None:
+    text = value.strip()
+    if not text:
+        return None
+    for fmt in ("%Y%m%d", "%Y-%m-%d", "%Y/%m/%d"):
+        try:
+            return datetime.strptime(text, fmt).date().isoformat()
+        except ValueError:
+            continue
+    return None
 
 
 def _finra_short_interest_rows(symbols: list[str]) -> list[dict[str, Any]]:
@@ -1008,6 +1154,9 @@ def _calendar(locale: str) -> list[dict[str, Any]]:
 
 def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
     updated = generated_at.isoformat().replace("+00:00", "Z")
+    env = _runtime_env()
+    pizza_url = str(env.get("PENTAGON_PIZZA_BASE_URL") or PENTAGON_PIZZA_URL)
+    pizza_metadata = _web_metadata(pizza_url)
 
     def rate_event(region: str) -> dict[str, str]:
         events = {
@@ -1039,6 +1188,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         points: list[dict[str, Any]] | None = None,
         coverage_status: str = "active",
         next_event: dict[str, str] | None = None,
+        refresh_seconds: int = 900,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "key": key,
@@ -1049,6 +1199,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "delay_label": delay_label,
             "updated_at": updated,
             "coverage_status": coverage_status,
+            "refresh_seconds": refresh_seconds,
         }
         if unit:
             payload["unit"] = unit
@@ -1070,6 +1221,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         unit: str | None = None,
         decimals: int = 2,
         next_event: dict[str, str] | None = None,
+        refresh_seconds: int = 900,
     ) -> dict[str, Any]:
         series = _fred_series(series_id)
         if not series:
@@ -1090,6 +1242,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
                 None,
                 "coverage_gap",
                 next_event,
+                refresh_seconds,
             )
         return tile(
             key,
@@ -1104,6 +1257,106 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             series["points"],
             "active",
             next_event,
+            refresh_seconds,
+        )
+
+    def mof_jgb_tile(
+        key: str,
+        label_en: str,
+        label_ko: str,
+        term: str,
+        next_event: dict[str, str] | None = None,
+        refresh_seconds: int = 900,
+    ) -> dict[str, Any]:
+        series = _mof_jgb_series(term)
+        if not series:
+            return tile(
+                key,
+                label_en,
+                label_ko,
+                _t(locale, "Source gap", "출처 공백"),
+                "Japan MOF JGB yield curve",
+                _unsupported_delay_label(
+                    locale,
+                    "Japan MOF historical JGB CSV unavailable during snapshot build",
+                    "스냅샷 생성 중 일본 재무성 국채 금리 CSV를 사용할 수 없습니다.",
+                ),
+                "watch",
+                "%",
+                MOF_JGB_PAGE_URL,
+                None,
+                "coverage_gap",
+                next_event,
+                refresh_seconds,
+            )
+        return tile(
+            key,
+            label_en,
+            label_ko,
+            _format_metric_value(series["value"], 2),
+            "Japan MOF JGB yield curve",
+            _actual_delay_label(locale, f"MOF {term} JGB", series["date"]),
+            "fresh",
+            "%",
+            MOF_JGB_PAGE_URL,
+            series["points"],
+            "active",
+            next_event,
+            refresh_seconds,
+        )
+
+    def krx_tile(
+        key: str,
+        label_en: str,
+        label_ko: str,
+        path: str,
+        predicate: Any,
+        value_keys: tuple[str, ...],
+        source: str,
+        source_url: str,
+        unit: str | None = None,
+        decimals: int = 2,
+        refresh_seconds: int = 900,
+    ) -> dict[str, Any]:
+        if not _krx_auth_key():
+            return coverage_gap_tile(
+                key,
+                label_en,
+                label_ko,
+                source,
+                "KRX_OPEN_API_AUTH_KEY, KRX_AUTH_KEY, or KRX_API_KEY is required for official Korea Exchange data",
+                "한국거래소 공식 데이터를 가져오려면 KRX_OPEN_API_AUTH_KEY, KRX_AUTH_KEY 또는 KRX_API_KEY가 필요합니다.",
+                unit,
+                source_url,
+                refresh_seconds,
+            )
+        series = _krx_series(path, generated_at, predicate=predicate, value_keys=value_keys)
+        if not series:
+            return coverage_gap_tile(
+                key,
+                label_en,
+                label_ko,
+                source,
+                "KRX credentials are configured, but recent official rows were unavailable for this instrument",
+                "KRX 자격 증명은 구성되었지만 이 상품의 최근 공식 행을 가져오지 못했습니다.",
+                unit,
+                source_url,
+                refresh_seconds,
+            )
+        return tile(
+            key,
+            label_en,
+            label_ko,
+            _format_metric_value(series["value"], decimals),
+            source,
+            _actual_delay_label(locale, source, series["date"]),
+            "fresh",
+            unit,
+            source_url,
+            series["points"],
+            "active",
+            None,
+            refresh_seconds,
         )
 
     def coverage_gap_tile(
@@ -1115,6 +1368,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         reason_ko: str,
         unit: str | None = None,
         source_url: str | None = None,
+        refresh_seconds: int = 900,
     ) -> dict[str, Any]:
         return tile(
             key,
@@ -1129,6 +1383,38 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             None,
             "coverage_gap",
             None,
+            refresh_seconds,
+        )
+
+    def pentagon_pizza_tile() -> dict[str, Any]:
+        signal_value = 1 if pizza_metadata else 0
+        points = [
+            {
+                "date": (generated_at - timedelta(minutes=offset)).isoformat().replace("+00:00", "Z"),
+                "value": signal_value,
+            }
+            for offset in (45, 30, 15, 0)
+        ]
+        return tile(
+            "pentagon_pizza_index",
+            "Pentagon pizza index",
+            "펜타곤 피자 지수",
+            _t(locale, "observed", "관측됨") if pizza_metadata else _t(locale, "watch", "감시"),
+            "Pentagon.Pizza",
+            _actual_delay_label(locale, "Pentagon.Pizza weak OSINT snapshot", updated[:10])
+            if pizza_metadata
+            else _unsupported_delay_label(
+                locale,
+                "Weak OSINT source unavailable during snapshot build",
+                "스냅샷 생성 중 약한 OSINT 출처를 사용할 수 없었습니다.",
+            ),
+            "fresh" if pizza_metadata else "watch",
+            None,
+            pizza_url,
+            points,
+            "active",
+            None,
+            300,
         )
 
     return [
@@ -1140,13 +1426,13 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "FRED / Nasdaq",
             "FRED NASDAQCOM",
         ),
-        coverage_gap_tile(
-            "nasdaq_100_futures",
-            "Nasdaq 100 futures",
-            "나스닥 100 선물",
-            "CME / licensed futures feed",
-            "No always-free licensed futures API is configured",
-            "상시 무료 라이선스 선물 API가 설정되지 않았습니다.",
+        fred_tile(
+            "nasdaq_100",
+            "Nasdaq 100",
+            "나스닥 100",
+            "NASDAQ100",
+            "FRED / Nasdaq",
+            "FRED NASDAQ100",
         ),
         fred_tile(
             "kospi",
@@ -1156,21 +1442,29 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "FRED / OECD Korea share prices",
             "FRED SPASTT01KRM661N",
         ),
-        coverage_gap_tile(
+        krx_tile(
             "kodex_200",
             "KODEX 200 ETF",
             "KODEX 200 ETF",
-            "KRX / Samsung AM",
-            "No always-free redistributable ETF feed is configured",
-            "상시 무료 재배포 가능 ETF 피드가 설정되지 않았습니다.",
+            KRX_ETF_DAILY_PATH,
+            lambda row: row.get("ISU_CD") == "069500" or "KODEX 200" in str(row.get("ISU_NM") or ""),
+            ("TDD_CLSPRC",),
+            "KRX ETF daily trading",
+            KRX_DOC_URLS["etf_daily"],
+            "KRW",
+            0,
         ),
-        coverage_gap_tile(
+        krx_tile(
             "kospi_200_futures",
             "KOSPI 200 futures",
-            "코스피 200 선물",
-            "KRX derivatives feed",
-            "No always-free licensed derivatives API is configured",
-            "상시 무료 라이선스 파생상품 API가 설정되지 않았습니다.",
+            "코스피200 선물",
+            KRX_FUTURES_DAILY_PATH,
+            lambda row: row.get("PROD_NM") == "코스피200 선물"
+            and row.get("MKT_NM") == "정규"
+            and bool(str(row.get("TDD_CLSPRC") or row.get("SETL_PRC") or "").strip()),
+            ("TDD_CLSPRC", "SETL_PRC"),
+            "KRX derivatives daily trading",
+            KRX_DOC_URLS["futures_daily"],
         ),
         fred_tile("wti_crude", "WTI crude oil", "WTI 원유", "DCOILWTICO", "FRED / EIA", "FRED DCOILWTICO", "$", 2),
         fred_tile("vix", "VIX", "VIX", "VIXCLS", "FRED / Cboe", "FRED VIXCLS"),
@@ -1191,35 +1485,16 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             2,
             rate_event("japan"),
         ),
-        coverage_gap_tile(
-            "japan_2y",
-            "Japan govt 2Y",
-            "일본 국채 2년",
-            "Japan MOF / BoJ",
-            "Always-free 2Y JGB API source is not configured",
-            "상시 무료 2년 JGB API 출처가 설정되지 않았습니다.",
-            "%",
-        ),
-        coverage_gap_tile(
-            "japan_5y",
-            "Japan govt 5Y",
-            "일본 국채 5년",
-            "Japan MOF / BoJ",
-            "Always-free 5Y JGB API source is not configured",
-            "상시 무료 5년 JGB API 출처가 설정되지 않았습니다.",
-            "%",
-        ),
-        fred_tile(
+        mof_jgb_tile("japan_2y", "Japan govt 2Y", "일본 국채 2년", "2Y", rate_event("japan")),
+        mof_jgb_tile("japan_5y", "Japan govt 5Y", "일본 국채 5년", "5Y", rate_event("japan")),
+        mof_jgb_tile(
             "japan_10y",
             "Japan govt 10Y",
             "일본 국채 10년",
-            "IRLTLT01JPM156N",
-            "FRED / OECD Japan 10Y yield",
-            "FRED IRLTLT01JPM156N",
-            "%",
-            2,
+            "10Y",
             rate_event("japan"),
         ),
+        pentagon_pizza_tile(),
     ]
 
 
@@ -1257,7 +1532,6 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
     symbols = _symbol_list(env.get("SHORT_VOLUME_MONITORED_TICKERS") or DEFAULT_SHORT_TICKERS)
     short_interest = _latest_short_interest(_finra_short_interest_rows(symbols), symbols)
     short_volume = _latest_short_volume(_finra_short_volume_rows(symbols), symbols)
-    pizza_metadata = _web_metadata(str(env.get("PENTAGON_PIZZA_BASE_URL") or PENTAGON_PIZZA_URL))
     trump_documents = _recent_sec_documents(DEFAULT_TRUMP_CIKS["DJT"])
     ai_summary_ready = any(
         _env_has(env, key)
@@ -1446,43 +1720,6 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
             )
         ]
 
-    pizza_items = [
-        item(
-            "pentagon_pizza_index",
-            "latest_page",
-            "Observed page",
-            "관측 페이지",
-            pizza_metadata["title"] if pizza_metadata else _t(locale, "unavailable", "사용 불가"),
-            pizza_metadata["description"]
-            if pizza_metadata and pizza_metadata["description"]
-            else _t(
-                locale,
-                "No direct metric was extracted; keep this as weak OSINT context only.",
-                "직접 지표를 추출하지 못했으므로 약한 OSINT 맥락으로만 유지합니다.",
-            ),
-            pizza_metadata["description"]
-            if pizza_metadata and pizza_metadata["description"]
-            else "직접 지표를 추출하지 못했으므로 약한 OSINT 맥락으로만 유지합니다.",
-            "Pentagon.Pizza",
-            "low",
-            "fresh" if pizza_metadata else "watch",
-            str(env.get("PENTAGON_PIZZA_BASE_URL") or PENTAGON_PIZZA_URL),
-        ),
-        item(
-            "pentagon_pizza_index",
-            "method",
-            "Weak OSINT context",
-            "약한 OSINT 맥락",
-            "watch only",
-            "Collate with official geopolitical news; do not publish as a causal market claim.",
-            "공식 지정학 뉴스와 함께 보되 인과적 시장 주장으로 공개하지 않습니다.",
-            "source policy",
-            "low",
-            "watch",
-            str(env.get("PENTAGON_PIZZA_BASE_URL") or PENTAGON_PIZZA_URL),
-        ),
-    ]
-
     trump_items = [
         item(
             "trump_filings",
@@ -1629,23 +1866,6 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
             ],
         },
         {
-            "key": "pentagon_pizza_index",
-            "title": _t(locale, "Pentagon pizza index", "펜타곤 피자 지수"),
-            "summary": _t(
-                locale,
-                "Direct weak-OSINT snapshot from Pentagon.Pizza, displayed here so users do not need to inspect another site first.",
-                "사용자가 먼저 다른 사이트를 살펴보지 않아도 되도록 Pentagon.Pizza의 약한 OSINT 스냅샷을 직접 표시합니다.",
-            ),
-            "value": _t(locale, "observed", "관측됨") if pizza_metadata else _t(locale, "source unavailable", "출처 사용 불가"),
-            "cadence": _t(locale, "5-minute polling target; weak-source label required.", "5분 폴링 목표; 약한 출처 라벨 필수."),
-            "source": "Pentagon.Pizza",
-            "source_url": str(env.get("PENTAGON_PIZZA_BASE_URL") or PENTAGON_PIZZA_URL),
-            "freshness": "fresh" if pizza_metadata else "watch",
-            "severity": "low",
-            "refresh_seconds": 300,
-            "items": pizza_items,
-        },
-        {
             "key": "trump_filings",
             "title": _t(locale, "Trump-family filings", "트럼프 일가 공시"),
             "summary": _t(
@@ -1784,6 +2004,13 @@ def _source_status() -> dict[str, Any]:
     fmp_status, fmp_warning = status_for("FMP_API_KEY", "FMP_API_KEY enables EOD/fundamental fallback")
     finnhub_status, finnhub_warning = status_for("FINNHUB_API_KEY", "FINNHUB_API_KEY enables future market/fundamental fallback")
     nasdaq_status, nasdaq_warning = status_for("NASDAQ_DATA_LINK_API_KEY", "NASDAQ_DATA_LINK_API_KEY enables future Nasdaq Data Link datasets")
+    if any(_env_has(env, key) for key in ("KRX_OPEN_API_AUTH_KEY", "KRX_AUTH_KEY", "KRX_API_KEY")):
+        krx_status, krx_warning = "ready", None
+    else:
+        krx_status, krx_warning = (
+            "missing_credentials",
+            "KRX_OPEN_API_AUTH_KEY, KRX_AUTH_KEY, or KRX_API_KEY required for KODEX 200 and KOSPI 200 futures ingest",
+        )
     if _env_has(env, "FINRA_API_TOKEN") or (_env_has(env, "FINRA_API_CLIENT_ID") and _env_has(env, "FINRA_API_CLIENT_SECRET")):
         finra_status, finra_warning = "ready", None
     else:
@@ -1810,6 +2037,8 @@ def _source_status() -> dict[str, Any]:
         ("fmp", "market_data", fmp_status, "FREE_ONLY", fmp_warning),
         ("finnhub", "market_data", finnhub_status, "FREE_ONLY", finnhub_warning),
         ("nasdaq_data_link", "market_data", nasdaq_status, "FREE_ONLY", nasdaq_warning),
+        ("krx_open_api", "official_api", krx_status, "FREE_ONLY", krx_warning),
+        ("japan_mof_jgb_csv", "official_csv", "ready", "FREE_ONLY", None),
         ("finra", "official_api", finra_status, "FREE_ONLY", finra_warning),
         ("gdelt", "news_metadata", "ready", "FREE_ONLY", None),
         ("google_news_rss", "news_metadata", "ready", "FREE_ONLY", None),

@@ -299,7 +299,9 @@ function countryHoverFilter(countryName: string) {
   return [
     "all",
     ["==", ["get", "name"], countryName],
-    ["!=", ["get", "crossesAntimeridian"], true]
+    ["!=", ["get", "crossesAntimeridian"], true],
+    ["!=", ["get", "antimeridianRepaired"], true],
+    ["!=", ["get", "antimeridianHoverUnsafe"], true]
   ] as maplibregl.FilterSpecification;
 }
 

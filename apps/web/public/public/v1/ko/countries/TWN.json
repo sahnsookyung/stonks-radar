@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-25T15:26:16Z",
-  "stale_after": "2026-05-26T03:26:16Z",
-  "hard_expires_at": "2026-06-01T15:26:16Z",
+  "generated_at": "2026-05-25T16:21:12Z",
+  "stale_after": "2026-05-26T04:21:12Z",
+  "hard_expires_at": "2026-06-01T16:21:12Z",
   "object_type": "country_region",
   "object_key": "TWN",
-  "content_hash": "sha256:15c4d48cb6d8af937a7ce09d020831cf1a967dae502f7ec899f8cfc7b71d51ad",
+  "content_hash": "sha256:c9fcfce43883948506a4b1ded929a84d8ac8e4c5a56d03e46514a5cde483d8ba",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -98,8 +98,8 @@
         "title": "반도체 수출통제 모니터링 강도 유지",
         "summary": "승인된 시드 이벤트가 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
         "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다.",
-        "occurred_at": "2026-05-25T15:26:16Z",
-        "published_at": "2026-05-25T15:26:16Z",
+        "occurred_at": "2026-05-25T16:21:12Z",
+        "published_at": "2026-05-25T16:21:12Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -183,8 +183,9 @@
         "source": "FRED / Nasdaq",
         "freshness": "fresh",
         "delay_label": "FRED NASDAQCOM 실제값, 2026-05-22까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "source_url": "https://fred.stlouisfed.org/series/NASDAQCOM",
         "points": [
           {
@@ -206,14 +207,34 @@
         ]
       },
       {
-        "key": "nasdaq_100_futures",
-        "label": "나스닥 100 선물",
-        "value": "출처 공백",
-        "source": "CME / licensed futures feed",
-        "freshness": "watch",
-        "delay_label": "상시 무료 라이선스 선물 API가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T15:26:16Z",
-        "coverage_status": "coverage_gap"
+        "key": "nasdaq_100",
+        "label": "나스닥 100",
+        "value": "29,481.64",
+        "source": "FRED / Nasdaq",
+        "freshness": "fresh",
+        "delay_label": "FRED NASDAQ100 실제값, 2026-05-22까지",
+        "updated_at": "2026-05-25T16:21:12Z",
+        "coverage_status": "active",
+        "refresh_seconds": 900,
+        "source_url": "https://fred.stlouisfed.org/series/NASDAQ100",
+        "points": [
+          {
+            "date": "2026-05-19",
+            "value": 28818.84
+          },
+          {
+            "date": "2026-05-20",
+            "value": 29297.7
+          },
+          {
+            "date": "2026-05-21",
+            "value": 29357.27
+          },
+          {
+            "date": "2026-05-22",
+            "value": 29481.64
+          }
+        ]
       },
       {
         "key": "kospi",
@@ -222,8 +243,9 @@
         "source": "FRED / OECD Korea share prices",
         "freshness": "fresh",
         "delay_label": "FRED SPASTT01KRM661N 실제값, 2026-04-01까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "source_url": "https://fred.stlouisfed.org/series/SPASTT01KRM661N",
         "points": [
           {
@@ -248,21 +270,25 @@
         "key": "kodex_200",
         "label": "KODEX 200 ETF",
         "value": "출처 공백",
-        "source": "KRX / Samsung AM",
+        "source": "KRX ETF daily trading",
         "freshness": "watch",
-        "delay_label": "상시 무료 재배포 가능 ETF 피드가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T15:26:16Z",
-        "coverage_status": "coverage_gap"
+        "delay_label": "한국거래소 공식 데이터를 가져오려면 KRX_OPEN_API_AUTH_KEY, KRX_AUTH_KEY 또는 KRX_API_KEY가 필요합니다.",
+        "updated_at": "2026-05-25T16:21:12Z",
+        "coverage_status": "coverage_gap",
+        "refresh_seconds": 900,
+        "source_url": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES003_S2.cmd?BO_ID=nrEpCLaZpoLCTzPUMxuF"
       },
       {
         "key": "kospi_200_futures",
-        "label": "코스피 200 선물",
+        "label": "코스피200 선물",
         "value": "출처 공백",
-        "source": "KRX derivatives feed",
+        "source": "KRX derivatives daily trading",
         "freshness": "watch",
-        "delay_label": "상시 무료 라이선스 파생상품 API가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T15:26:16Z",
-        "coverage_status": "coverage_gap"
+        "delay_label": "한국거래소 공식 데이터를 가져오려면 KRX_OPEN_API_AUTH_KEY, KRX_AUTH_KEY 또는 KRX_API_KEY가 필요합니다.",
+        "updated_at": "2026-05-25T16:21:12Z",
+        "coverage_status": "coverage_gap",
+        "refresh_seconds": 900,
+        "source_url": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES005_S2.cmd?BO_ID=ilaVYOabbaicHbKTsqga"
       },
       {
         "key": "wti_crude",
@@ -271,8 +297,9 @@
         "source": "FRED / EIA",
         "freshness": "fresh",
         "delay_label": "FRED DCOILWTICO 실제값, 2026-05-18까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "$",
         "source_url": "https://fred.stlouisfed.org/series/DCOILWTICO",
         "points": [
@@ -301,8 +328,9 @@
         "source": "FRED / Cboe",
         "freshness": "fresh",
         "delay_label": "FRED VIXCLS 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "source_url": "https://fred.stlouisfed.org/series/VIXCLS",
         "points": [
           {
@@ -330,8 +358,9 @@
         "source": "FRED / Federal Reserve H.10",
         "freshness": "fresh",
         "delay_label": "FRED DEXKOUS 실제값, 2026-05-15까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "KRW",
         "source_url": "https://fred.stlouisfed.org/series/DEXKOUS",
         "points": [
@@ -360,8 +389,9 @@
         "source": "FRED / Federal Reserve H.10",
         "freshness": "fresh",
         "delay_label": "FRED DEXJPUS 실제값, 2026-05-15까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "JPY",
         "source_url": "https://fred.stlouisfed.org/series/DEXJPUS",
         "points": [
@@ -390,8 +420,9 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS2 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "%",
         "source_url": "https://fred.stlouisfed.org/series/DGS2",
         "points": [
@@ -426,8 +457,9 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS3 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "%",
         "source_url": "https://fred.stlouisfed.org/series/DGS3",
         "points": [
@@ -462,8 +494,9 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS5 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "%",
         "source_url": "https://fred.stlouisfed.org/series/DGS5",
         "points": [
@@ -498,8 +531,9 @@
         "source": "FRED / US Treasury",
         "freshness": "fresh",
         "delay_label": "FRED DGS10 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "%",
         "source_url": "https://fred.stlouisfed.org/series/DGS10",
         "points": [
@@ -534,8 +568,9 @@
         "source": "FRED / OECD Japan central bank rate",
         "freshness": "fresh",
         "delay_label": "FRED IRSTCB01JPM156N 실제값, 2023-12-01까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "%",
         "source_url": "https://fred.stlouisfed.org/series/IRSTCB01JPM156N",
         "points": [
@@ -566,50 +601,31 @@
       {
         "key": "japan_2y",
         "label": "일본 국채 2년",
-        "value": "출처 공백",
-        "source": "Japan MOF / BoJ",
-        "freshness": "watch",
-        "delay_label": "상시 무료 2년 JGB API 출처가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T15:26:16Z",
-        "coverage_status": "coverage_gap"
-      },
-      {
-        "key": "japan_5y",
-        "label": "일본 국채 5년",
-        "value": "출처 공백",
-        "source": "Japan MOF / BoJ",
-        "freshness": "watch",
-        "delay_label": "상시 무료 5년 JGB API 출처가 설정되지 않았습니다.",
-        "updated_at": "2026-05-25T15:26:16Z",
-        "coverage_status": "coverage_gap"
-      },
-      {
-        "key": "japan_10y",
-        "label": "일본 국채 10년",
-        "value": "2.52",
-        "source": "FRED / OECD Japan 10Y yield",
+        "value": "1.4",
+        "source": "Japan MOF JGB yield curve",
         "freshness": "fresh",
-        "delay_label": "FRED IRLTLT01JPM156N 실제값, 2026-04-01까지",
-        "updated_at": "2026-05-25T15:26:16Z",
+        "delay_label": "MOF 2Y JGB 실제값, 2026-04-30까지",
+        "updated_at": "2026-05-25T16:21:12Z",
         "coverage_status": "active",
+        "refresh_seconds": 900,
         "unit": "%",
-        "source_url": "https://fred.stlouisfed.org/series/IRLTLT01JPM156N",
+        "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
         "points": [
           {
-            "date": "2026-01-01",
-            "value": 2.24
+            "date": "2026-04-24",
+            "value": 1.363
           },
           {
-            "date": "2026-02-01",
-            "value": 2.11
+            "date": "2026-04-27",
+            "value": 1.375
           },
           {
-            "date": "2026-03-01",
-            "value": 2.345
+            "date": "2026-04-28",
+            "value": 1.389
           },
           {
-            "date": "2026-04-01",
-            "value": 2.515
+            "date": "2026-04-30",
+            "value": 1.402
           }
         ],
         "next_event": {
@@ -618,6 +634,110 @@
           "timezone": "Asia/Tokyo",
           "source": "Bank of Japan MPM calendar"
         }
+      },
+      {
+        "key": "japan_5y",
+        "label": "일본 국채 5년",
+        "value": "1.9",
+        "source": "Japan MOF JGB yield curve",
+        "freshness": "fresh",
+        "delay_label": "MOF 5Y JGB 실제값, 2026-04-30까지",
+        "updated_at": "2026-05-25T16:21:12Z",
+        "coverage_status": "active",
+        "refresh_seconds": 900,
+        "unit": "%",
+        "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
+        "points": [
+          {
+            "date": "2026-04-24",
+            "value": 1.842
+          },
+          {
+            "date": "2026-04-27",
+            "value": 1.862
+          },
+          {
+            "date": "2026-04-28",
+            "value": 1.868
+          },
+          {
+            "date": "2026-04-30",
+            "value": 1.903
+          }
+        ],
+        "next_event": {
+          "title": "일본은행 통화정책회의",
+          "date": "2026-06-16",
+          "timezone": "Asia/Tokyo",
+          "source": "Bank of Japan MPM calendar"
+        }
+      },
+      {
+        "key": "japan_10y",
+        "label": "일본 국채 10년",
+        "value": "2.52",
+        "source": "Japan MOF JGB yield curve",
+        "freshness": "fresh",
+        "delay_label": "MOF 10Y JGB 실제값, 2026-04-30까지",
+        "updated_at": "2026-05-25T16:21:12Z",
+        "coverage_status": "active",
+        "refresh_seconds": 900,
+        "unit": "%",
+        "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
+        "points": [
+          {
+            "date": "2026-04-24",
+            "value": 2.443
+          },
+          {
+            "date": "2026-04-27",
+            "value": 2.477
+          },
+          {
+            "date": "2026-04-28",
+            "value": 2.468
+          },
+          {
+            "date": "2026-04-30",
+            "value": 2.52
+          }
+        ],
+        "next_event": {
+          "title": "일본은행 통화정책회의",
+          "date": "2026-06-16",
+          "timezone": "Asia/Tokyo",
+          "source": "Bank of Japan MPM calendar"
+        }
+      },
+      {
+        "key": "pentagon_pizza_index",
+        "label": "펜타곤 피자 지수",
+        "value": "관측됨",
+        "source": "Pentagon.Pizza",
+        "freshness": "fresh",
+        "delay_label": "Pentagon.Pizza weak OSINT snapshot 실제값, 2026-05-25까지",
+        "updated_at": "2026-05-25T16:21:12Z",
+        "coverage_status": "active",
+        "refresh_seconds": 300,
+        "source_url": "https://pentagon.pizza/",
+        "points": [
+          {
+            "date": "2026-05-25T15:36:12Z",
+            "value": 1
+          },
+          {
+            "date": "2026-05-25T15:51:12Z",
+            "value": 1
+          },
+          {
+            "date": "2026-05-25T16:06:12Z",
+            "value": 1
+          },
+          {
+            "date": "2026-05-25T16:21:12Z",
+            "value": 1
+          }
+        ]
       }
     ]
   },

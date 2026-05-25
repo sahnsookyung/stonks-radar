@@ -20,6 +20,7 @@ PROVIDERS = {
     "FMP_API_KEY": "portfolio market/fundamental fallback",
     "FINNHUB_API_KEY": "future market/fundamental fallback",
     "NASDAQ_DATA_LINK_API_KEY": "future Nasdaq Data Link datasets",
+    "KRX_OPEN_API_AUTH_KEY": "KRX Open API for KODEX 200 and KOSPI 200 futures ingest",
     "FINRA_API_CLIENT_ID": "FINRA OAuth client id for short interest/short volume ingest",
     "FINRA_API_CLIENT_SECRET": "FINRA OAuth client secret for short interest/short volume ingest",
     "GEMINI_API_KEY": "Gemini public-facts LLM tasks",

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-25T15:26:16Z",
-  "stale_after": "2026-05-26T03:26:16Z",
-  "hard_expires_at": "2026-06-01T15:26:16Z",
+  "generated_at": "2026-05-25T16:21:12Z",
+  "stale_after": "2026-05-26T04:21:12Z",
+  "hard_expires_at": "2026-06-01T16:21:12Z",
   "object_type": "source_status",
   "object_key": "status",
-  "content_hash": "sha256:511af5595934eb51dbaa01cf20573d79c8acd9f9680dea27a7a4b78f3fa0ab71",
+  "content_hash": "sha256:1bc24ec52e675bb62a269c01f4f7d030b0f74b57de48eab2e03e462f0928ac98",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -110,6 +110,22 @@
       {
         "provider_key": "nasdaq_data_link",
         "provider_type": "market_data",
+        "status": "ready",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": null
+      },
+      {
+        "provider_key": "krx_open_api",
+        "provider_type": "official_api",
+        "status": "missing_credentials",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": "KRX_OPEN_API_AUTH_KEY, KRX_AUTH_KEY, or KRX_API_KEY required for KODEX 200 and KOSPI 200 futures ingest"
+      },
+      {
+        "provider_key": "japan_mof_jgb_csv",
+        "provider_type": "official_csv",
         "status": "ready",
         "mode": "FREE_ONLY",
         "last_verified_at": null,

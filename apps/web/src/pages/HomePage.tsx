@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   DatabaseZap,
-  ExternalLink,
   Layers3,
   MapPinned,
   Radar,
@@ -19,6 +18,7 @@ import type { AlternativeSignalLane, CalendarItem, MetricTile, PublicEvent } fro
 import { FreshnessBadge, SeverityBadge, SourceBadge } from "../components/Badge";
 import { EventList } from "../components/EventList";
 import { EventMap } from "../components/EventMap";
+import { LineChart } from "../components/LineChart";
 import { ErrorState, LoadingState } from "../components/LoadingState";
 import { SnapshotBanner } from "../components/SnapshotBanner";
 import { useLocale } from "../lib/locale";
@@ -26,7 +26,7 @@ import { snapshotQueries } from "../lib/snapshots";
 
 const marketOrder = [
   "nasdaq_composite",
-  "nasdaq_100_futures",
+  "nasdaq_100",
   "kospi",
   "kodex_200",
   "kospi_200_futures",
@@ -41,8 +41,11 @@ const marketOrder = [
   "japan_policy_rate",
   "japan_2y",
   "japan_5y",
-  "japan_10y"
+  "japan_10y",
+  "pentagon_pizza_index"
 ];
+
+const dashboardSignalKeys = new Set(["breaking_market_news"]);
 
 export function HomePage() {
   const locale = useLocale();
@@ -63,6 +66,7 @@ export function HomePage() {
   const policyCalendar = sortCalendarItems(
     data.calendar_preview.filter((item) => item.release_type === "central_bank")
   );
+  const dashboardSignals = data.alternative_signals.filter((lane) => dashboardSignalKeys.has(lane.key));
   const priorityEvent = data.top_events[0];
 
   return (
@@ -105,7 +109,7 @@ export function HomePage() {
           />
       </section>
 
-      <AlternativeSignalRadar lanes={data.alternative_signals} />
+      <DashboardSignalRadar lanes={dashboardSignals} />
 
       <section className="grid min-w-0 gap-5 lg:grid-cols-[1fr_0.6fr]">
         {priorityEvent ? <PriorityEvent event={priorityEvent} /> : null}
@@ -220,13 +224,10 @@ function PriorityEvent({ event }: { event: PublicEvent }) {
 }
 
 function MarketPulse({ tiles }: { tiles: MetricTile[] }) {
-  const unavailableTiles = tiles.filter(isUnavailableTile);
-  const activeTiles = tiles.filter((tile) => !isUnavailableTile(tile));
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const locale = useLocale();
   const { t } = useTranslation();
   const [now, setNow] = useState(() => Date.now());
-  const visibleTiles = [...activeTiles, ...unavailableTiles];
   useEffect(() => {
     const interval = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(interval);
@@ -264,7 +265,7 @@ function MarketPulse({ tiles }: { tiles: MetricTile[] }) {
         className="-mx-1 flex max-w-full snap-x gap-3 overflow-x-auto px-1 pb-2"
         data-testid="market-pulse-strip"
       >
-        {visibleTiles.map((tile) => (
+        {tiles.map((tile) => (
           <MarketTile key={tile.key} tile={tile} locale={locale} now={now} />
         ))}
       </div>
@@ -275,7 +276,7 @@ function MarketPulse({ tiles }: { tiles: MetricTile[] }) {
 function MarketTile({ tile, locale, now }: { tile: MetricTile; locale: "en" | "ko"; now: number }) {
   const unavailable = isUnavailableTile(tile);
   const className =
-    "panel focus-ring flex min-h-[164px] w-[220px] shrink-0 snap-start flex-col p-4 transition-colors hover:border-accent md:w-[240px]";
+    "panel focus-ring flex min-h-[260px] w-[230px] shrink-0 snap-start flex-col p-4 transition-colors hover:border-accent md:w-[252px]";
   const body = (
     <>
       <div className="flex items-start justify-between gap-3">
@@ -292,7 +293,20 @@ function MarketTile({ tile, locale, now }: { tile: MetricTile; locale: "en" | "k
           </span>
         ) : null}
       </div>
+      <div className="mt-3 h-28 shrink-0">
+        {tile.points && tile.points.length >= 2 ? (
+          <LineChart points={tile.points} label={tile.label} />
+        ) : (
+          <div className="h-full rounded-md border border-line bg-paper/40" aria-hidden="true" />
+        )}
+      </div>
       <div className="mt-3 text-xs font-semibold leading-5 text-accent">{formatMetricUpdate(tile.updated_at, locale, now)}</div>
+      {tile.refresh_seconds ? (
+        <div className="mt-1 text-xs leading-5 text-muted">
+          {locale === "ko" ? "목표 갱신" : "Target refresh"} {formatRefreshInterval(tile.refresh_seconds, locale)}
+        </div>
+      ) : null}
+      {unavailable ? <p className="mt-2 max-h-16 overflow-hidden text-xs leading-5 text-muted">{tile.delay_label}</p> : null}
       {tile.next_event ? (
         <div className="mt-auto flex items-start gap-2 pt-3 text-xs leading-5 text-muted">
           <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
@@ -316,6 +330,14 @@ function MarketTile({ tile, locale, now }: { tile: MetricTile; locale: "en" | "k
   return <article className={className}>{body}</article>;
 }
 
+function formatRefreshInterval(seconds: number, locale: "en" | "ko") {
+  if (seconds < 60) return locale === "ko" ? `${seconds}초` : `${seconds}s`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return locale === "ko" ? `${minutes}분` : `${minutes}m`;
+  const hours = Math.round(minutes / 60);
+  return locale === "ko" ? `${hours}시간` : `${hours}h`;
+}
+
 function isUnavailableTile(tile: MetricTile) {
   return (
     tile.coverage_status === "coverage_gap" ||
@@ -336,17 +358,18 @@ function formatMetricUpdate(value: string, locale: "en" | "ko", now: number) {
   return locale === "ko" ? `${elapsedDays}일 전 갱신` : `Updated ${elapsedDays}d ago`;
 }
 
-function AlternativeSignalRadar({ lanes }: { lanes: AlternativeSignalLane[] }) {
+function DashboardSignalRadar({ lanes }: { lanes: AlternativeSignalLane[] }) {
   const { t } = useTranslation();
+  if (lanes.length === 0) return null;
   return (
-    <section aria-labelledby="shorts-risk-title">
+    <section aria-labelledby="breaking-news-title">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 id="shorts-risk-title" className="flex items-center gap-2 text-sm font-semibold text-warning">
+          <h2 id="breaking-news-title" className="flex items-center gap-2 text-sm font-semibold text-warning">
             <Radar className="h-4 w-4" />
-            {t("shortsEventRadar")}
+            {t("breakingNewsRadar")}
           </h2>
-          <p className="mt-1 max-w-4xl text-sm leading-6 text-muted">{t("shortsEventRadarSummary")}</p>
+          <p className="mt-1 max-w-4xl text-sm leading-6 text-muted">{t("breakingNewsRadarSummary")}</p>
         </div>
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -403,17 +426,7 @@ function AlternativeSignalCard({ lane }: { lane: AlternativeSignalLane }) {
       ) : null}
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-3 text-xs leading-5 text-muted">
         <span>{lane.cadence}</span>
-        {lane.source_url ? (
-          <a
-            className="focus-ring inline-flex min-h-11 items-center gap-1 rounded-md px-2 text-accent hover:underline"
-            href={lane.source_url}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {t("source")}
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        ) : null}
+        <span>{t("sourceLinksOnCards")}</span>
       </div>
     </article>
   );

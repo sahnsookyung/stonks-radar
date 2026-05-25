@@ -11,6 +11,7 @@ const countries = feature(world, world.objects.countries);
 repairAntimeridianFeatures(countries);
 dropKnownAntimeridianFragments(countries);
 markAntimeridianFeatures(countries);
+markAntimeridianHoverUnsafeFeatures(countries);
 
 countries.metadata = {
   source: "Natural Earth Admin 0 country boundaries via world-atlas",
@@ -140,6 +141,14 @@ function markAntimeridianFeatures(collection) {
     if (!geometryCrossesAntimeridian(item.geometry)) continue;
     item.properties = item.properties ?? {};
     item.properties.crossesAntimeridian = true;
+  }
+}
+
+function markAntimeridianHoverUnsafeFeatures(collection) {
+  for (const item of collection.features ?? []) {
+    if (!item.properties?.antimeridianRepaired && !item.properties?.crossesAntimeridian) continue;
+    item.properties = item.properties ?? {};
+    item.properties.antimeridianHoverUnsafe = true;
   }
 }
 

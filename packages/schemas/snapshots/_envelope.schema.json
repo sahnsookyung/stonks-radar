@@ -146,6 +146,7 @@
         "delay_label": { "type": "string" },
         "updated_at": { "type": "string" },
         "coverage_status": { "enum": ["active", "coverage_gap"] },
+        "refresh_seconds": { "type": "integer", "minimum": 60 },
         "next_event": {
           "type": "object",
           "required": ["title", "date", "timezone", "source"],
