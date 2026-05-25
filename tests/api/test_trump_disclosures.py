@@ -1,7 +1,11 @@
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import Session
+
 from frw_api.services.trump_disclosures import (
     _extract_recent_sec_filings,
     _oge_transaction_from_text,
     _parse_sec_ownership_xml,
+    transactions_response,
 )
 
 
@@ -103,3 +107,70 @@ def test_parse_oge_text_row_with_valid_ticker_and_amount_range():
     assert transaction["issuer_name"] == "Apple Inc."
     assert transaction["amount_min"] == 100001
     assert transaction["amount_max"] == 250000
+
+
+def test_transactions_response_hides_low_confidence_rows_by_default():
+    engine = create_engine("sqlite+pysqlite:///:memory:", future=True)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                create table source_filings (
+                  id integer primary key,
+                  source_url text,
+                  form_type text,
+                  filed_at text,
+                  doc_date text
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                create table security_transactions (
+                  id integer primary key,
+                  filing_id integer,
+                  source text,
+                  person_name text,
+                  owner_name text,
+                  issuer_name text,
+                  ticker text,
+                  transaction_type text,
+                  transaction_code text,
+                  transaction_date text,
+                  confidence numeric
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                insert into source_filings (id, source_url, form_type, filed_at, doc_date)
+                values (1, 'https://oge.example/report.pdf', '278-T', null, '2026-05-01'),
+                       (2, 'https://sec.example/form4.xml', '4', null, '2026-05-21')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                insert into security_transactions
+                  (id, filing_id, source, person_name, owner_name, issuer_name, ticker,
+                   transaction_type, transaction_code, transaction_date, confidence)
+                values
+                  (1, 1, 'OGE', 'Donald J. Trump', null, 'Noisy bond row', null,
+                   'reported', null, '2036-07-01', 0.72),
+                  (2, 2, 'SEC', 'Example Owner', 'Example Owner', 'Trump Media', 'DJT',
+                   'purchase', 'P', '2026-05-21', 0.98)
+                """
+            )
+        )
+
+    with Session(engine) as db:
+        default_payload = transactions_response(db, limit=10)
+        review_payload = transactions_response(db, min_confidence=None, limit=10)
+
+    assert [row["issuer_name"] for row in default_payload["transactions"]] == ["Trump Media"]
+    assert {row["issuer_name"] for row in review_payload["transactions"]} == {"Noisy bond row", "Trump Media"}

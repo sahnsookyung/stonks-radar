@@ -83,9 +83,19 @@ def transactions(
     person: str | None = Query(default=None, min_length=2, max_length=120),
     ticker: str | None = Query(default=None, min_length=1, max_length=16),
     source: str | None = Query(default=None, pattern="^(OGE|SEC|oge|sec)$"),
+    include_review: bool = Query(default=False),
     limit: int = Query(default=100, ge=1, le=500),
     db: Session = Depends(get_db),
 ):
+    if include_review:
+        return transactions_response(
+            db,
+            person=person,
+            ticker=ticker,
+            source=source,
+            min_confidence=None,
+            limit=limit,
+        )
     return transactions_response(db, person=person, ticker=ticker, source=source, limit=limit)
 
 

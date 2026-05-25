@@ -163,7 +163,7 @@ export function TrumpFilingsPage() {
               icon={<FileText className="h-5 w-5" />}
               label={locale === "ko" ? "거래 행" : "Transaction Rows"}
               value={String(transactions.length)}
-              detail={locale === "ko" ? "확정 공개자료만 표시" : "Only legally public rows"}
+              detail={locale === "ko" ? "신뢰도 0.90 이상만 표시" : "Confidence 0.90+ only"}
             />
             <StatCard
               icon={<Users className="h-5 w-5" />}
@@ -179,8 +179,8 @@ export function TrumpFilingsPage() {
               title={locale === "ko" ? "최근 공개 거래" : "Recent Public Transactions"}
               subtitle={
                 locale === "ko"
-                  ? "OGE 행은 금액 범위이며, SEC Form 4는 신고된 보유권 변동입니다."
-                  : "OGE rows are amount ranges; SEC Form 4 rows are reported beneficial-ownership changes."
+                  ? "불확실한 OGE PDF 파싱 행은 검토 대기열에 남기고, 여기에는 표시하지 않습니다."
+                  : "Uncertain OGE PDF parses stay in review and are not shown as transaction rows."
               }
             />
             {transactions.length ? (

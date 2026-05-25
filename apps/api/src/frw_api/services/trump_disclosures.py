@@ -40,6 +40,7 @@ SEC_TARGET_FORMS = {"3", "4", "5", "144", "SC 13D", "SC 13D/A", "SC 13G", "SC 13
 OWNERSHIP_FORMS = {"3", "4", "5"}
 DEFAULT_SEC_TARGETS = {"DJT": "0001849635"}
 DEFAULT_OGE_NAMES = {"Trump, Donald J.", "Trump, Donald J"}
+PUBLIC_TRANSACTION_MIN_CONFIDENCE = Decimal("0.90")
 OGE_API_HOST = "https://extapps2.oge.gov"
 SEC_TICKER_MAP_URL = "https://www.sec.gov/files/company_tickers.json"
 
@@ -313,10 +314,14 @@ def transactions_response(
     person: str | None = None,
     ticker: str | None = None,
     source: str | None = None,
+    min_confidence: Decimal | None = PUBLIC_TRANSACTION_MIN_CONFIDENCE,
     limit: int = 100,
 ) -> dict[str, Any]:
     conditions = ["true"]
     params: dict[str, Any] = {"limit": min(max(limit, 1), 500)}
+    if min_confidence is not None:
+        conditions.append("coalesce(st.confidence, 0) >= :min_confidence")
+        params["min_confidence"] = float(min_confidence)
     if source:
         conditions.append("st.source = :source")
         params["source"] = source.upper()
@@ -343,7 +348,11 @@ def transactions_response(
         .mappings()
         .all()
     )
-    return {"transactions": [_jsonable(dict(row)) for row in rows], "limitations": DISCLOSURE_LIMITATIONS}
+    return {
+        "transactions": [_jsonable(dict(row)) for row in rows],
+        "limitations": DISCLOSURE_LIMITATIONS,
+        "min_confidence": _jsonable(min_confidence),
+    }
 
 
 def entity_insiders_response(db: Session, *, ticker: str, limit: int = 100) -> dict[str, Any]:
