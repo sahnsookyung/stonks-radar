@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-25T06:29:51Z",
-  "stale_after": "2026-05-25T18:29:51Z",
-  "hard_expires_at": "2026-06-01T06:29:51Z",
+  "generated_at": "2026-05-25T08:23:17Z",
+  "stale_after": "2026-05-25T20:23:17Z",
+  "hard_expires_at": "2026-06-01T08:23:17Z",
   "object_type": "country_region",
   "object_key": "MIDDLE_EAST_OPEC_GCC",
-  "content_hash": "sha256:72eb66f43f16877a2eddcbbf5be32f28df2b4c8af518849d368b6e5114d361f1",
+  "content_hash": "sha256:13dadd5f2d07c1276154497456959fefb68290b716b478fb4cf7e30737cde6e6",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -86,8 +86,8 @@
         "title": "석유 공급 모니터링을 위한 에너지 재고 일정 활성",
         "summary": "EIA 연계 재고 발표는 공개 전 공식 구조화 데이터로 추적됩니다.",
         "why_it_matters": "재고 서프라이즈는 에너지 주식, 인플레이션 입력값, 지정학 리스크 해석에 영향을 줄 수 있습니다.",
-        "occurred_at": "2026-05-25T06:29:51Z",
-        "published_at": "2026-05-25T06:29:51Z",
+        "occurred_at": "2026-05-25T08:23:17Z",
+        "published_at": "2026-05-25T08:23:17Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -166,7 +166,7 @@
         "source": "Nasdaq / licensed market feed",
         "freshness": "watch",
         "delay_label": "출처 게이트 시장 피드",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "points": [
           {
             "date": "T-3",
@@ -193,7 +193,7 @@
         "source": "CME / licensed futures feed",
         "freshness": "watch",
         "delay_label": "출처 게이트 시장 피드",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "points": [
           {
             "date": "T-3",
@@ -220,7 +220,7 @@
         "source": "KRX / licensed market feed",
         "freshness": "watch",
         "delay_label": "출처 게이트 시장 피드",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "points": [
           {
             "date": "T-3",
@@ -247,7 +247,7 @@
         "source": "KRX / Samsung AM",
         "freshness": "watch",
         "delay_label": "출처 게이트 시장 피드",
-        "updated_at": "2026-05-25T06:29:51Z"
+        "updated_at": "2026-05-25T08:23:17Z"
       },
       {
         "key": "kospi_200_futures",
@@ -256,7 +256,7 @@
         "source": "KRX derivatives feed",
         "freshness": "watch",
         "delay_label": "출처 게이트 시장 피드",
-        "updated_at": "2026-05-25T06:29:51Z"
+        "updated_at": "2026-05-25T08:23:17Z"
       },
       {
         "key": "wti_crude",
@@ -265,7 +265,7 @@
         "source": "EIA / exchange reference",
         "freshness": "watch",
         "delay_label": "출처 게이트 시장 피드",
-        "updated_at": "2026-05-25T06:29:51Z"
+        "updated_at": "2026-05-25T08:23:17Z"
       },
       {
         "key": "vix",
@@ -274,7 +274,7 @@
         "source": "Cboe / licensed market feed",
         "freshness": "watch",
         "delay_label": "출처 게이트 시장 피드",
-        "updated_at": "2026-05-25T06:29:51Z"
+        "updated_at": "2026-05-25T08:23:17Z"
       },
       {
         "key": "usd_krw",
@@ -283,7 +283,7 @@
         "source": "BOK / licensed FX feed",
         "freshness": "watch",
         "delay_label": "출처 게이트 시장 피드",
-        "updated_at": "2026-05-25T06:29:51Z"
+        "updated_at": "2026-05-25T08:23:17Z"
       },
       {
         "key": "usd_jpy",
@@ -292,7 +292,7 @@
         "source": "BoJ / licensed FX feed",
         "freshness": "watch",
         "delay_label": "출처 게이트 시장 피드",
-        "updated_at": "2026-05-25T06:29:51Z"
+        "updated_at": "2026-05-25T08:23:17Z"
       },
       {
         "key": "us_2y",
@@ -301,7 +301,7 @@
         "source": "US Treasury",
         "freshness": "fresh",
         "delay_label": "공식 참조",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "unit": "%"
       },
       {
@@ -311,7 +311,7 @@
         "source": "US Treasury",
         "freshness": "fresh",
         "delay_label": "공식 참조",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "unit": "%"
       },
       {
@@ -321,7 +321,7 @@
         "source": "US Treasury",
         "freshness": "fresh",
         "delay_label": "공식 참조",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "unit": "%"
       },
       {
@@ -331,7 +331,7 @@
         "source": "US Treasury",
         "freshness": "fresh",
         "delay_label": "공식 참조",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "unit": "%"
       },
       {
@@ -341,7 +341,7 @@
         "source": "Bank of Japan",
         "freshness": "fresh",
         "delay_label": "공식 참조",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "unit": "%"
       },
       {
@@ -351,7 +351,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "fresh",
         "delay_label": "공식 참조",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "unit": "%"
       },
       {
@@ -361,7 +361,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "fresh",
         "delay_label": "공식 참조",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "unit": "%"
       },
       {
@@ -371,7 +371,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "fresh",
         "delay_label": "공식 참조",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "unit": "%"
       }
     ]

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-25T06:29:51Z",
-  "stale_after": "2026-05-25T18:29:51Z",
-  "hard_expires_at": "2026-06-01T06:29:51Z",
+  "generated_at": "2026-05-25T08:23:17Z",
+  "stale_after": "2026-05-25T20:23:17Z",
+  "hard_expires_at": "2026-06-01T08:23:17Z",
   "object_type": "sector_page",
   "object_key": "oil-energy",
-  "content_hash": "sha256:c2489753b0b830a3fc12135d895d0997498522b898bf9c93c8b7c810ba9afddb",
+  "content_hash": "sha256:89fb3ca525f5282a4806c2267b73d62796ea4d8f7d0c98e55ce1ff6188ab3af0",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -56,8 +56,8 @@
         "title": "Energy inventory calendar is active for oil supply monitoring",
         "summary": "EIA-linked inventory releases are tracked as official structured data before publication.",
         "why_it_matters": "Inventory surprises can affect energy equities, inflation inputs, and geopolitical risk interpretation.",
-        "occurred_at": "2026-05-25T06:29:51Z",
-        "published_at": "2026-05-25T06:29:51Z",
+        "occurred_at": "2026-05-25T08:23:17Z",
+        "published_at": "2026-05-25T08:23:17Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -94,8 +94,8 @@
         "title": "Central-bank calendar coverage seeded across six policy committees",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
         "why_it_matters": "Calendar visibility reduces silent unsupported coverage and makes stale policy data visible.",
-        "occurred_at": "2026-05-25T06:29:51Z",
-        "published_at": "2026-05-25T06:29:51Z",
+        "occurred_at": "2026-05-25T08:23:17Z",
+        "published_at": "2026-05-25T08:23:17Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -225,7 +225,7 @@
         "source": "Nasdaq / licensed market feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "points": [
           {
             "date": "T-3",
@@ -252,7 +252,7 @@
         "source": "CME / licensed futures feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "points": [
           {
             "date": "T-3",

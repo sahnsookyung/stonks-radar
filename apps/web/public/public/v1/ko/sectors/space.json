@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-25T06:29:51Z",
-  "stale_after": "2026-05-25T18:29:51Z",
-  "hard_expires_at": "2026-06-01T06:29:51Z",
+  "generated_at": "2026-05-25T08:23:17Z",
+  "stale_after": "2026-05-25T20:23:17Z",
+  "hard_expires_at": "2026-06-01T08:23:17Z",
   "object_type": "sector_page",
   "object_key": "space",
-  "content_hash": "sha256:3dd36054b1b0f8e748dd822b2473398df02423bc9f39fb0a54a3be91a46c45eb",
+  "content_hash": "sha256:635f2e2f9903fd4e60a0421e104e34f74c7862bf595b3fbe7a1f84f282fa4bbd",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -55,8 +55,8 @@
         "title": "반도체 수출통제 모니터링 강도 유지",
         "summary": "승인된 시드 이벤트가 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
         "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다.",
-        "occurred_at": "2026-05-25T06:29:51Z",
-        "published_at": "2026-05-25T06:29:51Z",
+        "occurred_at": "2026-05-25T08:23:17Z",
+        "published_at": "2026-05-25T08:23:17Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -182,7 +182,7 @@
         "source": "Nasdaq / licensed market feed",
         "freshness": "watch",
         "delay_label": "출처 게이트 시장 피드",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "points": [
           {
             "date": "T-3",
@@ -209,7 +209,7 @@
         "source": "CME / licensed futures feed",
         "freshness": "watch",
         "delay_label": "출처 게이트 시장 피드",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "points": [
           {
             "date": "T-3",

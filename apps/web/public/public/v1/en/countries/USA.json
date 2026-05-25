@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-25T06:29:51Z",
-  "stale_after": "2026-05-25T18:29:51Z",
-  "hard_expires_at": "2026-06-01T06:29:51Z",
+  "generated_at": "2026-05-25T08:23:17Z",
+  "stale_after": "2026-05-25T20:23:17Z",
+  "hard_expires_at": "2026-06-01T08:23:17Z",
   "object_type": "country_region",
   "object_key": "USA",
-  "content_hash": "sha256:baa58510af1d2d5a18c168fc444fbff99fd3728b5d7db20cb015f550f93a38eb",
+  "content_hash": "sha256:4edd3e2f21c4139b92f851aea4f77b21aaf68b80426dab22a14d8397885e2c9c",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -86,8 +86,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-25T06:29:51Z",
-        "published_at": "2026-05-25T06:29:51Z",
+        "occurred_at": "2026-05-25T08:23:17Z",
+        "published_at": "2026-05-25T08:23:17Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -129,8 +129,8 @@
         "title": "Energy inventory calendar is active for oil supply monitoring",
         "summary": "EIA-linked inventory releases are tracked as official structured data before publication.",
         "why_it_matters": "Inventory surprises can affect energy equities, inflation inputs, and geopolitical risk interpretation.",
-        "occurred_at": "2026-05-25T06:29:51Z",
-        "published_at": "2026-05-25T06:29:51Z",
+        "occurred_at": "2026-05-25T08:23:17Z",
+        "published_at": "2026-05-25T08:23:17Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -167,8 +167,8 @@
         "title": "Central-bank calendar coverage seeded across six policy committees",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
         "why_it_matters": "Calendar visibility reduces silent unsupported coverage and makes stale policy data visible.",
-        "occurred_at": "2026-05-25T06:29:51Z",
-        "published_at": "2026-05-25T06:29:51Z",
+        "occurred_at": "2026-05-25T08:23:17Z",
+        "published_at": "2026-05-25T08:23:17Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -291,7 +291,7 @@
         "source": "Nasdaq / licensed market feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "points": [
           {
             "date": "T-3",
@@ -318,7 +318,7 @@
         "source": "CME / licensed futures feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "points": [
           {
             "date": "T-3",
@@ -345,7 +345,7 @@
         "source": "KRX / licensed market feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "points": [
           {
             "date": "T-3",
@@ -372,7 +372,7 @@
         "source": "KRX / Samsung AM",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T06:29:51Z"
+        "updated_at": "2026-05-25T08:23:17Z"
       },
       {
         "key": "kospi_200_futures",
@@ -381,7 +381,7 @@
         "source": "KRX derivatives feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T06:29:51Z"
+        "updated_at": "2026-05-25T08:23:17Z"
       },
       {
         "key": "wti_crude",
@@ -390,7 +390,7 @@
         "source": "EIA / exchange reference",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T06:29:51Z"
+        "updated_at": "2026-05-25T08:23:17Z"
       },
       {
         "key": "vix",
@@ -399,7 +399,7 @@
         "source": "Cboe / licensed market feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T06:29:51Z"
+        "updated_at": "2026-05-25T08:23:17Z"
       },
       {
         "key": "usd_krw",
@@ -408,7 +408,7 @@
         "source": "BOK / licensed FX feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T06:29:51Z"
+        "updated_at": "2026-05-25T08:23:17Z"
       },
       {
         "key": "usd_jpy",
@@ -417,7 +417,7 @@
         "source": "BoJ / licensed FX feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T06:29:51Z"
+        "updated_at": "2026-05-25T08:23:17Z"
       },
       {
         "key": "us_2y",
@@ -426,7 +426,7 @@
         "source": "US Treasury",
         "freshness": "fresh",
         "delay_label": "official reference",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "unit": "%"
       },
       {
@@ -436,7 +436,7 @@
         "source": "US Treasury",
         "freshness": "fresh",
         "delay_label": "official reference",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "unit": "%"
       },
       {
@@ -446,7 +446,7 @@
         "source": "US Treasury",
         "freshness": "fresh",
         "delay_label": "official reference",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "unit": "%"
       },
       {
@@ -456,7 +456,7 @@
         "source": "US Treasury",
         "freshness": "fresh",
         "delay_label": "official reference",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "unit": "%"
       },
       {
@@ -466,7 +466,7 @@
         "source": "Bank of Japan",
         "freshness": "fresh",
         "delay_label": "official reference",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "unit": "%"
       },
       {
@@ -476,7 +476,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "fresh",
         "delay_label": "official reference",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "unit": "%"
       },
       {
@@ -486,7 +486,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "fresh",
         "delay_label": "official reference",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "unit": "%"
       },
       {
@@ -496,7 +496,7 @@
         "source": "Japan MOF / BoJ",
         "freshness": "fresh",
         "delay_label": "official reference",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "unit": "%"
       }
     ]

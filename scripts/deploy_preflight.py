@@ -49,8 +49,8 @@ def main() -> None:
         raise SystemExit("OCI Always Free capacity preflight failed: " + "; ".join(failures))
 
     _run(["npm", "run", "check:schemas"])
-    _run(["docker", "compose", "-f", "compose.yaml", "-f", "infra/docker-compose.prod.yml", "config"])
-    _run(["uv", "run", "--project", ".", "alembic", "-c", "alembic.ini", "upgrade", "head", "--sql"], cwd=ROOT / "apps/api")
+    _run(["docker", "compose", "-f", "compose.yaml", "-f", "infra/docker-compose.prod.yml", "config", "--quiet"])
+    _run(["uv", "run", "--project", ".", "python", "-m", "alembic", "-c", "alembic.ini", "upgrade", "head", "--sql"], cwd=ROOT / "apps/api")
     print("deploy_preflight=ok")
 
 

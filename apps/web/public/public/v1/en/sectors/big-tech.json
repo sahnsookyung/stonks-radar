@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-25T06:29:51Z",
-  "stale_after": "2026-05-25T18:29:51Z",
-  "hard_expires_at": "2026-06-01T06:29:51Z",
+  "generated_at": "2026-05-25T08:23:17Z",
+  "stale_after": "2026-05-25T20:23:17Z",
+  "hard_expires_at": "2026-06-01T08:23:17Z",
   "object_type": "sector_page",
   "object_key": "big-tech",
-  "content_hash": "sha256:1e8198b527f143fa67ab316f5b42a4d0f539635b5cda50c1781c17c418d2f342",
+  "content_hash": "sha256:8778c492b64554c5e1b955a8630c240907367e3ad6770c1ee3f5e1a12534fa2b",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -58,8 +58,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-25T06:29:51Z",
-        "published_at": "2026-05-25T06:29:51Z",
+        "occurred_at": "2026-05-25T08:23:17Z",
+        "published_at": "2026-05-25T08:23:17Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -101,8 +101,8 @@
         "title": "Central-bank calendar coverage seeded across six policy committees",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
         "why_it_matters": "Calendar visibility reduces silent unsupported coverage and makes stale policy data visible.",
-        "occurred_at": "2026-05-25T06:29:51Z",
-        "published_at": "2026-05-25T06:29:51Z",
+        "occurred_at": "2026-05-25T08:23:17Z",
+        "published_at": "2026-05-25T08:23:17Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -232,7 +232,7 @@
         "source": "Nasdaq / licensed market feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "points": [
           {
             "date": "T-3",
@@ -259,7 +259,7 @@
         "source": "CME / licensed futures feed",
         "freshness": "watch",
         "delay_label": "source-gated market feed",
-        "updated_at": "2026-05-25T06:29:51Z",
+        "updated_at": "2026-05-25T08:23:17Z",
         "points": [
           {
             "date": "T-3",
