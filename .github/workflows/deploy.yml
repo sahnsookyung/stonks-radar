@@ -86,6 +86,15 @@ jobs:
           ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
             'cd /opt/stonks-radar && docker compose -f compose.yaml -f infra/docker-compose.prod.yml build --pull && docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d'
 
+      - name: Refresh published snapshots
+        env:
+          STONKS_HOST: ${{ secrets.STONKS_HOST }}
+          STONKS_USER: ${{ secrets.STONKS_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+            'docker run --rm -v stonks-radar_published-snapshots:/dest -v /opt/stonks-radar/apps/web/dist/public:/src:ro alpine:3.22 sh -c "rm -rf /dest/* && cp -a /src/. /dest/"'
+
       - name: Verify origin health
         env:
           STONKS_HOST: ${{ secrets.STONKS_HOST }}
@@ -93,4 +102,4 @@ jobs:
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
-            'curl -fsS http://127.0.0.1/api/public/health >/dev/null && curl -fsS http://127.0.0.1/public/latest/manifest.json | python3 -c "import json, sys; data=json.load(sys.stdin); assert data.get(\"current_version\") and data.get(\"objects\")"'
+            'cd /opt/stonks-radar && PUBLIC_HOSTNAME=$(awk -F= '\''$1=="PUBLIC_HOSTNAME"{print $2}'\'' .env) && test -n "$PUBLIC_HOSTNAME" && curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/api/public/health" >/dev/null && curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/public/latest/manifest.json" | python3 -c "import json, sys; data=json.load(sys.stdin); assert data.get(\"current_version\") and data.get(\"objects\")"'
