@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-25T17:56:18Z",
-  "stale_after": "2026-05-26T05:56:18Z",
-  "hard_expires_at": "2026-06-01T17:56:18Z",
+  "generated_at": "2026-05-26T01:00:50Z",
+  "stale_after": "2026-05-26T13:00:50Z",
+  "hard_expires_at": "2026-06-02T01:00:50Z",
   "object_type": "scenario_basket",
   "object_key": "ai-infra-capex",
-  "content_hash": "sha256:0ac35978bf050fe48c50be916f0911292e1c770dc3e9862ea54c80d46a8d58f2",
+  "content_hash": "sha256:593efa20b18186386ee50679055df0d909595a401b2af41670123535c22c42bd",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -82,7 +82,7 @@
       }
     ],
     "risk_summary": "출처 데이터가 오래되거나 정책 리스크가 반전되거나 섹터 노출이 예상보다 약하면 시나리오가 실패할 수 있습니다.",
-    "freshness_timestamp": "2026-05-25T17:56:18Z",
+    "freshness_timestamp": "2026-05-26T01:00:50Z",
     "data_delay_warning": "지연/참조 지표만 사용하며 증권사 연결이나 주문 실행은 없습니다.",
     "disclaimer": "리서치 목적입니다. 개인화 금융 조언이 아니며 매수, 매도, 배분 추천으로 해석하지 마십시오.",
     "approval_status": "approved"

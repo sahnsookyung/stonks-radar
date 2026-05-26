@@ -5,7 +5,7 @@ from copy import deepcopy
 import re
 import time
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Any
 
 import httpx
@@ -15,6 +15,7 @@ from frw_api.core.settings import get_settings
 from frw_api.services.provider_limits import (
     ERROR_RATE_LIMITED,
     ProviderLimitError,
+    ProviderLimitRegistry,
     provider_request,
 )
 
@@ -63,7 +64,12 @@ async def fetch_market_history(
             f"date range exceeds {settings.market_data_max_history_days} days"
         )
 
-    cache_key = f"{','.join(normalized)}:{start.isoformat()}:{end.isoformat()}:{_provider_order()}"
+    display_mode = settings.resolved_market_data_display_mode
+    display_allowlist = ",".join(sorted(settings.market_data_public_display_allowlist_values))
+    cache_key = (
+        f"{','.join(normalized)}:{start.isoformat()}:{end.isoformat()}:"
+        f"{_provider_order()}:{display_mode}:{display_allowlist}"
+    )
     now = time.time()
     cached_payload = _cache_get(cache_key, now=now)
     if cached_payload:
@@ -73,6 +79,33 @@ async def fetch_market_history(
 
     provider_status = _provider_status()
     provider_order = [item for item in _provider_order() if item in {"twelve_data", "alpha_vantage", "fmp"}]
+    display_allowed_providers = [
+        provider
+        for provider in provider_order
+        if _provider_public_display_allowed(provider) or provider in settings.market_data_public_display_allowlist_values
+    ]
+    if display_mode == "public" and not display_allowed_providers:
+        payload = _license_limited_payload(
+            symbols=normalized,
+            start=start,
+            end=end,
+            provider_order=provider_order,
+            reason=(
+                "Configured free market-data providers are not approved for public quote/candle "
+                "redistribution. Use TradingView for public visual market display or explicitly "
+                "allow a provider after legal/source-policy review."
+            ),
+        )
+        _cache_set(
+            cache_key,
+            payload,
+            expires_at=now + min(settings.market_data_cache_ttl_seconds, 300),
+            max_entries=settings.market_data_cache_max_entries,
+            now=now,
+        )
+        return payload
+    if display_mode == "public":
+        provider_order = [provider for provider in provider_order if provider in display_allowed_providers]
     failures: list[str] = []
 
     for provider in provider_order:
@@ -97,6 +130,16 @@ async def fetch_market_history(
                 "provider": provider,
                 "source_note": _source_note(provider),
                 "cache": "miss",
+                "display_mode": display_mode,
+                "display_status": "display_allowed",
+                "data_freshness": _data_freshness(
+                    provider=provider,
+                    series=series,
+                    fetched_at=datetime.now(timezone.utc),
+                    display_mode=display_mode,
+                    public_display_allowed=True,
+                ),
+                "provider_budget_status": _provider_budget_status(provider),
                 "symbols": normalized,
                 "start": start.isoformat(),
                 "end": end.isoformat(),
@@ -171,6 +214,143 @@ def _provider_status() -> list[dict[str, str]]:
         }
         for provider in _provider_order()
     ]
+
+
+def _provider_public_display_allowed(provider: str) -> bool:
+    return ProviderLimitRegistry().public_display_allowed(provider, "daily_prices")
+
+
+def _provider_budget_status(provider: str) -> list[dict[str, Any]]:
+    return [
+        _public_provider_budget(item)
+        for item in ProviderLimitRegistry().as_dicts()
+        if item["provider_key"] == provider and item["endpoint_key"] in {"daily_prices", "*"}
+    ]
+
+
+def _public_provider_budget(item: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "provider_key": item["provider_key"],
+        "endpoint_key": item["endpoint_key"],
+        "public_display_allowed": item["public_display_allowed"],
+        "attribution_required": item["attribution_required"],
+        "refresh_interval": _provider_refresh_interval(item.get("rules", [])),
+        "source_checked_at": item["source_checked_at"],
+    }
+
+
+def _provider_refresh_interval(rules: list[dict[str, Any]]) -> str:
+    request_rules = [
+        rule for rule in rules if rule.get("unit") == "request" and rule.get("window_seconds")
+    ]
+    if not request_rules:
+        return "policy-defined"
+    rule = max(request_rules, key=lambda item: int(item.get("window_seconds") or 0))
+    window_seconds = int(rule.get("window_seconds") or 0)
+    limit = float(rule.get("limit") or 0)
+    if window_seconds <= 0 or limit <= 0:
+        return "policy-defined"
+    seconds_per_request = max(1, round(window_seconds / limit))
+    if seconds_per_request < 60:
+        return f"at most every {seconds_per_request}s"
+    minutes = round(seconds_per_request / 60)
+    if minutes < 60:
+        return f"at most every {minutes}m"
+    hours = round(minutes / 60)
+    return f"at most every {hours}h"
+
+
+def _license_limited_payload(
+    *,
+    symbols: list[str],
+    start: date,
+    end: date,
+    provider_order: list[str],
+    reason: str,
+) -> dict[str, Any]:
+    fetched_at = datetime.now(timezone.utc)
+    return {
+        "status": "license_limited",
+        "provider": "tradingview_widget_only",
+        "source_note": reason,
+        "cache": "miss",
+        "display_mode": "public",
+        "display_status": "license_limited",
+        "data_freshness": {
+            "provider": "tradingview_widget_only",
+            "provider_timestamp": None,
+            "fetched_at": fetched_at.isoformat(),
+            "market_session_date": None,
+            "exchange_timezone": "America/New_York",
+            "delay_label": "license-limited",
+            "is_same_day_valid": False,
+            "is_public_display_allowed": False,
+            "staleness_reason": reason,
+            "license_mode": "public_display_not_allowed",
+            "source_url": "https://www.tradingview.com/widget-docs/widgets/charts/advanced-chart/",
+        },
+        "provider_budget_status": [
+            _public_provider_budget(item)
+            for item in ProviderLimitRegistry().as_dicts()
+            if item["provider_key"] in set(provider_order)
+        ],
+        "symbols": symbols,
+        "start": start.isoformat(),
+        "end": end.isoformat(),
+        "series": [{"symbol": symbol, "points": []} for symbol in symbols],
+        "warnings": [reason],
+    }
+
+
+def _data_freshness(
+    *,
+    provider: str,
+    series: list[dict[str, Any]],
+    fetched_at: datetime,
+    display_mode: str,
+    public_display_allowed: bool,
+) -> dict[str, Any]:
+    market_session_date = _latest_market_session_date(series)
+    return {
+        "provider": provider,
+        "provider_timestamp": market_session_date,
+        "fetched_at": fetched_at.isoformat(),
+        "market_session_date": market_session_date,
+        "exchange_timezone": "America/New_York",
+        "delay_label": _delay_label(provider, display_mode, market_session_date),
+        "is_same_day_valid": False,
+        "is_public_display_allowed": public_display_allowed,
+        "staleness_reason": (
+            "Daily candle history only; not same-day intraday data and not a realtime quote."
+            if market_session_date
+            else "Provider returned no market session date."
+        ),
+        "license_mode": "private_or_internal" if display_mode == "private" else "public_display_allowed",
+        "source_url": _provider_source_url(provider),
+    }
+
+
+def _latest_market_session_date(series: list[dict[str, Any]]) -> str | None:
+    dates = [
+        str(point.get("date"))
+        for item in series
+        for point in item.get("points", [])
+        if point.get("date")
+    ]
+    return max(dates) if dates else None
+
+
+def _delay_label(provider: str, display_mode: str, market_session_date: str | None) -> str:
+    if display_mode == "private":
+        return f"daily historical/private-mode; latest session {market_session_date or 'pending'}"
+    return f"public-display allowed daily snapshot; latest session {market_session_date or 'pending'}"
+
+
+def _provider_source_url(provider: str) -> str:
+    for item in ProviderLimitRegistry().as_dicts():
+        if item["provider_key"] == provider and item["endpoint_key"] in {"daily_prices", "*"}:
+            return str(item["source_url"])
+    return ""
 
 
 async def _fetch_provider(

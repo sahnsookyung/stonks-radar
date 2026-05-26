@@ -6,6 +6,7 @@ import httpx
 import pytest
 
 from frw_api.core.settings import get_settings
+from frw_api.services.provider_limits import ProviderQuotaGuard
 from frw_api.services.market_data import MarketDataInputError, clear_market_data_cache, fetch_market_history
 
 
@@ -13,8 +14,10 @@ from frw_api.services.market_data import MarketDataInputError, clear_market_data
 def clear_settings_cache():
     get_settings.cache_clear()
     clear_market_data_cache()
+    ProviderQuotaGuard.reset_memory()
     yield
     clear_market_data_cache()
+    ProviderQuotaGuard.reset_memory()
     get_settings.cache_clear()
 
 
@@ -104,3 +107,70 @@ async def test_market_history_cache_is_bounded(monkeypatch):
 
     assert payload["cache"] == "miss"
     assert calls == ["AAPL", "MSFT", "AAPL"]
+
+
+@pytest.mark.asyncio
+async def test_public_market_history_blocks_license_limited_providers(monkeypatch):
+    settings = get_settings()
+    monkeypatch.setattr(settings, "market_data_display_mode", "public")
+    monkeypatch.setattr(settings, "market_data_provider_order", "twelve_data")
+    monkeypatch.setattr(settings, "twelve_data_api_key", "test-key")
+
+    calls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(str(request.url))
+        return httpx.Response(500)
+
+    payload = await fetch_market_history(
+        symbols=["AAPL"],
+        start=date(2026, 1, 1),
+        end=date(2026, 1, 31),
+        transport=httpx.MockTransport(handler),
+    )
+
+    assert payload["status"] == "license_limited"
+    assert payload["provider"] == "tradingview_widget_only"
+    assert payload["series"] == [{"symbol": "AAPL", "points": []}]
+    assert payload["data_freshness"]["is_public_display_allowed"] is False
+    assert payload["data_freshness"]["license_mode"] == "public_display_not_allowed"
+    assert calls == []
+
+
+@pytest.mark.asyncio
+async def test_market_history_cache_separates_public_display_allowlist(monkeypatch):
+    settings = get_settings()
+    monkeypatch.setattr(settings, "market_data_display_mode", "public")
+    monkeypatch.setattr(settings, "market_data_provider_order", "twelve_data")
+    monkeypatch.setattr(settings, "twelve_data_api_key", "test-key")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "status": "ok",
+                "values": [
+                    {"datetime": "2026-01-02", "close": "100.0"},
+                    {"datetime": "2026-01-03", "close": "102.0"},
+                ],
+            },
+        )
+
+    limited = await fetch_market_history(
+        symbols=["AAPL"],
+        start=date(2026, 1, 1),
+        end=date(2026, 1, 31),
+        transport=httpx.MockTransport(handler),
+    )
+    monkeypatch.setattr(settings, "market_data_public_display_allowlist", "twelve_data")
+    allowed = await fetch_market_history(
+        symbols=["AAPL"],
+        start=date(2026, 1, 1),
+        end=date(2026, 1, 31),
+        transport=httpx.MockTransport(handler),
+    )
+
+    assert limited["status"] == "license_limited"
+    assert allowed["status"] == "ok"
+    assert allowed["cache"] == "miss"
+    assert allowed["data_freshness"]["is_public_display_allowed"] is True

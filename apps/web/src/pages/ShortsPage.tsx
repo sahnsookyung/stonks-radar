@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { ExternalLink, Radar, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { AlternativeSignalItem, AlternativeSignalLane } from "@frw/shared-types";
@@ -58,7 +59,13 @@ export function ShortsPage() {
                 <div className="text-xs font-semibold uppercase leading-5 text-muted">
                   {locale === "ko" ? "추적 티커" : "Tracked ticker"}
                 </div>
-                <h2 className="mt-1 text-2xl font-bold">{row.symbol}</h2>
+                <Link
+                  to="/$locale/tickers/$symbol"
+                  params={{ locale, symbol: row.symbol }}
+                  className="focus-ring mt-1 inline-flex items-center rounded-md text-2xl font-bold hover:text-accent"
+                >
+                  {row.symbol}
+                </Link>
               </div>
               <SeverityBadge value="medium" />
             </div>

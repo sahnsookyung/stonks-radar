@@ -114,6 +114,10 @@ class ProviderLimitRegistry:
             or self._limits.get((provider_key, "*"))
         )
 
+    def public_display_allowed(self, provider_key: str, endpoint_key: str = "*") -> bool:
+        limit = self.get(provider_key, endpoint_key)
+        return True if limit is None else limit.public_display_allowed
+
     def as_dicts(self) -> list[dict[str, Any]]:
         return [
             {
@@ -583,12 +587,14 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
         ),
         "https://support.twelvedata.com/en/articles/5335783-trial",
         attribution_required=True,
+        public_display_allowed=False,
     ),
     _limit(
         "alpha_vantage",
         "daily_prices",
         (_rule("request", 86_400, 20, "25 requests/day", "20 requests/day"),),
         "https://www.alphavantage.co/premium/",
+        public_display_allowed=False,
     ),
     _limit(
         "fmp",
@@ -598,12 +604,14 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
             _rule("byte", 2_592_000, 400_000_000, "500MB/30 days", "400MB/30 days"),
         ),
         "https://site.financialmodelingprep.com/pricing-plans",
+        public_display_allowed=False,
     ),
     _limit(
         "finnhub",
         "*",
         (_rule("request", 60, 30, "60 API calls/minute", "30 API calls/minute"),),
         "https://finnhub.io/pricing",
+        public_display_allowed=False,
     ),
     _limit(
         "nasdaq_data_link",

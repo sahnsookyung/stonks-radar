@@ -1,6 +1,16 @@
 from types import SimpleNamespace
 
+import pytest
+
+from frw_api.core.settings import get_settings
 from frw_api.services.rate_limit import _allow_memory, _client_identity
+
+
+@pytest.fixture(autouse=True)
+def clear_settings_cache():
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
 
 
 def test_memory_rate_limit_blocks_after_limit():
@@ -10,22 +20,33 @@ def test_memory_rate_limit_blocks_after_limit():
     assert not _allow_memory(key, 2)
 
 
-def test_client_identity_prefers_cloudflare_connecting_ip():
+def test_client_identity_uses_rightmost_untrusted_forwarded_for():
+    request = SimpleNamespace(
+        headers={"cf-connecting-ip": "203.0.113.10", "x-forwarded-for": "198.51.100.20, 203.0.113.30"},
+        client=SimpleNamespace(host="172.18.0.8"),
+    )
+
+    assert _client_identity(request) == "203.0.113.30"
+
+
+def test_client_identity_ignores_forwarded_headers_from_untrusted_peer(monkeypatch):
+    settings = get_settings()
+    monkeypatch.setattr(settings, "trusted_proxy_cidrs", "127.0.0.1/32")
     request = SimpleNamespace(
         headers={"cf-connecting-ip": "203.0.113.10", "x-forwarded-for": "198.51.100.20"},
+        client=SimpleNamespace(host="198.51.100.77"),
+    )
+
+    assert _client_identity(request) == "198.51.100.77"
+
+
+def test_client_identity_falls_back_to_cloudflare_header_when_forwarded_for_missing():
+    request = SimpleNamespace(
+        headers={"cf-connecting-ip": "203.0.113.10"},
         client=SimpleNamespace(host="172.18.0.8"),
     )
 
     assert _client_identity(request) == "203.0.113.10"
-
-
-def test_client_identity_uses_first_valid_forwarded_for():
-    request = SimpleNamespace(
-        headers={"x-forwarded-for": "bad-value, 198.51.100.20, 172.18.0.8"},
-        client=SimpleNamespace(host="172.18.0.8"),
-    )
-
-    assert _client_identity(request) == "198.51.100.20"
 
 
 def test_client_identity_falls_back_to_socket_peer():

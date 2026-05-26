@@ -50,6 +50,8 @@ class Settings(BaseSettings):
     market_data_provider: str | None = None
     market_data_base_url: str | None = None
     market_data_provider_order: str = "twelve_data,alpha_vantage,fmp"
+    market_data_display_mode: Literal["auto", "public", "private"] = "auto"
+    market_data_public_display_allowlist: str = ""
     market_data_cache_ttl_seconds: int = Field(default=900, ge=60)
     market_data_cache_max_entries: int = Field(default=512, ge=1, le=10000)
     market_data_timeout_seconds: int = Field(default=12, ge=1)
@@ -85,8 +87,10 @@ class Settings(BaseSettings):
 
     public_api_rate_limit_per_minute: int = 60
     admin_api_rate_limit_per_minute: int = 120
+    trusted_proxy_cidrs: str = "127.0.0.1/32,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
     source_fetch_max_bytes: int = Field(default=5_000_000, ge=1000)
     source_fetch_timeout_seconds: int = Field(default=20, ge=1)
+    source_fetch_allow_http: bool = False
     playwright_concurrency: int = 1
     llm_global_daily_soft_limit: int = 0
     llm_global_daily_hard_limit: int = 0
@@ -102,6 +106,20 @@ class Settings(BaseSettings):
         if self.app_env != "production":
             origins.extend(value.strip() for value in self.dev_cors_origins.split(",") if value.strip())
         return list(dict.fromkeys(origins))
+
+    @property
+    def resolved_market_data_display_mode(self) -> Literal["public", "private"]:
+        if self.market_data_display_mode != "auto":
+            return self.market_data_display_mode
+        return "public" if self.app_env.lower() in {"production", "prod"} else "private"
+
+    @property
+    def market_data_public_display_allowlist_values(self) -> set[str]:
+        return {
+            value.strip().lower()
+            for value in self.market_data_public_display_allowlist.split(",")
+            if value.strip()
+        }
 
 
 @lru_cache(maxsize=1)

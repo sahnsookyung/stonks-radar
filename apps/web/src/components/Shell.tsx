@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Activity, Calculator, Database, FileText, Globe2, LayoutDashboard, Lock, Map, Scale, SearchCheck, ShieldAlert } from "lucide-react";
+import { Activity, Calculator, Database, FileText, Globe2, LayoutDashboard, Lock, Map, Scale, SearchCheck, ShieldAlert, TrendingUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { alternateLocale, asLocale, useLocale } from "../lib/locale";
 
@@ -44,6 +44,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <NavLink to="/$locale/map" params={{ locale }} icon={<Map />} label={t("map")} />
             <NavLink to="/$locale/calendar" params={{ locale }} icon={<Activity />} label={t("calendar")} />
             <NavLink to="/$locale/portfolio" params={{ locale }} icon={<Calculator />} label={t("portfolio")} />
+            <NavLink to="/$locale/tickers/$symbol" params={{ locale, symbol: "NVDA" }} icon={<TrendingUp />} label={t("tickers")} />
             <NavLink to="/$locale/shorts" params={{ locale }} icon={<ShieldAlert />} label={t("shorts")} />
             <NavLink to="/$locale/trump-filings" params={{ locale }} icon={<FileText />} label={t("trumpFilings")} />
             <NavLink to="/$locale/sources" params={{ locale }} icon={<Database />} label={t("sources")} />

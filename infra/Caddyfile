@@ -56,7 +56,7 @@
 	handle {
 		root * /srv/web
 		header Cache-Control "no-cache, max-age=0, must-revalidate, no-transform"
-		header Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'"
+			header Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' https://s3.tradingview.com; connect-src 'self'; frame-src https://www.tradingview-widget.com https://s.tradingview.com https://www.tradingview.com; worker-src 'self' blob:; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'"
 		try_files {path} /index.html
 		file_server
 	}

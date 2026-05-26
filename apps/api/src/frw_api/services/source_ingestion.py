@@ -98,6 +98,7 @@ async def fetch_source_bytes(url: str, *, transport: httpx.AsyncBaseTransport | 
         timeout=settings.source_fetch_timeout_seconds,
         follow_redirects=False,
         headers={"User-Agent": settings.sec_user_agent},
+        trust_env=False,
         transport=transport,
     ) as client:
         while True:

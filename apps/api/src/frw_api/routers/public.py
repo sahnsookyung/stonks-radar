@@ -7,6 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from frw_api.db.session import get_db
+from frw_api.services.provider_limits import provider_limits_snapshot
 from frw_api.services.market_data import (
     MarketDataInputError,
     MarketDataUnavailable,
@@ -54,6 +55,20 @@ def status(db: Session = Depends(get_db)):
     }
 
 
+@router.get("/provider-status")
+def provider_status():
+    providers = provider_limits_snapshot()
+    market_data_provider_keys = {"twelve_data", "alpha_vantage", "fmp", "finnhub", "marketdata_app"}
+    return {
+        "status": "ok",
+        "market_data_providers": [
+            _public_provider_status(item)
+            for item in providers
+            if item["provider_key"] in market_data_provider_keys
+        ],
+    }
+
+
 @router.get("/snapshot-manifest-proxy")
 def snapshot_manifest_proxy():
     return {"manifest_url": "/public/latest/manifest.json", "mode": "local_oci"}
@@ -83,19 +98,9 @@ def transactions(
     person: str | None = Query(default=None, min_length=2, max_length=120),
     ticker: str | None = Query(default=None, min_length=1, max_length=16),
     source: str | None = Query(default=None, pattern="^(OGE|SEC|oge|sec)$"),
-    include_review: bool = Query(default=False),
     limit: int = Query(default=100, ge=1, le=500),
     db: Session = Depends(get_db),
 ):
-    if include_review:
-        return transactions_response(
-            db,
-            person=person,
-            ticker=ticker,
-            source=source,
-            min_confidence=None,
-            limit=limit,
-        )
     return transactions_response(db, person=person, ticker=ticker, source=source, limit=limit)
 
 
@@ -153,6 +158,38 @@ def search(q: str = Query(min_length=2, max_length=80), db: Session = Depends(ge
         .all()
     )
     return {"results": [dict(row) for row in rows]}
+
+
+def _public_provider_status(item: dict) -> dict:
+    return {
+        "provider_key": item["provider_key"],
+        "endpoint_key": item["endpoint_key"],
+        "public_display_allowed": item["public_display_allowed"],
+        "attribution_required": item["attribution_required"],
+        "refresh_interval": _coarsest_refresh_interval(item.get("rules", [])),
+        "source_checked_at": item["source_checked_at"],
+    }
+
+
+def _coarsest_refresh_interval(rules: list[dict]) -> str:
+    request_rules = [
+        rule for rule in rules if rule.get("unit") == "request" and rule.get("window_seconds")
+    ]
+    if not request_rules:
+        return "policy-defined"
+    rule = max(request_rules, key=lambda item: int(item.get("window_seconds") or 0))
+    window_seconds = int(rule.get("window_seconds") or 0)
+    limit = float(rule.get("limit") or 0)
+    if window_seconds <= 0 or limit <= 0:
+        return "policy-defined"
+    seconds_per_request = max(1, round(window_seconds / limit))
+    if seconds_per_request < 60:
+        return f"at most every {seconds_per_request}s"
+    minutes = round(seconds_per_request / 60)
+    if minutes < 60:
+        return f"at most every {minutes}m"
+    hours = round(minutes / 60)
+    return f"at most every {hours}h"
 
 
 def _scalar(db: Session, sql: str, default):

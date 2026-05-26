@@ -5,6 +5,8 @@ import socket
 from dataclasses import dataclass
 from urllib.parse import urljoin, urlparse
 
+from frw_api.core.settings import get_settings
+
 
 PRIVATE_NETWORKS = [
     ipaddress.ip_network("0.0.0.0/8"),
@@ -33,6 +35,8 @@ def evaluate_url(url: str) -> FetchPolicyDecision:
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
         return FetchPolicyDecision(False, "Only http and https URLs are allowed", [])
+    if parsed.scheme == "http" and not get_settings().source_fetch_allow_http:
+        return FetchPolicyDecision(False, "Plain HTTP source fetches are disabled", [])
     if not parsed.hostname:
         return FetchPolicyDecision(False, "URL must include a hostname", [])
     try:

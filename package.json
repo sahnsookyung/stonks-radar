@@ -17,7 +17,7 @@
     "seed:snapshots": "python3 scripts/build_seed_snapshots.py",
     "check:schemas": "python3 scripts/validate_snapshots.py",
     "api:compile": "python3 -m compileall apps/api/src apps/worker/src apps/fetch-sandbox/src scripts",
-    "api:test": "uv run --project apps/api --extra dev --with ./apps/fetch-sandbox python -m pytest -q tests",
+    "api:test": "PYTHONPATH=apps/api/src:apps/worker/src:apps/fetch-sandbox/src uv run --project apps/api --extra dev --with ./apps/fetch-sandbox python -m pytest -q tests",
     "deploy:preflight": "python3 scripts/deploy_preflight.py",
     "audit:delivery": "node scripts/audit_live_delivery.mjs",
     "ops:storage": "python3 scripts/monitor_storage.py",

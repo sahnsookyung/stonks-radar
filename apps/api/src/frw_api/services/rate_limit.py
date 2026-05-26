@@ -65,17 +65,22 @@ def _get_redis_client() -> redis.Redis:
 
 
 def _client_identity(request: Request) -> str:
-    cf_ip = _valid_ip(request.headers.get("cf-connecting-ip"))
-    if cf_ip:
-        return cf_ip
+    peer = _valid_ip(request.client.host if request.client else None)
+    if not peer or not _trusted_proxy_peer(peer):
+        return peer or "unknown"
 
+    trusted_networks = _trusted_proxy_networks()
     forwarded_for = request.headers.get("x-forwarded-for", "")
-    for candidate in forwarded_for.split(","):
-        forwarded_ip = _valid_ip(candidate.strip())
-        if forwarded_ip:
+    for candidate in reversed([item.strip() for item in forwarded_for.split(",") if item.strip()]):
+        forwarded_ip = _valid_ip(candidate)
+        if forwarded_ip and not _ip_in_networks(forwarded_ip, trusted_networks):
             return forwarded_ip
 
-    return request.client.host if request.client else "unknown"
+    cf_ip = _valid_ip(request.headers.get("cf-connecting-ip"))
+    if cf_ip and not _ip_in_networks(cf_ip, trusted_networks):
+        return cf_ip
+
+    return peer
 
 
 def _valid_ip(value: str | None) -> str | None:
@@ -85,6 +90,34 @@ def _valid_ip(value: str | None) -> str | None:
         return str(ipaddress.ip_address(value))
     except ValueError:
         return None
+
+
+def _trusted_proxy_peer(value: str) -> bool:
+    return _ip_in_networks(value, _trusted_proxy_networks())
+
+
+def _trusted_proxy_networks() -> list[ipaddress.IPv4Network | ipaddress.IPv6Network]:
+    networks: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = []
+    for raw_value in get_settings().trusted_proxy_cidrs.split(","):
+        value = raw_value.strip()
+        if not value:
+            continue
+        try:
+            networks.append(ipaddress.ip_network(value, strict=False))
+        except ValueError:
+            continue
+    return networks
+
+
+def _ip_in_networks(
+    value: str,
+    networks: list[ipaddress.IPv4Network | ipaddress.IPv6Network],
+) -> bool:
+    try:
+        ip = ipaddress.ip_address(value)
+    except ValueError:
+        return False
+    return any(ip in network for network in networks)
 
 
 def _allow_memory(bucket_key: str, limit: int) -> bool:
