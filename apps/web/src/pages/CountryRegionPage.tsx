@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
-import { Landmark } from "lucide-react";
+import { Landmark, Newspaper } from "lucide-react";
 import { CalendarTable } from "../components/CalendarTable";
 import { FreshnessBadge, SourceBadge } from "../components/Badge";
 import { EventList } from "../components/EventList";
@@ -22,6 +22,7 @@ export function CountryRegionPage({ type }: { type: "country" | "region" }) {
   if (query.isLoading) return <LoadingState />;
   if (query.isError || !query.data) return <ErrorState error={query.error} />;
   const data = query.data.data;
+  const newsRegionKey = key === "EUROZONE" ? "EU" : key;
 
   return (
     <div className="grid min-w-0 gap-6">
@@ -36,6 +37,13 @@ export function CountryRegionPage({ type }: { type: "country" | "region" }) {
         <div className="mt-4 flex flex-wrap gap-2">
           <FreshnessBadge value={data.freshness} />
           <SourceBadge label={data.source_strength} />
+          <a
+            href={`/${locale}/news?region=${encodeURIComponent(newsRegionKey)}`}
+            className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-md border border-accent/40 bg-accentSoft px-3 text-sm font-semibold text-accent hover:border-accent"
+          >
+            <Newspaper className="h-4 w-4" />
+            {locale === "ko" ? "지역 뉴스" : "Region news"}
+          </a>
         </div>
       </section>
       <section className="grid gap-4 md:grid-cols-3">

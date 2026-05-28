@@ -2,9 +2,9 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-26T01:00:50Z",
-  "stale_after": "2026-05-26T13:00:50Z",
-  "hard_expires_at": "2026-06-02T01:00:50Z",
+  "generated_at": "2026-05-28T07:32:34Z",
+  "stale_after": "2026-05-28T19:32:34Z",
+  "hard_expires_at": "2026-06-04T07:32:34Z",
   "object_type": "calendar_upcoming",
   "object_key": "upcoming",
   "content_hash": "sha256:e5307bf2c6f89c4c01faaa8384ce3e315eb240a8e2add8706f43f75aba4ee666",
@@ -35,6 +35,54 @@
     },
     {
       "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bis",
+      "policy_version": 1
+    },
+    {
+      "source_key": "who",
+      "policy_version": 1
+    },
+    {
+      "source_key": "cdc",
+      "policy_version": 1
+    },
+    {
+      "source_key": "company_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ecb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_korea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_japan",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bcb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "rocket_lab_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ionq_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "iea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "source_policy",
       "policy_version": 1
     }
   ],

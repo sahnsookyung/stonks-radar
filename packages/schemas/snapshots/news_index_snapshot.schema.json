@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    { "$ref": "./_envelope.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "object_type": { "const": "news_index" },
+        "object_key": { "const": "news_index" },
+        "data": {
+          "type": "object",
+          "required": ["generated_label", "filters", "events"],
+          "properties": {
+            "generated_label": { "type": "string" },
+            "filters": {
+              "type": "object",
+              "required": ["regions", "topics", "tickers", "trust_tiers"],
+              "properties": {
+                "regions": { "type": "array", "items": { "$ref": "./_news.schema.json#/$defs/facet" } },
+                "topics": { "type": "array", "items": { "$ref": "./_news.schema.json#/$defs/facet" } },
+                "tickers": { "type": "array", "items": { "$ref": "./_news.schema.json#/$defs/facet" } },
+                "trust_tiers": { "type": "array", "items": { "$ref": "./_news.schema.json#/$defs/facet" } }
+              },
+              "additionalProperties": false
+            },
+            "events": {
+              "type": "array",
+              "items": { "$ref": "./_news.schema.json#/$defs/newsEventListItem" }
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

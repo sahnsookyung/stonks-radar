@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-26T01:00:50Z",
-  "stale_after": "2026-05-26T13:00:50Z",
-  "hard_expires_at": "2026-06-02T01:00:50Z",
+  "generated_at": "2026-05-28T07:32:34Z",
+  "stale_after": "2026-05-28T19:32:34Z",
+  "hard_expires_at": "2026-06-04T07:32:34Z",
   "object_type": "home",
   "object_key": "home",
-  "content_hash": "sha256:ceba9474f9732ff9e5f31a70aa88622b3810f6da052809074be4b9d1c4506dfe",
+  "content_hash": "sha256:a73dc6f532311fd21cd60fc1b1091faa3e261fa3249c1fb57194e7857d2cc686",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -36,16 +36,64 @@
     {
       "source_key": "yahoo_finance_rss",
       "policy_version": 1
+    },
+    {
+      "source_key": "bis",
+      "policy_version": 1
+    },
+    {
+      "source_key": "who",
+      "policy_version": 1
+    },
+    {
+      "source_key": "cdc",
+      "policy_version": 1
+    },
+    {
+      "source_key": "company_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ecb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_korea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_japan",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bcb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "rocket_lab_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ionq_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "iea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "source_policy",
+      "policy_version": 1
     }
   ],
   "data": {
     "headline": "Global market intelligence dashboard",
     "summary": "Snapshot-first research dashboard for public, source-gated intelligence. It highlights monitored sectors, central-bank calendars, scenario baskets, and approved events without personalized advice.",
-    "generated_label": "2026-05-26T01:00:50Z",
+    "generated_label": "2026-05-28T07:32:34Z",
     "snapshot_health": {
       "status": "fresh",
       "age_minutes": 0,
-      "stale_after": "2026-05-26T13:00:50Z",
+      "stale_after": "2026-05-28T19:32:34Z",
       "backend_dependency": "none_for_public_pages"
     },
     "top_events": [
@@ -54,8 +102,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-26T01:00:50Z",
-        "published_at": "2026-05-26T01:00:50Z",
+        "occurred_at": "2026-05-28T07:32:34Z",
+        "published_at": "2026-05-28T07:32:34Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -97,8 +145,8 @@
         "title": "Energy inventory calendar is active for oil supply monitoring",
         "summary": "EIA-linked inventory releases are tracked as official structured data before publication.",
         "why_it_matters": "Inventory surprises can affect energy equities, inflation inputs, and geopolitical risk interpretation.",
-        "occurred_at": "2026-05-26T01:00:50Z",
-        "published_at": "2026-05-26T01:00:50Z",
+        "occurred_at": "2026-05-28T07:32:34Z",
+        "published_at": "2026-05-28T07:32:34Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -135,8 +183,8 @@
         "title": "Central-bank calendar coverage seeded across six policy committees",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
         "why_it_matters": "Calendar visibility reduces silent coverage gaps and makes stale policy data visible.",
-        "occurred_at": "2026-05-26T01:00:50Z",
-        "published_at": "2026-05-26T01:00:50Z",
+        "occurred_at": "2026-05-28T07:32:34Z",
+        "published_at": "2026-05-28T07:32:34Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -213,8 +261,8 @@
         "label": "Nasdaq Composite",
         "value": "26,343.97",
         "source": "FRED / Nasdaq",
-        "freshness": "fresh",
-        "delay_label": "FRED NASDAQCOM actual through 2026-05-22",
+        "freshness": "watch",
+        "delay_label": "Using last published value; current refresh unavailable: FRED_API_KEY missing or FRED series unavailable",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -243,8 +291,8 @@
         "label": "Nasdaq 100",
         "value": "29,481.64",
         "source": "FRED / Nasdaq",
-        "freshness": "fresh",
-        "delay_label": "FRED NASDAQ100 actual through 2026-05-22",
+        "freshness": "watch",
+        "delay_label": "Using last published value; current refresh unavailable: FRED_API_KEY missing or FRED series unavailable",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -273,8 +321,8 @@
         "label": "Korea share price index",
         "value": "301.39",
         "source": "FRED / OECD Korea share prices",
-        "freshness": "fresh",
-        "delay_label": "FRED SPASTT01KRM661N actual through 2026-04-01",
+        "freshness": "watch",
+        "delay_label": "Using last published value; current refresh unavailable: FRED_API_KEY missing or FRED series unavailable",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -299,36 +347,37 @@
         ]
       },
       {
-        "key": "kodex_200",
-        "label": "KODEX 200 ETF",
-        "value": "Source gap",
-        "source": "KRX ETF daily trading",
-        "freshness": "watch",
-        "delay_label": "KRX_OPEN_API_AUTH_KEY, KRX_AUTH_KEY, or KRX_API_KEY is required for official Korea Exchange data",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "coverage_gap",
+        "key": "ewy_korea_proxy",
+        "label": "EWY Korea ETF NAV proxy",
+        "value": "199.3",
+        "source": "iShares / BlackRock EWY",
+        "freshness": "fresh",
+        "delay_label": "iShares EWY NAV actual through 2026-05-27; proxy for Korean equity exposure, not local exchange tape",
+        "updated_at": "2026-05-28T07:32:34Z",
+        "coverage_status": "active",
         "refresh_seconds": 900,
-        "source_url": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES003_S2.cmd?BO_ID=nrEpCLaZpoLCTzPUMxuF"
-      },
-      {
-        "key": "kospi_200_futures",
-        "label": "KOSPI 200 futures",
-        "value": "Source gap",
-        "source": "KRX derivatives daily trading",
-        "freshness": "watch",
-        "delay_label": "KRX_OPEN_API_AUTH_KEY, KRX_AUTH_KEY, or KRX_API_KEY is required for official Korea Exchange data",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "coverage_gap",
-        "refresh_seconds": 900,
-        "source_url": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES005_S2.cmd?BO_ID=ilaVYOabbaicHbKTsqga"
+        "unit": "$",
+        "source_url": "https://www.ishares.com/us/products/239681/ishares-msci-south-korea-etf",
+        "points": [
+          {
+            "date": "2026-05-26",
+            "value": 197.709462
+          },
+          {
+            "date": "2026-05-27",
+            "value": 199.303267
+          }
+        ],
+        "refresh_delta": 1.593805,
+        "refresh_delta_percent": 0.8061349132597407
       },
       {
         "key": "wti_crude",
         "label": "WTI crude oil",
         "value": "112.25",
         "source": "FRED / EIA",
-        "freshness": "fresh",
-        "delay_label": "FRED DCOILWTICO actual through 2026-05-18",
+        "freshness": "watch",
+        "delay_label": "Using last published value; current refresh unavailable: FRED_API_KEY missing or FRED series unavailable",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -358,8 +407,8 @@
         "label": "VIX",
         "value": "16.76",
         "source": "FRED / Cboe",
-        "freshness": "fresh",
-        "delay_label": "FRED VIXCLS actual through 2026-05-21",
+        "freshness": "watch",
+        "delay_label": "Using last published value; current refresh unavailable: FRED_API_KEY missing or FRED series unavailable",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -388,8 +437,8 @@
         "label": "USD/KRW",
         "value": "1,499.61",
         "source": "FRED / Federal Reserve H.10",
-        "freshness": "fresh",
-        "delay_label": "FRED DEXKOUS actual through 2026-05-15",
+        "freshness": "watch",
+        "delay_label": "Using last published value; current refresh unavailable: FRED_API_KEY missing or FRED series unavailable",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -419,8 +468,8 @@
         "label": "USD/JPY",
         "value": "158.69",
         "source": "FRED / Federal Reserve H.10",
-        "freshness": "fresh",
-        "delay_label": "FRED DEXJPUS actual through 2026-05-15",
+        "freshness": "watch",
+        "delay_label": "Using last published value; current refresh unavailable: FRED_API_KEY missing or FRED series unavailable",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -450,8 +499,8 @@
         "label": "US Treasury 2Y",
         "value": "4.08",
         "source": "FRED / US Treasury",
-        "freshness": "fresh",
-        "delay_label": "FRED DGS2 actual through 2026-05-21",
+        "freshness": "watch",
+        "delay_label": "Using last published value; current refresh unavailable: FRED_API_KEY missing or FRED series unavailable",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -487,8 +536,8 @@
         "label": "US Treasury 3Y",
         "value": "4.13",
         "source": "FRED / US Treasury",
-        "freshness": "fresh",
-        "delay_label": "FRED DGS3 actual through 2026-05-21",
+        "freshness": "watch",
+        "delay_label": "Using last published value; current refresh unavailable: FRED_API_KEY missing or FRED series unavailable",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -524,8 +573,8 @@
         "label": "US Treasury 5Y",
         "value": "4.25",
         "source": "FRED / US Treasury",
-        "freshness": "fresh",
-        "delay_label": "FRED DGS5 actual through 2026-05-21",
+        "freshness": "watch",
+        "delay_label": "Using last published value; current refresh unavailable: FRED_API_KEY missing or FRED series unavailable",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -561,8 +610,8 @@
         "label": "US Treasury 10Y",
         "value": "4.57",
         "source": "FRED / US Treasury",
-        "freshness": "fresh",
-        "delay_label": "FRED DGS10 actual through 2026-05-21",
+        "freshness": "watch",
+        "delay_label": "Using last published value; current refresh unavailable: FRED_API_KEY missing or FRED series unavailable",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -598,8 +647,8 @@
         "label": "BoJ policy rate",
         "value": "0.3",
         "source": "FRED / OECD Japan central bank rate",
-        "freshness": "fresh",
-        "delay_label": "FRED IRSTCB01JPM156N actual through 2023-12-01",
+        "freshness": "watch",
+        "delay_label": "Using last published value; current refresh unavailable: FRED_API_KEY missing or FRED series unavailable",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -637,7 +686,7 @@
         "source": "Japan MOF JGB yield curve",
         "freshness": "fresh",
         "delay_label": "MOF 2Y JGB actual through 2026-04-30",
-        "updated_at": "2026-05-26T01:00:50Z",
+        "updated_at": "2026-05-28T07:32:34Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "%",
@@ -674,7 +723,7 @@
         "source": "Japan MOF JGB yield curve",
         "freshness": "fresh",
         "delay_label": "MOF 5Y JGB actual through 2026-04-30",
-        "updated_at": "2026-05-26T01:00:50Z",
+        "updated_at": "2026-05-28T07:32:34Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "%",
@@ -711,7 +760,7 @@
         "source": "Japan MOF JGB yield curve",
         "freshness": "fresh",
         "delay_label": "MOF 10Y JGB actual through 2026-04-30",
-        "updated_at": "2026-05-26T01:00:50Z",
+        "updated_at": "2026-05-28T07:32:34Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "%",
@@ -744,31 +793,31 @@
       {
         "key": "pentagon_pizza_index",
         "label": "Pentagon pizza index",
-        "value": "59.6",
+        "value": "4.2",
         "source": "Pentagon.Pizza",
         "freshness": "fresh",
-        "delay_label": "Pentagon.Pizza average busyness across 18 monitored sites; 0 anomalies through 2026-05-26",
-        "updated_at": "2026-05-26T01:00:55.035Z",
+        "delay_label": "Pentagon.Pizza average busyness across 18 monitored sites; 2 anomalies through 2026-05-28",
+        "updated_at": "2026-05-28T07:32:38.938Z",
         "coverage_status": "active",
         "refresh_seconds": 300,
         "unit": "/100",
         "source_url": "https://pentagon.pizza/",
         "points": [
           {
-            "date": "2026-05-26T00:15:50Z",
-            "value": 50.0
+            "date": "2026-05-28T06:47:34Z",
+            "value": 0.0
           },
           {
-            "date": "2026-05-26T00:30:50Z",
-            "value": 56.0
+            "date": "2026-05-28T07:02:34Z",
+            "value": 2.0
           },
           {
-            "date": "2026-05-26T00:45:50Z",
-            "value": 62.0
+            "date": "2026-05-28T07:17:34Z",
+            "value": 6.0
           },
           {
-            "date": "2026-05-26T01:00:50Z",
-            "value": 72.0
+            "date": "2026-05-28T07:32:34Z",
+            "value": 15.0
           }
         ]
       }
@@ -778,46 +827,23 @@
         "key": "highest_short_interest",
         "title": "Short interest watch",
         "summary": "Latest FINRA short-interest rows for tracked tickers. Float-adjusted ranking remains separate until float data is approved.",
-        "value": "NVDA 282.93M",
+        "value": "rows pending",
         "cadence": "FINRA short interest is published twice monthly after settlement-date reporting.",
         "source": "FINRA consolidated short interest",
         "source_url": "https://www.finra.org/filing-reporting/regulatory-filing-systems/short-interest",
-        "freshness": "fresh",
+        "freshness": "watch",
         "severity": "medium",
         "refresh_seconds": 43200,
         "items": [
           {
-            "key": "highest_short_interest_djt",
-            "label": "DJT short interest",
-            "value": "12.05M shares",
-            "detail": "As of 2026-04-30; open short positions, not daily short-sale volume.",
-            "source": "FINRA consolidated short interest",
-            "freshness": "fresh",
+            "key": "highest_short_interest_credentials",
+            "label": "FINRA short interest",
+            "value": "waiting for rows",
+            "detail": "Credentials are configured, but the latest symbol-filtered rows were not available during this snapshot build.",
+            "source": "FINRA",
+            "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
-          },
-          {
-            "key": "highest_short_interest_tsla",
-            "label": "TSLA short interest",
-            "value": "76.67M shares",
-            "detail": "As of 2026-04-30; open short positions, not daily short-sale volume.",
-            "source": "FINRA consolidated short interest",
-            "freshness": "fresh",
-            "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
-          },
-          {
-            "key": "highest_short_interest_nvda",
-            "label": "NVDA short interest",
-            "value": "282.93M shares",
-            "detail": "As of 2026-04-30; open short positions, not daily short-sale volume.",
-            "source": "FINRA consolidated short interest",
-            "freshness": "fresh",
-            "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
+            "updated_at": "2026-05-28T07:32:34Z"
           },
           {
             "key": "highest_short_interest_method",
@@ -827,7 +853,7 @@
             "source": "FINRA",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://www.finra.org/investors/insights/short-interest"
           }
         ]
@@ -836,46 +862,23 @@
         "key": "short_volume_monitor",
         "title": "Daily short volume",
         "summary": "Aggregated FINRA Reg SHO daily short-sale volume for the tracked ticker watchlist.",
-        "value": "NVDA 32.00M",
+        "value": "DJT / TSLA / NVDA",
         "cadence": "Daily after FINRA posts files, no later than 6:00 p.m. ET.",
         "source": "FINRA Reg SHO Daily Short Sale Volume",
         "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume",
-        "freshness": "fresh",
+        "freshness": "watch",
         "severity": "medium",
         "refresh_seconds": 900,
         "items": [
           {
-            "key": "short_volume_monitor_djt",
-            "label": "DJT short volume",
-            "value": "636.5K shares",
-            "detail": "Aggregated FINRA Reg SHO rows for trade date 2026-05-22. This is flow, not outstanding short interest.",
-            "source": "FINRA Reg SHO daily short sale volume",
-            "freshness": "fresh",
+            "key": "short_volume_monitor_monitored",
+            "label": "Monitored tickers",
+            "value": "DJT, TSLA, NVDA",
+            "detail": "FINRA Reg SHO rows were not available during this snapshot build.",
+            "source": "configuration",
+            "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
-          },
-          {
-            "key": "short_volume_monitor_tsla",
-            "label": "TSLA short volume",
-            "value": "10.19M shares",
-            "detail": "Aggregated FINRA Reg SHO rows for trade date 2026-05-22. This is flow, not outstanding short interest.",
-            "source": "FINRA Reg SHO daily short sale volume",
-            "freshness": "fresh",
-            "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
-          },
-          {
-            "key": "short_volume_monitor_nvda",
-            "label": "NVDA short volume",
-            "value": "32.00M shares",
-            "detail": "Aggregated FINRA Reg SHO rows for trade date 2026-05-22. This is flow, not outstanding short interest.",
-            "source": "FINRA Reg SHO daily short sale volume",
-            "freshness": "fresh",
-            "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
+            "updated_at": "2026-05-28T07:32:34Z"
           }
         ]
       },
@@ -899,63 +902,63 @@
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://news.google.com/rss/articles/CBMikgFBVV95cUxOeDBsTFNOQ091ZkdDWnJBd3ExWDZvN2JfTnFsVUV3RDNweFV2Y1FJY1luQUtuMmFlanRsOG44dFZFMFVJa3Y1bHZhZFRiRTlrUFhqNWVYR1RlWUtTbm1PSzhvS2hkcXdOLTFPeFhuY2ItX3Q4c2t1QWFHMU1HSGFlVGdqTzNBSEZsbkpFd1FDV3dadw?oc=5"
           },
           {
-            "key": "breaking_market_news_google_geopolitical_f6b22032e713",
+            "key": "breaking_market_news_google_geopolitical_77326d3216c1",
+            "label": "Trump’s aspiration to control the oil market finds out the lack of an alternative to Hormuz - Universidad de Navarra",
+            "value": "headline",
+            "detail": "Geopolitical market risk; news.google.com; seen Wed, 29 Apr 2026 13:49:27 GMT",
+            "source": "Google News RSS",
+            "freshness": "fresh",
+            "severity": "high",
+            "updated_at": "2026-05-28T07:32:34Z",
+            "source_url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxQWlBaYUUzUEtqbS1kNWlGYUhPQlNqWmJ3V2NkWjFRTWluYms0UlduNWZrZUJkaFJNQUdOLUExRzNmYmJKUWtRTGdNNUJhMXo3N1NVU2NKM2VpYXlDWi1WY1JHQVdHTjk3LW94WnBnbnNpbFBtaEpHQW9JbXN3MU5XNVZLaElBcnJTcGtQaTZUX1Y2RXoyeDFqRFpKQ0VSb3EwN3h0SDU4OE5feEk0ZmgxS3ViandHRGVnaWtwcWc1RUg1UGdnN1hfNmxR?oc=5"
+          },
+          {
+            "key": "breaking_market_news_google_geopolitical_a8949f285178",
             "label": "Why Restricting US Oil Exports Would Backfire - CGEP",
             "value": "headline",
             "detail": "Geopolitical market risk; news.google.com; seen Wed, 18 Mar 2026 21:12:56 GMT",
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxPZUd6bnFNNjVRbkc3dXpYZE9nSHhYdUdJZGIxQk93alNIQTF0QUlmNHUwZ0VVS2s4Q1ROcHJYT1RidnFjOWRGUHA1T2hZNW02QzdMVXNJeTBBRUZ1YmhJajFUYmNkazhYRm1vRzdjdjNkY0twQXMza01UalMwa050bkp0a0I0bk82UVhfOQ?oc=5"
           },
           {
-            "key": "breaking_market_news_google_geopolitical_2b2744e48a67",
+            "key": "breaking_market_news_google_geopolitical_8253d69169d3",
             "label": "China, Iran weaponized the global economy to beat the U.S. at its own game - The Washington Post",
             "value": "headline",
             "detail": "Geopolitical market risk; news.google.com; seen Sun, 12 Apr 2026 07:00:00 GMT",
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNaGlTTTRONFFaYWx2MV9NZ0ZJdVJySUhqbkJwWlZ3Nk04STZLdDhiRFlfUVJYYVdXQkJzS25aMGI4X2I4LUxFbnZXdXo1VThqTFRXc0JtVzFaMnBjWXp3UkhzYmlPaXVobzhnNk40OXlibHRZQkVHRVMtQzNWTm9icg?oc=5"
           },
           {
-            "key": "breaking_market_news_google_geopolitical_536f8bb3b353",
-            "label": "The Iran War Doesn’t Have to Be a Rerun of ‘That ’70s Show’ - Cato Institute",
+            "key": "breaking_market_news_yahoo_tickers_e5b1b6e6545f",
+            "label": "Cisco Joins EnterpriseClaw To Link AI Automation With Security And Valuation Risks",
             "value": "headline",
-            "detail": "Geopolitical market risk; news.google.com; seen Tue, 31 Mar 2026 07:00:00 GMT",
-            "source": "Google News RSS",
-            "freshness": "fresh",
-            "severity": "high",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://news.google.com/rss/articles/CBMiekFVX3lxTFAyYmZ0ZjdUN0lLWmZ0X0QtQktHa1FrVnFUbG9PdlBiNmJzNGw3UkZERHdXTlhVaUg2MXV3LXJ1cE4tVk4zMjlQQmo4cGllTmdKUXo0RGtKOFZEdHJUY2pfemQyeUZOc3VKNWpIdmNndVNObU9wbm5CNXVB?oc=5"
-          },
-          {
-            "key": "breaking_market_news_yahoo_tickers_b438c1324ad9",
-            "label": "Better Gene-Editing Stock: CRISPR Therapeutics or Beam Therapeutics?",
-            "value": "headline",
-            "detail": "Tracked ticker headlines; www.fool.com; seen Tue, 26 May 2026 00:55:00 +0000",
+            "detail": "Tracked ticker headlines; finance.yahoo.com; seen Thu, 28 May 2026 07:03:34 +0000",
             "source": "Yahoo Finance RSS",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://www.fool.com/investing/2026/05/25/better-gene-editing-stock-crispr-therapeutics-or-b/?.tsrc=rss"
+            "updated_at": "2026-05-28T07:32:34Z",
+            "source_url": "https://finance.yahoo.com/markets/stocks/articles/cisco-joins-enterpriseclaw-ai-automation-070334324.html?.tsrc=rss"
           },
           {
-            "key": "breaking_market_news_yahoo_tickers_2760b3c32a1e",
-            "label": "JPMorgan Chase Says It Is Comfortable With $50 Billion in Private Credit Exposure. Should Investors Be?",
+            "key": "breaking_market_news_yahoo_tickers_99d21f05970f",
+            "label": "TeamViewer Appoints Peter Ruchatz as Chief Marketing Officer",
             "value": "headline",
-            "detail": "Tracked ticker headlines; www.fool.com; seen Tue, 26 May 2026 00:35:00 +0000",
+            "detail": "Tracked ticker headlines; finance.yahoo.com; seen Thu, 28 May 2026 07:00:00 +0000",
             "source": "Yahoo Finance RSS",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://www.fool.com/investing/2026/05/25/jpmorgan-chase-says-it-is-comfortable-with-50-bill/?.tsrc=rss"
+            "updated_at": "2026-05-28T07:32:34Z",
+            "source_url": "https://finance.yahoo.com/sectors/technology/articles/teamviewer-appoints-peter-ruchatz-chief-070000949.html?.tsrc=rss"
           }
         ]
       },
@@ -978,7 +981,7 @@
             "source": "Hindenburg/news",
             "freshness": "watch",
             "severity": "high",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://hindenburgresearch.com/"
           },
           {
@@ -989,7 +992,7 @@
             "source": "Muddy Waters",
             "freshness": "watch",
             "severity": "high",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://www.muddywatersresearch.com/"
           },
           {
@@ -1000,7 +1003,7 @@
             "source": "Viceroy",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://viceroyresearch.org/"
           },
           {
@@ -1011,7 +1014,7 @@
             "source": "LLM router",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z"
+            "updated_at": "2026-05-28T07:32:34Z"
           },
           {
             "key": "short_research_reports_spruce_point",
@@ -1021,7 +1024,7 @@
             "source": "Spruce Point",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://www.sprucepointcap.com/"
           },
           {
@@ -1032,7 +1035,7 @@
             "source": "Kerrisdale",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://www.kerrisdalecap.com/"
           },
           {
@@ -1043,7 +1046,7 @@
             "source": "Culper",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://culperresearch.com/"
           },
           {
@@ -1054,7 +1057,7 @@
             "source": "Blue Orca",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://www.blueorcacapital.com/"
           },
           {
@@ -1065,7 +1068,7 @@
             "source": "Grizzly",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://grizzlyreports.com/"
           }
         ]
@@ -1074,7 +1077,7 @@
         "key": "trump_filings",
         "title": "Trump-family filings",
         "summary": "Direct SEC filing digest for tracked Trump-related public entities, with unresolved entity caveats kept visible.",
-        "value": "4 2026-05-21",
+        "value": "4 2026-05-27",
         "cadence": "SEC submissions snapshot; poll no faster than the configured fair-access schedule.",
         "source": "SEC EDGAR / OGE disclosures",
         "source_url": "https://www.sec.gov/search-filings",
@@ -1085,35 +1088,35 @@
           {
             "key": "trump_filings_4_0",
             "label": "DJT 4",
-            "value": "filed 2026-05-21",
-            "detail": "Trump Media & Technology Group Corp. 4 · accession 0001140361-26-022487",
+            "value": "filed 2026-05-27",
+            "detail": "Trump Media & Technology Group Corp. 4 · accession 0002015663-26-000004",
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000114036126022487/xslF345X06/form4.xml"
+            "updated_at": "2026-05-28T07:32:34Z",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000201566326000004/xslF345X06/primary_doc.xml"
           },
           {
-            "key": "trump_filings_144_1",
-            "label": "DJT 144",
-            "value": "filed 2026-05-21",
-            "detail": "Trump Media & Technology Group Corp. 144 · accession 0001921094-26-000535",
+            "key": "trump_filings_4_1",
+            "label": "DJT 4",
+            "value": "filed 2026-05-27",
+            "detail": "Trump Media & Technology Group Corp. 4 · accession 0002015667-26-000004",
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000192109426000535/xsl144X01/primary_doc.xml"
+            "updated_at": "2026-05-28T07:32:34Z",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000201566726000004/xslF345X06/primary_doc.xml"
           },
           {
-            "key": "trump_filings_144_2",
-            "label": "DJT 144",
-            "value": "filed 2026-05-14",
-            "detail": "Trump Media & Technology Group Corp. 144 · accession 0001921094-26-000474",
+            "key": "trump_filings_4_2",
+            "label": "DJT 4",
+            "value": "filed 2026-05-27",
+            "detail": "Trump Media & Technology Group Corp. 4 · accession 0001808488-26-000004",
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000192109426000474/xsl144X01/primary_doc.xml"
+            "updated_at": "2026-05-28T07:32:34Z",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000180848826000004/xslF345X06/primary_doc.xml"
           },
           {
             "key": "trump_filings_trust",
@@ -1123,7 +1126,7 @@
             "source": "SEC EDGAR",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z"
+            "updated_at": "2026-05-28T07:32:34Z"
           },
           {
             "key": "trump_filings_ai_summary",
@@ -1133,7 +1136,7 @@
             "source": "LLM router",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z"
+            "updated_at": "2026-05-28T07:32:34Z"
           }
         ]
       }

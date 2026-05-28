@@ -47,9 +47,17 @@ def evaluate_url(url: str) -> FetchPolicyDecision:
     for info in infos:
         ip = ipaddress.ip_address(info[4][0])
         resolved.append(str(ip))
-        if any(ip in network for network in PRIVATE_NETWORKS):
+        if is_blocked_ip(str(ip)):
             return FetchPolicyDecision(False, f"Private or metadata IP blocked: {ip}", resolved)
     return FetchPolicyDecision(True, "allowed", sorted(set(resolved)))
+
+
+def is_blocked_ip(value: str) -> bool:
+    try:
+        ip = ipaddress.ip_address(value)
+    except ValueError:
+        return True
+    return any(ip in network for network in PRIVATE_NETWORKS)
 
 
 def resolve_redirect(base_url: str, location: str) -> FetchPolicyDecision:

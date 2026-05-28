@@ -1,0 +1,104 @@
+{
+  "schema_version": "1.0",
+  "snapshot_version": 1,
+  "locale": "en",
+  "generated_at": "2026-05-28T07:32:34Z",
+  "stale_after": "2026-05-28T19:32:34Z",
+  "hard_expires_at": "2026-06-04T07:32:34Z",
+  "object_type": "news_ticker",
+  "object_key": "news_ticker_TLT",
+  "content_hash": "sha256:1d56a63ad8ffedda5b2f7bc6d78c1e311283b76f252186ac81972f431af0e9cb",
+  "source_policy_versions": [
+    {
+      "source_key": "federal_reserve",
+      "policy_version": 1
+    },
+    {
+      "source_key": "sec_edgar",
+      "policy_version": 1
+    },
+    {
+      "source_key": "eia",
+      "policy_version": 1
+    },
+    {
+      "source_key": "world_bank",
+      "policy_version": 1
+    },
+    {
+      "source_key": "gdelt",
+      "policy_version": 1
+    },
+    {
+      "source_key": "google_news_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bis",
+      "policy_version": 1
+    },
+    {
+      "source_key": "who",
+      "policy_version": 1
+    },
+    {
+      "source_key": "cdc",
+      "policy_version": 1
+    },
+    {
+      "source_key": "company_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ecb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_korea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_japan",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bcb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "rocket_lab_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ionq_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "iea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "source_policy",
+      "policy_version": 1
+    }
+  ],
+  "data": {
+    "symbol": "TLT",
+    "name": "iShares 20+ Year Treasury Bond ETF",
+    "generated_label": "2026-05-28T07:32:34Z",
+    "summary": "No approved news events are currently linked to TLT.",
+    "events": []
+  },
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "Market indicators are delayed/reference unless licensed.",
+      "severity": "info"
+    }
+  ],
+  "corrections": []
+}

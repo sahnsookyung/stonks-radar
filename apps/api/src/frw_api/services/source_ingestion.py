@@ -11,9 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from frw_api.core.settings import get_settings
-from frw_api.services.fetch_policy import evaluate_url, redirect_url
-
-MAX_REDIRECTS = 5
+from frw_api.services.safe_fetch import SafeFetchError, safe_fetch_bytes
 
 ALLOWED_RETENTION = {
     "official_api": "structured_fact_only",
@@ -87,50 +85,24 @@ async def ingest_url(db: Session, *, url: str, source_key: str | None = None) ->
 
 
 async def fetch_source_bytes(url: str, *, transport: httpx.AsyncBaseTransport | None = None) -> dict[str, object]:
-    decision = evaluate_url(url)
-    if not decision.allowed:
-        raise SourceIngestionError(decision.reason)
     settings = get_settings()
-    current_url = url
-    all_resolved_ips = set(decision.resolved_ips)
-    redirects = 0
-    async with httpx.AsyncClient(
-        timeout=settings.source_fetch_timeout_seconds,
-        follow_redirects=False,
-        headers={"User-Agent": settings.sec_user_agent},
-        trust_env=False,
-        transport=transport,
-    ) as client:
-        while True:
-            decision = evaluate_url(current_url)
-            if not decision.allowed:
-                raise SourceIngestionError(decision.reason)
-            all_resolved_ips.update(decision.resolved_ips)
-            async with client.stream("GET", current_url) as response:
-                if response.is_redirect:
-                    redirects += 1
-                    if redirects > MAX_REDIRECTS:
-                        raise SourceIngestionError("Too many redirects")
-                    location = response.headers.get("location")
-                    if not location:
-                        raise SourceIngestionError("Redirect response missing Location header")
-                    current_url = redirect_url(current_url, location)
-                    continue
-                response.raise_for_status()
-                chunks: list[bytes] = []
-                total = 0
-                async for chunk in response.aiter_bytes():
-                    total += len(chunk)
-                    if total > settings.source_fetch_max_bytes:
-                        raise SourceIngestionError("Response exceeded SOURCE_FETCH_MAX_BYTES")
-                    chunks.append(chunk)
-                body = b"".join(chunks)
-                return {
-                    "body": body,
-                    "response": response,
-                    "final_url": str(response.url),
-                    "resolved_ips": sorted(all_resolved_ips),
-                }
+    try:
+        fetched = await safe_fetch_bytes(
+            url,
+            headers={"User-Agent": settings.sec_user_agent},
+            transport=transport,
+            max_bytes=settings.source_fetch_max_bytes,
+            timeout_seconds=settings.source_fetch_timeout_seconds,
+            raise_for_status=True,
+        )
+    except (SafeFetchError, httpx.HTTPError) as exc:
+        raise SourceIngestionError(str(exc)) from exc
+    return {
+        "body": fetched.body,
+        "response": fetched.response,
+        "final_url": fetched.final_url,
+        "resolved_ips": fetched.resolved_ips,
+    }
 
 
 def _extract_title(body: bytes, content_type: str) -> str | None:

@@ -17,7 +17,8 @@ dependencies = [
   "selectolax>=0.3",
   "sqlalchemy>=2.0",
   "tenacity>=9.0",
-  "uvicorn[standard]>=0.30"
+  "uvicorn[standard]>=0.30",
+  "zstandard>=0.23"
 ]
 
 [project.optional-dependencies]
@@ -42,3 +43,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+frw_api = ["services/news/*.json"]

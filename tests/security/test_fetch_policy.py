@@ -1,4 +1,5 @@
 from frw_api.services.fetch_policy import evaluate_url
+from frw_api.services.safe_fetch import SafeFetchError, safe_fetch_bytes
 from frw_api.services.source_ingestion import SourceIngestionError, fetch_source_bytes
 
 import httpx
@@ -34,8 +35,27 @@ def test_controlled_redirect_rechecks_target(monkeypatch):
     async def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(302, headers={"location": "http://private.local/secret"})
 
-    monkeypatch.setattr("frw_api.services.source_ingestion.evaluate_url", fake_evaluate)
+    monkeypatch.setattr("frw_api.services.safe_fetch.evaluate_url", fake_evaluate)
     with pytest.raises(SourceIngestionError, match="blocked private"):
         import asyncio
 
         asyncio.run(fetch_source_bytes("http://example.com", transport=httpx.MockTransport(handler)))
+
+
+def test_safe_fetch_blocks_private_peer_ip(monkeypatch):
+    def fake_evaluate(url: str):
+        return type("Decision", (), {"allowed": True, "reason": "allowed", "resolved_ips": ["93.184.216.34"]})()
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            request=request,
+            content=b"blocked",
+            extensions={"peer_ip": "127.0.0.1"},
+        )
+
+    monkeypatch.setattr("frw_api.services.safe_fetch.evaluate_url", fake_evaluate)
+    with pytest.raises(SafeFetchError, match="Private or metadata peer IP blocked"):
+        import asyncio
+
+        asyncio.run(safe_fetch_bytes("https://example.com", transport=httpx.MockTransport(handler)))

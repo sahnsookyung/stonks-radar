@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Activity, Calculator, Database, FileText, Globe2, LayoutDashboard, Lock, Map, Scale, SearchCheck, ShieldAlert, TrendingUp } from "lucide-react";
+import { Activity, Calculator, Database, FileText, Globe2, LayoutDashboard, Lock, Map, Newspaper, Scale, SearchCheck, ShieldAlert, TrendingUp } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { alternateLocale, asLocale, useLocale } from "../lib/locale";
@@ -68,6 +68,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <NavLink navKey="market-pulse" registerRef={registerPrimaryNavRef} to="/$locale/market-pulse" params={{ locale }} icon={<TrendingUp />} label={t("marketPulse")} />
             <NavLink navKey="portfolio" registerRef={registerPrimaryNavRef} to="/$locale/portfolio" params={{ locale }} icon={<Calculator />} label={t("portfolio")} />
             <NavLink navKey="tickers" registerRef={registerPrimaryNavRef} to="/$locale/tickers/$symbol" params={{ locale, symbol: "NVDA" }} icon={<TrendingUp />} label={t("tickers")} />
+            <NavLink navKey="news" registerRef={registerPrimaryNavRef} to="/$locale/news" params={{ locale }} icon={<Newspaper />} label={t("news")} />
             <NavLink navKey="shorts" registerRef={registerPrimaryNavRef} to="/$locale/shorts" params={{ locale }} icon={<ShieldAlert />} label={t("shorts")} />
             <NavLink navKey="trump-filings" registerRef={registerPrimaryNavRef} to="/$locale/trump-filings" params={{ locale }} icon={<FileText />} label={t("trumpFilings")} />
             <NavLink navKey="sources" registerRef={registerPrimaryNavRef} to="/$locale/sources" params={{ locale }} icon={<Database />} label={t("sources")} />
@@ -190,6 +191,7 @@ function getActivePrimaryNavKey(pathname: string) {
   if (path.startsWith("/market-pulse")) return "market-pulse";
   if (path.startsWith("/portfolio")) return "portfolio";
   if (path.startsWith("/tickers")) return "tickers";
+  if (path.startsWith("/news")) return "news";
   if (path.startsWith("/shorts")) return "shorts";
   if (path.startsWith("/trump-filings")) return "trump-filings";
   if (path.startsWith("/sources")) return "sources";

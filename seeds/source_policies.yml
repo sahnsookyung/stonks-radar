@@ -29,3 +29,21 @@ policies:
     allowed_retention_classes: [metadata_only]
     public_display_policy: discovery_only
     llm_allowed_classes: [PUBLIC_FACTS_ONLY]
+  - source_key: google_news_rss
+    policy_version: 1
+    allowed_acquisition_modes: [metadata_only]
+    allowed_retention_classes: [metadata_only]
+    public_display_policy: discovery_only
+    llm_allowed_classes: [PUBLIC_FACTS_ONLY]
+  - source_key: yahoo_finance_rss
+    policy_version: 1
+    allowed_acquisition_modes: [metadata_only]
+    allowed_retention_classes: [metadata_only]
+    public_display_policy: discovery_only
+    llm_allowed_classes: [PUBLIC_FACTS_ONLY]
+  - source_key: who
+    policy_version: 1
+    allowed_acquisition_modes: [official_page, public_web_fetch]
+    allowed_retention_classes: [structured_fact_only]
+    public_display_policy: facts_with_attribution
+    llm_allowed_classes: [PUBLIC_FACTS_ONLY]

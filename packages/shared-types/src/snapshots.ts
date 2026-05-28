@@ -78,6 +78,132 @@ export interface SourceLink {
   policy_version: number;
 }
 
+export type NewsTrustTier =
+  | "T0_OFFICIAL"
+  | "T1_REGULATED_FILING"
+  | "T2_REPUTABLE_MEDIA"
+  | "T3_REVIEWED_PUBLIC_SOURCE"
+  | "T4_WEAK_SIGNAL"
+  | "T5_UNREVIEWED"
+  | "T6_BLOCKED";
+
+export type NewsMarketDirection = "bullish" | "bearish" | "mixed" | "unclear";
+
+export type NewsRegionRelation =
+  | "source_region"
+  | "event_region"
+  | "company_region"
+  | "affected_region"
+  | "market_region"
+  | "mentioned_region";
+
+export interface NewsFacet {
+  key: string;
+  label: string;
+  count: number;
+}
+
+export interface NewsTickerRef {
+  symbol: string;
+  name: string;
+  exchange?: string;
+  relationship: "direct_subject" | "affected_company" | "competitor" | "supplier" | "customer" | "mentioned_only";
+  confidence: number;
+}
+
+export interface NewsRegionRef {
+  key: string;
+  name: string;
+  relation: NewsRegionRelation;
+  confidence: number;
+}
+
+export interface NewsTopicRef {
+  key: string;
+  label: string;
+  confidence: number;
+}
+
+export interface NewsSourceRef extends SourceLink {
+  title: string;
+  published_at: string;
+  trust_tier: NewsTrustTier;
+  is_primary: boolean;
+}
+
+export interface NewsEventListItem {
+  id: string;
+  title: string;
+  summary: string;
+  event_type: string;
+  first_seen_at: string;
+  last_seen_at: string;
+  published_at: string;
+  freshness: Freshness;
+  severity: Severity;
+  confidence: number;
+  breaking_score: number;
+  trust_score: number;
+  source_count: number;
+  tickers: NewsTickerRef[];
+  regions: NewsRegionRef[];
+  topics: NewsTopicRef[];
+  market_direction: NewsMarketDirection;
+  source_links: NewsSourceRef[];
+}
+
+export interface NewsIndexSnapshotData {
+  generated_label: string;
+  filters: {
+    regions: NewsFacet[];
+    topics: NewsFacet[];
+    tickers: NewsFacet[];
+    trust_tiers: NewsFacet[];
+  };
+  events: NewsEventListItem[];
+}
+
+export interface NewsEventSnapshotData extends NewsEventListItem {
+  one_sentence_summary: string;
+  what_happened: string[];
+  why_it_matters: string[];
+  known_facts: string[];
+  uncertainties: string[];
+  conflicting_reports: string[];
+  market_relevance: {
+    direction: NewsMarketDirection;
+    confidence: "low" | "medium" | "high";
+    reasoning: string;
+  };
+  related_events: NewsEventListItem[];
+  methodology: string;
+  disclaimer: string;
+}
+
+export interface NewsTickerSnapshotData {
+  symbol: string;
+  name: string;
+  generated_label: string;
+  summary: string;
+  events: NewsEventListItem[];
+}
+
+export interface NewsRegionSnapshotData {
+  key: string;
+  name: string;
+  generated_label: string;
+  regional_brief: string;
+  events: NewsEventListItem[];
+}
+
+export interface NewsTopicSnapshotData {
+  key: string;
+  label: string;
+  generated_label: string;
+  topic_brief: string;
+  events: NewsEventListItem[];
+}
+
 export interface HomeSnapshotData {
   headline: string;
   summary: string;

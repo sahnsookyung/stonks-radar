@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-26T01:00:50Z",
-  "stale_after": "2026-05-26T13:00:50Z",
-  "hard_expires_at": "2026-06-02T01:00:50Z",
+  "generated_at": "2026-05-28T07:32:34Z",
+  "stale_after": "2026-05-28T19:32:34Z",
+  "hard_expires_at": "2026-06-04T07:32:34Z",
   "object_type": "scenario_basket",
   "object_key": "ai-infra-capex",
-  "content_hash": "sha256:85a7c680472bd28fa38e1247280c6c5fb03670e606332c3910bd3cea7450b7a7",
+  "content_hash": "sha256:e13b3728d3f67ab20a8847787720f8a8b1a8d41cacbc11db46e6b751e5585ef6",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -35,6 +35,54 @@
     },
     {
       "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bis",
+      "policy_version": 1
+    },
+    {
+      "source_key": "who",
+      "policy_version": 1
+    },
+    {
+      "source_key": "cdc",
+      "policy_version": 1
+    },
+    {
+      "source_key": "company_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ecb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_korea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_japan",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bcb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "rocket_lab_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ionq_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "iea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "source_policy",
       "policy_version": 1
     }
   ],
@@ -82,7 +130,7 @@
       }
     ],
     "risk_summary": "Scenario can fail if source data is stale, policy risk reverses, or sector exposure is weaker than expected.",
-    "freshness_timestamp": "2026-05-26T01:00:50Z",
+    "freshness_timestamp": "2026-05-28T07:32:34Z",
     "data_delay_warning": "Uses delayed/reference indicators only; no brokerage connection or trade execution.",
     "disclaimer": "Research only. Not personalized financial advice. Do not treat this as a buy, sell, or allocation recommendation.",
     "approval_status": "approved"

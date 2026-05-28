@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    { "$ref": "./_envelope.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "object_type": { "const": "news_topic" },
+        "data": {
+          "type": "object",
+          "required": ["key", "label", "generated_label", "topic_brief", "events"],
+          "properties": {
+            "key": { "type": "string" },
+            "label": { "type": "string" },
+            "generated_label": { "type": "string" },
+            "topic_brief": { "type": "string" },
+            "events": {
+              "type": "array",
+              "items": { "$ref": "./_news.schema.json#/$defs/newsEventListItem" }
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

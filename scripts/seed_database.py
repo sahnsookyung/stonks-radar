@@ -19,6 +19,9 @@ DATA_SOURCES = [
     ("ecb", "ECB Data Portal", "official_api", "https://data-api.ecb.europa.eu", "structured_fact_only", "low"),
     ("world_bank", "World Bank", "official_api", "https://api.worldbank.org/v2", "structured_fact_only", "low"),
     ("gdelt", "GDELT", "aggregator", "https://api.gdeltproject.org", "metadata_only", "medium"),
+    ("google_news_rss", "Google News RSS", "news_metadata", "https://news.google.com/rss", "metadata_only", "medium"),
+    ("yahoo_finance_rss", "Yahoo Finance RSS", "news_metadata", "https://feeds.finance.yahoo.com/rss/2.0/headline", "metadata_only", "medium"),
+    ("who", "World Health Organization", "official_page", "https://www.who.int", "structured_fact_only", "low"),
     ("natural_earth", "Natural Earth", "public_web", "https://www.naturalearthdata.com", "full_text_open", "low"),
     ("finra_short_interest", "FINRA Short Interest", "official_api", "https://www.finra.org/filing-reporting/regulatory-filing-systems/short-interest", "structured_fact_only", "low"),
     ("finra_reg_sho_short_volume", "FINRA Reg SHO Daily Short Sale Volume", "official_api", "https://api.finra.org", "structured_fact_only", "low"),
@@ -46,6 +49,9 @@ PROVIDERS = [
     ("ecb", "official_api", "always_free", "FREE_ONLY", False),
     ("world_bank", "official_api", "always_free", "FREE_ONLY", False),
     ("gdelt", "aggregator", "always_free", "FREE_ONLY", False),
+    ("google_news_rss", "rss_metadata", "always_free", "FREE_ONLY", False),
+    ("yahoo_finance_rss", "rss_metadata", "always_free", "FREE_ONLY", False),
+    ("who", "official_page", "always_free", "FREE_ONLY", False),
     ("federal_reserve", "official_page", "always_free", "FREE_ONLY", False),
     ("sec_edgar", "filing", "always_free", "FREE_ONLY", False),
     ("twelve_data", "market_data", "free_quota", "FREE_ONLY", False),
@@ -122,6 +128,79 @@ FACT_TYPES: list[tuple[str, str, str, dict[str, Any], list[str], bool]] = [
         ["occurred", "escalated", "deescalated"],
         False,
     ),
+    (
+        "news_document_metadata",
+        "News document metadata",
+        "뉴스 문서 메타데이터",
+        {
+            "type": "object",
+            "required": ["title", "source_url", "source_key", "trust_tier"],
+            "properties": {
+                "title": {"type": "string"},
+                "snippet": {"type": ["string", "null"]},
+                "published_at": {"type": ["string", "null"]},
+                "source_url": {"type": "string"},
+                "source_key": {"type": "string"},
+                "trust_tier": {"type": "string"},
+            },
+            "additionalProperties": False,
+        },
+        ["states"],
+        False,
+    ),
+    (
+        "news_event_link",
+        "News event link",
+        "뉴스 이벤트 연결",
+        {
+            "type": "object",
+            "required": ["event_id", "document_id", "relationship"],
+            "properties": {
+                "event_id": {"type": "string"},
+                "document_id": {"type": "string"},
+                "relationship": {"type": "string"},
+                "confidence": {"type": "number"},
+            },
+            "additionalProperties": False,
+        },
+        ["supports"],
+        False,
+    ),
+    (
+        "news_entity_mention",
+        "News entity mention",
+        "뉴스 엔티티 언급",
+        {
+            "type": "object",
+            "required": ["entity_key", "entity_type", "relationship"],
+            "properties": {
+                "entity_key": {"type": "string"},
+                "entity_type": {"type": "string"},
+                "relationship": {"type": "string"},
+                "confidence": {"type": "number"},
+            },
+            "additionalProperties": False,
+        },
+        ["mentions"],
+        False,
+    ),
+    (
+        "news_market_relevance",
+        "News market relevance",
+        "뉴스 시장 관련성",
+        {
+            "type": "object",
+            "required": ["direction", "confidence", "reasoning"],
+            "properties": {
+                "direction": {"type": "string"},
+                "confidence": {"type": "string"},
+                "reasoning": {"type": "string"},
+            },
+            "additionalProperties": False,
+        },
+        ["suggests"],
+        False,
+    ),
 ]
 
 
@@ -129,6 +208,11 @@ def main() -> None:
     engine = create_engine(DATABASE_URL, future=True)
     with engine.begin() as conn:
         for source in DATA_SOURCES:
+            llm_classes = (
+                ["PUBLIC_FACTS_ONLY"]
+                if source[2] in {"rss", "news_metadata", "aggregator"} or source[4] == "metadata_only"
+                else ["PUBLIC_FACTS_ONLY", "PUBLIC_SOURCE_TEXT"]
+            )
             source_id = conn.execute(
                 text(
                     """
@@ -171,7 +255,7 @@ def main() -> None:
                     "source_id": source_id,
                     "modes": ["official_api", "official_page", "filing", "rss_metadata", "public_web_fetch"],
                     "retention_classes": ["metadata_only", "structured_fact_only", source[4]],
-                    "llm_classes": ["PUBLIC_FACTS_ONLY", "PUBLIC_SOURCE_TEXT"],
+                    "llm_classes": llm_classes,
                 },
             )
         for key, typ, billing, mode, paid in PROVIDERS:
@@ -247,6 +331,11 @@ def main() -> None:
             ("job_type", "snapshot_publish", 1),
             ("job_type", "backup", 1),
             ("provider", "local", 1),
+            ("provider", "google_news_rss", 1),
+            ("provider", "yahoo_finance_rss", 1),
+            ("provider", "company_ir", 1),
+            ("provider", "sec_edgar", 2),
+            ("job_group", "news", 2),
             ("global", "global", 8),
         ]:
             conn.execute(

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-26T01:00:50Z",
-  "stale_after": "2026-05-26T13:00:50Z",
-  "hard_expires_at": "2026-06-02T01:00:50Z",
+  "generated_at": "2026-05-28T07:32:34Z",
+  "stale_after": "2026-05-28T19:32:34Z",
+  "hard_expires_at": "2026-06-04T07:32:34Z",
   "object_type": "sector_page",
   "object_key": "oil-energy",
-  "content_hash": "sha256:179cd901862164684c9f03823e2f8eac111232a439d7524a35c2b91a167c8cff",
+  "content_hash": "sha256:0d53d5e21dd76f95a6ecc53dfa61db6ca132fe0f0a6ee03a5d5d376ab2a02077",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -35,6 +35,54 @@
     },
     {
       "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bis",
+      "policy_version": 1
+    },
+    {
+      "source_key": "who",
+      "policy_version": 1
+    },
+    {
+      "source_key": "cdc",
+      "policy_version": 1
+    },
+    {
+      "source_key": "company_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ecb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_korea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_japan",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bcb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "rocket_lab_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ionq_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "iea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "source_policy",
       "policy_version": 1
     }
   ],
@@ -68,8 +116,8 @@
         "title": "Energy inventory calendar is active for oil supply monitoring",
         "summary": "EIA-linked inventory releases are tracked as official structured data before publication.",
         "why_it_matters": "Inventory surprises can affect energy equities, inflation inputs, and geopolitical risk interpretation.",
-        "occurred_at": "2026-05-26T01:00:50Z",
-        "published_at": "2026-05-26T01:00:50Z",
+        "occurred_at": "2026-05-28T07:32:34Z",
+        "published_at": "2026-05-28T07:32:34Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -106,8 +154,8 @@
         "title": "Central-bank calendar coverage seeded across six policy committees",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
         "why_it_matters": "Calendar visibility reduces silent coverage gaps and makes stale policy data visible.",
-        "occurred_at": "2026-05-26T01:00:50Z",
-        "published_at": "2026-05-26T01:00:50Z",
+        "occurred_at": "2026-05-28T07:32:34Z",
+        "published_at": "2026-05-28T07:32:34Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -263,62 +311,26 @@
       {
         "key": "nasdaq_composite",
         "label": "Nasdaq Composite",
-        "value": "26,343.97",
+        "value": "Source gap",
         "source": "FRED / Nasdaq",
-        "freshness": "fresh",
-        "delay_label": "FRED NASDAQCOM actual through 2026-05-22",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "active",
+        "freshness": "watch",
+        "delay_label": "FRED_API_KEY missing or FRED series unavailable",
+        "updated_at": "2026-05-28T07:32:34Z",
+        "coverage_status": "coverage_gap",
         "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/NASDAQCOM",
-        "points": [
-          {
-            "date": "2026-05-19",
-            "value": 25870.71
-          },
-          {
-            "date": "2026-05-20",
-            "value": 26270.36
-          },
-          {
-            "date": "2026-05-21",
-            "value": 26293.1
-          },
-          {
-            "date": "2026-05-22",
-            "value": 26343.97
-          }
-        ]
+        "source_url": "https://fred.stlouisfed.org/series/NASDAQCOM"
       },
       {
         "key": "nasdaq_100",
         "label": "Nasdaq 100",
-        "value": "29,481.64",
+        "value": "Source gap",
         "source": "FRED / Nasdaq",
-        "freshness": "fresh",
-        "delay_label": "FRED NASDAQ100 actual through 2026-05-22",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "active",
+        "freshness": "watch",
+        "delay_label": "FRED_API_KEY missing or FRED series unavailable",
+        "updated_at": "2026-05-28T07:32:34Z",
+        "coverage_status": "coverage_gap",
         "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/NASDAQ100",
-        "points": [
-          {
-            "date": "2026-05-19",
-            "value": 28818.84
-          },
-          {
-            "date": "2026-05-20",
-            "value": 29297.7
-          },
-          {
-            "date": "2026-05-21",
-            "value": 29357.27
-          },
-          {
-            "date": "2026-05-22",
-            "value": 29481.64
-          }
-        ]
+        "source_url": "https://fred.stlouisfed.org/series/NASDAQ100"
       }
     ],
     "scenario_baskets": [

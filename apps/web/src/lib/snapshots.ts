@@ -4,6 +4,11 @@ import type {
   HomeSnapshotData,
   Locale,
   MapEventsData,
+  NewsEventSnapshotData,
+  NewsIndexSnapshotData,
+  NewsRegionSnapshotData,
+  NewsTickerSnapshotData,
+  NewsTopicSnapshotData,
   ScenarioBasketSnapshotData,
   SectorSnapshotData,
   SnapshotEnvelope,
@@ -54,7 +59,16 @@ export const snapshotQueries = {
   scenarioBasket: (key: string, locale: Locale) =>
     getSnapshot<ScenarioBasketSnapshotData>(`scenario_basket_${key}`, locale),
   status: (locale: Locale) => getSnapshot<SourceStatusSnapshotData>("source_status", locale),
-  corrections: (locale: Locale) => getSnapshot<{ entries: unknown[] }>("correction_log", locale)
+  corrections: (locale: Locale) => getSnapshot<{ entries: unknown[] }>("correction_log", locale),
+  newsIndex: (locale: Locale) => getSnapshot<NewsIndexSnapshotData>("news_index", locale),
+  newsEvent: (eventId: string, locale: Locale) =>
+    getSnapshot<NewsEventSnapshotData>(`news_event_${eventId}`, locale),
+  newsTicker: (symbolKey: string, locale: Locale) =>
+    getSnapshot<NewsTickerSnapshotData>(`news_ticker_${symbolKey}`, locale),
+  newsRegion: (regionKey: string, locale: Locale) =>
+    getSnapshot<NewsRegionSnapshotData>(`news_region_${regionKey}`, locale),
+  newsTopic: (topicKey: string, locale: Locale) =>
+    getSnapshot<NewsTopicSnapshotData>(`news_topic_${topicKey}`, locale)
 };
 
 export function isStale(staleAfter: string): boolean {

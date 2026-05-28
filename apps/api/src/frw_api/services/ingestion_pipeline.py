@@ -110,19 +110,24 @@ def _persist_document(
 ) -> None:
     title = str(document.get("title") or document.get("url") or object_key)[:500]
     url = document.get("url") or document.get("source_url")
-    content_hash = _hash(document)
+    content_hash = str(document.get("raw_hash") or document.get("content_hash") or _hash(document))
+    retention_class = str(document.get("retention_class") or "metadata_only")
+    dedupe_key = document.get("dedupe_key")
+    raw_expires_at = _parse_timestamp(document.get("raw_expires_at"))
     db.execute(
         text(
             """
             insert into source_document(
               source_id, title, original_url, canonical_url, publisher, acquisition_mode,
               acquisition_stack, retention_class, fetched_at, content_hash,
-              legal_risk_level, review_required, downstream_ai_allowed, public_allowed, status, metadata
+              dedupe_key, raw_expires_at, legal_risk_level, review_required,
+              downstream_ai_allowed, public_allowed, status, metadata
             )
             values (
               :source_id, :title, :url, :url, :publisher, :mode,
-              'adapter_metadata', 'metadata_only', now(), :content_hash,
-              :risk, true, 'extract_only', false, 'discovered', cast(:metadata as jsonb)
+              'adapter_metadata', :retention_class, now(), :content_hash,
+              :dedupe_key, :raw_expires_at, :risk, true,
+              'extract_only', false, 'discovered', cast(:metadata as jsonb)
             )
             on conflict do nothing
             """
@@ -134,6 +139,9 @@ def _persist_document(
             "publisher": source_key,
             "mode": "news_metadata" if document.get("discovery_only") else "official_api",
             "content_hash": content_hash,
+            "retention_class": retention_class,
+            "dedupe_key": str(dedupe_key) if dedupe_key else None,
+            "raw_expires_at": raw_expires_at,
             "risk": "medium" if document.get("discovery_only") else "low",
             "metadata": json.dumps(document, default=str),
         },

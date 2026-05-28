@@ -3,7 +3,9 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, Literal
+from uuid import uuid4
 
 import httpx
 from jsonschema import Draft202012Validator
@@ -38,6 +40,13 @@ class LLMTask:
     schema: dict[str, Any]
     locale: str | None = None
     glossary_hash: str | None = None
+    allowed_provider_keys: frozenset[str] | None = None
+    external_allowed: bool = True
+    actor_user_id: str | None = None
+    session_id: str | None = None
+    request_id: str | None = None
+    job_id: str | None = None
+    event_id: str | None = None
 
 
 def input_hash(payload: Any) -> str:
@@ -49,18 +58,25 @@ class LLMRouter:
     def __init__(self, db: Session):
         self.db = db
         self.settings = get_settings()
+        self._last_reservation_id: str | None = None
 
     async def run_json(self, task: LLMTask, *, messages: list[dict[str, str]]) -> dict[str, Any]:
+        self._last_reservation_id = None
         if task.input_class == "SECRETS":
+            self._log_invocation(task, None, messages, None, "denied", cache_hit=False, count_usage=False, denial_reason="secrets_input_class")
             raise LLMRoutingError("SECRETS are never routed to LLM providers")
-        profile = self._select_profile(task)
+        try:
+            profile = self._select_profile(task)
+        except LLMRoutingError as exc:
+            self._log_invocation(task, None, messages, None, "denied", cache_hit=False, count_usage=False, denial_reason=str(exc))
+            raise
         cache_key = self._cache_key(task, profile["id"], messages)
         cached = self._get_cache(cache_key)
         if cached is not None:
-            self._log_invocation(task, profile, messages, cached, "succeeded", cache_hit=True, count_usage=False)
+            self._log_invocation(task, profile, messages, cached, "succeeded", cache_hit=True, count_usage=False, cache_key=cache_key)
             return cached
         try:
-            output = await self._call_provider(profile, messages)
+            output = await self._call_provider_for_task(task, profile, messages)
         except ProviderLimitError as exc:
             status = "quota_failed" if exc.quota_related else "provider_failed"
             self._log_invocation(task, profile, messages, None, status, cache_hit=False, count_usage=False)
@@ -74,7 +90,8 @@ class LLMRouter:
         except LLMRoutingError as first_error:
             self._log_invocation(task, profile, messages, output, "schema_failed", cache_hit=False)
             try:
-                repaired = await self._call_provider(
+                repaired = await self._call_provider_for_task(
+                    task,
                     profile,
                     [
                         *messages,
@@ -97,7 +114,7 @@ class LLMRouter:
                 ) from repair_error
             output = repaired
         self._write_cache(cache_key, task, profile["id"], messages, output)
-        self._log_invocation(task, profile, messages, output, "succeeded", cache_hit=False)
+        self._log_invocation(task, profile, messages, output, "succeeded", cache_hit=False, cache_key=cache_key)
         return output
 
     def _select_profile(self, task: LLMTask) -> dict[str, Any]:
@@ -127,6 +144,13 @@ class LLMRouter:
 
     def _profile_allowed(self, profile: dict[str, Any], task: LLMTask) -> bool:
         provider_key = profile["provider_key"]
+        if task.allowed_provider_keys is not None and provider_key not in task.allowed_provider_keys:
+            return False
+        if provider_key != "local":
+            if not task.external_allowed:
+                return False
+            if self.settings.llm_global_daily_hard_limit <= 0:
+                return False
         if task.input_class == "PRIVATE_RESEARCH":
             return provider_key == "local" or profile["privacy_class"] in ("PRIVATE_ALLOWED", "LOCAL_ONLY")
         if task.input_class == "RESTRICTED_SOURCE":
@@ -134,6 +158,23 @@ class LLMRouter:
         if provider_key != "local" and profile["privacy_class"] == "PUBLIC_FACTS_ONLY":
             return task.input_class in PUBLIC_FREE_ONLY
         return True
+
+    async def _call_provider_for_task(
+        self,
+        task: LLMTask,
+        profile: dict[str, Any],
+        messages: list[dict[str, str]],
+    ) -> dict[str, Any]:
+        reservation_id = None
+        if profile["provider_key"] != "local":
+            reservation_id = self._reserve_external_llm_budget(task, profile, messages)
+            self._last_reservation_id = reservation_id
+        try:
+            return await self._call_provider(profile, messages)
+        except Exception:
+            if reservation_id:
+                self._record_budget_failure(task, profile, reservation_id, messages)
+            raise
 
     async def _call_provider(self, profile: dict[str, Any], messages: list[dict[str, str]]) -> dict[str, Any]:
         provider = profile["provider_key"]
@@ -321,30 +362,42 @@ class LLMRouter:
     def _log_invocation(
         self,
         task: LLMTask,
-        profile: dict[str, Any],
+        profile: dict[str, Any] | None,
         messages: list[dict[str, str]],
         output: dict[str, Any] | None,
         status: str,
         cache_hit: bool,
         count_usage: bool = True,
+        cache_key: str | None = None,
+        denial_reason: str | None = None,
+        reservation_id: str | None = None,
     ) -> None:
+        if self.db is None:
+            return
+        reservation_value = reservation_id or (
+            self._last_reservation_id if profile is not None and profile["provider_key"] != "local" else None
+        )
         self.db.execute(
             text(
                 """
                 insert into llm_invocation(
                   task_type, model_profile_id, provider_key, input_class, input_hash,
-                  output_hash, prompt_version, schema_key, status, cache_hit
+                  output_hash, prompt_version, schema_key, status, cache_hit,
+                  actor_user_id, session_id, request_id, job_id, event_id,
+                  cache_key, denial_reason, usage_estimate_json, reservation_id
                 )
                 values (
                   :task_type, :model_profile_id, :provider_key, :input_class, :input_hash,
-                  :output_hash, :prompt_version, :schema_key, :status, :cache_hit
+                  :output_hash, :prompt_version, :schema_key, :status, :cache_hit,
+                  :actor_user_id, :session_id, :request_id, :job_id, :event_id,
+                  :cache_key, :denial_reason, cast(:usage_estimate_json as jsonb), :reservation_id
                 )
                 """
             ),
             {
                 "task_type": task.task_type,
-                "model_profile_id": profile["id"],
-                "provider_key": profile["provider_key"],
+                "model_profile_id": profile["id"] if profile else None,
+                "provider_key": profile["provider_key"] if profile else None,
                 "input_class": task.input_class,
                 "input_hash": input_hash(messages),
                 "output_hash": input_hash(output) if output is not None else None,
@@ -352,9 +405,18 @@ class LLMRouter:
                 "schema_key": task.schema_key,
                 "status": status,
                 "cache_hit": cache_hit,
+                "actor_user_id": task.actor_user_id,
+                "session_id": task.session_id,
+                "request_id": task.request_id,
+                "job_id": task.job_id,
+                "event_id": task.event_id,
+                "cache_key": cache_key,
+                "denial_reason": denial_reason,
+                "usage_estimate_json": json.dumps({"estimated_tokens": _estimate_tokens(messages)}),
+                "reservation_id": reservation_value,
             },
         )
-        if count_usage:
+        if count_usage and profile is not None and profile["provider_key"] == "local":
             record_usage(
                 self.db,
                 provider_key=profile["provider_key"],
@@ -365,6 +427,117 @@ class LLMRouter:
                 status=status,
                 details={"cache_hit": cache_hit},
             )
+
+    def _reserve_external_llm_budget(self, task: LLMTask, profile: dict[str, Any], messages: list[dict[str, str]]) -> str:
+        if self.db is None:
+            return f"llm_{uuid4().hex}"
+        provider_key = profile["provider_key"]
+        quantity = 1
+        period_key = datetime.now(timezone.utc).date().isoformat()
+        global_limit = self.settings.llm_global_daily_hard_limit
+        if global_limit <= 0:
+            self._log_invocation(
+                task,
+                profile,
+                messages,
+                None,
+                "budget_failed",
+                cache_hit=False,
+                count_usage=False,
+                denial_reason="llm_global_daily_hard_limit_zero",
+            )
+            raise LLMRoutingError("External LLM usage is disabled by global hard limit")
+        global_reserved = self.db.execute(
+            text(
+                """
+                insert into llm_usage_counter(counter_key, period_key, used, hard_limit)
+                values ('global', :period_key, :quantity, :hard_limit)
+                on conflict (counter_key, period_key) do update
+                set used = llm_usage_counter.used + excluded.used,
+                    hard_limit = excluded.hard_limit,
+                    updated_at = now()
+                where llm_usage_counter.used + excluded.used <= excluded.hard_limit
+                returning used
+                """
+            ),
+            {"period_key": period_key, "quantity": quantity, "hard_limit": global_limit},
+        ).scalar_one_or_none()
+        if global_reserved is None:
+            self._log_invocation(
+                task,
+                profile,
+                messages,
+                None,
+                "budget_failed",
+                cache_hit=False,
+                count_usage=False,
+                denial_reason="llm_global_daily_hard_limit_exhausted",
+            )
+            raise LLMRoutingError("External LLM global hard limit exhausted")
+        provider_reserved = self.db.execute(
+            text(
+                """
+                update provider_budget
+                set current_period_usage = current_period_usage + :quantity,
+                    last_usage_sync_at = now(),
+                    hard_stop_triggered_at = case
+                      when hard_limit is not null and current_period_usage + :quantity >= hard_limit then now()
+                      else hard_stop_triggered_at
+                    end
+                where provider_key = :provider_key
+                  and (hard_limit is null or current_period_usage + :quantity <= hard_limit)
+                returning id
+                """
+            ),
+            {"provider_key": provider_key, "quantity": quantity},
+        ).scalar_one_or_none()
+        if provider_reserved is None:
+            self._log_invocation(
+                task,
+                profile,
+                messages,
+                None,
+                "budget_failed",
+                cache_hit=False,
+                count_usage=False,
+                denial_reason="llm_provider_hard_limit_exhausted",
+            )
+            raise LLMRoutingError(f"{provider_key} LLM provider hard limit exhausted")
+        reservation_id = f"llm_{uuid4().hex}"
+        record_usage(
+            self.db,
+            provider_key=provider_key,
+            endpoint_key="chat_completions",
+            partition_key="llm_router",
+            unit="reservation",
+            quantity=0,
+            status="reserved",
+            idempotency_key=reservation_id,
+            reserved_units={"invocation": quantity, "estimated_tokens": _estimate_tokens(messages)},
+            details={"task_type": task.task_type, "event_id": task.event_id},
+        )
+        return reservation_id
+
+    def _record_budget_failure(
+        self,
+        task: LLMTask,
+        profile: dict[str, Any],
+        reservation_id: str,
+        messages: list[dict[str, str]],
+    ) -> None:
+        if self.db is None:
+            return
+        self._log_invocation(
+            task,
+            profile,
+            messages,
+            None,
+            "budget_failed",
+            cache_hit=False,
+            count_usage=False,
+            denial_reason="provider_call_failed_after_budget_reservation",
+            reservation_id=reservation_id,
+        )
 
 
 def _estimate_tokens(messages: list[dict[str, str]]) -> int:

@@ -26,21 +26,54 @@ def enqueue_job(
     provider_key: str | None = None,
     source_id: str | None = None,
     depends_on_job_id: str | None = None,
+    run_after: datetime | None = None,
 ) -> str:
+    scheduled_after = run_after or datetime.now(timezone.utc)
     row = db.execute(
         text(
             """
-            insert into job_queue(
-              job_type, job_group, priority, idempotency_key, payload, payload_hash,
-              provider_key, source_id, depends_on_job_id
+            with upserted as (
+              insert into job_queue(
+                job_type, job_group, priority, idempotency_key, payload, payload_hash,
+                provider_key, source_id, depends_on_job_id, run_after
+              )
+              values (
+                :job_type, :job_group, :priority, :idempotency_key, cast(:payload as jsonb), :payload_hash,
+                :provider_key, :source_id, :depends_on_job_id, :run_after
+              )
+              on conflict (job_type, idempotency_scope, idempotency_key)
+              do update set job_group = excluded.job_group,
+                            priority = case
+                              when job_queue.status = 'queued' then excluded.priority
+                              else job_queue.priority
+                            end,
+                            payload = case
+                              when job_queue.status = 'queued' then excluded.payload
+                              else job_queue.payload
+                            end,
+                            payload_hash = case
+                              when job_queue.status = 'queued' then excluded.payload_hash
+                              else job_queue.payload_hash
+                            end,
+                            provider_key = excluded.provider_key,
+                            source_id = excluded.source_id,
+                            depends_on_job_id = excluded.depends_on_job_id,
+                            run_after = case
+                              when job_queue.status = 'queued' then excluded.run_after
+                              else job_queue.run_after
+                            end,
+                            updated_at = now()
+              where job_queue.status in ('queued','retry_wait','quota_wait')
+              returning id
             )
-            values (
-              :job_type, :job_group, :priority, :idempotency_key, cast(:payload as jsonb), :payload_hash,
-              :provider_key, :source_id, :depends_on_job_id
-            )
-            on conflict (job_type, idempotency_scope, idempotency_key)
-            do update set updated_at = now()
-            returning id
+            select id from upserted
+            union all
+            select id from job_queue
+            where job_type = :job_type
+              and idempotency_scope = 'global'
+              and idempotency_key = :idempotency_key
+              and not exists (select 1 from upserted)
+            limit 1
             """
         ),
         {
@@ -53,6 +86,7 @@ def enqueue_job(
             "provider_key": provider_key,
             "source_id": source_id,
             "depends_on_job_id": depends_on_job_id,
+            "run_after": scheduled_after,
         },
     ).scalar_one()
     return str(row)
@@ -78,6 +112,7 @@ def claim_job(db: Session, *, worker_id: str, lease_seconds: int = 120) -> dict[
                         and (
                           (lim.scope_type = 'global' and lim.scope_key = 'global')
                           or (lim.scope_type = 'job_type' and lim.scope_key = j.job_type)
+                          or (lim.scope_type = 'job_group' and lim.scope_key = j.job_group)
                           or (lim.scope_type = 'provider' and lim.scope_key = coalesce(j.provider_key, ''))
                           or (lim.scope_type = 'source' and lim.scope_key = coalesce(j.source_id::text, ''))
                         )
@@ -88,6 +123,7 @@ def claim_job(db: Session, *, worker_id: str, lease_seconds: int = 120) -> dict[
                             and (
                               (lim.scope_type = 'global')
                               or (lim.scope_type = 'job_type' and running.job_type = j.job_type)
+                              or (lim.scope_type = 'job_group' and running.job_group = j.job_group)
                               or (lim.scope_type = 'provider' and running.provider_key = j.provider_key)
                               or (lim.scope_type = 'source' and running.source_id = j.source_id)
                             )

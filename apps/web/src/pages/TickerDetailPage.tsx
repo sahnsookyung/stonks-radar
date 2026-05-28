@@ -23,8 +23,9 @@ import {
   StickyNote,
   TrendingUp
 } from "lucide-react";
-import type { AlternativeSignalItem, HomeSnapshotData, SnapshotEnvelope } from "@frw/shared-types";
+import type { AlternativeSignalItem, HomeSnapshotData, NewsEventListItem, NewsTickerSnapshotData, SnapshotEnvelope } from "@frw/shared-types";
 import { LineChart } from "../components/LineChart";
+import { NewsEventCard, SourcePill } from "../components/NewsEventCard";
 import { apiGet } from "../lib/api";
 import { disclosureTransactionBucket, disclosureTransactionCaveat, disclosureTransactionLabel } from "../lib/disclosureLabels";
 import { useLocale } from "../lib/locale";
@@ -192,6 +193,7 @@ export function TickerDetailPage() {
   const [chartPreset, setChartPreset] = useState<ChartPresetKey>("trend");
   const defaultDates = useMemo(() => tickerDateRange(), []);
   const shouldLoadFilings = activeTab === "filings" || activeTab === "overview";
+  const shouldLoadNews = activeTab === "news";
 
   const snapshotQuery = useQuery({
     queryKey: ["snapshot", "ticker-detail", locale],
@@ -223,6 +225,12 @@ export function TickerDetailPage() {
     queryKey: ["ticker-insiders", ticker?.symbol],
     queryFn: () => apiGet<InsidersResponse>(`/api/public/entities/${encodeURIComponent(ticker?.symbol ?? "")}/insiders?limit=50`),
     enabled: Boolean(ticker) && shouldLoadFilings,
+    retry: false
+  });
+  const tickerNewsQuery = useQuery({
+    queryKey: ["snapshot", "ticker-news", ticker?.symbol, locale],
+    queryFn: () => snapshotQueries.newsTicker(newsSymbolKey(ticker?.symbol ?? ""), locale),
+    enabled: Boolean(ticker) && shouldLoadNews,
     retry: false
   });
 
@@ -391,7 +399,16 @@ export function TickerDetailPage() {
           ) : null}
           {activeTab === "technicals" ? <TechnicalsPanel indicators={indicators} ticker={ticker} freshness={freshness} canDisplayMarketData={canDisplayMarketData} locale={locale} /> : null}
           {activeTab === "options" ? <OptionsPanel ticker={ticker} locale={locale} /> : null}
-          {activeTab === "news" ? <NewsPanel ticker={ticker} newsItems={newsItems} trumpItems={trumpItems} locale={locale} /> : null}
+          {activeTab === "news" ? (
+            <NewsPanel
+              ticker={ticker}
+              tickerNews={tickerNewsQuery.data?.data}
+              newsLoading={tickerNewsQuery.isLoading}
+              newsError={tickerNewsQuery.error}
+              trumpItems={trumpItems}
+              locale={locale}
+            />
+          ) : null}
           {activeTab === "filings" ? (
             <FilingsPanel
               ticker={ticker}
@@ -866,16 +883,21 @@ function OptionsPanel({ ticker, locale }: { ticker: TrackedTicker; locale: "en" 
 
 function NewsPanel({
   ticker,
-  newsItems,
+  tickerNews,
+  newsLoading,
+  newsError,
   trumpItems,
   locale
 }: {
   ticker: TrackedTicker;
-  newsItems: TickerSignal[];
+  tickerNews?: NewsTickerSnapshotData;
+  newsLoading: boolean;
+  newsError: unknown;
   trumpItems: TickerSignal[];
   locale: "en" | "ko";
 }) {
   const isKo = locale === "ko";
+  const events = tickerNews?.events ?? [];
   return (
     <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(300px,0.42fr)]">
       <div className="panel p-5">
@@ -884,8 +906,22 @@ function NewsPanel({
           title={isKo ? "티커 관련 뉴스" : "Ticker-Relevant News"}
           subtitle={isKo ? "출처, 시각, 관련 티커, 중요도 라벨을 함께 표시합니다." : "Source, time, related ticker, and importance labels stay visible."}
         />
+        {tickerNews ? (
+          <div className="mt-3 rounded-md border border-line bg-panelAlt p-3 text-sm leading-6 text-muted">
+            <div className="font-semibold text-ink">{tickerNews.summary}</div>
+            <div className="mt-1 text-xs">{isKo ? "생성" : "Generated"} {formatDateTime(tickerNews.generated_label)}</div>
+          </div>
+        ) : null}
         <div className="mt-4 grid gap-3">
-          {newsItems.length ? newsItems.map((signal) => <NewsSignalCard key={signal.item.key} signal={signal} ticker={ticker} locale={locale} />) : <EmptyState text={isKo ? "현재 스냅샷에는 이 티커와 직접 연결된 뉴스가 없습니다." : "No directly matched news items in the current snapshot."} />}
+          {newsLoading ? (
+            <EmptyState text={isKo ? "티커 뉴스 스냅샷을 불러오는 중입니다." : "Loading ticker news snapshot."} />
+          ) : newsError ? (
+            <EmptyState text={isKo ? "이 티커의 뉴스 스냅샷이 아직 없습니다." : "No ticker news snapshot is available for this symbol yet."} />
+          ) : events.length ? (
+            events.map((event) => <TickerNewsEvent key={event.id} event={event} locale={locale} />)
+          ) : (
+            <EmptyState text={isKo ? "현재 스냅샷에는 이 티커와 직접 연결된 뉴스가 없습니다." : "No directly matched news events in the current snapshot."} />
+          )}
         </div>
       </div>
       <div className="panel p-5">
@@ -900,8 +936,17 @@ function NewsPanel({
         />
         <div className="mt-4 grid gap-2 text-sm leading-6 text-muted">
           <div>{ticker.tags.join(" / ")}</div>
-          <div>{isKo ? "긴 문서는 출처 텍스트가 준비된 뒤 AI 요약 대상으로 표시합니다." : "Long documents become AI-summary candidates after source text is available."}</div>
+          <div>{isKo ? "공개 페이지는 스냅샷만 읽고, 긴 문서 AI 요약은 사전 생성된 경우에만 표시합니다." : "The public page reads snapshots only; long-document AI summaries appear only after pre-publication generation."}</div>
         </div>
+        {events.length ? (
+          <div className="mt-4 grid gap-2">
+            <h3 className="text-sm font-semibold">{isKo ? "주요 출처" : "Primary Sources"}</h3>
+            {events
+              .flatMap((event) => event.source_links.filter((source) => source.is_primary))
+              .slice(0, 4)
+              .map((source) => <SourcePill key={`${source.source_key}-${source.url}`} source={source} />)}
+          </div>
+        ) : null}
         {trumpItems.length ? (
           <div className="mt-4">
             <CompactList title={isKo ? "트럼프 관련 항목" : "Trump-Related Items"} empty="" items={trumpItems} locale={locale} />
@@ -910,6 +955,10 @@ function NewsPanel({
       </div>
     </section>
   );
+}
+
+function TickerNewsEvent({ event, locale }: { event: NewsEventListItem; locale: "en" | "ko" }) {
+  return <NewsEventCard event={event} locale={locale} compact />;
 }
 
 function FilingsPanel({
@@ -1527,6 +1576,10 @@ function collectTickerSignals(data: HomeSnapshotData, ticker: TrackedTicker): Ti
 function matchesTicker(item: AlternativeSignalItem, needles: string[]) {
   const haystack = `${item.label} ${item.detail} ${item.value} ${item.source}`.toUpperCase();
   return needles.some((needle) => needle.length > 2 && haystack.includes(needle));
+}
+
+function newsSymbolKey(symbol: string) {
+  return symbol.toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
 }
 
 interface FreshnessMeta {

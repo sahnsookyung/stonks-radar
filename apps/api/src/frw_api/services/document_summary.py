@@ -6,6 +6,7 @@ from typing import Any
 from selectolax.parser import HTMLParser
 from sqlalchemy.orm import Session
 
+from frw_api.core.settings import get_settings
 from frw_api.services.llm_router import LLMRouter, LLMTask
 from frw_api.services.source_ingestion import fetch_source_bytes
 
@@ -23,7 +24,16 @@ DOCUMENT_SUMMARY_SCHEMA: dict[str, Any] = {
 }
 
 
-async def summarize_public_url(db: Session, *, url: str, locale: str = "en") -> dict[str, Any]:
+async def summarize_public_url(
+    db: Session,
+    *,
+    url: str,
+    locale: str = "en",
+    actor_user_id: str | None = None,
+) -> dict[str, Any]:
+    settings = get_settings()
+    if not settings.news_summary_llm_enabled:
+        raise ValueError("News/document LLM summaries are disabled")
     fetched = await fetch_source_bytes(url)
     response = fetched["response"]
     body = fetched["body"]
@@ -41,6 +51,9 @@ async def summarize_public_url(db: Session, *, url: str, locale: str = "en") -> 
         schema_key="document_summary",
         schema=DOCUMENT_SUMMARY_SCHEMA,
         locale=locale,
+        allowed_provider_keys=frozenset({"local"}),
+        external_allowed=False,
+        actor_user_id=actor_user_id,
     )
     return await router.run_json(
         task,

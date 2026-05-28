@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    { "$ref": "./_envelope.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "object_type": { "const": "news_event" },
+        "data": { "$ref": "./_news.schema.json#/$defs/newsEventDetail" }
+      }
+    }
+  ]
+}

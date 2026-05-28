@@ -1,0 +1,460 @@
+{
+  "version": 1,
+  "entities": [
+    {
+      "symbol": "DJT",
+      "legal_name": "Trump Media & Technology Group",
+      "sec_cik": "0001849635",
+      "aliases": ["Trump Media", "TMTG", "Truth Social"],
+      "official_domains": ["trumpmedia.com", "truthsocial.com"],
+      "sector_terms": ["filing", "insider", "social media", "political event risk"],
+      "sources": [
+        {
+          "source_key": "sec_djt_filings",
+          "source_name": "SEC EDGAR - Trump Media",
+          "source_type": "regulated_filing",
+          "base_url": "https://data.sec.gov",
+          "trust_tier": "T1_REGULATED_FILING",
+          "region_coverage": ["USA"],
+          "topic_coverage": ["filings", "stocks", "political_event_risk"],
+          "rate_limit_provider_key": "sec_edgar",
+          "rate_limit_endpoint_key": "submissions",
+          "copyright_mode": "public_filing_metadata",
+          "feed_url": "https://data.sec.gov/submissions/CIK0001849635.json",
+          "fetch_kind": "sec_submissions",
+          "official_domains": ["sec.gov"]
+        }
+      ],
+      "email_sources": []
+    },
+    {
+      "symbol": "TSLA",
+      "legal_name": "Tesla, Inc.",
+      "sec_cik": "0001318605",
+      "aliases": ["Tesla"],
+      "official_domains": ["tesla.com"],
+      "sector_terms": ["ev", "electric vehicle", "autonomy", "delivery", "automaker"],
+      "sources": [
+        {
+          "source_key": "sec_tsla_filings",
+          "source_name": "SEC EDGAR - Tesla",
+          "source_type": "regulated_filing",
+          "base_url": "https://data.sec.gov",
+          "trust_tier": "T1_REGULATED_FILING",
+          "region_coverage": ["USA"],
+          "topic_coverage": ["filings", "stocks", "ev"],
+          "rate_limit_provider_key": "sec_edgar",
+          "rate_limit_endpoint_key": "submissions",
+          "copyright_mode": "public_filing_metadata",
+          "feed_url": "https://data.sec.gov/submissions/CIK0001318605.json",
+          "fetch_kind": "sec_submissions",
+          "official_domains": ["sec.gov"]
+        },
+        {
+          "source_key": "tesla_ir_press",
+          "source_name": "Tesla Investor Relations Press",
+          "source_type": "official",
+          "base_url": "https://ir.tesla.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": ["USA"],
+          "topic_coverage": ["ev", "big_tech", "autos", "earnings"],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://ir.tesla.com/press",
+          "fetch_kind": "html_index",
+          "official_domains": ["tesla.com"],
+          "fetch_profile": "safari",
+          "scheduled_fetch": false
+        }
+      ],
+      "email_sources": [
+        {
+          "signup_url": "https://www.tesla.com/updates",
+          "source_name": "Tesla updates email"
+        }
+      ]
+    },
+    {
+      "symbol": "NVDA",
+      "legal_name": "NVIDIA Corporation",
+      "sec_cik": "0001045810",
+      "aliases": ["Nvidia", "NVIDIA"],
+      "official_domains": ["nvidia.com"],
+      "sector_terms": ["gpu", "ai accelerator", "semiconductor", "chip"],
+      "sources": [
+        {
+          "source_key": "nvidia_newsroom",
+          "source_name": "NVIDIA Newsroom",
+          "source_type": "official",
+          "base_url": "https://nvidianews.nvidia.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": ["USA"],
+          "topic_coverage": ["semiconductors", "ai_infrastructure"],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "rss",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://nvidianews.nvidia.com/rss.xml",
+          "official_domains": ["nvidia.com"]
+        }
+      ],
+      "email_sources": []
+    },
+    {
+      "symbol": "RKLB",
+      "legal_name": "Rocket Lab USA, Inc.",
+      "sec_cik": "0001819994",
+      "aliases": ["Rocket Lab"],
+      "official_domains": ["rocketlabusa.com"],
+      "sector_terms": ["launch", "rocket", "space", "mission"],
+      "sources": [
+        {
+          "source_key": "rocket_lab_ir",
+          "source_name": "Rocket Lab Investor Relations",
+          "source_type": "official",
+          "base_url": "https://investors.rocketlabcorp.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": ["USA", "NZL"],
+          "topic_coverage": ["space", "defense", "earnings"],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://investors.rocketlabcorp.com/news",
+          "fetch_kind": "html_index",
+          "official_domains": ["rocketlabcorp.com", "rocketlabusa.com"],
+          "fetch_profile": "safari"
+        }
+      ],
+      "email_sources": [
+        {
+          "signup_url": "https://investors.rocketlabcorp.com/news/email-alerts",
+          "source_name": "Rocket Lab IR email alerts"
+        }
+      ]
+    },
+    {
+      "symbol": "IONQ",
+      "legal_name": "IonQ, Inc.",
+      "sec_cik": "0001824920",
+      "aliases": ["IonQ"],
+      "official_domains": ["ionq.com"],
+      "sector_terms": ["quantum", "qubit", "ion trap"],
+      "sources": [
+        {
+          "source_key": "ionq_ir",
+          "source_name": "IonQ Investor Relations",
+          "source_type": "official",
+          "base_url": "https://investors.ionq.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": ["USA"],
+          "topic_coverage": ["quantum"],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://investors.ionq.com/news/default.aspx",
+          "fetch_kind": "html_index",
+          "official_domains": ["ionq.com"],
+          "fetch_profile": "ir_vendor",
+          "scheduled_fetch": false
+        }
+      ],
+      "email_sources": []
+    },
+    {
+      "symbol": "RGTI",
+      "legal_name": "Rigetti Computing, Inc.",
+      "sec_cik": "0001838359",
+      "aliases": ["Rigetti", "Rigetti Computing"],
+      "official_domains": ["rigetti.com"],
+      "sector_terms": ["quantum", "qubit", "superconducting"],
+      "sources": [
+        {
+          "source_key": "rigetti_ir",
+          "source_name": "Rigetti Computing Investor Relations",
+          "source_type": "official",
+          "base_url": "https://www.rigetti.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": ["USA"],
+          "topic_coverage": ["quantum", "earnings"],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://www.rigetti.com/rigetti-computing-news",
+          "fetch_kind": "html_article",
+          "official_domains": ["rigetti.com"],
+          "fetch_profile": "safari"
+        }
+      ],
+      "email_sources": []
+    },
+    {
+      "symbol": "QBTS",
+      "legal_name": "D-Wave Quantum Inc.",
+      "sec_cik": "0001907982",
+      "aliases": ["D-Wave", "D-Wave Quantum"],
+      "official_domains": ["dwavequantum.com", "dwavesys.com"],
+      "sector_terms": ["quantum", "annealing", "qubit"],
+      "sources": [
+        {
+          "source_key": "dwave_newsroom",
+          "source_name": "D-Wave Quantum Newsroom",
+          "source_type": "official",
+          "base_url": "https://www.dwavequantum.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": ["USA", "CAN"],
+          "topic_coverage": ["quantum"],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://www.dwavequantum.com/company/newsroom/",
+          "fetch_kind": "html_index",
+          "official_domains": ["dwavequantum.com", "dwavesys.com"]
+        }
+      ],
+      "email_sources": []
+    },
+    {
+      "symbol": "QUANTINUUM",
+      "legal_name": "Quantinuum",
+      "yahoo_discovery_enabled": false,
+      "aliases": ["Quantinuum", "Honeywell Quantum Solutions", "Cambridge Quantum"],
+      "official_domains": ["quantinuum.com", "honeywell.com"],
+      "sector_terms": ["quantum", "fault-tolerant", "ion trap", "qubit"],
+      "sources": [
+        {
+          "source_key": "quantinuum_newsroom",
+          "source_name": "Quantinuum Newsroom",
+          "source_type": "official",
+          "base_url": "https://www.quantinuum.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": ["USA", "GBR"],
+          "topic_coverage": ["quantum"],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://www.quantinuum.com/news/news",
+          "fetch_kind": "html_index",
+          "symbols": ["QUANTINUUM", "HON"],
+          "entity_type": "private_reference",
+          "official_domains": ["quantinuum.com", "honeywell.com"]
+        }
+      ],
+      "email_sources": []
+    },
+    {
+      "symbol": "LUNR",
+      "legal_name": "Intuitive Machines, Inc.",
+      "sec_cik": "0001844452",
+      "aliases": ["Intuitive Machines"],
+      "official_domains": ["intuitivemachines.com"],
+      "sector_terms": ["space", "lunar", "NASA", "mission"],
+      "sources": [
+        {
+          "source_key": "intuitive_machines_ir",
+          "source_name": "Intuitive Machines Investor Relations",
+          "source_type": "official",
+          "base_url": "https://investors.intuitivemachines.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": ["USA"],
+          "topic_coverage": ["space", "moon", "NASA", "earnings"],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://investors.intuitivemachines.com/news-releases/news-release-details",
+          "fetch_kind": "html_index",
+          "official_domains": ["intuitivemachines.com"],
+          "fetch_profile": "ir_vendor",
+          "scheduled_fetch": false
+        }
+      ],
+      "email_sources": []
+    },
+    {
+      "symbol": "ASTS",
+      "legal_name": "AST SpaceMobile, Inc.",
+      "sec_cik": "0001780312",
+      "aliases": ["AST SpaceMobile"],
+      "official_domains": ["ast-science.com", "astspacemobile.com"],
+      "sector_terms": ["space", "satellite", "satcom", "direct-to-device"],
+      "sources": [
+        {
+          "source_key": "ast_spacemobile_ir",
+          "source_name": "AST SpaceMobile Investor Relations",
+          "source_type": "official",
+          "base_url": "https://investors.ast-science.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": ["USA"],
+          "topic_coverage": ["space", "satcom", "telecom", "earnings"],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://investors.ast-science.com/press-releases",
+          "fetch_kind": "html_index",
+          "official_domains": ["ast-science.com", "astspacemobile.com"],
+          "fetch_profile": "ir_vendor",
+          "scheduled_fetch": false
+        }
+      ],
+      "email_sources": []
+    },
+    {
+      "symbol": "RDW",
+      "legal_name": "Redwire Corporation",
+      "sec_cik": "0001819810",
+      "aliases": ["Redwire"],
+      "official_domains": ["redwirespace.com"],
+      "sector_terms": ["space", "defense", "aerospace", "backlog"],
+      "sources": [
+        {
+          "source_key": "redwire_ir",
+          "source_name": "Redwire Investor Relations",
+          "source_type": "official",
+          "base_url": "https://ir.redwirespace.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": ["USA"],
+          "topic_coverage": ["space", "defense"],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "rss",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://ir.redwirespace.com/news-events/press-releases/rss",
+          "official_domains": ["redwirespace.com"]
+        }
+      ],
+      "email_sources": [
+        {
+          "signup_url": "https://ir.redwirespace.com/news-events/email-alerts",
+          "source_name": "Redwire IR email alerts"
+        }
+      ]
+    },
+    {
+      "symbol": "AMD",
+      "legal_name": "Advanced Micro Devices, Inc.",
+      "sec_cik": "0000002488",
+      "aliases": ["Advanced Micro Devices", "AMD"],
+      "official_domains": ["amd.com"],
+      "sector_terms": ["semiconductor", "gpu", "datacenter", "ai accelerator"],
+      "sources": [
+        {
+          "source_key": "amd_ir",
+          "source_name": "AMD Investor Relations",
+          "source_type": "official",
+          "base_url": "https://ir.amd.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": ["USA"],
+          "topic_coverage": ["semiconductors", "ai_infrastructure"],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "rss",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://ir.amd.com/news-events/press-releases/rss",
+          "official_domains": ["amd.com"]
+        }
+      ],
+      "email_sources": []
+    },
+    {
+      "symbol": "AAPL",
+      "legal_name": "Apple Inc.",
+      "sec_cik": "0000320193",
+      "aliases": ["Apple"],
+      "official_domains": ["apple.com"],
+      "sector_terms": ["iphone", "consumer electronics", "services", "big tech"],
+      "sources": [
+        {
+          "source_key": "apple_newsroom",
+          "source_name": "Apple Newsroom",
+          "source_type": "official",
+          "base_url": "https://www.apple.com/newsroom",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": ["USA"],
+          "topic_coverage": ["big_tech", "consumer_electronics"],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "rss",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://www.apple.com/newsroom/rss-feed.rss",
+          "official_domains": ["apple.com"],
+          "fetch_profile": "safari"
+        }
+      ],
+      "email_sources": []
+    },
+    {
+      "symbol": "MSFT",
+      "legal_name": "Microsoft Corporation",
+      "sec_cik": "0000789019",
+      "aliases": ["Microsoft"],
+      "official_domains": ["microsoft.com"],
+      "sector_terms": ["cloud", "azure", "software", "ai infrastructure"],
+      "sources": [
+        {
+          "source_key": "microsoft_ir",
+          "source_name": "Microsoft News",
+          "source_type": "official",
+          "base_url": "https://news.microsoft.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": ["USA"],
+          "topic_coverage": ["big_tech", "ai_infrastructure"],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "rss",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://news.microsoft.com/feed/",
+          "fetch_kind": "feed",
+          "official_domains": ["microsoft.com"],
+          "discovery_only": true
+        }
+      ],
+      "email_sources": []
+    },
+    {
+      "symbol": "TLT",
+      "legal_name": "iShares 20+ Year Treasury Bond ETF",
+      "aliases": ["iShares 20+ Year Treasury Bond ETF", "long-duration Treasuries"],
+      "official_domains": ["ishares.com", "blackrock.com"],
+      "sector_terms": ["rates", "treasury", "duration", "bond"],
+      "sources": [
+        {
+          "source_key": "ishares_tlt",
+          "source_name": "iShares TLT Official Fund Page",
+          "source_type": "official",
+          "base_url": "https://www.ishares.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": ["USA"],
+          "topic_coverage": ["rates", "treasury", "bonds"],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://www.ishares.com/us/products/239454/TLT",
+          "fetch_kind": "html_index",
+          "official_domains": ["ishares.com", "blackrock.com"],
+          "scheduled_fetch": false
+        }
+      ],
+      "email_sources": []
+    },
+    {
+      "symbol": "005930.KS",
+      "legal_name": "Samsung Electronics Co., Ltd.",
+      "aliases": ["Samsung Electronics", "Samsung"],
+      "official_domains": ["samsung.com"],
+      "sector_terms": ["memory", "semiconductor", "foundry", "korea"],
+      "sources": [
+        {
+          "source_key": "samsung_global_newsroom",
+          "source_name": "Samsung Global Newsroom",
+          "source_type": "official",
+          "base_url": "https://news.samsung.com/global",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": ["KOR", "GLOBAL"],
+          "topic_coverage": ["semiconductors", "consumer_electronics"],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "rss",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://news.samsung.com/global/feed",
+          "official_domains": ["samsung.com"],
+          "fetch_profile": "safari"
+        }
+      ],
+      "email_sources": []
+    }
+  ]
+}

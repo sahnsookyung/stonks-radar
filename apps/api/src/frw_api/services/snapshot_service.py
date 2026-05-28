@@ -16,6 +16,7 @@ from referencing.jsonschema import DRAFT202012
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from frw_api.services.news.snapshot_builder import build_reviewed_news_snapshots
 from frw_api.services.publication_gate import EventGateInput, can_publish_event
 
 ROOT = Path(__file__).resolve().parents[5]
@@ -25,6 +26,15 @@ LOCAL_ARTIFACTS = Path(os.getenv("SNAPSHOT_ARTIFACT_DIR", str(ROOT / "artifacts"
 CANDIDATE_ROOT = LOCAL_ARTIFACTS / "candidates"
 PUBLISHED_ROOT = Path(os.getenv("PUBLISHED_SNAPSHOT_DIR", str(WEB_PUBLIC)))
 _NUMBER_RE = re.compile(r"-?\d+(?:,\d{3})*(?:\.\d+)?|-?\d+(?:\.\d+)?")
+PROHIBITED_PUBLIC_FIELDS = {
+    "raw_html",
+    "private_note",
+    "restricted_source_text",
+    "full_article_text",
+    "prompt_text",
+    "secret",
+    "api_key",
+}
 
 
 @dataclass(frozen=True)
@@ -186,6 +196,11 @@ def _build_snapshot_tree(
     db_calendar = _calendar_items(db)
     status_data = _source_status_data(db)
     previous_macro_tiles = _published_home_macro_tiles()
+    db_news_by_locale = {
+        locale: build_reviewed_news_snapshots(db, locale=locale, generated_label=_iso(generated_at))
+        for locale in seed_manifest["locales"]
+    }
+    news_event_templates: dict[str, dict[str, Any]] = {}
     for object_key, locale_paths in seed_manifest["objects"].items():
         for locale, source_path in locale_paths.items():
             seed_path = seed_public_root / source_path.removeprefix("public/")
@@ -217,8 +232,44 @@ def _build_snapshot_tree(
                 snapshot["data"] = status_data
             elif snapshot["object_type"] == "correction_log":
                 snapshot["data"]["entries"] = corrections
+            elif snapshot["object_type"] == "news_index" and db_news_by_locale.get(locale):
+                snapshot["data"] = db_news_by_locale[locale]["index"]
+            elif snapshot["object_type"] == "news_ticker" and db_news_by_locale.get(locale):
+                key = object_key.removeprefix("news_ticker_")
+                snapshot["data"] = db_news_by_locale[locale].get("tickers", {}).get(key, snapshot["data"])
+            elif snapshot["object_type"] == "news_region" and db_news_by_locale.get(locale):
+                key = object_key.removeprefix("news_region_")
+                snapshot["data"] = db_news_by_locale[locale].get("regions", {}).get(key, snapshot["data"])
+            elif snapshot["object_type"] == "news_topic" and db_news_by_locale.get(locale):
+                key = object_key.removeprefix("news_topic_")
+                snapshot["data"] = db_news_by_locale[locale].get("topics", {}).get(key, snapshot["data"])
+            if snapshot["object_type"] == "news_event" and locale not in news_event_templates:
+                news_event_templates[locale] = json.loads(json.dumps(snapshot))
             snapshot["content_hash"] = _payload_hash(snapshot["data"])
             rel = Path(f"v{version}") / locale / Path(source_path).relative_to(f"public/v{seed_manifest['current_version']}/{locale}")
+            target = output_root / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False) + "\n")
+            _validate_snapshot_file(target)
+            manifest["objects"].setdefault(object_key, {})[locale] = f"public/{rel.as_posix()}"
+            files.append(target)
+    for locale, news_data in db_news_by_locale.items():
+        if not news_data or locale not in news_event_templates:
+            continue
+        for event_id, event_data in news_data.get("events", {}).items():
+            object_key = f"news_event_{event_id}"
+            if locale in manifest["objects"].get(object_key, {}):
+                continue
+            snapshot = json.loads(json.dumps(news_event_templates[locale]))
+            snapshot["object_key"] = object_key
+            snapshot["snapshot_version"] = version
+            snapshot["generated_at"] = _iso(generated_at)
+            snapshot["stale_after"] = _iso(generated_at + timedelta(hours=12))
+            snapshot["hard_expires_at"] = _iso(generated_at + timedelta(days=7))
+            snapshot["corrections"] = corrections
+            snapshot["data"] = event_data
+            snapshot["content_hash"] = _payload_hash(snapshot["data"])
+            rel = Path(f"v{version}") / locale / "news" / "events" / f"{event_id}.json"
             target = output_root / rel
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False) + "\n")
@@ -616,6 +667,11 @@ def _validate_snapshot_file(file_path: Path) -> None:
         "scenario_basket": "scenario_basket_snapshot.schema.json",
         "source_status": "source_status_snapshot.schema.json",
         "correction_log": "correction_log_snapshot.schema.json",
+        "news_index": "news_index_snapshot.schema.json",
+        "news_event": "news_event_snapshot.schema.json",
+        "news_ticker": "news_ticker_snapshot.schema.json",
+        "news_region": "news_region_snapshot.schema.json",
+        "news_topic": "news_topic_snapshot.schema.json",
     }.get(data.get("object_type"))
     if schema_name is None:
         raise ValueError(f"Unknown snapshot object_type: {data.get('object_type')}")
@@ -629,7 +685,7 @@ def _validate_snapshot_file(file_path: Path) -> None:
 def _assert_no_public_raw_private(value: Any) -> None:
     if isinstance(value, dict):
         for key, nested in value.items():
-            if str(key).lower() in {"raw_html", "private_note", "restricted_source_text"}:
+            if str(key).lower() in PROHIBITED_PUBLIC_FIELDS:
                 raise ValueError(f"Public snapshot contains prohibited field {key}")
             _assert_no_public_raw_private(nested)
     elif isinstance(value, list):

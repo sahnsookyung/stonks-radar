@@ -11,12 +11,41 @@ declare global {
 test("public routes render from snapshots", async ({ page }) => {
   await page.goto("/en");
   await expect(page.getByText("Global market intelligence dashboard")).toBeVisible();
+  await page.goto("/en/news");
+  await expect(page.getByText("Source-Linked Event News")).toBeVisible();
   await page.goto("/en/portfolio");
   await expect(page.getByText("Portfolio lab")).toBeVisible();
   await page.goto("/en/sources");
   await expect(page.getByText("Source registry")).toBeVisible();
   await page.goto("/ko");
   await expect(page.getByText("글로벌 시장 인텔리전스 대시보드")).toBeVisible();
+  await page.goto("/ko/news");
+  await expect(page.getByText("출처 연결 이벤트 뉴스")).toBeVisible();
+});
+
+test("news filters and detail routes render from snapshots", async ({ page }) => {
+  await page.goto("/en/news?region=KOR");
+  await expect(page.getByText("Source-Linked Event News")).toBeVisible();
+  await expect(page.getByText("China-origin export-control risk remains elevated").first()).toBeVisible();
+
+  await page.goto("/en/news");
+  await page.getByPlaceholder("ticker, region, topic").fill("Rocket Lab");
+  await expect(page.getByText("Rocket Lab launch-window monitoring is linked to source evidence for RKLB")).toBeVisible();
+
+  await page.goto("/en/news?topic=energy&breaking=1");
+  await expect(page.getByText("Energy supply-risk watch links shipping chokepoints")).toBeVisible();
+
+  await page.goto("/en/news/events/semiconductor_export_controls_seed");
+  await expect(page.getByText("China-origin export-control risk remains elevated")).toBeVisible();
+  await expect(page.getByText("BIS")).toBeVisible();
+});
+
+test("ticker detail news tab renders ticker snapshot", async ({ page }) => {
+  await page.goto("/en/tickers/NVDA");
+  await page.getByRole("tab", { name: "News" }).click();
+  await expect(page.getByText("Ticker-Relevant News")).toBeVisible();
+  await expect(page.getByText("NVIDIA Corporation has")).toBeVisible();
+  await expect(page.getByText("China-origin export-control risk remains elevated")).toBeVisible();
 });
 
 test("map countries expose hover feedback", async ({ page }) => {

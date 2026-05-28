@@ -86,6 +86,28 @@ class Settings(BaseSettings):
     worker_job_lease_seconds: int = Field(default=900, ge=60, le=3600)
     snapshot_refresh_seconds: int = Field(default=900, ge=300)
     alternative_signal_refresh_seconds: int = Field(default=900, ge=60)
+    news_rss_enabled: bool = True
+    news_gdelt_enabled: bool = False
+    news_public_health_enabled: bool = True
+    news_source_refresh_seconds: int = Field(default=900, ge=300)
+    news_publication_interval_seconds: int = Field(default=300, ge=60)
+    news_max_documents_per_source_per_run: int = Field(default=100, ge=1, le=1000)
+    news_processing_batch_limit: int = Field(default=500, ge=1, le=5000)
+    news_page_read_batch_limit: int = Field(default=25, ge=1, le=250)
+    news_event_cluster_min_confidence: float = Field(default=0.55, ge=0, le=1)
+    news_ticker_watchlist: str = "DJT,TSLA,NVDA,RKLB,IONQ,RGTI,QBTS,QUANTINUUM,LUNR,ASTS,RDW,AMD,AAPL,MSFT,TLT,005930.KS"
+    news_summary_input_max_chars: int = Field(default=120_000, ge=1_000, le=1_000_000)
+    news_summary_llm_enabled: bool = False
+    news_summary_max_events_per_run: int = Field(default=20, ge=0, le=200)
+    admin_url_summary_daily_limit: int = Field(default=20, ge=0, le=200)
+    news_email_webhook_secret: str | None = None
+    news_email_allowed_recipients: str = ""
+    news_email_raw_retention_days: int = Field(default=30, ge=1, le=365)
+    news_email_dead_letter_retention_days: int = Field(default=14, ge=1, le=90)
+    news_email_max_raw_bytes: int = Field(default=1_048_576, ge=1024, le=5_000_000)
+    news_email_archive_dir: str = "/var/lib/stonks-radar/email-archive"
+    news_email_signature_max_skew_seconds: int = Field(default=300, ge=30, le=3600)
+    news_auto_review_trusted_events: bool = True
 
     public_api_rate_limit_per_minute: int = 60
     admin_api_rate_limit_per_minute: int = 120
@@ -122,6 +144,10 @@ class Settings(BaseSettings):
             for value in self.market_data_public_display_allowlist.split(",")
             if value.strip()
         }
+
+    @property
+    def news_email_allowed_recipient_list(self) -> list[str]:
+        return [value.strip().lower() for value in self.news_email_allowed_recipients.split(",") if value.strip()]
 
 
 @lru_cache(maxsize=1)

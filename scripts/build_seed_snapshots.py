@@ -40,7 +40,7 @@ FINRA_API_BASE_URL = "https://api.finra.org"
 FINRA_OAUTH_TOKEN_URL = "https://ews.fip.finra.org/fip/rest/ews/oauth2/access_token?grant_type=client_credentials"
 FINRA_REQUEST_MIN_INTERVAL_SECONDS = 0.25
 DEFAULT_SHORT_TICKERS = "DJT,TSLA,NVDA"
-DEFAULT_NEWS_TICKERS = "RKLB,TSLA,NVDA,DJT"
+DEFAULT_NEWS_TICKERS = "DJT,TSLA,NVDA,RKLB,IONQ,RGTI,QBTS,QUANTINUUM,LUNR,ASTS,RDW,AMD,AAPL,MSFT,TLT,005930.KS"
 DEFAULT_TRUMP_CIKS = {"DJT": "0001849635"}
 PENTAGON_PIZZA_URL = "https://pentagon.pizza/"
 OFFICIAL_POLICY_CALENDAR_URLS = {
@@ -85,7 +85,7 @@ SECTORS = {
     "quantum": {
         "en": "Quantum",
         "ko": "양자",
-        "entities": ["IONQ", "Rigetti", "D-Wave", "Quantum Computing Inc.", "Big Tech quantum divisions"],
+        "entities": ["IONQ", "Rigetti", "D-Wave", "Quantinuum (private/reference)", "Quantum Computing Inc.", "Big Tech quantum divisions"],
         "exposure": ["USA", "EU", "JPN"],
         "drivers_en": ["Government funding", "technical milestone verification", "export controls"],
         "drivers_ko": ["정부 지원", "기술 마일스톤 검증", "수출통제"],
@@ -156,6 +156,90 @@ SCENARIOS = {
         "thesis_ko": "대만, 한국, 일본, 수출통제, 메모리, 파운드리 리스크 경로를 매핑합니다.",
         "objects": ["TSMC", "Samsung Electronics", "SK Hynix", "ASML", "NVIDIA"],
     },
+}
+
+NEWS_TICKER_KO_NAMES = {
+    "DJT": "트럼프 미디어",
+    "TSLA": "테슬라",
+    "NVDA": "엔비디아",
+    "005930.KS": "삼성전자",
+    "RKLB": "로켓랩 USA",
+    "IONQ": "아이온큐",
+    "RGTI": "리게티 컴퓨팅",
+    "QBTS": "디웨이브 퀀텀",
+    "QUANTINUUM": "퀀티넘",
+    "LUNR": "인튜이티브 머신스",
+    "ASTS": "AST 스페이스모바일",
+    "RDW": "레드와이어",
+    "AMD": "AMD",
+    "AAPL": "애플",
+    "MSFT": "마이크로소프트",
+    "TLT": "아이셰어즈 장기 미국채 ETF",
+}
+
+NEWS_TICKER_EXCHANGES = {
+    "DJT": "NASDAQ",
+    "TSLA": "NASDAQ",
+    "NVDA": "NASDAQ",
+    "005930.KS": "KRX",
+    "RKLB": "NASDAQ",
+    "IONQ": "NYSE",
+    "RGTI": "NASDAQ",
+    "QBTS": "NYSE",
+    "QUANTINUUM": "PRIVATE",
+    "LUNR": "NASDAQ",
+    "ASTS": "NASDAQ",
+    "RDW": "NYSE",
+    "AMD": "NASDAQ",
+    "AAPL": "NASDAQ",
+    "MSFT": "NASDAQ",
+    "TLT": "NASDAQ",
+}
+
+
+def _load_news_ticker_profiles() -> dict[str, dict[str, str]]:
+    watchlist_path = ROOT / "apps" / "api" / "src" / "frw_api" / "services" / "news" / "ticker_watchlist.json"
+    payload = json.loads(watchlist_path.read_text())
+    profiles: dict[str, dict[str, str]] = {}
+    for entity in payload.get("entities", []):
+        symbol = str(entity.get("symbol") or "").upper()
+        if not symbol:
+            continue
+        name_en = str(entity.get("legal_name") or symbol)
+        profiles[symbol] = {
+            "name_en": name_en,
+            "name_ko": NEWS_TICKER_KO_NAMES.get(symbol, name_en),
+            "exchange": NEWS_TICKER_EXCHANGES.get(symbol, "REFERENCE"),
+        }
+    return profiles
+
+
+NEWS_TICKER_PROFILES = _load_news_ticker_profiles()
+
+NEWS_REGION_KEYS = ["USA", "KOR", "JPN", "BRA", "EU", "CHN"]
+NEWS_TOPIC_KEYS = ["semiconductors", "geopolitics", "public_health", "central_banks", "energy"]
+
+NEWS_TOPIC_LABELS = {
+    "semiconductors": ("Semiconductors", "반도체"),
+    "geopolitics": ("Geopolitics", "지정학"),
+    "public_health": ("Public health", "공중보건"),
+    "central_banks": ("Central banks", "중앙은행"),
+    "energy": ("Energy", "에너지"),
+    "space": ("Space", "우주"),
+    "quantum": ("Quantum", "양자"),
+    "trade_policy": ("Trade policy", "무역 정책"),
+    "supply_chain": ("Supply chain", "공급망"),
+    "macro": ("Macro", "거시"),
+}
+
+NEWS_TRUST_LABELS = {
+    "T0_OFFICIAL": ("Official source", "공식 출처"),
+    "T1_REGULATED_FILING": ("Regulated filing", "규제 공시"),
+    "T2_REPUTABLE_MEDIA": ("Reputable media", "신뢰 매체"),
+    "T3_REVIEWED_PUBLIC_SOURCE": ("Reviewed public source", "검토된 공개 출처"),
+    "T4_WEAK_SIGNAL": ("Weak signal", "약한 신호"),
+    "T5_UNREVIEWED": ("Unreviewed", "미검토"),
+    "T6_BLOCKED": ("Blocked", "차단"),
 }
 
 
@@ -346,6 +430,8 @@ def build_snapshots() -> None:
                 {"entries": []},
             ),
         )
+
+        _write_news_snapshots(manifest, locale, generated_at, stale_after, hard_expires_at)
 
     latest = PUBLIC_ROOT / "latest"
     latest.mkdir(parents=True, exist_ok=True)
@@ -1268,6 +1354,18 @@ def _envelope(
             {"source_key": "gdelt", "policy_version": 1},
             {"source_key": "google_news_rss", "policy_version": 1},
             {"source_key": "yahoo_finance_rss", "policy_version": 1},
+            {"source_key": "bis", "policy_version": 1},
+            {"source_key": "who", "policy_version": 1},
+            {"source_key": "cdc", "policy_version": 1},
+            {"source_key": "company_ir", "policy_version": 1},
+            {"source_key": "ecb", "policy_version": 1},
+            {"source_key": "bank_of_korea", "policy_version": 1},
+            {"source_key": "bank_of_japan", "policy_version": 1},
+            {"source_key": "bcb", "policy_version": 1},
+            {"source_key": "rocket_lab_ir", "policy_version": 1},
+            {"source_key": "ionq_ir", "policy_version": 1},
+            {"source_key": "iea", "policy_version": 1},
+            {"source_key": "source_policy", "policy_version": 1},
         ],
         "data": data,
         "warnings": [
@@ -1375,6 +1473,680 @@ def _events(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "correction_status": "none",
         },
     ]
+
+
+def _write_news_snapshots(
+    manifest: dict[str, Any],
+    locale: str,
+    generated_at: datetime,
+    stale_after: datetime,
+    hard_expires_at: datetime,
+) -> None:
+    events = _news_event_details(locale, generated_at)
+    list_items = [_news_list_item(event) for event in events]
+    list_items.sort(key=lambda event: (event["breaking_score"], event["last_seen_at"]), reverse=True)
+
+    _write(
+        manifest,
+        "news_index",
+        locale,
+        ["news", "index.json"],
+        _envelope(
+            locale,
+            generated_at,
+            stale_after,
+            hard_expires_at,
+            "news_index",
+            "news_index",
+            {
+                "generated_label": generated_at.isoformat().replace("+00:00", "Z"),
+                "filters": _news_filters(list_items, locale),
+                "events": list_items,
+            },
+        ),
+    )
+
+    for event in events:
+        _write(
+            manifest,
+            f"news_event_{event['id']}",
+            locale,
+            ["news", "events", f"{event['id']}.json"],
+            _envelope(
+                locale,
+                generated_at,
+                stale_after,
+                hard_expires_at,
+                "news_event",
+                f"news_event_{event['id']}",
+                event,
+            ),
+        )
+
+    for symbol, profile in NEWS_TICKER_PROFILES.items():
+        symbol_events = [
+            item
+            for item in list_items
+            if any(ticker["symbol"].upper() == symbol.upper() for ticker in item["tickers"])
+        ]
+        symbol_key = _news_symbol_key(symbol)
+        _write(
+            manifest,
+            f"news_ticker_{symbol_key}",
+            locale,
+            ["news", "tickers", f"{symbol_key}.json"],
+            _envelope(
+                locale,
+                generated_at,
+                stale_after,
+                hard_expires_at,
+                "news_ticker",
+                f"news_ticker_{symbol_key}",
+                {
+                    "symbol": symbol,
+                    "name": _t(locale, profile["name_en"], profile["name_ko"]),
+                    "generated_label": generated_at.isoformat().replace("+00:00", "Z"),
+                    "summary": _news_ticker_summary(symbol, profile, symbol_events, locale),
+                    "events": symbol_events,
+                },
+            ),
+        )
+
+    for region_key in NEWS_REGION_KEYS:
+        region_events = [
+            item
+            for item in list_items
+            if any(region["key"] == region_key for region in item["regions"])
+        ]
+        _write(
+            manifest,
+            f"news_region_{region_key}",
+            locale,
+            ["news", "regions", f"{region_key}.json"],
+            _envelope(
+                locale,
+                generated_at,
+                stale_after,
+                hard_expires_at,
+                "news_region",
+                f"news_region_{region_key}",
+                {
+                    "key": region_key,
+                    "name": _news_region_name(region_key, locale),
+                    "generated_label": generated_at.isoformat().replace("+00:00", "Z"),
+                    "regional_brief": _news_region_brief(region_key, region_events, locale),
+                    "events": region_events,
+                },
+            ),
+        )
+
+    for topic_key in NEWS_TOPIC_KEYS:
+        topic_events = [
+            item
+            for item in list_items
+            if any(topic["key"] == topic_key for topic in item["topics"])
+        ]
+        label_en, label_ko = NEWS_TOPIC_LABELS[topic_key]
+        _write(
+            manifest,
+            f"news_topic_{topic_key}",
+            locale,
+            ["news", "topics", f"{topic_key}.json"],
+            _envelope(
+                locale,
+                generated_at,
+                stale_after,
+                hard_expires_at,
+                "news_topic",
+                f"news_topic_{topic_key}",
+                {
+                    "key": topic_key,
+                    "label": _t(locale, label_en, label_ko),
+                    "generated_label": generated_at.isoformat().replace("+00:00", "Z"),
+                    "topic_brief": _news_topic_brief(topic_key, topic_events, locale),
+                    "events": topic_events,
+                },
+            ),
+        )
+
+
+def _news_event_details(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
+    ts = generated_at.isoformat().replace("+00:00", "Z")
+    early = (generated_at - timedelta(hours=4)).isoformat().replace("+00:00", "Z")
+    prior = (generated_at - timedelta(hours=18)).isoformat().replace("+00:00", "Z")
+    old = (generated_at - timedelta(days=2)).isoformat().replace("+00:00", "Z")
+    events = [
+        {
+            "id": "semiconductor_export_controls_seed",
+            "title": _t(locale, "China-origin export-control risk remains elevated for AI-chip supply chains", "중국발 수출통제 리스크가 AI 반도체 공급망에 높은 상태로 유지"),
+            "summary": _t(locale, "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.", "공식 정책 모니터링은 수출통제를 엔비디아, 삼성전자, 일본 장비 업체, 유럽 장비 노출과 연결합니다."),
+            "event_type": "trade_policy",
+            "first_seen_at": old,
+            "last_seen_at": ts,
+            "published_at": ts,
+            "freshness": "fresh",
+            "severity": "high",
+            "confidence": 0.78,
+            "breaking_score": 76,
+            "trust_score": 88,
+            "source_count": 3,
+            "tickers": [
+                _news_ticker_ref("NVDA", "affected_company", 0.88, locale),
+                _news_ticker_ref("005930.KS", "affected_company", 0.84, locale),
+            ],
+            "regions": [
+                _news_region_ref("CHN", "event_region", 0.92, locale),
+                _news_region_ref("USA", "affected_region", 0.86, locale),
+                _news_region_ref("KOR", "affected_region", 0.84, locale),
+                _news_region_ref("JPN", "affected_region", 0.78, locale),
+                _news_region_ref("EU", "affected_region", 0.72, locale),
+                _news_region_ref("USA", "market_region", 0.76, locale),
+                _news_region_ref("KOR", "market_region", 0.74, locale),
+            ],
+            "topics": [
+                _news_topic_ref("semiconductors", 0.94, locale),
+                _news_topic_ref("geopolitics", 0.79, locale),
+                _news_topic_ref("trade_policy", 0.86, locale),
+                _news_topic_ref("supply_chain", 0.77, locale),
+            ],
+            "market_direction": "mixed",
+            "source_links": [
+                _news_source_ref("BIS", "https://www.bis.gov/", "bis", "Bureau of Industry and Security export controls", "미 산업안보국 수출통제", "T0_OFFICIAL", prior, locale),
+                _news_source_ref("SEC EDGAR", "https://www.sec.gov/edgar/search/", "sec_edgar", "Issuer filings for affected companies", "영향 기업 공시", "T1_REGULATED_FILING", prior, locale, False),
+                _news_source_ref("Source policy", "https://www.bis.gov/ear", "source_policy", "Export Administration Regulations reference", "수출관리규정 참고", "T3_REVIEWED_PUBLIC_SOURCE", prior, locale, False),
+            ],
+            "one_sentence_summary": _t(locale, "Export-control monitoring remains a cross-region semiconductor risk, not a trade recommendation.", "수출통제 모니터링은 매매 추천이 아니라 지역 간 반도체 리스크입니다."),
+            "what_happened": [
+                _t(locale, "The seed event models an official-policy event originating in China-facing export controls.", "시드 이벤트는 중국 관련 수출통제에서 발생하는 공식 정책 이벤트를 모델링합니다."),
+                _t(locale, "Affected regions distinguish event location from likely market impact.", "영향 지역은 이벤트 발생지와 시장 영향 가능 지역을 구분합니다."),
+            ],
+            "why_it_matters": [
+                _t(locale, "AI accelerator availability, memory demand, equipment channels, and capex timing can move together.", "AI 가속기 가용성, 메모리 수요, 장비 채널, 투자 시점이 함께 움직일 수 있습니다."),
+                _t(locale, "Korea and Japan exposure is shown as affected-market context, not as the source of the policy.", "한국과 일본 노출은 정책 출처가 아니라 영향 시장 맥락으로 표시됩니다."),
+            ],
+            "known_facts": [
+                _t(locale, "Only source-linked public metadata and short summaries are published.", "출처 연결 공개 메타데이터와 짧은 요약만 게시합니다."),
+                _t(locale, "Ticker links require company/entity matching, not naive text search.", "티커 연결은 단순 텍스트 검색이 아닌 회사/엔티티 매칭을 요구합니다."),
+            ],
+            "uncertainties": [
+                _t(locale, "Actual shipment, revenue, and compliance impacts require issuer-specific filings or guidance.", "실제 선적, 매출, 컴플라이언스 영향은 기업별 공시나 가이던스가 필요합니다."),
+            ],
+            "conflicting_reports": [],
+            "market_relevance": {
+                "direction": "mixed",
+                "confidence": "medium",
+                "reasoning": _t(locale, "Restrictions can pressure revenue channels while supporting constrained-supply pricing in parts of the chain.", "제한은 매출 채널을 압박할 수 있지만 공급 제약 구간의 가격을 지지할 수도 있습니다."),
+            },
+            "methodology": _news_methodology(locale),
+            "disclaimer": _news_disclaimer(locale),
+        },
+        {
+            "id": "central_bank_policy_watch_seed",
+            "title": _t(locale, "Central-bank decision calendar clusters FOMC, BoJ, BoK, ECB, and Brazil COPOM risk", "FOMC, 일본은행, 한국은행, ECB, 브라질 COPOM 결정 일정 리스크"),
+            "summary": _t(locale, "Official calendars are grouped into one policy-event watch so users can scan rate dates without leaving the app.", "공식 일정을 하나의 정책 이벤트 워치로 묶어 앱을 벗어나지 않고 금리 결정일을 확인할 수 있습니다."),
+            "event_type": "central_bank_calendar",
+            "first_seen_at": old,
+            "last_seen_at": ts,
+            "published_at": ts,
+            "freshness": "fresh",
+            "severity": "medium",
+            "confidence": 0.86,
+            "breaking_score": 58,
+            "trust_score": 96,
+            "source_count": 5,
+            "tickers": [
+                _news_ticker_ref("005930.KS", "affected_company", 0.58, locale),
+            ],
+            "regions": [
+                _news_region_ref("USA", "event_region", 0.88, locale),
+                _news_region_ref("JPN", "event_region", 0.88, locale),
+                _news_region_ref("KOR", "event_region", 0.88, locale),
+                _news_region_ref("EU", "event_region", 0.85, locale),
+                _news_region_ref("BRA", "event_region", 0.84, locale),
+                _news_region_ref("USA", "market_region", 0.72, locale),
+                _news_region_ref("KOR", "market_region", 0.68, locale),
+            ],
+            "topics": [
+                _news_topic_ref("central_banks", 0.96, locale),
+                _news_topic_ref("macro", 0.82, locale),
+            ],
+            "market_direction": "unclear",
+            "source_links": [
+                _news_source_ref("Federal Reserve", OFFICIAL_POLICY_CALENDAR_URLS["federal_reserve"], "federal_reserve", "FOMC calendars", "FOMC 일정", "T0_OFFICIAL", prior, locale),
+                _news_source_ref("Bank of Korea", OFFICIAL_POLICY_CALENDAR_URLS["bank_of_korea"], "bank_of_korea", "Monetary policy schedule", "통화정책 일정", "T0_OFFICIAL", prior, locale),
+                _news_source_ref("Bank of Japan", OFFICIAL_POLICY_CALENDAR_URLS["bank_of_japan"], "bank_of_japan", "Monetary policy meetings", "통화정책회의", "T0_OFFICIAL", prior, locale),
+                _news_source_ref("ECB", OFFICIAL_POLICY_CALENDAR_URLS["ecb"], "ecb", "Governing Council calendars", "ECB 정책위원회 일정", "T0_OFFICIAL", prior, locale),
+                _news_source_ref("BCB", OFFICIAL_POLICY_CALENDAR_URLS["bcb"], "bcb", "COPOM calendar", "COPOM 일정", "T0_OFFICIAL", prior, locale),
+            ],
+            "one_sentence_summary": _t(locale, "Rate-decision dates are grouped as official calendar context, not a rate forecast.", "금리 결정일은 금리 전망이 아닌 공식 일정 맥락으로 묶입니다."),
+            "what_happened": [
+                _t(locale, "The event clusters official policy calendars across major monitored regions.", "이 이벤트는 주요 모니터링 지역의 공식 정책 일정을 클러스터링합니다."),
+            ],
+            "why_it_matters": [
+                _t(locale, "Rate decisions can affect FX, discount rates, sector rotations, and liquidity-sensitive equities.", "금리 결정은 환율, 할인율, 섹터 로테이션, 유동성 민감 주식에 영향을 줄 수 있습니다."),
+            ],
+            "known_facts": [
+                _t(locale, "Calendar sources are official central-bank or monetary-authority pages.", "일정 출처는 공식 중앙은행 또는 통화당국 페이지입니다."),
+            ],
+            "uncertainties": [
+                _t(locale, "The snapshot does not infer the decision outcome.", "스냅샷은 결정 결과를 추론하지 않습니다."),
+            ],
+            "conflicting_reports": [],
+            "market_relevance": {
+                "direction": "unclear",
+                "confidence": "medium",
+                "reasoning": _t(locale, "The event is date-sensitive; direction depends on the decision and statement language.", "이 이벤트는 날짜 민감 이벤트이며 방향성은 결정과 성명 문구에 달려 있습니다."),
+            },
+            "methodology": _news_methodology(locale),
+            "disclaimer": _news_disclaimer(locale),
+        },
+        {
+            "id": "public_health_alert_seed",
+            "title": _t(locale, "Public-health alert monitoring covers Brazil, US, Europe, and Asia travel-sensitive markets", "공중보건 경보 모니터링이 브라질, 미국, 유럽, 아시아 여행 민감 시장을 포괄"),
+            "summary": _t(locale, "Official public-health feeds are classified separately from financial news and surfaced only as market-context risk.", "공식 공중보건 피드는 금융 뉴스와 별도로 분류되어 시장 맥락 리스크로만 표시됩니다."),
+            "event_type": "public_health_alert",
+            "first_seen_at": old,
+            "last_seen_at": early,
+            "published_at": early,
+            "freshness": "watch",
+            "severity": "medium",
+            "confidence": 0.74,
+            "breaking_score": 63,
+            "trust_score": 92,
+            "source_count": 2,
+            "tickers": [],
+            "regions": [
+                _news_region_ref("BRA", "event_region", 0.72, locale),
+                _news_region_ref("USA", "affected_region", 0.58, locale),
+                _news_region_ref("EU", "affected_region", 0.56, locale),
+                _news_region_ref("JPN", "affected_region", 0.54, locale),
+                _news_region_ref("KOR", "affected_region", 0.54, locale),
+            ],
+            "topics": [
+                _news_topic_ref("public_health", 0.96, locale),
+                _news_topic_ref("macro", 0.52, locale),
+            ],
+            "market_direction": "unclear",
+            "source_links": [
+                _news_source_ref("WHO", "https://www.who.int/emergencies/disease-outbreak-news", "who", "Disease Outbreak News", "질병 발생 뉴스", "T0_OFFICIAL", prior, locale),
+                _news_source_ref("CDC", "https://www.cdc.gov/travel/notices", "cdc", "Travel health notices", "여행 건강 고지", "T0_OFFICIAL", prior, locale, False),
+            ],
+            "one_sentence_summary": _t(locale, "Public-health items are risk context and are not converted into trading calls.", "공중보건 항목은 리스크 맥락이며 거래 신호로 변환하지 않습니다."),
+            "what_happened": [
+                _t(locale, "The seed classifier identifies official outbreak and travel-health sources.", "시드 분류기는 공식 질병 발생 및 여행 건강 출처를 식별합니다."),
+            ],
+            "why_it_matters": [
+                _t(locale, "Large alerts can affect travel, logistics, consumer behavior, and regional risk premia.", "대형 경보는 여행, 물류, 소비 행동, 지역 리스크 프리미엄에 영향을 줄 수 있습니다."),
+            ],
+            "known_facts": [
+                _t(locale, "Only official public-health source links are used for this seed event.", "이 시드 이벤트는 공식 공중보건 출처 링크만 사용합니다."),
+            ],
+            "uncertainties": [
+                _t(locale, "Market effects require severity, spread, and policy-response confirmation.", "시장 영향은 심각도, 확산, 정책 대응 확인이 필요합니다."),
+            ],
+            "conflicting_reports": [],
+            "market_relevance": {
+                "direction": "unclear",
+                "confidence": "low",
+                "reasoning": _t(locale, "Health alerts can affect sectors unevenly and should stay separate from unsupported market claims.", "보건 경보는 섹터별 영향이 다를 수 있어 근거 없는 시장 주장과 분리해야 합니다."),
+            },
+            "methodology": _news_methodology(locale),
+            "disclaimer": _news_disclaimer(locale),
+        },
+        {
+            "id": "rklb_launch_window_seed",
+            "title": _t(locale, "Rocket Lab launch-window monitoring is linked to source evidence for RKLB", "로켓랩 발사 일정 모니터링이 RKLB 원문 근거와 연결"),
+            "summary": _t(locale, "Company and filing sources are grouped into a ticker-specific event for Rocket Lab launch-cadence monitoring.", "회사 및 공시 출처를 로켓랩 발사 빈도 모니터링을 위한 티커별 이벤트로 묶습니다."),
+            "event_type": "company_update",
+            "first_seen_at": prior,
+            "last_seen_at": ts,
+            "published_at": ts,
+            "freshness": "fresh",
+            "severity": "medium",
+            "confidence": 0.8,
+            "breaking_score": 68,
+            "trust_score": 90,
+            "source_count": 2,
+            "tickers": [_news_ticker_ref("RKLB", "direct_subject", 0.92, locale)],
+            "regions": [
+                _news_region_ref("USA", "company_region", 0.84, locale),
+                _news_region_ref("USA", "market_region", 0.84, locale),
+                _news_region_ref("JPN", "affected_region", 0.48, locale),
+            ],
+            "topics": [
+                _news_topic_ref("space", 0.94, locale),
+                _news_topic_ref("supply_chain", 0.44, locale),
+            ],
+            "market_direction": "mixed",
+            "source_links": [
+                _news_source_ref("Rocket Lab", "https://www.rocketlabusa.com/updates/", "rocket_lab_ir", "Rocket Lab updates", "로켓랩 업데이트", "T0_OFFICIAL", prior, locale),
+                _news_source_ref("SEC EDGAR", "https://www.sec.gov/edgar/browse/?CIK=1819994", "sec_edgar", "Rocket Lab SEC filings", "로켓랩 SEC 공시", "T1_REGULATED_FILING", prior, locale, False),
+            ],
+            "one_sentence_summary": _t(locale, "RKLB event rows link to company and filing evidence rather than unsourced social chatter.", "RKLB 이벤트 행은 출처 없는 소셜 소문이 아니라 회사 및 공시 근거에 연결됩니다."),
+            "what_happened": [
+                _t(locale, "The seed event demonstrates ticker-level company news grouping for a tracked space company.", "시드 이벤트는 추적 우주 기업의 티커별 회사 뉴스 그룹화를 보여줍니다."),
+            ],
+            "why_it_matters": [
+                _t(locale, "Launch cadence, backlog execution, and mission risk are central inputs for space-sector monitoring.", "발사 빈도, 수주 실행, 미션 리스크는 우주 섹터 모니터링의 핵심 입력값입니다."),
+            ],
+            "known_facts": [
+                _t(locale, "Source links are official company updates and regulated filings.", "출처 링크는 공식 회사 업데이트 및 규제 공시입니다."),
+            ],
+            "uncertainties": [
+                _t(locale, "Specific launch timing can change and should be verified against the source page.", "구체적 발사 시각은 변동될 수 있으므로 원문 페이지로 확인해야 합니다."),
+            ],
+            "conflicting_reports": [],
+            "market_relevance": {
+                "direction": "mixed",
+                "confidence": "medium",
+                "reasoning": _t(locale, "Operational cadence can support sentiment, but execution delays can offset it.", "운영 빈도는 심리를 지지할 수 있지만 실행 지연이 이를 상쇄할 수 있습니다."),
+            },
+            "methodology": _news_methodology(locale),
+            "disclaimer": _news_disclaimer(locale),
+        },
+        {
+            "id": "ionq_contract_watch_seed",
+            "title": _t(locale, "IonQ contract and funding news is classified as quantum-sector ticker context", "아이온큐 계약 및 자금 뉴스가 양자 섹터 티커 맥락으로 분류"),
+            "summary": _t(locale, "IONQ appears in the ticker news layer only when company, filing, or sector-context evidence is present.", "IONQ는 회사, 공시, 섹터 맥락 근거가 있을 때만 티커 뉴스 레이어에 표시됩니다."),
+            "event_type": "company_update",
+            "first_seen_at": prior,
+            "last_seen_at": early,
+            "published_at": early,
+            "freshness": "watch",
+            "severity": "medium",
+            "confidence": 0.76,
+            "breaking_score": 61,
+            "trust_score": 88,
+            "source_count": 2,
+            "tickers": [_news_ticker_ref("IONQ", "direct_subject", 0.9, locale)],
+            "regions": [
+                _news_region_ref("USA", "company_region", 0.88, locale),
+                _news_region_ref("USA", "market_region", 0.88, locale),
+                _news_region_ref("EU", "affected_region", 0.42, locale),
+                _news_region_ref("KOR", "mentioned_region", 0.3, locale),
+            ],
+            "topics": [
+                _news_topic_ref("quantum", 0.96, locale),
+                _news_topic_ref("macro", 0.38, locale),
+            ],
+            "market_direction": "mixed",
+            "source_links": [
+                _news_source_ref("IonQ", "https://ionq.com/news", "ionq_ir", "IonQ news", "아이온큐 뉴스", "T0_OFFICIAL", prior, locale),
+                _news_source_ref("SEC EDGAR", "https://www.sec.gov/edgar/browse/?CIK=1824920", "sec_edgar", "IonQ SEC filings", "아이온큐 SEC 공시", "T1_REGULATED_FILING", prior, locale, False),
+            ],
+            "one_sentence_summary": _t(locale, "IONQ coverage is source-linked ticker context, not a model-generated price call.", "IONQ 커버리지는 출처 연결 티커 맥락이며 모델 생성 가격 의견이 아닙니다."),
+            "what_happened": [
+                _t(locale, "The seed event demonstrates ambiguous/high-beta ticker matching with official sources.", "시드 이벤트는 공식 출처 기반의 고베타 티커 매칭을 보여줍니다."),
+            ],
+            "why_it_matters": [
+                _t(locale, "Quantum-sector news often needs source strength and milestone validation before becoming market context.", "양자 섹터 뉴스는 시장 맥락이 되기 전에 출처 강도와 마일스톤 검증이 필요합니다."),
+            ],
+            "known_facts": [
+                _t(locale, "The event is tied to official company and SEC source pages.", "이 이벤트는 공식 회사 및 SEC 출처 페이지에 연결됩니다."),
+            ],
+            "uncertainties": [
+                _t(locale, "Technical milestones and commercial revenue impact need separate verification.", "기술 마일스톤과 상업 매출 영향은 별도 검증이 필요합니다."),
+            ],
+            "conflicting_reports": [],
+            "market_relevance": {
+                "direction": "mixed",
+                "confidence": "medium",
+                "reasoning": _t(locale, "Contract news can support narrative momentum, but milestone risk remains high.", "계약 뉴스는 내러티브 모멘텀을 지지할 수 있지만 마일스톤 리스크는 여전히 높습니다."),
+            },
+            "methodology": _news_methodology(locale),
+            "disclaimer": _news_disclaimer(locale),
+        },
+        {
+            "id": "energy_geopolitical_supply_risk_seed",
+            "title": _t(locale, "Energy supply-risk watch links shipping chokepoints, inventories, and inflation-sensitive markets", "에너지 공급 리스크 워치가 해상 요충지, 재고, 인플레이션 민감 시장을 연결"),
+            "summary": _t(locale, "Official energy data and reviewed geopolitical context are grouped as a supply-risk event affecting the US, Europe, China, Korea, Japan, and Brazil.", "공식 에너지 데이터와 검토된 지정학 맥락을 미국, 유럽, 중국, 한국, 일본, 브라질에 영향을 줄 수 있는 공급 리스크 이벤트로 묶습니다."),
+            "event_type": "geopolitical_supply_risk",
+            "first_seen_at": old,
+            "last_seen_at": ts,
+            "published_at": ts,
+            "freshness": "fresh",
+            "severity": "high",
+            "confidence": 0.72,
+            "breaking_score": 82,
+            "trust_score": 84,
+            "source_count": 3,
+            "tickers": [],
+            "regions": [
+                _news_region_ref("USA", "affected_region", 0.76, locale),
+                _news_region_ref("EU", "affected_region", 0.74, locale),
+                _news_region_ref("CHN", "affected_region", 0.72, locale),
+                _news_region_ref("KOR", "affected_region", 0.7, locale),
+                _news_region_ref("JPN", "affected_region", 0.7, locale),
+                _news_region_ref("BRA", "affected_region", 0.54, locale),
+            ],
+            "topics": [
+                _news_topic_ref("energy", 0.96, locale),
+                _news_topic_ref("geopolitics", 0.86, locale),
+                _news_topic_ref("supply_chain", 0.72, locale),
+            ],
+            "market_direction": "mixed",
+            "source_links": [
+                _news_source_ref("EIA", "https://www.eia.gov/petroleum/supply/weekly/", "eia", "Weekly petroleum status report", "주간 석유 현황 보고서", "T0_OFFICIAL", prior, locale),
+                _news_source_ref("IEA", "https://www.iea.org/reports/oil-market-report", "iea", "Oil market report", "석유 시장 보고서", "T3_REVIEWED_PUBLIC_SOURCE", prior, locale, False),
+                _news_source_ref("Source policy", "https://www.eia.gov/", "source_policy", "Official energy-data context", "공식 에너지 데이터 맥락", "T3_REVIEWED_PUBLIC_SOURCE", prior, locale, False),
+            ],
+            "one_sentence_summary": _t(locale, "Supply-risk monitoring separates official energy data from weaker geopolitical discovery signals.", "공급 리스크 모니터링은 공식 에너지 데이터와 약한 지정학 발견 신호를 구분합니다."),
+            "what_happened": [
+                _t(locale, "The event models an energy chokepoint/inventory monitoring cluster.", "이 이벤트는 에너지 해상 요충지/재고 모니터링 클러스터를 모델링합니다."),
+            ],
+            "why_it_matters": [
+                _t(locale, "Energy supply shocks can feed inflation, rates, FX, transportation, and commodity-linked equities.", "에너지 공급 충격은 인플레이션, 금리, 환율, 운송, 원자재 연계 주식에 영향을 줄 수 있습니다."),
+            ],
+            "known_facts": [
+                _t(locale, "Official inventory sources are kept separate from discovery-only feeds.", "공식 재고 출처는 발견 전용 피드와 분리됩니다."),
+            ],
+            "uncertainties": [
+                _t(locale, "Chokepoint closure probability and duration require continuous source corroboration.", "요충지 폐쇄 가능성과 기간은 지속적인 출처 확인이 필요합니다."),
+            ],
+            "conflicting_reports": [],
+            "market_relevance": {
+                "direction": "mixed",
+                "confidence": "medium",
+                "reasoning": _t(locale, "Supply risk can lift energy inputs while pressuring inflation-sensitive growth assets.", "공급 리스크는 에너지 가격을 높일 수 있지만 인플레이션 민감 성장자산에는 압박이 될 수 있습니다."),
+            },
+            "methodology": _news_methodology(locale),
+            "disclaimer": _news_disclaimer(locale),
+        },
+    ]
+    list_items = [_news_list_item(event) for event in events]
+    for event in events:
+        related = [
+            item
+            for item in list_items
+            if item["id"] != event["id"]
+            and (
+                {topic["key"] for topic in item["topics"]} & {topic["key"] for topic in event["topics"]}
+                or {region["key"] for region in item["regions"]} & {region["key"] for region in event["regions"]}
+            )
+        ]
+        event["related_events"] = related[:3]
+    return events
+
+
+def _news_list_item(event: dict[str, Any]) -> dict[str, Any]:
+    keys = [
+        "id",
+        "title",
+        "summary",
+        "event_type",
+        "first_seen_at",
+        "last_seen_at",
+        "published_at",
+        "freshness",
+        "severity",
+        "confidence",
+        "breaking_score",
+        "trust_score",
+        "source_count",
+        "tickers",
+        "regions",
+        "topics",
+        "market_direction",
+        "source_links",
+    ]
+    return {key: event[key] for key in keys}
+
+
+def _news_filters(events: list[dict[str, Any]], locale: str) -> dict[str, list[dict[str, Any]]]:
+    return {
+        "regions": _news_facets(events, "regions", "key", locale),
+        "topics": _news_facets(events, "topics", "key", locale),
+        "tickers": _news_facets(events, "tickers", "symbol", locale),
+        "trust_tiers": _news_trust_facets(events, locale),
+    }
+
+
+def _news_facets(events: list[dict[str, Any]], field: str, key_field: str, locale: str) -> list[dict[str, Any]]:
+    labels: dict[str, str] = {}
+    counts: dict[str, int] = {}
+    for event in events:
+        seen: set[str] = set()
+        for ref in event.get(field, []):
+            key = str(ref.get(key_field) or "")
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            counts[key] = counts.get(key, 0) + 1
+            labels[key] = str(ref.get("label") or ref.get("name") or _news_fallback_label(field, key, locale))
+    return [
+        {"key": key, "label": labels.get(key, key), "count": counts[key]}
+        for key in sorted(counts, key=lambda item: (-counts[item], item))
+    ]
+
+
+def _news_trust_facets(events: list[dict[str, Any]], locale: str) -> list[dict[str, Any]]:
+    counts: dict[str, int] = {}
+    for event in events:
+        seen = {str(source.get("trust_tier") or "") for source in event.get("source_links", [])}
+        for key in seen:
+            if key:
+                counts[key] = counts.get(key, 0) + 1
+    return [
+        {"key": key, "label": _t(locale, *NEWS_TRUST_LABELS.get(key, (key, key))), "count": counts[key]}
+        for key in sorted(counts, key=lambda item: (-counts[item], item))
+    ]
+
+
+def _news_fallback_label(field: str, key: str, locale: str) -> str:
+    if field == "regions":
+        return _news_region_name(key, locale)
+    if field == "topics":
+        label_en, label_ko = NEWS_TOPIC_LABELS.get(key, (key.replace("_", " ").title(), key))
+        return _t(locale, label_en, label_ko)
+    return key
+
+
+def _news_ticker_ref(symbol: str, relationship: str, confidence: float, locale: str) -> dict[str, Any]:
+    profile = NEWS_TICKER_PROFILES[symbol]
+    return {
+        "symbol": symbol,
+        "name": _t(locale, profile["name_en"], profile["name_ko"]),
+        "exchange": profile["exchange"],
+        "relationship": relationship,
+        "confidence": confidence,
+    }
+
+
+def _news_region_ref(key: str, relation: str, confidence: float, locale: str) -> dict[str, Any]:
+    return {
+        "key": key,
+        "name": _news_region_name(key, locale),
+        "relation": relation,
+        "confidence": confidence,
+    }
+
+
+def _news_topic_ref(key: str, confidence: float, locale: str) -> dict[str, Any]:
+    label_en, label_ko = NEWS_TOPIC_LABELS.get(key, (key.replace("_", " ").title(), key))
+    return {"key": key, "label": _t(locale, label_en, label_ko), "confidence": confidence}
+
+
+def _news_source_ref(
+    label: str,
+    url: str,
+    source_key: str,
+    title_en: str,
+    title_ko: str,
+    trust_tier: str,
+    published_at: str,
+    locale: str,
+    is_primary: bool = True,
+) -> dict[str, Any]:
+    return {
+        "label": label,
+        "url": url,
+        "source_key": source_key,
+        "policy_version": 1,
+        "title": _t(locale, title_en, title_ko),
+        "published_at": published_at,
+        "trust_tier": trust_tier,
+        "is_primary": is_primary,
+    }
+
+
+def _news_region_name(key: str, locale: str) -> str:
+    if key in COUNTRIES:
+        return _t(locale, COUNTRIES[key][0], COUNTRIES[key][1])
+    if key in REGIONS:
+        return _t(locale, REGIONS[key][0], REGIONS[key][1])
+    if key == "EU":
+        return _t(locale, "European Union", "유럽연합")
+    return key
+
+
+def _news_symbol_key(symbol: str) -> str:
+    return re.sub(r"[^A-Z0-9]+", "_", symbol.upper()).strip("_")
+
+
+def _news_ticker_summary(symbol: str, profile: dict[str, str], events: list[dict[str, Any]], locale: str) -> str:
+    name = _t(locale, profile["name_en"], profile["name_ko"])
+    if not events:
+        return _t(locale, f"No approved news events are currently linked to {symbol}.", f"{symbol}에 연결된 승인 뉴스 이벤트가 아직 없습니다.")
+    return _t(
+        locale,
+        f"{name} has {len(events)} approved, source-linked news event(s) in the public snapshot.",
+        f"{name}에 대해 공개 스냅샷에 승인·출처 연결 뉴스 이벤트 {len(events)}건이 있습니다.",
+    )
+
+
+def _news_region_brief(region_key: str, events: list[dict[str, Any]], locale: str) -> str:
+    name = _news_region_name(region_key, locale)
+    return _t(
+        locale,
+        f"{name} has {len(events)} approved news event(s), with relation labels separating event location, affected region, and market region.",
+        f"{name} 관련 승인 뉴스 이벤트 {len(events)}건이 있으며 발생지, 영향 지역, 시장 지역 라벨을 분리합니다.",
+    )
+
+
+def _news_topic_brief(topic_key: str, events: list[dict[str, Any]], locale: str) -> str:
+    label_en, label_ko = NEWS_TOPIC_LABELS[topic_key]
+    label = _t(locale, label_en, label_ko)
+    return _t(
+        locale,
+        f"{label} includes {len(events)} approved event cluster(s) built from source-linked public metadata.",
+        f"{label}에는 출처 연결 공개 메타데이터에서 만든 승인 이벤트 클러스터 {len(events)}건이 포함됩니다.",
+    )
+
+
+def _news_methodology(locale: str) -> str:
+    return _t(
+        locale,
+        "Snapshot-first news: documents are normalized, entity/region/topic classified, clustered, reviewed, and published as source-linked metadata. Public users never trigger provider or LLM calls.",
+        "스냅샷 우선 뉴스: 문서를 정규화하고 엔티티/지역/토픽을 분류한 뒤 클러스터링·검토하여 출처 연결 메타데이터로 게시합니다. 공개 사용자는 공급자나 LLM 호출을 유발하지 않습니다.",
+    )
+
+
+def _news_disclaimer(locale: str) -> str:
+    return _t(
+        locale,
+        "News summaries are source-linked research context, not personalized investment advice.",
+        "뉴스 요약은 출처 연결 리서치 맥락이며 개인화된 투자 조언이 아닙니다.",
+    )
 
 
 def _preserve_previous_active_macro_tiles(locale: str, tiles: list[dict[str, Any]]) -> list[dict[str, Any]]:

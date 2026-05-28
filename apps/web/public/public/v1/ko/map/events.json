@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-26T01:00:50Z",
-  "stale_after": "2026-05-26T13:00:50Z",
-  "hard_expires_at": "2026-06-02T01:00:50Z",
+  "generated_at": "2026-05-28T07:32:34Z",
+  "stale_after": "2026-05-28T19:32:34Z",
+  "hard_expires_at": "2026-06-04T07:32:34Z",
   "object_type": "map_events",
   "object_key": "events",
-  "content_hash": "sha256:fc46ea89eaf67eecbeb46353011d247490d17e82a71a2ec96c2757ebb26ead99",
+  "content_hash": "sha256:830c039dafe05126be791f54beaed9100299c392ae4369dae0cd9c088531c6d5",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -36,6 +36,54 @@
     {
       "source_key": "yahoo_finance_rss",
       "policy_version": 1
+    },
+    {
+      "source_key": "bis",
+      "policy_version": 1
+    },
+    {
+      "source_key": "who",
+      "policy_version": 1
+    },
+    {
+      "source_key": "cdc",
+      "policy_version": 1
+    },
+    {
+      "source_key": "company_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ecb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_korea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_japan",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bcb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "rocket_lab_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ionq_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "iea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "source_policy",
+      "policy_version": 1
     }
   ],
   "data": {
@@ -45,8 +93,8 @@
         "title": "반도체 수출통제 모니터링 강도 유지",
         "summary": "승인된 시드 이벤트가 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
         "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다.",
-        "occurred_at": "2026-05-26T01:00:50Z",
-        "published_at": "2026-05-26T01:00:50Z",
+        "occurred_at": "2026-05-28T07:32:34Z",
+        "published_at": "2026-05-28T07:32:34Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -88,8 +136,8 @@
         "title": "석유 공급 모니터링을 위한 에너지 재고 일정 활성",
         "summary": "EIA 연계 재고 발표는 공개 전 공식 구조화 데이터로 추적됩니다.",
         "why_it_matters": "재고 서프라이즈는 에너지 주식, 인플레이션 입력값, 지정학 리스크 해석에 영향을 줄 수 있습니다.",
-        "occurred_at": "2026-05-26T01:00:50Z",
-        "published_at": "2026-05-26T01:00:50Z",
+        "occurred_at": "2026-05-28T07:32:34Z",
+        "published_at": "2026-05-28T07:32:34Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -126,8 +174,8 @@
         "title": "6개 중앙은행 정책회의 일정 시드 적용",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, 브라질 COPOM이 명시적 예상치 라벨과 함께 표시됩니다.",
         "why_it_matters": "캘린더 가시성은 커버리지 공백을 숨기지 않고 오래된 정책 데이터를 드러냅니다.",
-        "occurred_at": "2026-05-26T01:00:50Z",
-        "published_at": "2026-05-26T01:00:50Z",
+        "occurred_at": "2026-05-28T07:32:34Z",
+        "published_at": "2026-05-28T07:32:34Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-26T01:00:50Z",
-  "stale_after": "2026-05-26T13:00:50Z",
-  "hard_expires_at": "2026-06-02T01:00:50Z",
+  "generated_at": "2026-05-28T07:32:34Z",
+  "stale_after": "2026-05-28T19:32:34Z",
+  "hard_expires_at": "2026-06-04T07:32:34Z",
   "object_type": "country_region",
   "object_key": "GBR",
-  "content_hash": "sha256:6c6308ddc2b6ff70f1af5eaf2fb47a0025ebf02744f8142e33363d18ea4b4850",
+  "content_hash": "sha256:62178dc3265bf49270aee9e14b75e1b42ee1ecbc0d3ac1f3775f85329853d78f",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -35,6 +35,54 @@
     },
     {
       "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bis",
+      "policy_version": 1
+    },
+    {
+      "source_key": "who",
+      "policy_version": 1
+    },
+    {
+      "source_key": "cdc",
+      "policy_version": 1
+    },
+    {
+      "source_key": "company_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ecb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_korea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_japan",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bcb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "rocket_lab_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ionq_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "iea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "source_policy",
       "policy_version": 1
     }
   ],
@@ -98,8 +146,8 @@
         "title": "6개 중앙은행 정책회의 일정 시드 적용",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, 브라질 COPOM이 명시적 예상치 라벨과 함께 표시됩니다.",
         "why_it_matters": "캘린더 가시성은 커버리지 공백을 숨기지 않고 오래된 정책 데이터를 드러냅니다.",
-        "occurred_at": "2026-05-26T01:00:50Z",
-        "published_at": "2026-05-26T01:00:50Z",
+        "occurred_at": "2026-05-28T07:32:34Z",
+        "published_at": "2026-05-28T07:32:34Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -194,270 +242,123 @@
       {
         "key": "nasdaq_composite",
         "label": "나스닥 종합",
-        "value": "26,343.97",
+        "value": "출처 공백",
         "source": "FRED / Nasdaq",
-        "freshness": "fresh",
-        "delay_label": "FRED NASDAQCOM 실제값, 2026-05-22까지",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "active",
+        "freshness": "watch",
+        "delay_label": "FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
+        "updated_at": "2026-05-28T07:32:34Z",
+        "coverage_status": "coverage_gap",
         "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/NASDAQCOM",
-        "points": [
-          {
-            "date": "2026-05-19",
-            "value": 25870.71
-          },
-          {
-            "date": "2026-05-20",
-            "value": 26270.36
-          },
-          {
-            "date": "2026-05-21",
-            "value": 26293.1
-          },
-          {
-            "date": "2026-05-22",
-            "value": 26343.97
-          }
-        ]
+        "source_url": "https://fred.stlouisfed.org/series/NASDAQCOM"
       },
       {
         "key": "nasdaq_100",
         "label": "나스닥 100",
-        "value": "29,481.64",
+        "value": "출처 공백",
         "source": "FRED / Nasdaq",
-        "freshness": "fresh",
-        "delay_label": "FRED NASDAQ100 실제값, 2026-05-22까지",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "active",
+        "freshness": "watch",
+        "delay_label": "FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
+        "updated_at": "2026-05-28T07:32:34Z",
+        "coverage_status": "coverage_gap",
         "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/NASDAQ100",
-        "points": [
-          {
-            "date": "2026-05-19",
-            "value": 28818.84
-          },
-          {
-            "date": "2026-05-20",
-            "value": 29297.7
-          },
-          {
-            "date": "2026-05-21",
-            "value": 29357.27
-          },
-          {
-            "date": "2026-05-22",
-            "value": 29481.64
-          }
-        ]
+        "source_url": "https://fred.stlouisfed.org/series/NASDAQ100"
       },
       {
         "key": "kospi",
         "label": "한국 주가지수",
-        "value": "301.39",
+        "value": "출처 공백",
         "source": "FRED / OECD Korea share prices",
+        "freshness": "watch",
+        "delay_label": "FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
+        "updated_at": "2026-05-28T07:32:34Z",
+        "coverage_status": "coverage_gap",
+        "refresh_seconds": 900,
+        "source_url": "https://fred.stlouisfed.org/series/SPASTT01KRM661N"
+      },
+      {
+        "key": "ewy_korea_proxy",
+        "label": "EWY 한국 ETF NAV 프록시",
+        "value": "199.3",
+        "source": "iShares / BlackRock EWY",
         "freshness": "fresh",
-        "delay_label": "FRED SPASTT01KRM661N 실제값, 2026-04-01까지",
-        "updated_at": "2026-05-26T01:00:50Z",
+        "delay_label": "iShares EWY NAV 실제값, 2026-05-27까지; 한국 주식 노출 프록시이며 현지 거래소 시세가 아닙니다.",
+        "updated_at": "2026-05-28T07:32:34Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/SPASTT01KRM661N",
+        "unit": "$",
+        "source_url": "https://www.ishares.com/us/products/239681/ishares-msci-south-korea-etf",
         "points": [
           {
-            "date": "2026-01-01",
-            "value": 237.6905
+            "date": "2026-05-26",
+            "value": 197.709462
           },
           {
-            "date": "2026-02-01",
-            "value": 276.7081
-          },
-          {
-            "date": "2026-03-01",
-            "value": 276.3034
-          },
-          {
-            "date": "2026-04-01",
-            "value": 301.3875
+            "date": "2026-05-27",
+            "value": 199.303267
           }
-        ]
-      },
-      {
-        "key": "kodex_200",
-        "label": "KODEX 200 ETF",
-        "value": "출처 공백",
-        "source": "KRX ETF daily trading",
-        "freshness": "watch",
-        "delay_label": "한국거래소 공식 데이터를 가져오려면 KRX_OPEN_API_AUTH_KEY, KRX_AUTH_KEY 또는 KRX_API_KEY가 필요합니다.",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "coverage_gap",
-        "refresh_seconds": 900,
-        "source_url": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES003_S2.cmd?BO_ID=nrEpCLaZpoLCTzPUMxuF"
-      },
-      {
-        "key": "kospi_200_futures",
-        "label": "코스피200 선물",
-        "value": "출처 공백",
-        "source": "KRX derivatives daily trading",
-        "freshness": "watch",
-        "delay_label": "한국거래소 공식 데이터를 가져오려면 KRX_OPEN_API_AUTH_KEY, KRX_AUTH_KEY 또는 KRX_API_KEY가 필요합니다.",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "coverage_gap",
-        "refresh_seconds": 900,
-        "source_url": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES005_S2.cmd?BO_ID=ilaVYOabbaicHbKTsqga"
+        ],
+        "refresh_delta": 1.593805,
+        "refresh_delta_percent": 0.8061349132597407
       },
       {
         "key": "wti_crude",
         "label": "WTI 원유",
-        "value": "112.25",
+        "value": "출처 공백",
         "source": "FRED / EIA",
-        "freshness": "fresh",
-        "delay_label": "FRED DCOILWTICO 실제값, 2026-05-18까지",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "active",
+        "freshness": "watch",
+        "delay_label": "FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
+        "updated_at": "2026-05-28T07:32:34Z",
+        "coverage_status": "coverage_gap",
         "refresh_seconds": 900,
-        "unit": "$",
-        "source_url": "https://fred.stlouisfed.org/series/DCOILWTICO",
-        "points": [
-          {
-            "date": "2026-05-13",
-            "value": 104.52
-          },
-          {
-            "date": "2026-05-14",
-            "value": 104.66
-          },
-          {
-            "date": "2026-05-15",
-            "value": 108.99
-          },
-          {
-            "date": "2026-05-18",
-            "value": 112.25
-          }
-        ]
+        "source_url": "https://fred.stlouisfed.org/series/DCOILWTICO"
       },
       {
         "key": "vix",
         "label": "VIX",
-        "value": "16.76",
+        "value": "출처 공백",
         "source": "FRED / Cboe",
-        "freshness": "fresh",
-        "delay_label": "FRED VIXCLS 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "active",
+        "freshness": "watch",
+        "delay_label": "FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
+        "updated_at": "2026-05-28T07:32:34Z",
+        "coverage_status": "coverage_gap",
         "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/VIXCLS",
-        "points": [
-          {
-            "date": "2026-05-18",
-            "value": 17.82
-          },
-          {
-            "date": "2026-05-19",
-            "value": 18.06
-          },
-          {
-            "date": "2026-05-20",
-            "value": 17.44
-          },
-          {
-            "date": "2026-05-21",
-            "value": 16.76
-          }
-        ]
+        "source_url": "https://fred.stlouisfed.org/series/VIXCLS"
       },
       {
         "key": "usd_krw",
         "label": "달러/원",
-        "value": "1,499.61",
+        "value": "출처 공백",
         "source": "FRED / Federal Reserve H.10",
-        "freshness": "fresh",
-        "delay_label": "FRED DEXKOUS 실제값, 2026-05-15까지",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "active",
+        "freshness": "watch",
+        "delay_label": "FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
+        "updated_at": "2026-05-28T07:32:34Z",
+        "coverage_status": "coverage_gap",
         "refresh_seconds": 900,
-        "unit": "KRW",
-        "source_url": "https://fred.stlouisfed.org/series/DEXKOUS",
-        "points": [
-          {
-            "date": "2026-05-12",
-            "value": 1490.32
-          },
-          {
-            "date": "2026-05-13",
-            "value": 1490.11
-          },
-          {
-            "date": "2026-05-14",
-            "value": 1491.75
-          },
-          {
-            "date": "2026-05-15",
-            "value": 1499.61
-          }
-        ]
+        "source_url": "https://fred.stlouisfed.org/series/DEXKOUS"
       },
       {
         "key": "usd_jpy",
         "label": "달러/엔",
-        "value": "158.69",
+        "value": "출처 공백",
         "source": "FRED / Federal Reserve H.10",
-        "freshness": "fresh",
-        "delay_label": "FRED DEXJPUS 실제값, 2026-05-15까지",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "active",
+        "freshness": "watch",
+        "delay_label": "FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
+        "updated_at": "2026-05-28T07:32:34Z",
+        "coverage_status": "coverage_gap",
         "refresh_seconds": 900,
-        "unit": "JPY",
-        "source_url": "https://fred.stlouisfed.org/series/DEXJPUS",
-        "points": [
-          {
-            "date": "2026-05-12",
-            "value": 157.71
-          },
-          {
-            "date": "2026-05-13",
-            "value": 157.84
-          },
-          {
-            "date": "2026-05-14",
-            "value": 158.08
-          },
-          {
-            "date": "2026-05-15",
-            "value": 158.69
-          }
-        ]
+        "source_url": "https://fred.stlouisfed.org/series/DEXJPUS"
       },
       {
         "key": "us_2y",
         "label": "미국 국채 2년",
-        "value": "4.08",
+        "value": "출처 공백",
         "source": "FRED / US Treasury",
-        "freshness": "fresh",
-        "delay_label": "FRED DGS2 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "active",
+        "freshness": "watch",
+        "delay_label": "FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
+        "updated_at": "2026-05-28T07:32:34Z",
+        "coverage_status": "coverage_gap",
         "refresh_seconds": 900,
-        "unit": "%",
         "source_url": "https://fred.stlouisfed.org/series/DGS2",
-        "points": [
-          {
-            "date": "2026-05-18",
-            "value": 4.07
-          },
-          {
-            "date": "2026-05-19",
-            "value": 4.13
-          },
-          {
-            "date": "2026-05-20",
-            "value": 4.04
-          },
-          {
-            "date": "2026-05-21",
-            "value": 4.08
-          }
-        ],
         "next_event": {
           "title": "FOMC 정책 결정",
           "date": "2026-06-17",
@@ -468,33 +369,14 @@
       {
         "key": "us_3y",
         "label": "미국 국채 3년",
-        "value": "4.13",
+        "value": "출처 공백",
         "source": "FRED / US Treasury",
-        "freshness": "fresh",
-        "delay_label": "FRED DGS3 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "active",
+        "freshness": "watch",
+        "delay_label": "FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
+        "updated_at": "2026-05-28T07:32:34Z",
+        "coverage_status": "coverage_gap",
         "refresh_seconds": 900,
-        "unit": "%",
         "source_url": "https://fred.stlouisfed.org/series/DGS3",
-        "points": [
-          {
-            "date": "2026-05-18",
-            "value": 4.14
-          },
-          {
-            "date": "2026-05-19",
-            "value": 4.2
-          },
-          {
-            "date": "2026-05-20",
-            "value": 4.11
-          },
-          {
-            "date": "2026-05-21",
-            "value": 4.13
-          }
-        ],
         "next_event": {
           "title": "FOMC 정책 결정",
           "date": "2026-06-17",
@@ -505,33 +387,14 @@
       {
         "key": "us_5y",
         "label": "미국 국채 5년",
-        "value": "4.25",
+        "value": "출처 공백",
         "source": "FRED / US Treasury",
-        "freshness": "fresh",
-        "delay_label": "FRED DGS5 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "active",
+        "freshness": "watch",
+        "delay_label": "FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
+        "updated_at": "2026-05-28T07:32:34Z",
+        "coverage_status": "coverage_gap",
         "refresh_seconds": 900,
-        "unit": "%",
         "source_url": "https://fred.stlouisfed.org/series/DGS5",
-        "points": [
-          {
-            "date": "2026-05-18",
-            "value": 4.27
-          },
-          {
-            "date": "2026-05-19",
-            "value": 4.32
-          },
-          {
-            "date": "2026-05-20",
-            "value": 4.22
-          },
-          {
-            "date": "2026-05-21",
-            "value": 4.25
-          }
-        ],
         "next_event": {
           "title": "FOMC 정책 결정",
           "date": "2026-06-17",
@@ -542,33 +405,14 @@
       {
         "key": "us_10y",
         "label": "미국 국채 10년",
-        "value": "4.57",
+        "value": "출처 공백",
         "source": "FRED / US Treasury",
-        "freshness": "fresh",
-        "delay_label": "FRED DGS10 실제값, 2026-05-21까지",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "active",
+        "freshness": "watch",
+        "delay_label": "FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
+        "updated_at": "2026-05-28T07:32:34Z",
+        "coverage_status": "coverage_gap",
         "refresh_seconds": 900,
-        "unit": "%",
         "source_url": "https://fred.stlouisfed.org/series/DGS10",
-        "points": [
-          {
-            "date": "2026-05-18",
-            "value": 4.61
-          },
-          {
-            "date": "2026-05-19",
-            "value": 4.67
-          },
-          {
-            "date": "2026-05-20",
-            "value": 4.57
-          },
-          {
-            "date": "2026-05-21",
-            "value": 4.57
-          }
-        ],
         "next_event": {
           "title": "FOMC 정책 결정",
           "date": "2026-06-17",
@@ -579,33 +423,14 @@
       {
         "key": "japan_policy_rate",
         "label": "일본은행 정책금리",
-        "value": "0.3",
+        "value": "출처 공백",
         "source": "FRED / OECD Japan central bank rate",
-        "freshness": "fresh",
-        "delay_label": "FRED IRSTCB01JPM156N 실제값, 2023-12-01까지",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "active",
+        "freshness": "watch",
+        "delay_label": "FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
+        "updated_at": "2026-05-28T07:32:34Z",
+        "coverage_status": "coverage_gap",
         "refresh_seconds": 900,
-        "unit": "%",
         "source_url": "https://fred.stlouisfed.org/series/IRSTCB01JPM156N",
-        "points": [
-          {
-            "date": "2023-09-01",
-            "value": 0.3
-          },
-          {
-            "date": "2023-10-01",
-            "value": 0.3
-          },
-          {
-            "date": "2023-11-01",
-            "value": 0.3
-          },
-          {
-            "date": "2023-12-01",
-            "value": 0.3
-          }
-        ],
         "next_event": {
           "title": "일본은행 통화정책회의",
           "date": "2026-06-16",
@@ -620,7 +445,7 @@
         "source": "Japan MOF JGB yield curve",
         "freshness": "fresh",
         "delay_label": "MOF 2Y JGB 실제값, 2026-04-30까지",
-        "updated_at": "2026-05-26T01:00:50Z",
+        "updated_at": "2026-05-28T07:32:34Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "%",
@@ -657,7 +482,7 @@
         "source": "Japan MOF JGB yield curve",
         "freshness": "fresh",
         "delay_label": "MOF 5Y JGB 실제값, 2026-04-30까지",
-        "updated_at": "2026-05-26T01:00:50Z",
+        "updated_at": "2026-05-28T07:32:34Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "%",
@@ -694,7 +519,7 @@
         "source": "Japan MOF JGB yield curve",
         "freshness": "fresh",
         "delay_label": "MOF 10Y JGB 실제값, 2026-04-30까지",
-        "updated_at": "2026-05-26T01:00:50Z",
+        "updated_at": "2026-05-28T07:32:34Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "%",
@@ -727,31 +552,31 @@
       {
         "key": "pentagon_pizza_index",
         "label": "펜타곤 피자 지수",
-        "value": "59.6",
+        "value": "4.2",
         "source": "Pentagon.Pizza",
         "freshness": "fresh",
-        "delay_label": "Pentagon.Pizza 모니터링 지점 18곳 평균 혼잡도; 이상치 0건, 2026-05-26까지",
-        "updated_at": "2026-05-26T01:00:55.035Z",
+        "delay_label": "Pentagon.Pizza 모니터링 지점 18곳 평균 혼잡도; 이상치 2건, 2026-05-28까지",
+        "updated_at": "2026-05-28T07:32:38.938Z",
         "coverage_status": "active",
         "refresh_seconds": 300,
         "unit": "/100",
         "source_url": "https://pentagon.pizza/",
         "points": [
           {
-            "date": "2026-05-26T00:15:50Z",
-            "value": 50.0
+            "date": "2026-05-28T06:47:34Z",
+            "value": 0.0
           },
           {
-            "date": "2026-05-26T00:30:50Z",
-            "value": 56.0
+            "date": "2026-05-28T07:02:34Z",
+            "value": 2.0
           },
           {
-            "date": "2026-05-26T00:45:50Z",
-            "value": 62.0
+            "date": "2026-05-28T07:17:34Z",
+            "value": 6.0
           },
           {
-            "date": "2026-05-26T01:00:50Z",
-            "value": 72.0
+            "date": "2026-05-28T07:32:34Z",
+            "value": 15.0
           }
         ]
       }

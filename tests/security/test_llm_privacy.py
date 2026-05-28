@@ -34,3 +34,19 @@ def test_openrouter_paid_model_is_blocked_when_paid_usage_disabled(monkeypatch):
                 messages=[],
             )
         )
+
+
+def test_external_profiles_are_ineligible_when_global_hard_limit_is_zero(monkeypatch):
+    settings = get_settings()
+    monkeypatch.setattr(settings, "llm_global_daily_hard_limit", 0)
+    router = LLMRouter(db=None)  # type: ignore[arg-type]
+    task = LLMTask(
+        task_type="public_summary",
+        input_class="PUBLIC_FACTS_ONLY",
+        prompt_version="v1",
+        schema_key="public_summary",
+        schema={"type": "object"},
+    )
+
+    assert not router._profile_allowed({"provider_key": "gemini", "privacy_class": "PUBLIC_FACTS_ONLY"}, task)
+    assert router._profile_allowed({"provider_key": "local", "privacy_class": "LOCAL_ONLY"}, task)

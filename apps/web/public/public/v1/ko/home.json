@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-26T01:00:50Z",
-  "stale_after": "2026-05-26T13:00:50Z",
-  "hard_expires_at": "2026-06-02T01:00:50Z",
+  "generated_at": "2026-05-28T07:32:34Z",
+  "stale_after": "2026-05-28T19:32:34Z",
+  "hard_expires_at": "2026-06-04T07:32:34Z",
   "object_type": "home",
   "object_key": "home",
-  "content_hash": "sha256:562dce44a44b3ebab47273f89b37468e406556075c225ab7ce971e204b4f6043",
+  "content_hash": "sha256:34126954cee176cab65152706c32e02bda12566bf93b3f4257366adc5c559514",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -36,16 +36,64 @@
     {
       "source_key": "yahoo_finance_rss",
       "policy_version": 1
+    },
+    {
+      "source_key": "bis",
+      "policy_version": 1
+    },
+    {
+      "source_key": "who",
+      "policy_version": 1
+    },
+    {
+      "source_key": "cdc",
+      "policy_version": 1
+    },
+    {
+      "source_key": "company_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ecb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_korea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_japan",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bcb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "rocket_lab_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ionq_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "iea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "source_policy",
+      "policy_version": 1
     }
   ],
   "data": {
     "headline": "글로벌 시장 인텔리전스 대시보드",
     "summary": "공개 출처 정책을 통과한 정보를 스냅샷 우선 방식으로 보여주는 리서치 대시보드입니다. 개인화 조언 없이 섹터, 중앙은행 일정, 시나리오 바스켓, 승인 이벤트를 표시합니다.",
-    "generated_label": "2026-05-26T01:00:50Z",
+    "generated_label": "2026-05-28T07:32:34Z",
     "snapshot_health": {
       "status": "fresh",
       "age_minutes": 0,
-      "stale_after": "2026-05-26T13:00:50Z",
+      "stale_after": "2026-05-28T19:32:34Z",
       "backend_dependency": "none_for_public_pages"
     },
     "top_events": [
@@ -54,8 +102,8 @@
         "title": "반도체 수출통제 모니터링 강도 유지",
         "summary": "승인된 시드 이벤트가 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
         "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다.",
-        "occurred_at": "2026-05-26T01:00:50Z",
-        "published_at": "2026-05-26T01:00:50Z",
+        "occurred_at": "2026-05-28T07:32:34Z",
+        "published_at": "2026-05-28T07:32:34Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -97,8 +145,8 @@
         "title": "석유 공급 모니터링을 위한 에너지 재고 일정 활성",
         "summary": "EIA 연계 재고 발표는 공개 전 공식 구조화 데이터로 추적됩니다.",
         "why_it_matters": "재고 서프라이즈는 에너지 주식, 인플레이션 입력값, 지정학 리스크 해석에 영향을 줄 수 있습니다.",
-        "occurred_at": "2026-05-26T01:00:50Z",
-        "published_at": "2026-05-26T01:00:50Z",
+        "occurred_at": "2026-05-28T07:32:34Z",
+        "published_at": "2026-05-28T07:32:34Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -135,8 +183,8 @@
         "title": "6개 중앙은행 정책회의 일정 시드 적용",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, 브라질 COPOM이 명시적 예상치 라벨과 함께 표시됩니다.",
         "why_it_matters": "캘린더 가시성은 커버리지 공백을 숨기지 않고 오래된 정책 데이터를 드러냅니다.",
-        "occurred_at": "2026-05-26T01:00:50Z",
-        "published_at": "2026-05-26T01:00:50Z",
+        "occurred_at": "2026-05-28T07:32:34Z",
+        "published_at": "2026-05-28T07:32:34Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -213,8 +261,8 @@
         "label": "나스닥 종합",
         "value": "26,343.97",
         "source": "FRED / Nasdaq",
-        "freshness": "fresh",
-        "delay_label": "FRED NASDAQCOM 실제값, 2026-05-22까지",
+        "freshness": "watch",
+        "delay_label": "마지막 게시 값을 사용 중입니다. 현재 갱신 불가: FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -243,8 +291,8 @@
         "label": "나스닥 100",
         "value": "29,481.64",
         "source": "FRED / Nasdaq",
-        "freshness": "fresh",
-        "delay_label": "FRED NASDAQ100 실제값, 2026-05-22까지",
+        "freshness": "watch",
+        "delay_label": "마지막 게시 값을 사용 중입니다. 현재 갱신 불가: FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -273,8 +321,8 @@
         "label": "한국 주가지수",
         "value": "301.39",
         "source": "FRED / OECD Korea share prices",
-        "freshness": "fresh",
-        "delay_label": "FRED SPASTT01KRM661N 실제값, 2026-04-01까지",
+        "freshness": "watch",
+        "delay_label": "마지막 게시 값을 사용 중입니다. 현재 갱신 불가: FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -299,36 +347,37 @@
         ]
       },
       {
-        "key": "kodex_200",
-        "label": "KODEX 200 ETF",
-        "value": "출처 공백",
-        "source": "KRX ETF daily trading",
-        "freshness": "watch",
-        "delay_label": "한국거래소 공식 데이터를 가져오려면 KRX_OPEN_API_AUTH_KEY, KRX_AUTH_KEY 또는 KRX_API_KEY가 필요합니다.",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "coverage_gap",
+        "key": "ewy_korea_proxy",
+        "label": "EWY 한국 ETF NAV 프록시",
+        "value": "199.3",
+        "source": "iShares / BlackRock EWY",
+        "freshness": "fresh",
+        "delay_label": "iShares EWY NAV 실제값, 2026-05-27까지; 한국 주식 노출 프록시이며 현지 거래소 시세가 아닙니다.",
+        "updated_at": "2026-05-28T07:32:34Z",
+        "coverage_status": "active",
         "refresh_seconds": 900,
-        "source_url": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES003_S2.cmd?BO_ID=nrEpCLaZpoLCTzPUMxuF"
-      },
-      {
-        "key": "kospi_200_futures",
-        "label": "코스피200 선물",
-        "value": "출처 공백",
-        "source": "KRX derivatives daily trading",
-        "freshness": "watch",
-        "delay_label": "한국거래소 공식 데이터를 가져오려면 KRX_OPEN_API_AUTH_KEY, KRX_AUTH_KEY 또는 KRX_API_KEY가 필요합니다.",
-        "updated_at": "2026-05-26T01:00:50Z",
-        "coverage_status": "coverage_gap",
-        "refresh_seconds": 900,
-        "source_url": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES005_S2.cmd?BO_ID=ilaVYOabbaicHbKTsqga"
+        "unit": "$",
+        "source_url": "https://www.ishares.com/us/products/239681/ishares-msci-south-korea-etf",
+        "points": [
+          {
+            "date": "2026-05-26",
+            "value": 197.709462
+          },
+          {
+            "date": "2026-05-27",
+            "value": 199.303267
+          }
+        ],
+        "refresh_delta": 1.593805,
+        "refresh_delta_percent": 0.8061349132597407
       },
       {
         "key": "wti_crude",
         "label": "WTI 원유",
         "value": "112.25",
         "source": "FRED / EIA",
-        "freshness": "fresh",
-        "delay_label": "FRED DCOILWTICO 실제값, 2026-05-18까지",
+        "freshness": "watch",
+        "delay_label": "마지막 게시 값을 사용 중입니다. 현재 갱신 불가: FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -358,8 +407,8 @@
         "label": "VIX",
         "value": "16.76",
         "source": "FRED / Cboe",
-        "freshness": "fresh",
-        "delay_label": "FRED VIXCLS 실제값, 2026-05-21까지",
+        "freshness": "watch",
+        "delay_label": "마지막 게시 값을 사용 중입니다. 현재 갱신 불가: FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -388,8 +437,8 @@
         "label": "달러/원",
         "value": "1,499.61",
         "source": "FRED / Federal Reserve H.10",
-        "freshness": "fresh",
-        "delay_label": "FRED DEXKOUS 실제값, 2026-05-15까지",
+        "freshness": "watch",
+        "delay_label": "마지막 게시 값을 사용 중입니다. 현재 갱신 불가: FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -419,8 +468,8 @@
         "label": "달러/엔",
         "value": "158.69",
         "source": "FRED / Federal Reserve H.10",
-        "freshness": "fresh",
-        "delay_label": "FRED DEXJPUS 실제값, 2026-05-15까지",
+        "freshness": "watch",
+        "delay_label": "마지막 게시 값을 사용 중입니다. 현재 갱신 불가: FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -450,8 +499,8 @@
         "label": "미국 국채 2년",
         "value": "4.08",
         "source": "FRED / US Treasury",
-        "freshness": "fresh",
-        "delay_label": "FRED DGS2 실제값, 2026-05-21까지",
+        "freshness": "watch",
+        "delay_label": "마지막 게시 값을 사용 중입니다. 현재 갱신 불가: FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -487,8 +536,8 @@
         "label": "미국 국채 3년",
         "value": "4.13",
         "source": "FRED / US Treasury",
-        "freshness": "fresh",
-        "delay_label": "FRED DGS3 실제값, 2026-05-21까지",
+        "freshness": "watch",
+        "delay_label": "마지막 게시 값을 사용 중입니다. 현재 갱신 불가: FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -524,8 +573,8 @@
         "label": "미국 국채 5년",
         "value": "4.25",
         "source": "FRED / US Treasury",
-        "freshness": "fresh",
-        "delay_label": "FRED DGS5 실제값, 2026-05-21까지",
+        "freshness": "watch",
+        "delay_label": "마지막 게시 값을 사용 중입니다. 현재 갱신 불가: FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -561,8 +610,8 @@
         "label": "미국 국채 10년",
         "value": "4.57",
         "source": "FRED / US Treasury",
-        "freshness": "fresh",
-        "delay_label": "FRED DGS10 실제값, 2026-05-21까지",
+        "freshness": "watch",
+        "delay_label": "마지막 게시 값을 사용 중입니다. 현재 갱신 불가: FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -598,8 +647,8 @@
         "label": "일본은행 정책금리",
         "value": "0.3",
         "source": "FRED / OECD Japan central bank rate",
-        "freshness": "fresh",
-        "delay_label": "FRED IRSTCB01JPM156N 실제값, 2023-12-01까지",
+        "freshness": "watch",
+        "delay_label": "마지막 게시 값을 사용 중입니다. 현재 갱신 불가: FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
         "updated_at": "2026-05-26T01:00:50Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
@@ -637,7 +686,7 @@
         "source": "Japan MOF JGB yield curve",
         "freshness": "fresh",
         "delay_label": "MOF 2Y JGB 실제값, 2026-04-30까지",
-        "updated_at": "2026-05-26T01:00:50Z",
+        "updated_at": "2026-05-28T07:32:34Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "%",
@@ -674,7 +723,7 @@
         "source": "Japan MOF JGB yield curve",
         "freshness": "fresh",
         "delay_label": "MOF 5Y JGB 실제값, 2026-04-30까지",
-        "updated_at": "2026-05-26T01:00:50Z",
+        "updated_at": "2026-05-28T07:32:34Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "%",
@@ -711,7 +760,7 @@
         "source": "Japan MOF JGB yield curve",
         "freshness": "fresh",
         "delay_label": "MOF 10Y JGB 실제값, 2026-04-30까지",
-        "updated_at": "2026-05-26T01:00:50Z",
+        "updated_at": "2026-05-28T07:32:34Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "%",
@@ -744,31 +793,31 @@
       {
         "key": "pentagon_pizza_index",
         "label": "펜타곤 피자 지수",
-        "value": "59.6",
+        "value": "4.2",
         "source": "Pentagon.Pizza",
         "freshness": "fresh",
-        "delay_label": "Pentagon.Pizza 모니터링 지점 18곳 평균 혼잡도; 이상치 0건, 2026-05-26까지",
-        "updated_at": "2026-05-26T01:00:55.035Z",
+        "delay_label": "Pentagon.Pizza 모니터링 지점 18곳 평균 혼잡도; 이상치 2건, 2026-05-28까지",
+        "updated_at": "2026-05-28T07:32:38.938Z",
         "coverage_status": "active",
         "refresh_seconds": 300,
         "unit": "/100",
         "source_url": "https://pentagon.pizza/",
         "points": [
           {
-            "date": "2026-05-26T00:15:50Z",
-            "value": 50.0
+            "date": "2026-05-28T06:47:34Z",
+            "value": 0.0
           },
           {
-            "date": "2026-05-26T00:30:50Z",
-            "value": 56.0
+            "date": "2026-05-28T07:02:34Z",
+            "value": 2.0
           },
           {
-            "date": "2026-05-26T00:45:50Z",
-            "value": 62.0
+            "date": "2026-05-28T07:17:34Z",
+            "value": 6.0
           },
           {
-            "date": "2026-05-26T01:00:50Z",
-            "value": 72.0
+            "date": "2026-05-28T07:32:34Z",
+            "value": 15.0
           }
         ]
       }
@@ -778,46 +827,23 @@
         "key": "highest_short_interest",
         "title": "공매도 잔고 워치",
         "summary": "추적 티커의 최신 FINRA 공매도 잔고 행입니다. 유통주식 조정 랭킹은 유통주식 데이터 승인 후 분리해 표시합니다.",
-        "value": "NVDA 282.93M",
+        "value": "행 대기",
         "cadence": "FINRA 공매도 잔고는 결제일 보고 후 월 2회 공개됩니다.",
         "source": "FINRA consolidated short interest",
         "source_url": "https://www.finra.org/filing-reporting/regulatory-filing-systems/short-interest",
-        "freshness": "fresh",
+        "freshness": "watch",
         "severity": "medium",
         "refresh_seconds": 43200,
         "items": [
           {
-            "key": "highest_short_interest_djt",
-            "label": "DJT 공매도 잔고",
-            "value": "12.05M shares",
-            "detail": "2026-04-30 기준 미청산 공매도 포지션이며 일별 공매도 거래량이 아닙니다.",
-            "source": "FINRA consolidated short interest",
-            "freshness": "fresh",
+            "key": "highest_short_interest_credentials",
+            "label": "FINRA 공매도 잔고",
+            "value": "행 대기",
+            "detail": "자격 증명은 구성되었지만 이번 스냅샷 빌드에서 최신 심볼 필터 행을 가져오지 못했습니다.",
+            "source": "FINRA",
+            "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
-          },
-          {
-            "key": "highest_short_interest_tsla",
-            "label": "TSLA 공매도 잔고",
-            "value": "76.67M shares",
-            "detail": "2026-04-30 기준 미청산 공매도 포지션이며 일별 공매도 거래량이 아닙니다.",
-            "source": "FINRA consolidated short interest",
-            "freshness": "fresh",
-            "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
-          },
-          {
-            "key": "highest_short_interest_nvda",
-            "label": "NVDA 공매도 잔고",
-            "value": "282.93M shares",
-            "detail": "2026-04-30 기준 미청산 공매도 포지션이며 일별 공매도 거래량이 아닙니다.",
-            "source": "FINRA consolidated short interest",
-            "freshness": "fresh",
-            "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
+            "updated_at": "2026-05-28T07:32:34Z"
           },
           {
             "key": "highest_short_interest_method",
@@ -827,7 +853,7 @@
             "source": "FINRA",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://www.finra.org/investors/insights/short-interest"
           }
         ]
@@ -836,46 +862,23 @@
         "key": "short_volume_monitor",
         "title": "일별 공매도 거래량",
         "summary": "추적 티커 워치리스트의 FINRA Reg SHO 일별 공매도 거래량 합산값입니다.",
-        "value": "NVDA 32.00M",
+        "value": "DJT / TSLA / NVDA",
         "cadence": "FINRA 파일 공개 후 매일 갱신, 동부시간 오후 6시 이전 공개.",
         "source": "FINRA Reg SHO Daily Short Sale Volume",
         "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume",
-        "freshness": "fresh",
+        "freshness": "watch",
         "severity": "medium",
         "refresh_seconds": 900,
         "items": [
           {
-            "key": "short_volume_monitor_djt",
-            "label": "DJT 공매도 거래량",
-            "value": "636.5K shares",
-            "detail": "2026-05-22 거래일의 FINRA Reg SHO 행을 합산했습니다. 이는 거래 흐름이며 잔고가 아닙니다.",
-            "source": "FINRA Reg SHO daily short sale volume",
-            "freshness": "fresh",
+            "key": "short_volume_monitor_monitored",
+            "label": "모니터링 티커",
+            "value": "DJT, TSLA, NVDA",
+            "detail": "이번 스냅샷 빌드에서 FINRA Reg SHO 행을 가져오지 못했습니다.",
+            "source": "configuration",
+            "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
-          },
-          {
-            "key": "short_volume_monitor_tsla",
-            "label": "TSLA 공매도 거래량",
-            "value": "10.19M shares",
-            "detail": "2026-05-22 거래일의 FINRA Reg SHO 행을 합산했습니다. 이는 거래 흐름이며 잔고가 아닙니다.",
-            "source": "FINRA Reg SHO daily short sale volume",
-            "freshness": "fresh",
-            "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
-          },
-          {
-            "key": "short_volume_monitor_nvda",
-            "label": "NVDA 공매도 거래량",
-            "value": "32.00M shares",
-            "detail": "2026-05-22 거래일의 FINRA Reg SHO 행을 합산했습니다. 이는 거래 흐름이며 잔고가 아닙니다.",
-            "source": "FINRA Reg SHO daily short sale volume",
-            "freshness": "fresh",
-            "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
+            "updated_at": "2026-05-28T07:32:34Z"
           }
         ]
       },
@@ -899,63 +902,63 @@
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://news.google.com/rss/articles/CBMikgFBVV95cUxOeDBsTFNOQ091ZkdDWnJBd3ExWDZvN2JfTnFsVUV3RDNweFV2Y1FJY1luQUtuMmFlanRsOG44dFZFMFVJa3Y1bHZhZFRiRTlrUFhqNWVYR1RlWUtTbm1PSzhvS2hkcXdOLTFPeFhuY2ItX3Q4c2t1QWFHMU1HSGFlVGdqTzNBSEZsbkpFd1FDV3dadw?oc=5"
           },
           {
-            "key": "breaking_market_news_google_geopolitical_f6b22032e713",
+            "key": "breaking_market_news_google_geopolitical_77326d3216c1",
+            "label": "Trump’s aspiration to control the oil market finds out the lack of an alternative to Hormuz - Universidad de Navarra",
+            "value": "헤드라인",
+            "detail": "지정학 시장 리스크; news.google.com; 관측 Wed, 29 Apr 2026 13:49:27 GMT",
+            "source": "Google News RSS",
+            "freshness": "fresh",
+            "severity": "high",
+            "updated_at": "2026-05-28T07:32:34Z",
+            "source_url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxQWlBaYUUzUEtqbS1kNWlGYUhPQlNqWmJ3V2NkWjFRTWluYms0UlduNWZrZUJkaFJNQUdOLUExRzNmYmJKUWtRTGdNNUJhMXo3N1NVU2NKM2VpYXlDWi1WY1JHQVdHTjk3LW94WnBnbnNpbFBtaEpHQW9JbXN3MU5XNVZLaElBcnJTcGtQaTZUX1Y2RXoyeDFqRFpKQ0VSb3EwN3h0SDU4OE5feEk0ZmgxS3ViandHRGVnaWtwcWc1RUg1UGdnN1hfNmxR?oc=5"
+          },
+          {
+            "key": "breaking_market_news_google_geopolitical_a8949f285178",
             "label": "Why Restricting US Oil Exports Would Backfire - CGEP",
             "value": "헤드라인",
             "detail": "지정학 시장 리스크; news.google.com; 관측 Wed, 18 Mar 2026 21:12:56 GMT",
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxPZUd6bnFNNjVRbkc3dXpYZE9nSHhYdUdJZGIxQk93alNIQTF0QUlmNHUwZ0VVS2s4Q1ROcHJYT1RidnFjOWRGUHA1T2hZNW02QzdMVXNJeTBBRUZ1YmhJajFUYmNkazhYRm1vRzdjdjNkY0twQXMza01UalMwa050bkp0a0I0bk82UVhfOQ?oc=5"
           },
           {
-            "key": "breaking_market_news_google_geopolitical_2b2744e48a67",
+            "key": "breaking_market_news_google_geopolitical_8253d69169d3",
             "label": "China, Iran weaponized the global economy to beat the U.S. at its own game - The Washington Post",
             "value": "헤드라인",
             "detail": "지정학 시장 리스크; news.google.com; 관측 Sun, 12 Apr 2026 07:00:00 GMT",
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNaGlTTTRONFFaYWx2MV9NZ0ZJdVJySUhqbkJwWlZ3Nk04STZLdDhiRFlfUVJYYVdXQkJzS25aMGI4X2I4LUxFbnZXdXo1VThqTFRXc0JtVzFaMnBjWXp3UkhzYmlPaXVobzhnNk40OXlibHRZQkVHRVMtQzNWTm9icg?oc=5"
           },
           {
-            "key": "breaking_market_news_google_geopolitical_536f8bb3b353",
-            "label": "The Iran War Doesn’t Have to Be a Rerun of ‘That ’70s Show’ - Cato Institute",
+            "key": "breaking_market_news_yahoo_tickers_e5b1b6e6545f",
+            "label": "Cisco Joins EnterpriseClaw To Link AI Automation With Security And Valuation Risks",
             "value": "헤드라인",
-            "detail": "지정학 시장 리스크; news.google.com; 관측 Tue, 31 Mar 2026 07:00:00 GMT",
-            "source": "Google News RSS",
-            "freshness": "fresh",
-            "severity": "high",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://news.google.com/rss/articles/CBMiekFVX3lxTFAyYmZ0ZjdUN0lLWmZ0X0QtQktHa1FrVnFUbG9PdlBiNmJzNGw3UkZERHdXTlhVaUg2MXV3LXJ1cE4tVk4zMjlQQmo4cGllTmdKUXo0RGtKOFZEdHJUY2pfemQyeUZOc3VKNWpIdmNndVNObU9wbm5CNXVB?oc=5"
-          },
-          {
-            "key": "breaking_market_news_yahoo_tickers_b438c1324ad9",
-            "label": "Better Gene-Editing Stock: CRISPR Therapeutics or Beam Therapeutics?",
-            "value": "헤드라인",
-            "detail": "추적 티커 헤드라인; www.fool.com; 관측 Tue, 26 May 2026 00:55:00 +0000",
+            "detail": "추적 티커 헤드라인; finance.yahoo.com; 관측 Thu, 28 May 2026 07:03:34 +0000",
             "source": "Yahoo Finance RSS",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://www.fool.com/investing/2026/05/25/better-gene-editing-stock-crispr-therapeutics-or-b/?.tsrc=rss"
+            "updated_at": "2026-05-28T07:32:34Z",
+            "source_url": "https://finance.yahoo.com/markets/stocks/articles/cisco-joins-enterpriseclaw-ai-automation-070334324.html?.tsrc=rss"
           },
           {
-            "key": "breaking_market_news_yahoo_tickers_2760b3c32a1e",
-            "label": "JPMorgan Chase Says It Is Comfortable With $50 Billion in Private Credit Exposure. Should Investors Be?",
+            "key": "breaking_market_news_yahoo_tickers_99d21f05970f",
+            "label": "TeamViewer Appoints Peter Ruchatz as Chief Marketing Officer",
             "value": "헤드라인",
-            "detail": "추적 티커 헤드라인; www.fool.com; 관측 Tue, 26 May 2026 00:35:00 +0000",
+            "detail": "추적 티커 헤드라인; finance.yahoo.com; 관측 Thu, 28 May 2026 07:00:00 +0000",
             "source": "Yahoo Finance RSS",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://www.fool.com/investing/2026/05/25/jpmorgan-chase-says-it-is-comfortable-with-50-bill/?.tsrc=rss"
+            "updated_at": "2026-05-28T07:32:34Z",
+            "source_url": "https://finance.yahoo.com/sectors/technology/articles/teamviewer-appoints-peter-ruchatz-chief-070000949.html?.tsrc=rss"
           }
         ]
       },
@@ -978,7 +981,7 @@
             "source": "Hindenburg/news",
             "freshness": "watch",
             "severity": "high",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://hindenburgresearch.com/"
           },
           {
@@ -989,7 +992,7 @@
             "source": "Muddy Waters",
             "freshness": "watch",
             "severity": "high",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://www.muddywatersresearch.com/"
           },
           {
@@ -1000,7 +1003,7 @@
             "source": "Viceroy",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://viceroyresearch.org/"
           },
           {
@@ -1011,7 +1014,7 @@
             "source": "LLM router",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z"
+            "updated_at": "2026-05-28T07:32:34Z"
           },
           {
             "key": "short_research_reports_spruce_point",
@@ -1021,7 +1024,7 @@
             "source": "Spruce Point",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://www.sprucepointcap.com/"
           },
           {
@@ -1032,7 +1035,7 @@
             "source": "Kerrisdale",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://www.kerrisdalecap.com/"
           },
           {
@@ -1043,7 +1046,7 @@
             "source": "Culper",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://culperresearch.com/"
           },
           {
@@ -1054,7 +1057,7 @@
             "source": "Blue Orca",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://www.blueorcacapital.com/"
           },
           {
@@ -1065,7 +1068,7 @@
             "source": "Grizzly",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
+            "updated_at": "2026-05-28T07:32:34Z",
             "source_url": "https://grizzlyreports.com/"
           }
         ]
@@ -1074,7 +1077,7 @@
         "key": "trump_filings",
         "title": "트럼프 일가 공시",
         "summary": "추적 중인 트럼프 관련 공개 엔티티의 SEC 공시 요약이며 미확정 엔티티 주의사항을 함께 표시합니다.",
-        "value": "4 2026-05-21",
+        "value": "4 2026-05-27",
         "cadence": "SEC submissions 스냅샷이며 설정된 공정 접근 주기보다 빠르게 폴링하지 않습니다.",
         "source": "SEC EDGAR / OGE disclosures",
         "source_url": "https://www.sec.gov/search-filings",
@@ -1085,35 +1088,35 @@
           {
             "key": "trump_filings_4_0",
             "label": "DJT 4",
-            "value": "filed 2026-05-21",
-            "detail": "Trump Media & Technology Group Corp. 4 · 접수번호 0001140361-26-022487",
+            "value": "filed 2026-05-27",
+            "detail": "Trump Media & Technology Group Corp. 4 · 접수번호 0002015663-26-000004",
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000114036126022487/xslF345X06/form4.xml"
+            "updated_at": "2026-05-28T07:32:34Z",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000201566326000004/xslF345X06/primary_doc.xml"
           },
           {
-            "key": "trump_filings_144_1",
-            "label": "DJT 144",
-            "value": "filed 2026-05-21",
-            "detail": "Trump Media & Technology Group Corp. 144 · 접수번호 0001921094-26-000535",
+            "key": "trump_filings_4_1",
+            "label": "DJT 4",
+            "value": "filed 2026-05-27",
+            "detail": "Trump Media & Technology Group Corp. 4 · 접수번호 0002015667-26-000004",
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000192109426000535/xsl144X01/primary_doc.xml"
+            "updated_at": "2026-05-28T07:32:34Z",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000201566726000004/xslF345X06/primary_doc.xml"
           },
           {
-            "key": "trump_filings_144_2",
-            "label": "DJT 144",
-            "value": "filed 2026-05-14",
-            "detail": "Trump Media & Technology Group Corp. 144 · 접수번호 0001921094-26-000474",
+            "key": "trump_filings_4_2",
+            "label": "DJT 4",
+            "value": "filed 2026-05-27",
+            "detail": "Trump Media & Technology Group Corp. 4 · 접수번호 0001808488-26-000004",
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z",
-            "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000192109426000474/xsl144X01/primary_doc.xml"
+            "updated_at": "2026-05-28T07:32:34Z",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000180848826000004/xslF345X06/primary_doc.xml"
           },
           {
             "key": "trump_filings_trust",
@@ -1123,7 +1126,7 @@
             "source": "SEC EDGAR",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z"
+            "updated_at": "2026-05-28T07:32:34Z"
           },
           {
             "key": "trump_filings_ai_summary",
@@ -1133,7 +1136,7 @@
             "source": "LLM router",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-26T01:00:50Z"
+            "updated_at": "2026-05-28T07:32:34Z"
           }
         ]
       }

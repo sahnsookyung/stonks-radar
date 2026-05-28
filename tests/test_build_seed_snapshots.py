@@ -275,3 +275,53 @@ def test_source_status_marks_krx_degraded_when_index_probe_failed(monkeypatch):
 
     assert krx["status"] == "degraded"
     assert krx["warning"] == "KRX returned HTTP 401"
+
+
+def test_build_snapshots_writes_news_seed_snapshots(tmp_path, monkeypatch):
+    monkeypatch.setattr(build_seed_snapshots, "PUBLIC_ROOT", tmp_path)
+    monkeypatch.setattr(build_seed_snapshots, "_web_metadata", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_payload", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_summary", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_fred_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_mof_jgb_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_ishares_ewy_nav_series", lambda: None)
+
+    build_seed_snapshots.build_snapshots()
+
+    manifest = json.loads((tmp_path / "latest" / "manifest.json").read_text())
+    required = {
+        "news_index",
+        "news_ticker_NVDA",
+        "news_ticker_005930_KS",
+        "news_ticker_RKLB",
+        "news_ticker_IONQ",
+        "news_region_USA",
+        "news_region_KOR",
+        "news_region_JPN",
+        "news_region_BRA",
+        "news_region_EU",
+        "news_region_CHN",
+        "news_topic_semiconductors",
+        "news_topic_geopolitics",
+        "news_topic_public_health",
+        "news_topic_central_banks",
+        "news_topic_energy",
+    }
+
+    assert required.issubset(manifest["objects"])
+    for object_key in required:
+        assert set(manifest["objects"][object_key]) == {"en", "ko"}
+
+    index = json.loads((tmp_path / "v1" / "en" / "news" / "index.json").read_text())
+    event_ids = {event["id"] for event in index["data"]["events"]}
+
+    assert {
+        "semiconductor_export_controls_seed",
+        "central_bank_policy_watch_seed",
+        "public_health_alert_seed",
+        "rklb_launch_window_seed",
+        "ionq_contract_watch_seed",
+        "energy_geopolitical_supply_risk_seed",
+    }.issubset(event_ids)
+    assert index["data"]["filters"]["regions"]
+    assert index["data"]["filters"]["topics"]

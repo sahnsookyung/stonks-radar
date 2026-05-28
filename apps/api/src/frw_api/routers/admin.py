@@ -6,6 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from frw_api.auth.security import CurrentUser, require_csrf, require_role
+from frw_api.core.settings import get_settings
 from frw_api.db.session import get_db
 from frw_api.services.audit import audit
 from frw_api.services.document_summary import summarize_public_url
@@ -206,7 +207,7 @@ def create_source(
     user: CurrentUser = Depends(require_csrf),
     db: Session = Depends(get_db),
 ):
-    _assert_role(user, "owner", "admin", "editor")
+    _assert_role(user, "owner", "admin")
     row_id = db.execute(
         text(
             """
@@ -244,10 +245,11 @@ async def admin_summarize_url(
     user: CurrentUser = Depends(require_csrf),
     db: Session = Depends(get_db),
 ):
-    _assert_role(user, "owner", "admin", "editor")
+    _assert_role(user, "owner", "admin")
+    _assert_admin_summary_budget(db, user)
     locale = payload.locale if payload.locale in {"en", "ko"} else "en"
     try:
-        summary = await summarize_public_url(db, url=str(payload.url), locale=locale)
+        summary = await summarize_public_url(db, url=str(payload.url), locale=locale, actor_user_id=user.id)
     except (SourceIngestionError, LLMRoutingError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     audit(db, user=user, action="source_document.summarize_url", target_table="source_document", target_pk=str(payload.url))
@@ -515,6 +517,27 @@ def _count(db: Session, sql: str) -> int:
         return int(db.execute(text(sql)).scalar_one() or 0)
     except Exception:
         return 0
+
+
+def _assert_admin_summary_budget(db: Session, user: CurrentUser) -> None:
+    settings = get_settings()
+    if settings.admin_url_summary_daily_limit <= 0:
+        raise HTTPException(status_code=403, detail="Admin URL summaries are disabled")
+    used = db.execute(
+        text(
+            """
+            select count(*)
+            from llm_invocation
+            where actor_user_id = :user_id
+              and task_type = 'document_summary'
+              and created_at >= date_trunc('day', now())
+              and cache_hit = false
+            """
+        ),
+        {"user_id": user.id},
+    ).scalar_one()
+    if int(used or 0) >= settings.admin_url_summary_daily_limit:
+        raise HTTPException(status_code=429, detail="Admin URL summary daily limit reached")
 
 
 def _assert_role(user: CurrentUser, *roles: str) -> None:

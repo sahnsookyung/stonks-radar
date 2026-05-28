@@ -16,7 +16,22 @@ REQUIRED_SHEMAS = [
     "scenario_basket_snapshot.schema.json",
     "source_status_snapshot.schema.json",
     "correction_log_snapshot.schema.json",
+    "news_index_snapshot.schema.json",
+    "news_event_snapshot.schema.json",
+    "news_ticker_snapshot.schema.json",
+    "news_region_snapshot.schema.json",
+    "news_topic_snapshot.schema.json",
 ]
+
+PROHIBITED_PUBLIC_FIELDS = {
+    "raw_html",
+    "private_note",
+    "restricted_source_text",
+    "full_article_text",
+    "prompt_text",
+    "secret",
+    "api_key",
+}
 
 REQUIRED_ENVELOPE_FIELDS = {
     "schema_version",
@@ -69,7 +84,7 @@ def _assert_no_raw_private_text(value, path: str) -> None:
     if isinstance(value, dict):
         for key, nested in value.items():
             lowered = str(key).lower()
-            if lowered in {"raw_html", "private_note", "restricted_source_text"}:
+            if lowered in PROHIBITED_PUBLIC_FIELDS:
                 raise SystemExit(f"{path} contains prohibited public field {key}")
             _assert_no_raw_private_text(nested, path)
     elif isinstance(value, list):
