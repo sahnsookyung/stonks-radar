@@ -27,4 +27,6 @@ test-results/
 *.tsbuildinfo
 apps/api/.python-version
 apps/web/.env.local
+apps/web/.generated-public/
+.agents/
 .gitnexus

@@ -1,8 +1,11 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+const env = (globalThis as typeof globalThis & { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
+
 export default defineConfig({
   plugins: [react()],
+  publicDir: env.STONKS_WEB_PUBLIC_DIR ?? "public",
   server: {
     port: 5173,
     proxy: {

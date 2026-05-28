@@ -27,17 +27,17 @@ export function LegalPage() {
   const content = legalContent[locale][slug] ?? legalContent[locale].terms;
 
   return (
-    <article className="grid gap-6">
-      <section>
+    <article className="grid min-w-0 gap-6">
+      <section className="min-w-0">
         <div className="flex items-center gap-2 text-sm font-semibold text-accent">
           <FileText className="h-4 w-4" />
           {isKo ? "공개 신뢰 문서" : "Public trust page"}
         </div>
-        <h1 className="mt-2 text-4xl font-bold">{title}</h1>
+        <h1 className="safe-text mt-2 text-3xl font-bold sm:text-4xl">{title}</h1>
       </section>
       <section className="panel max-w-4xl p-5">
         {content.map((paragraph) => (
-          <p key={paragraph} className="mb-4 text-sm leading-7 text-muted last:mb-0">
+          <p key={paragraph} className="safe-text mb-4 text-sm leading-7 text-muted last:mb-0">
             {paragraph}
           </p>
         ))}
@@ -50,10 +50,10 @@ function Corrections() {
   const locale = useLocale();
   const isKo = locale === "ko";
   return (
-    <article className="grid gap-6">
-      <section>
-        <h1 className="text-4xl font-bold">{isKo ? "정정 및 철회 로그" : "Correction And Retraction Log"}</h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
+    <article className="grid min-w-0 gap-6">
+      <section className="min-w-0">
+        <h1 className="safe-text text-3xl font-bold sm:text-4xl">{isKo ? "정정 및 철회 로그" : "Correction And Retraction Log"}</h1>
+        <p className="safe-text mt-3 max-w-3xl text-sm leading-6 text-muted">
           {isKo
             ? "정정은 공개 스냅샷과 함께 배포되며 이전 주장을 조용히 덮어쓰지 않습니다."
             : "Corrections are distributed with public snapshots and do not silently overwrite prior claims."}

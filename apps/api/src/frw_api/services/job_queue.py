@@ -144,7 +144,10 @@ def complete_job(db: Session, *, job_id: str, result: dict[str, Any] | None = No
             set status = 'succeeded',
                 result_hash = :result_hash,
                 locked_by = null,
+                locked_at = null,
                 lease_expires_at = null,
+                last_error_class = null,
+                last_error_message = null,
                 updated_at = now()
             where id = :job_id
             """

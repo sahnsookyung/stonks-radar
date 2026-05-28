@@ -62,7 +62,7 @@ export function ShortsPage() {
                 <Link
                   to="/$locale/tickers/$symbol"
                   params={{ locale, symbol: row.symbol }}
-                  className="focus-ring mt-1 inline-flex items-center rounded-md text-2xl font-bold hover:text-accent"
+                className="focus-ring mt-1 inline-flex min-h-11 items-center rounded-md text-2xl font-bold hover:text-accent"
                 >
                   {row.symbol}
                 </Link>
@@ -73,7 +73,7 @@ export function ShortsPage() {
               {row.items.length ? (
                 row.items.map(({ lane, item }) => <SignalItem key={item.key} item={item} context={lane.title} />)
               ) : (
-                <div className="rounded-md border border-line bg-panelAlt px-3 py-2 text-xs leading-5 text-muted">
+                  <div className="safe-text min-h-11 rounded-md border border-line bg-panelAlt px-3 py-2 text-xs leading-5 text-muted">
                   {locale === "ko"
                     ? "이번 스냅샷에는 이 티커의 공식 공매도 행이 없습니다."
                     : "No official short row for this ticker in the current snapshot."}
@@ -109,15 +109,15 @@ export function ShortsPage() {
 function LaneCard({ lane }: { lane?: AlternativeSignalLane }) {
   if (!lane) return null;
   return (
-    <article className="panel flex min-h-[280px] flex-col p-4">
+    <article className="panel flex min-h-[260px] min-w-0 flex-col p-4 sm:min-h-[280px]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold leading-5">{lane.title}</h2>
-          <div className="mt-1 text-xl font-bold leading-7">{lane.value}</div>
+          <h2 className="safe-text text-sm font-semibold leading-5">{lane.title}</h2>
+          <div className="safe-text mt-1 text-xl font-bold leading-7">{lane.value}</div>
         </div>
         <SeverityBadge value={lane.severity} />
       </div>
-      <p className="mt-2 text-sm leading-6 text-muted">{lane.summary}</p>
+      <p className="safe-text mt-2 text-sm leading-6 text-muted">{lane.summary}</p>
       <div className="mt-4 grid gap-2">
         {lane.items.slice(0, 6).map((item) => (
           <SignalItem key={item.key} item={item} context={lane.cadence} />
@@ -131,17 +131,17 @@ function SignalItem({ item, context }: { item: AlternativeSignalItem; context: s
   const content = (
     <>
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 text-sm font-semibold leading-5 text-ink">{item.label}</div>
-        <div className="max-w-[45%] shrink-0 text-right text-xs font-semibold leading-5 text-accent">{item.value}</div>
+        <div className="safe-text min-w-0 text-sm font-semibold leading-5 text-ink">{item.label}</div>
+        <div className="safe-text max-w-[45%] shrink-0 text-right text-xs font-semibold leading-5 text-accent">{item.value}</div>
       </div>
-      <p className="mt-1 text-xs leading-5 text-muted">{item.detail}</p>
+      <p className="safe-text mt-1 text-xs leading-5 text-muted">{item.detail}</p>
       <div className="mt-2 flex items-center justify-between gap-2 text-[11px] leading-4 text-muted">
-        <span>{context}</span>
+        <span className="safe-text min-w-0">{context}</span>
         {item.source_url ? <ExternalLink className="h-3.5 w-3.5 text-accent" /> : null}
       </div>
     </>
   );
-  const className = "focus-ring rounded-md border border-line bg-panelAlt px-3 py-2 hover:border-accent";
+  const className = "focus-ring min-h-11 rounded-md border border-line bg-panelAlt px-3 py-2 hover:border-accent";
   if (item.source_url) {
     return (
       <a className={className} href={item.source_url} target="_blank" rel="noreferrer">

@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
-from frw_worker.scheduler import trump_disclosure_job_specs
+from frw_worker.scheduler import snapshot_refresh_job_specs, trump_disclosure_job_specs
 from frw_worker.tasks import handle_job
 
 
@@ -12,6 +12,7 @@ def _settings(**overrides):
         "trump_disclosure_sec_poll_seconds": 1800,
         "trump_disclosure_oge_poll_seconds": 86400,
         "trump_disclosure_oge_pdf_limit": 12,
+        "snapshot_refresh_seconds": 900,
     }
     values.update(overrides)
     return SimpleNamespace(**values)
@@ -40,6 +41,30 @@ def test_trump_disclosure_scheduler_can_skip_oge_when_pdf_limit_disabled():
 
 def test_trump_disclosure_scheduler_can_be_disabled():
     specs = trump_disclosure_job_specs(
+        now=datetime(2026, 5, 26, 1, 17, tzinfo=timezone.utc),
+        settings=_settings(worker_scheduler_enabled=False),
+    )
+
+    assert specs == []
+
+
+def test_snapshot_refresh_scheduler_creates_15_minute_spec():
+    specs = snapshot_refresh_job_specs(now=datetime(2026, 5, 26, 1, 17, tzinfo=timezone.utc), settings=_settings())
+
+    assert specs == [
+        {
+            "job_type": "snapshot_refresh",
+            "idempotency_key": "snapshot-refresh:1977509",
+            "payload": {},
+            "job_group": "snapshots",
+            "priority": 60,
+            "provider_key": "snapshot_refresh",
+        }
+    ]
+
+
+def test_snapshot_refresh_scheduler_can_be_disabled():
+    specs = snapshot_refresh_job_specs(
         now=datetime(2026, 5, 26, 1, 17, tzinfo=timezone.utc),
         settings=_settings(worker_scheduler_enabled=False),
     )
@@ -86,3 +111,56 @@ def test_trump_disclosure_job_dispatches_ingestion(monkeypatch):
     assert calls[0]["include_sec"] is True
     assert heartbeat_count == 1
     assert commits == [True]
+
+
+def test_snapshot_refresh_job_builds_and_publishes(monkeypatch):
+    calls = []
+    commits = []
+
+    class FakeResult:
+        def __init__(self, snapshot_version):
+            self.files = ["manifest.json"]
+            self.uploaded = False
+            self.destination = "/tmp/public"
+            self.snapshot_version = snapshot_version
+
+    class FakeSession:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def commit(self):
+            commits.append(True)
+
+    def fake_build(db, *, generated_by=None):
+        calls.append(("build", generated_by))
+        return FakeResult(42)
+
+    def fake_publish(db, *, snapshot_version, generated_by=None):
+        calls.append(("publish", snapshot_version, generated_by))
+        return FakeResult(snapshot_version)
+
+    heartbeat_count = 0
+
+    async def heartbeat():
+        nonlocal heartbeat_count
+        heartbeat_count += 1
+
+    monkeypatch.setattr("frw_worker.tasks.SessionLocal", lambda: FakeSession())
+    monkeypatch.setattr("frw_worker.tasks.build_candidate_snapshots", fake_build)
+    monkeypatch.setattr("frw_worker.tasks.publish_snapshots", fake_publish)
+
+    result = asyncio.run(
+        handle_job(
+            {"job_type": "snapshot_refresh", "payload": {"requested_by": "scheduler"}},
+            heartbeat,
+        )
+    )
+
+    assert result["status"] == "published"
+    assert result["built"]["snapshot_version"] == 42
+    assert calls == [("build", None), ("publish", 42, None)]
+    assert heartbeat_count == 2
+    assert commits == [True, True]

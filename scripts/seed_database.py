@@ -243,6 +243,7 @@ def main() -> None:
             )
         for scope_type, scope_key, max_running in [
             ("job_type", "public_js_render", 1),
+            ("job_type", "snapshot_refresh", 1),
             ("job_type", "snapshot_publish", 1),
             ("job_type", "backup", 1),
             ("provider", "local", 1),

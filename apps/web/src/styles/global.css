@@ -106,23 +106,24 @@ textarea {
   }
 
   .badge {
-    @apply inline-flex max-w-full items-center gap-1 rounded border px-2.5 py-1.5 text-xs font-semibold leading-5;
+    @apply inline-flex min-w-0 max-w-full items-center gap-1 rounded border px-2.5 py-1.5 text-left text-xs font-semibold leading-5;
+    overflow-wrap: anywhere;
   }
 
   .input-control {
-    @apply focus-ring h-11 rounded-md border border-line bg-panelAlt px-4 text-sm text-ink shadow-insetLine;
+    @apply focus-ring h-11 rounded-md border border-line bg-panelAlt px-4 text-base text-ink shadow-insetLine sm:text-sm;
   }
 
   .primary-action {
-    @apply focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-paper hover:bg-sky disabled:opacity-60;
+    @apply focus-ring inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-paper hover:bg-sky disabled:opacity-60;
   }
 
   .secondary-action {
-    @apply focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-line bg-panelAlt px-4 py-2.5 text-sm font-semibold text-ink hover:border-accent hover:bg-accentSoft;
+    @apply focus-ring inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-md border border-line bg-panelAlt px-4 py-2.5 text-sm font-semibold text-ink hover:border-accent hover:bg-accentSoft;
   }
 
   .table-surface {
-    @apply overflow-x-auto rounded-md border border-line bg-panel shadow-insetLine;
+    @apply w-full min-w-0 max-w-full overflow-x-auto rounded-md border border-line bg-panel shadow-insetLine;
   }
 
   .table-head {
@@ -139,5 +140,28 @@ textarea {
 
   .signal-danger {
     @apply rounded-md border border-danger/40 bg-danger/10 text-danger;
+  }
+
+  .safe-text {
+    overflow-wrap: anywhere;
+  }
+
+  .scroll-fade-x {
+    scrollbar-width: thin;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  }
+
+  .scroll-fade-x:focus-within {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  [data-allow-horizontal-scroll] {
+    max-width: 100%;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
   }
 }

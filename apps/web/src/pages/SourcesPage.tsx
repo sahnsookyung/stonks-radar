@@ -109,10 +109,20 @@ const sourceGroups: { title: string; summary: string; sources: SourceItem[] }[] 
         name: "KRX Open API",
         url: "https://openapi.krx.co.kr/contents/OPP/INFO/service/OPPINFO004.cmd",
         category: "Korea market data",
-        signal: "KODEX 200 ETF daily trading rows and KOSPI 200 futures daily trading rows",
+        signal: "KRX series daily index rows such as KRX 300 and KRX 300 IT",
         cadence: "daily market data; 15-minute cache check stays under free key limits",
         access: "KRX_OPEN_API_AUTH_KEY",
         status: "credential_pending",
+        risk: "low"
+      },
+      {
+        name: "iShares EWY",
+        url: "https://www.ishares.com/us/products/239681/ishares-msci-south-korea-etf",
+        category: "Korea market proxy",
+        signal: "EWY public NAV as a Korea equity exposure proxy when direct KRX rows are unavailable",
+        cadence: "daily NAV; 15-minute cache check target",
+        access: "public page",
+        status: "candidate",
         risk: "low"
       }
     ]
@@ -226,17 +236,17 @@ export function SourcesPage() {
   const isKo = locale === "ko";
 
   return (
-    <div className="grid gap-7">
-      <section className="flex flex-wrap items-end justify-between gap-5">
-        <div>
+    <div className="grid min-w-0 gap-7">
+      <section className="flex min-w-0 flex-wrap items-end justify-between gap-5">
+        <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-accent">
             <ShieldCheck className="h-4 w-4" />
             {isKo ? "출처 레지스트리" : "Source registry"}
           </div>
-          <h1 className="mt-3 max-w-4xl text-4xl font-bold leading-tight md:text-5xl">
+          <h1 className="safe-text mt-3 max-w-4xl text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
             {isKo ? "중요 출처와 신호를 한 곳에" : "Every important source, visible by design"}
           </h1>
-          <p className="mt-3 max-w-4xl text-base leading-7 text-muted md:text-lg md:leading-8">
+          <p className="safe-text mt-3 max-w-4xl text-base leading-7 text-muted md:text-lg md:leading-8">
             {isKo
               ? "공식 출처, 시장 데이터, 숏 리서치, 약한 OSINT를 분리해 표시합니다. 약한 신호는 항상 낮은 신뢰도와 검토 게이트를 유지합니다."
               : "Official feeds, market data, short research, and weak OSINT stay separated so users can see what is trusted, what needs credentials, and what is only a prompt for follow-up."}
@@ -255,10 +265,10 @@ export function SourcesPage() {
       </section>
 
       {sourceGroups.map((group) => (
-        <section key={group.title}>
-          <div className="mb-3">
+        <section key={group.title} className="min-w-0">
+          <div className="mb-3 min-w-0">
             <h2 className="text-xl font-bold">{group.title}</h2>
-            <p className="mt-1 text-sm leading-6 text-muted">{group.summary}</p>
+            <p className="safe-text mt-1 text-sm leading-6 text-muted">{group.summary}</p>
           </div>
           <div className="grid gap-3 lg:grid-cols-2">
             {group.sources.map((source) => (
@@ -269,10 +279,10 @@ export function SourcesPage() {
                 target="_blank"
                 rel="noreferrer"
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-semibold leading-6">{source.name}</h3>
-                    <p className="mt-2 text-sm leading-6 text-muted">{source.signal}</p>
+                <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="safe-text font-semibold leading-6">{source.name}</h3>
+                    <p className="safe-text mt-2 text-sm leading-6 text-muted">{source.signal}</p>
                   </div>
                   <ExternalLink className="h-4 w-4 text-muted" />
                 </div>
@@ -294,12 +304,12 @@ export function SourcesPage() {
 
 function Principle({ icon, title, body }: { icon: ReactNode; title: string; body: string }) {
   return (
-    <article className="panel p-5">
+    <article className="panel min-w-0 p-5">
       <div className="flex items-center gap-2 font-semibold text-accent">
         {icon}
         {title}
       </div>
-      <p className="mt-2 text-sm leading-6 text-muted">{body}</p>
+      <p className="safe-text mt-2 text-sm leading-6 text-muted">{body}</p>
     </article>
   );
 }
@@ -317,5 +327,5 @@ function RiskBadge({ risk }: { risk: SourceItem["risk"] }) {
       : risk === "medium"
         ? "border-accent/40 bg-accent/10 text-accent"
         : "border-line bg-panelAlt text-muted";
-  return <span className={`rounded-md border px-2 py-1 text-xs font-semibold uppercase ${className}`}>risk: {risk}</span>;
+  return <span className={`badge whitespace-nowrap ${className}`}>risk: {risk}</span>;
 }

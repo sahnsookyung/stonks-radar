@@ -108,6 +108,8 @@ export interface MetricTile {
   updated_at: string;
   coverage_status?: "active" | "coverage_gap";
   refresh_seconds?: number;
+  refresh_delta?: number;
+  refresh_delta_percent?: number;
   next_event?: MetricTileEvent;
   points?: { date: string; value: number }[];
 }

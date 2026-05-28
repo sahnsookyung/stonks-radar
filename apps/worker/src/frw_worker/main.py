@@ -39,7 +39,7 @@ async def main() -> None:
             reaped = reap_expired_leases(db)
             if reaped:
                 logger.info("reaped_expired_leases count=%s", reaped)
-            job = claim_job(db, worker_id=worker_id)
+            job = claim_job(db, worker_id=worker_id, lease_seconds=settings.worker_job_lease_seconds)
             db.commit()
         if not job:
             await asyncio.sleep(5)
@@ -48,7 +48,12 @@ async def main() -> None:
         try:
             async def beat() -> None:
                 with SessionLocal() as beat_db:
-                    heartbeat(beat_db, job_id=str(job["id"]), worker_id=worker_id)
+                    heartbeat(
+                        beat_db,
+                        job_id=str(job["id"]),
+                        worker_id=worker_id,
+                        lease_seconds=settings.worker_job_lease_seconds,
+                    )
                     beat_db.commit()
 
             result = await handle_job(job, beat)

@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from frw_api.core.settings import Settings
+from scripts import deploy_preflight
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -60,3 +61,50 @@ def test_production_cors_excludes_dev_origins() -> None:
     settings = Settings(app_env="production", public_base_url="https://stonks.sookyungahn.com")
 
     assert settings.cors_origin_list == ["https://stonks.sookyungahn.com"]
+
+
+def test_direct_deploy_uses_production_secret_env_file() -> None:
+    deploy_script = (ROOT / "scripts" / "deploy.sh").read_text()
+    prod_compose = (ROOT / "infra" / "docker-compose.prod.yml").read_text()
+
+    assert 'compose_env_args=(--env-file "$snapshot_env_file")' in deploy_script
+    assert 'STONKS_SNAPSHOT_ENV_FILE="$snapshot_env_file" npm run deploy:preflight' in deploy_script
+    assert ".secrets/stonks-radar.production.env" in prod_compose
+
+
+def test_deploy_preflight_requires_market_pulse_coverage_by_default(monkeypatch) -> None:
+    monkeypatch.delenv("DEPLOY_REQUIRED_PROVIDER_COVERAGE", raising=False)
+    report = {
+        "coverage": {
+            "fred_macro_pulse": {"status": "configured"},
+            "krx_korea_pulse": {"status": "missing", "required_any": ["KRX_OPEN_API_AUTH_KEY"]},
+            "finra_shorts": {
+                "status": "missing",
+                "required_any": ["FINRA_API_TOKEN"],
+                "required_groups_any": [["FINRA_API_CLIENT_ID", "FINRA_API_CLIENT_SECRET"]],
+            },
+        }
+    }
+
+    failures = deploy_preflight._provider_coverage_failures(report)
+
+    assert "Required provider coverage krx_korea_pulse is missing" in failures[0]
+    assert "FINRA_API_CLIENT_ID + FINRA_API_CLIENT_SECRET" in failures[1]
+
+
+def test_deploy_preflight_provider_coverage_gate_can_be_relaxed(monkeypatch) -> None:
+    monkeypatch.setenv("DEPLOY_REQUIRED_PROVIDER_COVERAGE", "none")
+
+    assert deploy_preflight._provider_coverage_failures({"coverage": {}}) == []
+
+
+def test_deploy_preflight_verifies_fred_and_krx_source_health_by_default(monkeypatch) -> None:
+    monkeypatch.delenv("DEPLOY_REQUIRED_SOURCE_HEALTH", raising=False)
+
+    assert deploy_preflight._required_source_health_sources() == ["fred", "korea_market_data"]
+
+
+def test_deploy_preflight_source_health_gate_can_be_relaxed(monkeypatch) -> None:
+    monkeypatch.setenv("DEPLOY_REQUIRED_SOURCE_HEALTH", "none")
+
+    assert deploy_preflight._required_source_health_sources() == []

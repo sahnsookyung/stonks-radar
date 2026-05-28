@@ -26,6 +26,7 @@ import {
 import type { AlternativeSignalItem, HomeSnapshotData, SnapshotEnvelope } from "@frw/shared-types";
 import { LineChart } from "../components/LineChart";
 import { apiGet } from "../lib/api";
+import { disclosureTransactionBucket, disclosureTransactionCaveat, disclosureTransactionLabel } from "../lib/disclosureLabels";
 import { useLocale } from "../lib/locale";
 import { snapshotQueries } from "../lib/snapshots";
 import { getTrackedTicker, trackedTickers, type TrackedTicker } from "../lib/trackedTickers";
@@ -254,11 +255,11 @@ export function TickerDetailPage() {
   const quoteValue = canDisplayMarketData ? formatCurrency(indicators.latestClose, ticker.currency) : (isKo ? "차트 전용" : "Chart only");
   const quoteChange = canDisplayMarketData
     ? `${formatSigned(indicators.change, ticker.currency)} (${formatPercent(indicators.changePct)})`
-    : freshness.delayLabel;
+    : (isKo ? "내부 가격 표시 보류" : "Internal prices withheld");
   const quoteTone = canDisplayMarketData ? (hasPositiveChange ? "text-success" : "text-danger") : "text-muted";
 
   return (
-    <div className="relative left-1/2 right-1/2 -mx-[50vw] -my-6 min-h-screen w-screen bg-[#071018]">
+    <div className="relative left-1/2 right-1/2 -mx-[50vw] -my-4 min-h-screen w-screen max-w-[100vw] overflow-x-clip bg-[#071018] sm:-my-6">
       <div className="mx-auto grid max-w-[1800px] gap-3 px-3 py-3 lg:px-4">
         <section className="panel min-w-0 overflow-hidden">
           <div className="grid min-w-0 gap-3 px-2 py-2 sm:px-3 sm:py-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:px-4">
@@ -292,26 +293,30 @@ export function TickerDetailPage() {
               </div>
             </div>
 
-            <div className="flex min-w-0 items-center justify-start gap-2 overflow-x-auto [scrollbar-width:thin] lg:justify-end">
+            <div
+              className="scroll-fade-x flex min-w-0 items-center justify-start gap-2 overflow-x-auto lg:justify-end"
+              data-allow-horizontal-scroll
+              aria-label={isKo ? "티커 작업" : "Ticker actions"}
+            >
               <HeaderAction disabled label={isKo ? "관심" : "Watch"} icon={<PlusCircle className="h-4 w-4" />} />
               <HeaderAction disabled label={isKo ? "알림" : "Alert"} icon={<Bell className="h-4 w-4" />} />
               <HeaderAction disabled label={isKo ? "노트" : "Note"} icon={<StickyNote className="h-4 w-4" />} />
-              <a className="secondary-action h-10 min-h-10 shrink-0 px-2.5 py-2 sm:px-3" href={`https://www.tradingview.com/chart/?symbol=${encodeURIComponent(ticker.tradingViewSymbol)}`} target="_blank" rel="noreferrer" aria-label="TradingView">
+              <a className="secondary-action h-11 min-h-11 shrink-0 px-2.5 py-2 sm:px-3" href={`https://www.tradingview.com/chart/?symbol=${encodeURIComponent(ticker.tradingViewSymbol)}`} target="_blank" rel="noreferrer" aria-label="TradingView">
                 <ExternalLink className="h-4 w-4" />
                 <span className="hidden sm:inline">TradingView</span>
               </a>
-              <a className="secondary-action h-10 min-h-10 shrink-0 px-2.5 py-2 sm:px-3" href={secUrl} target="_blank" rel="noreferrer" aria-label="SEC filings">
+              <a className="secondary-action h-11 min-h-11 shrink-0 px-2.5 py-2 sm:px-3" href={secUrl} target="_blank" rel="noreferrer" aria-label="SEC filings">
                 <FileText className="h-4 w-4" />
                 SEC
               </a>
-              <button type="button" className="secondary-action h-10 min-h-10 shrink-0 px-2.5 py-2 sm:px-3" onClick={() => void historyQuery.refetch()} aria-label={isKo ? "갱신" : "Refresh"}>
+              <button type="button" className="secondary-action h-11 min-h-11 shrink-0 px-2.5 py-2 sm:px-3" onClick={() => void historyQuery.refetch()} aria-label={isKo ? "갱신" : "Refresh"}>
                 <RefreshCw className="h-4 w-4" />
                 <span className="hidden sm:inline">{isKo ? "갱신" : "Refresh"}</span>
               </button>
               <HeaderAction disabled label={isKo ? "비교" : "Compare"} icon={<GitCompare className="h-4 w-4" />} />
               <button
                 type="button"
-                className="secondary-action h-10 min-h-10 shrink-0 px-2.5 py-2 sm:px-3"
+                className="secondary-action h-11 min-h-11 shrink-0 px-2.5 py-2 sm:px-3"
                 onClick={() => void navigator.clipboard?.writeText(window.location.href)}
                 aria-label={isKo ? "공유" : "Share"}
               >
@@ -322,14 +327,19 @@ export function TickerDetailPage() {
           </div>
 
           <div className="grid border-t border-line bg-panel/80 lg:grid-cols-[minmax(0,1fr)_auto]">
-            <div className="flex min-w-0 gap-1 overflow-x-auto px-2 py-2 [scrollbar-width:thin]" role="tablist" aria-label={isKo ? "티커 상세 탭" : "Ticker detail tabs"}>
+            <div
+              className="scroll-fade-x flex min-w-0 gap-1 overflow-x-auto px-2 py-2"
+              role="tablist"
+              aria-label={isKo ? "티커 상세 탭" : "Ticker detail tabs"}
+              data-allow-horizontal-scroll
+            >
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
                   type="button"
                   role="tab"
                   aria-selected={activeTab === tab.key}
-                  className={`focus-ring inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-semibold ${
+                  className={`focus-ring inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-semibold ${
                     activeTab === tab.key ? "bg-accentSoft text-accent" : "text-muted hover:bg-panelAlt hover:text-ink"
                   }`}
                   onClick={() => setActiveTab(tab.key)}
@@ -339,10 +349,14 @@ export function TickerDetailPage() {
                 </button>
               ))}
             </div>
-            <div className="flex min-w-0 gap-2 overflow-x-auto border-t border-line px-2 py-2 lg:border-l lg:border-t-0">
-              <MiniStat label={isKo ? "상태" : "Data"} value={freshness.delayLabel} />
-              <MiniStat label={isKo ? "기술" : "Score"} value={canDisplayMarketData ? `${indicators.score.total}/100` : "withheld"} />
-              <MiniStat label="RSI" value={canDisplayMarketData ? formatFixed(indicators.rsi14, 1) : "withheld"} />
+            <div
+              className="scroll-fade-x flex min-w-0 gap-2 overflow-x-auto border-t border-line px-2 py-2 lg:border-l lg:border-t-0"
+              data-allow-horizontal-scroll
+              aria-label={isKo ? "티커 미니 통계" : "Ticker mini stats"}
+            >
+              <MiniStat label={isKo ? "상태" : "Data"} value={canDisplayMarketData ? freshness.delayLabel : (isKo ? "TradingView 표시" : "TradingView display")} />
+              <MiniStat label={isKo ? "기술" : "Score"} value={canDisplayMarketData ? `${indicators.score.total}/100` : (isKo ? "보류" : "withheld")} />
+              <MiniStat label="RSI" value={canDisplayMarketData ? formatFixed(indicators.rsi14, 1) : (isKo ? "보류" : "withheld")} />
               <MiniStat label={isKo ? "생성" : "Generated"} value={snapshot?.generated_at ? formatDateTime(snapshot.generated_at) : "pending"} className="hidden sm:block" />
             </div>
           </div>
@@ -448,7 +462,11 @@ function UnknownTicker({ symbol, locale }: { symbol?: string; locale: "en" | "ko
 function TickerStrip({ activeSymbol, locale }: { activeSymbol: string; locale: "en" | "ko" }) {
   return (
     <nav className="panel min-w-0 overflow-hidden p-2" aria-label={locale === "ko" ? "추적 티커" : "Tracked tickers"}>
-      <div className="flex gap-2 overflow-x-auto [scrollbar-width:thin]">
+      <div
+        className="scroll-fade-x flex gap-2 overflow-x-auto"
+        data-allow-horizontal-scroll
+        aria-label={locale === "ko" ? "추적 티커 목록" : "Tracked ticker list"}
+      >
         {trackedTickers.map((ticker) => (
           <Link
             key={ticker.symbol}
@@ -511,14 +529,14 @@ function TradingViewWidget({
           href={`https://www.tradingview.com/chart/?symbol=${encodeURIComponent(ticker.tradingViewSymbol)}`}
           target="_blank"
           rel="noreferrer"
-          className="secondary-action h-10 min-h-10 px-3 py-2"
+          className="secondary-action h-11 min-h-11 px-3 py-2"
         >
           <ExternalLink className="h-4 w-4" />
           TradingView
         </a>
       </div>
       {isSafeSymbol ? (
-        <div className="relative h-[58vh] min-h-[520px] w-full bg-[#050b14] md:min-h-[640px] xl:h-[66vh] xl:max-h-[780px]">
+        <div className="relative h-[clamp(300px,45svh,390px)] w-full bg-[#050b14] md:h-[58vh] md:min-h-[640px] xl:h-[66vh] xl:max-h-[780px]">
           {shouldShowFrame ? (
             <iframe
               key={embedUrl}
@@ -560,7 +578,7 @@ function TradingViewWidget({
           </div>
         </div>
       ) : (
-        <div className="grid h-[420px] place-items-center p-6 text-center text-sm leading-6 text-muted">
+        <div className="grid h-[320px] place-items-center p-6 text-center text-sm leading-6 text-muted md:h-[420px]">
           {locale === "ko" ? "TradingView 심볼 검증에 실패했습니다." : "TradingView symbol validation failed."}
         </div>
       )}
@@ -796,7 +814,7 @@ function TechnicalsPanel({
 function OptionsPanel({ ticker, locale }: { ticker: TrackedTicker; locale: "en" | "ko" }) {
   const isKo = locale === "ko";
   return (
-    <section className="panel p-5">
+    <section className="panel min-w-0 p-5">
       <SectionHeader
         icon={<Activity className="h-5 w-5" />}
         title={isKo ? "옵션 라이트" : "Options Lite"}
@@ -812,7 +830,7 @@ function OptionsPanel({ ticker, locale }: { ticker: TrackedTicker; locale: "en" 
           <MetricCard key={field.label} label={field.label} value={field.value} detail={field.detail} />
         ))}
       </div>
-      <div className="mt-5 table-surface">
+      <div className="mt-5 table-surface" data-allow-horizontal-scroll aria-label={isKo ? "옵션 체인 표" : "Options chain table"}>
         <table className="min-w-full text-left text-sm">
           <thead className="table-head">
             <tr>
@@ -936,7 +954,7 @@ function FilingsPanel({
                 ? "증자, ATM, 워런트, 역분할, 계속기업, 내부자 매수/매도, 부채 약정, 주요 고객/계약, 정부 계약을 우선 표시 대상으로 둡니다."
                 : "Share offerings, ATMs, warrants, reverse splits, going-concern language, insider buys/sells, debt covenants, major customers/contracts, and government contracts are priority topics."}
             </div>
-            <a className="focus-ring inline-flex min-h-9 items-center gap-1 rounded-md font-semibold text-accent hover:underline" href={`https://www.sec.gov/edgar/search/#/q=${encodeURIComponent(ticker.symbol)}`} target="_blank" rel="noreferrer">
+            <a className="focus-ring inline-flex min-h-11 items-center gap-1 rounded-md font-semibold text-accent hover:underline" href={`https://www.sec.gov/edgar/search/#/q=${encodeURIComponent(ticker.symbol)}`} target="_blank" rel="noreferrer">
               SEC full-text search
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
@@ -1027,7 +1045,7 @@ function FundamentalsPanel({ ticker, locale }: { ticker: TrackedTicker; locale: 
           <div>1. SEC company facts</div>
           <div>2. FMP Basic profile/reference when terms allow</div>
           <div>3. Finnhub profile when terms allow</div>
-          <a className="focus-ring mt-2 inline-flex min-h-9 items-center gap-1 rounded-md font-semibold text-accent hover:underline" href={`https://www.sec.gov/edgar/search/#/q=${encodeURIComponent(ticker.symbol)}`} target="_blank" rel="noreferrer">
+          <a className="focus-ring mt-2 inline-flex min-h-11 items-center gap-1 rounded-md font-semibold text-accent hover:underline" href={`https://www.sec.gov/edgar/search/#/q=${encodeURIComponent(ticker.symbol)}`} target="_blank" rel="noreferrer">
             SEC source
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
@@ -1231,17 +1249,17 @@ function SignalLink({ signal, locale }: { signal: TickerSignal; locale: "en" | "
   const content = (
     <>
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 text-sm font-semibold leading-5">{signal.item.label}</div>
-        <span className="shrink-0 text-xs font-semibold text-accent">{signal.item.value}</span>
+        <div className="safe-text min-w-0 text-sm font-semibold leading-5">{signal.item.label}</div>
+        <span className="safe-text shrink-0 text-xs font-semibold text-accent">{signal.item.value}</span>
       </div>
-      <p className="mt-1 text-xs leading-5 text-muted">{signal.item.detail}</p>
+      <p className="safe-text mt-1 text-xs leading-5 text-muted">{signal.item.detail}</p>
       <div className="mt-2 flex items-center justify-between gap-2 text-[11px] leading-4 text-muted">
-        <span>{signal.context}</span>
+        <span className="safe-text min-w-0">{signal.context}</span>
         {signal.item.source_url ? <ExternalLink className="h-3.5 w-3.5 text-accent" aria-label={locale === "ko" ? "원문" : "source"} /> : null}
       </div>
     </>
   );
-  const className = "focus-ring block rounded-md border border-line bg-panelAlt px-3 py-2 hover:border-accent";
+  const className = "focus-ring block min-h-11 rounded-md border border-line bg-panelAlt px-3 py-2 hover:border-accent";
   if (signal.item.source_url) {
     return (
       <a className={className} href={signal.item.source_url} target="_blank" rel="noreferrer">
@@ -1254,12 +1272,12 @@ function SignalLink({ signal, locale }: { signal: TickerSignal; locale: "en" | "
 
 function SectionHeader({ icon, title, subtitle }: { icon: ReactNode; title: string; subtitle: string }) {
   return (
-    <div>
-      <h2 className="flex items-center gap-2 text-lg font-bold leading-7">
+    <div className="min-w-0">
+      <h2 className="safe-text flex items-center gap-2 text-lg font-bold leading-7">
         <span className="text-accent">{icon}</span>
         {title}
       </h2>
-      <p className="mt-1 text-sm leading-6 text-muted">{subtitle}</p>
+      <p className="safe-text mt-1 text-sm leading-6 text-muted">{subtitle}</p>
     </div>
   );
 }
@@ -1269,7 +1287,7 @@ function HeaderAction({ icon, label, disabled = false }: { icon: ReactNode; labe
     <button
       type="button"
       disabled={disabled}
-      className="secondary-action h-10 min-h-10 shrink-0 px-2.5 py-2 disabled:cursor-not-allowed disabled:opacity-55 sm:px-3"
+      className="secondary-action h-11 min-h-11 shrink-0 px-2.5 py-2 disabled:cursor-not-allowed disabled:opacity-55 sm:px-3"
       title={disabled ? "Persistence pending" : label}
       aria-label={label}
     >
@@ -1441,6 +1459,9 @@ function FilingRow({ filing, locale }: { filing: DisclosureFiling; locale: "en" 
 }
 
 function TransactionRow({ transaction, locale }: { transaction: DisclosureTransaction; locale: "en" | "ko" }) {
+  const label = disclosureTransactionLabel(transaction, locale);
+  const bucket = disclosureTransactionBucket(transaction, locale);
+  const caveat = disclosureTransactionCaveat(transaction, locale);
   return (
     <a
       className="focus-ring grid gap-3 rounded-md border border-line bg-panelAlt p-4 hover:border-accent md:grid-cols-[minmax(0,1fr)_160px_150px]"
@@ -1461,8 +1482,10 @@ function TransactionRow({ transaction, locale }: { transaction: DisclosureTransa
       </div>
       <div>
         <div className="text-xs font-semibold uppercase leading-5 text-muted">{locale === "ko" ? "거래" : "Transaction"}</div>
-        <div className="mt-1 text-sm font-bold">{transaction.transaction_type || transaction.transaction_code || "reported"}</div>
+        <div className="mt-1 text-sm font-bold">{label}</div>
+        <div className="mt-1 inline-flex rounded border border-line bg-panel px-2 py-1 text-[11px] font-semibold uppercase leading-4 text-muted">{bucket}</div>
         <div className="mt-1 text-xs leading-5 text-muted">{transaction.transaction_date || "date pending"}</div>
+        {caveat ? <div className="mt-1 text-xs leading-5 text-warning">{caveat}</div> : null}
       </div>
       <div>
         <div className="text-xs font-semibold uppercase leading-5 text-muted">{locale === "ko" ? "규모" : "Size"}</div>

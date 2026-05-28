@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
+import os
 from datetime import date, datetime, timezone
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Path as ApiPath, Query
 from sqlalchemy import text
@@ -21,6 +24,8 @@ from frw_api.services.trump_disclosures import (
 )
 
 router = APIRouter()
+ROOT = Path(__file__).resolve().parents[5]
+DEFAULT_PUBLISHED_ROOT = ROOT / "apps" / "web" / "public" / "public"
 
 
 @router.get("/health")
@@ -35,8 +40,13 @@ def health():
 
 @router.get("/status")
 def status(db: Session = Depends(get_db)):
+    published_manifest = _published_manifest_status()
+    db_snapshot_age = _scalar(db, "select extract(epoch from now() - max(generated_at))/60 from publication_snapshot", 0)
     metrics = {
-        "snapshot_age_minutes": _scalar(db, "select extract(epoch from now() - max(generated_at))/60 from publication_snapshot", 0),
+        "snapshot_age_minutes": published_manifest["age_minutes"] if published_manifest else db_snapshot_age,
+        "published_file_snapshot_age_minutes": published_manifest["age_minutes"] if published_manifest else None,
+        "published_file_generated_at": published_manifest["generated_at"] if published_manifest else None,
+        "db_snapshot_age_minutes": db_snapshot_age,
         "dead_letter_jobs": _scalar(db, "select count(*) from job_queue where status = 'dead_letter'", 0),
         "quota_wait_jobs": _scalar(db, "select count(*) from job_queue where status = 'quota_wait'", 0),
         "open_provider_circuits": _scalar(
@@ -190,6 +200,38 @@ def _coarsest_refresh_interval(rules: list[dict]) -> str:
         return f"at most every {minutes}m"
     hours = round(minutes / 60)
     return f"at most every {hours}h"
+
+
+def _published_manifest_status() -> dict | None:
+    root = Path(os.getenv("PUBLISHED_SNAPSHOT_DIR", str(DEFAULT_PUBLISHED_ROOT)))
+    manifest_path = root / "latest" / "manifest.json"
+    if not manifest_path.exists():
+        return None
+    try:
+        manifest = json.loads(manifest_path.read_text())
+        generated_at = _parse_datetime(str(manifest.get("generated_at", "")))
+    except (OSError, ValueError, TypeError):
+        return None
+    if generated_at is None:
+        return None
+    age_minutes = max(0.0, (datetime.now(timezone.utc) - generated_at).total_seconds() / 60)
+    return {
+        "age_minutes": age_minutes,
+        "generated_at": generated_at.isoformat(),
+        "path": str(manifest_path),
+    }
+
+
+def _parse_datetime(value: str) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
 def _scalar(db: Session, sql: str, default):

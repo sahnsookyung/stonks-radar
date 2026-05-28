@@ -1,14 +1,19 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const baseURL = process.env.STONKS_E2E_BASE_URL ?? "http://127.0.0.1:5173";
+const useExternalServer = Boolean(process.env.STONKS_E2E_BASE_URL);
+
 export default defineConfig({
   testDir: "../../tests/frontend",
-  webServer: {
-    command: "npm run dev -- --host 127.0.0.1",
-    url: "http://127.0.0.1:5173",
-    reuseExistingServer: false
-  },
+  webServer: useExternalServer
+    ? undefined
+    : {
+        command: "npm run dev -- --host 127.0.0.1",
+        url: baseURL,
+        reuseExistingServer: false
+      },
   use: {
-    baseURL: "http://127.0.0.1:5173",
+    baseURL,
     trace: "on-first-retry"
   },
   projects: [

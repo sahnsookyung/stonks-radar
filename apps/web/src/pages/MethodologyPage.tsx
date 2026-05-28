@@ -6,16 +6,16 @@ export function MethodologyPage() {
   const isKo = locale === "ko";
 
   return (
-    <article className="grid gap-6">
-      <section>
+    <article className="grid min-w-0 gap-6">
+      <section className="min-w-0">
         <div className="flex items-center gap-2 text-sm font-semibold text-accent">
           <BookOpenCheck className="h-4 w-4" />
           {isKo ? "방법론" : "Methodology"}
         </div>
-        <h1 className="mt-2 text-4xl font-bold">
+        <h1 className="safe-text mt-2 text-3xl font-bold sm:text-4xl">
           {isKo ? "출처, 검토, 공개 스냅샷 방법론" : "Source, Review, And Snapshot Methodology"}
         </h1>
-        <p className="mt-3 max-w-4xl text-base leading-7 text-muted">
+        <p className="safe-text mt-3 max-w-4xl text-base leading-7 text-muted">
           {isKo
             ? "공개 정보는 승인된 구조화 사실과 검토된 이벤트에서만 생성됩니다. 후보 데이터는 정본 데이터가 아니며, 출처 정책과 번역 상태가 공개 게이트를 통과해야 합니다."
             : "Public information is generated only from approved structured facts and reviewed events. Candidate data is not canonical data, and source policy plus translation freshness must pass publication gates."}
@@ -53,9 +53,9 @@ export function MethodologyPage() {
 
 function MethodCard({ title, body }: { title: string; body: string }) {
   return (
-    <div className="panel p-4">
-      <h2 className="font-semibold">{title}</h2>
-      <p className="mt-2 text-sm leading-6 text-muted">{body}</p>
+    <div className="panel min-w-0 p-4">
+      <h2 className="safe-text font-semibold">{title}</h2>
+      <p className="safe-text mt-2 text-sm leading-6 text-muted">{body}</p>
     </div>
   );
 }

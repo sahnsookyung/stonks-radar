@@ -152,17 +152,17 @@ export function PortfolioLabPage() {
   }
 
   return (
-    <div className="grid gap-7">
-      <section className="flex flex-wrap items-end justify-between gap-5">
-        <div>
+    <div className="grid min-w-0 gap-7">
+      <section className="flex min-w-0 flex-wrap items-end justify-between gap-5">
+        <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-accent">
             <Calculator className="h-4 w-4" />
             {isKo ? "포트폴리오 실험실" : "Portfolio lab"}
           </div>
-          <h1 className="mt-3 max-w-4xl text-4xl font-bold leading-tight md:text-5xl">
+          <h1 className="safe-text mt-3 max-w-4xl text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
             {isKo ? "샤프와 소르티노를 즉시 계산" : "Sharpe and Sortino, without spreadsheet fog"}
           </h1>
-          <p className="mt-3 max-w-4xl text-base leading-7 text-muted md:text-lg md:leading-8">
+          <p className="safe-text mt-3 max-w-4xl text-base leading-7 text-muted md:text-lg md:leading-8">
             {isKo
               ? "티커, 비중, 기간, 무위험 수익률을 입력하면 서버측 시장 데이터 프록시 또는 예시 데이터로 리스크 조정 성과를 계산합니다."
               : "Enter tickers, weights, dates, and a risk-free rate. The tool uses the server-side market-data proxy when keys are configured, with an explicit sample mode until then."}
@@ -175,8 +175,8 @@ export function PortfolioLabPage() {
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(360px,0.85fr)_minmax(0,1.15fr)]">
-        <div className="grid gap-4">
+      <section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(360px,0.85fr)_minmax(0,1.15fr)]">
+        <div className="grid min-w-0 gap-4">
           <div className="panel p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
@@ -187,7 +187,7 @@ export function PortfolioLabPage() {
               </div>
               <button
                 type="button"
-                className="secondary-action h-9 px-3 py-2"
+                className="secondary-action min-h-11 px-3 py-2"
                 onClick={() =>
                   setHoldings((items) => [
                     ...items,
@@ -201,7 +201,7 @@ export function PortfolioLabPage() {
             </div>
             <div className="grid gap-3">
               {holdings.map((holding) => (
-                <div key={holding.id} className="grid grid-cols-[1fr_96px_40px] gap-2">
+                <div key={holding.id} className="grid grid-cols-[minmax(0,1fr)_88px_44px] gap-2 sm:grid-cols-[minmax(0,1fr)_96px_44px]">
                   <input
                     className="input-control"
                     value={holding.symbol}
@@ -230,7 +230,7 @@ export function PortfolioLabPage() {
                   />
                   <button
                     type="button"
-                    className="secondary-action h-11 px-0 py-0"
+                    className="secondary-action h-11 min-w-11 px-0 py-0"
                     aria-label="Remove holding"
                     onClick={() => setHoldings((items) => items.filter((item) => item.id !== holding.id))}
                   >
@@ -266,15 +266,15 @@ export function PortfolioLabPage() {
               {loading ? (isKo ? "불러오는 중" : "Fetching") : isKo ? "시장 데이터 가져오기" : "Fetch market data"}
             </button>
             {error ? (
-              <div className="signal-warning mt-4 flex gap-2 px-4 py-3 text-sm leading-6">
+              <div className="signal-warning mt-4 flex min-w-0 gap-2 px-4 py-3 text-sm leading-6">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>{error}. Configure `TWELVE_DATA_API_KEY`, `ALPHA_VANTAGE_API_KEY`, or `FMP_API_KEY` to enable live history.</span>
+                <span className="safe-text min-w-0">{error}. Configure `TWELVE_DATA_API_KEY`, `ALPHA_VANTAGE_API_KEY`, or `FMP_API_KEY` to enable live history.</span>
               </div>
             ) : null}
           </div>
         </div>
 
-        <div className="grid gap-4">
+        <div className="grid min-w-0 gap-4">
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Metric label="Sharpe" value={formatRatio(stats?.sharpeRatio)} />
             <Metric label="Sortino" value={formatRatio(stats?.sortinoRatio)} />
@@ -284,19 +284,40 @@ export function PortfolioLabPage() {
 
           <section className="panel p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-lg font-semibold">{isKo ? "계산 결과" : "Calculation detail"}</h2>
-                <p className="mt-1 text-sm leading-6 text-muted">{marketData.source_note}</p>
+                <p className="safe-text mt-1 text-sm leading-6 text-muted">{marketData.source_note}</p>
               </div>
               {stats ? <SourceBadge label={`${stats.observationCount} aligned returns`} /> : <FreshnessBadge value="unsupported" />}
             </div>
             {marketData.warnings.length ? (
-              <div className="mt-4 flex gap-2 rounded-md border border-line bg-panelAlt px-4 py-3 text-sm leading-6 text-muted">
+              <div className="mt-4 flex min-w-0 gap-2 rounded-md border border-line bg-panelAlt px-4 py-3 text-sm leading-6 text-muted">
                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                <span>{marketData.warnings.join(" ")}</span>
+                <span className="safe-text min-w-0">{marketData.warnings.join(" ")}</span>
               </div>
             ) : null}
-            <div className="mt-5 overflow-x-auto">
+            <div className="mt-5 grid gap-2 md:hidden">
+              {holdings.map((holding) => {
+                const symbol = holding.symbol.trim().toUpperCase();
+                const asset = stats?.assetReturns.find((item) => item.symbol === symbol);
+                return (
+                  <article key={holding.id} className="rounded-md border border-line bg-panelAlt p-3">
+                    <div className="safe-text text-sm font-semibold">{symbol || "n/a"}</div>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs leading-5 text-muted">
+                      <div>
+                        <div className="font-semibold uppercase">Weight</div>
+                        <div className="text-ink">{formatPercent(normalizedWeights.get(symbol))}</div>
+                      </div>
+                      <div>
+                        <div className="font-semibold uppercase">Return</div>
+                        <div className="text-ink">{formatPercent(asset?.cumulativeReturn)}</div>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+            <div className="mt-5 hidden overflow-x-auto md:block" data-allow-horizontal-scroll aria-label="Portfolio calculation detail table">
               <table className="min-w-full text-left text-sm">
                 <thead className="text-xs uppercase text-muted">
                   <tr>
@@ -331,7 +352,7 @@ export function PortfolioLabPage() {
               <Activity className="h-4 w-4" />
               {isKo ? "평가 공식" : "Useful evaluation formulas"}
             </div>
-            <p className="mt-1 text-sm leading-6 text-muted">
+              <p className="safe-text mt-1 text-sm leading-6 text-muted">
               {isKo
                 ? "이 공식은 순위와 대시보드 설명에 활용할 수 있는 리서치 도구입니다."
                 : "These are research tools for ranking, triage, and explaining why a stock deserves deeper work."}
@@ -346,10 +367,10 @@ export function PortfolioLabPage() {
           {formulaCards.map((card) => (
             <article key={card.title} className="panel p-5">
               <h3 className="font-semibold">{card.title}</h3>
-              <p className="mt-2 rounded-md border border-line bg-panelAlt px-3 py-2 font-mono text-xs text-ink">
+              <p className="safe-text mt-2 rounded-md border border-line bg-panelAlt px-3 py-2 font-mono text-xs text-ink">
                 {card.formula}
               </p>
-              <p className="mt-3 text-sm leading-6 text-muted">{card.use}</p>
+              <p className="safe-text mt-3 text-sm leading-6 text-muted">{card.use}</p>
             </article>
           ))}
         </div>
@@ -360,9 +381,9 @@ export function PortfolioLabPage() {
 
 function Metric({ label, value, tone = "normal" }: { label: string; value: string; tone?: "normal" | "risk" }) {
   return (
-    <article className="panel p-5">
+    <article className="panel min-w-0 p-5">
       <div className="text-xs font-semibold uppercase text-muted">{label}</div>
-      <div className={`mt-2 text-3xl font-bold ${tone === "risk" ? "text-warning" : "text-ink"}`}>{value}</div>
+      <div className={`safe-text mt-2 text-2xl font-bold sm:text-3xl ${tone === "risk" ? "text-warning" : "text-ink"}`}>{value}</div>
     </article>
   );
 }

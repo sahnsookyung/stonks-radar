@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -23,6 +24,7 @@ SCHEMA_DIR = ROOT / "packages" / "schemas" / "snapshots"
 LOCAL_ARTIFACTS = Path(os.getenv("SNAPSHOT_ARTIFACT_DIR", str(ROOT / "artifacts" / "snapshots")))
 CANDIDATE_ROOT = LOCAL_ARTIFACTS / "candidates"
 PUBLISHED_ROOT = Path(os.getenv("PUBLISHED_SNAPSHOT_DIR", str(WEB_PUBLIC)))
+_NUMBER_RE = re.compile(r"-?\d+(?:,\d{3})*(?:\.\d+)?|-?\d+(?:\.\d+)?")
 
 
 @dataclass(frozen=True)
@@ -44,12 +46,16 @@ def build_candidate_snapshots(db: Session, *, generated_by: str | None = None) -
     _assert_publication_gates(db)
     version = _next_snapshot_version(db)
     generated_at = datetime.now(timezone.utc).replace(microsecond=0)
+    seed_public_root = LOCAL_ARTIFACTS / "runtime-seeds" / f"v{version}" / "public"
     candidate_public_root = CANDIDATE_ROOT / f"v{version}" / "public"
+    if seed_public_root.exists():
+        shutil.rmtree(seed_public_root)
+    _build_fresh_seed_snapshots(seed_public_root)
     if candidate_public_root.exists():
         shutil.rmtree(candidate_public_root)
     candidate_public_root.mkdir(parents=True, exist_ok=True)
 
-    files, manifest = _build_snapshot_tree(db, candidate_public_root, version, generated_at)
+    files, manifest = _build_snapshot_tree(db, candidate_public_root, version, generated_at, seed_public_root=seed_public_root)
     _record_manifest(db, manifest, candidate_public_root / "latest" / "manifest.json", version, "candidate", generated_by)
     _record_publication_rows(db, files, candidate_public_root, generated_by, "candidate")
     return SnapshotBuildResult(
@@ -58,6 +64,18 @@ def build_candidate_snapshots(db: Session, *, generated_by: str | None = None) -
         destination=str(candidate_public_root),
         snapshot_version=version,
     )
+
+
+def _build_fresh_seed_snapshots(public_root: Path) -> None:
+    from scripts import build_seed_snapshots
+
+    public_root.mkdir(parents=True, exist_ok=True)
+    previous_public_root = build_seed_snapshots.PUBLIC_ROOT
+    build_seed_snapshots.PUBLIC_ROOT = public_root
+    try:
+        build_seed_snapshots.build_snapshots()
+    finally:
+        build_seed_snapshots.PUBLIC_ROOT = previous_public_root
 
 
 def list_snapshot_candidates(db: Session) -> list[dict[str, Any]]:
@@ -152,8 +170,10 @@ def _build_snapshot_tree(
     output_root: Path,
     version: int,
     generated_at: datetime,
+    *,
+    seed_public_root: Path = WEB_PUBLIC,
 ) -> tuple[list[Path], dict[str, Any]]:
-    seed_manifest = json.loads((WEB_PUBLIC / "latest" / "manifest.json").read_text())
+    seed_manifest = json.loads((seed_public_root / "latest" / "manifest.json").read_text())
     manifest = {
         "current_version": version,
         "generated_at": _iso(generated_at),
@@ -165,9 +185,10 @@ def _build_snapshot_tree(
     db_events = _public_events(db)
     db_calendar = _calendar_items(db)
     status_data = _source_status_data(db)
+    previous_macro_tiles = _published_home_macro_tiles()
     for object_key, locale_paths in seed_manifest["objects"].items():
         for locale, source_path in locale_paths.items():
-            seed_path = WEB_PUBLIC / source_path.removeprefix("public/")
+            seed_path = seed_public_root / source_path.removeprefix("public/")
             snapshot = json.loads(seed_path.read_text())
             snapshot["snapshot_version"] = version
             snapshot["generated_at"] = _iso(generated_at)
@@ -180,8 +201,10 @@ def _build_snapshot_tree(
                     snapshot["data"]["top_events"] = localized_events + snapshot["data"].get("top_events", [])
                 if db_calendar:
                     snapshot["data"]["calendar_preview"] = db_calendar[:6]
+                snapshot["data"]["generated_label"] = _iso(generated_at)
                 snapshot["data"]["snapshot_health"]["age_minutes"] = 0
                 snapshot["data"]["snapshot_health"]["stale_after"] = snapshot["stale_after"]
+                _apply_refresh_deltas(snapshot["data"].get("macro_tiles", []), previous_macro_tiles.get(locale, {}))
             elif snapshot["object_type"] == "map_events":
                 localized_events = db_events.get(locale, [])
                 if localized_events:
@@ -208,6 +231,71 @@ def _build_snapshot_tree(
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
     files.append(manifest_path)
     return files, manifest
+
+
+def _published_home_macro_tiles() -> dict[str, dict[str, dict[str, Any]]]:
+    manifest_path = PUBLISHED_ROOT / "latest" / "manifest.json"
+    if not manifest_path.exists():
+        return {}
+    try:
+        manifest = json.loads(manifest_path.read_text())
+    except json.JSONDecodeError:
+        return {}
+    home_paths = manifest.get("objects", {}).get("home", {})
+    previous: dict[str, dict[str, dict[str, Any]]] = {}
+    for locale, home_path in home_paths.items():
+        if not isinstance(home_path, str):
+            continue
+        snapshot_path = PUBLISHED_ROOT / home_path.removeprefix("public/")
+        if not snapshot_path.exists():
+            continue
+        try:
+            snapshot = json.loads(snapshot_path.read_text())
+        except json.JSONDecodeError:
+            continue
+        tiles = snapshot.get("data", {}).get("macro_tiles", [])
+        if not isinstance(tiles, list):
+            continue
+        previous[str(locale)] = {
+            str(tile["key"]): tile
+            for tile in tiles
+            if isinstance(tile, dict) and isinstance(tile.get("key"), str)
+        }
+    return previous
+
+
+def _apply_refresh_deltas(tiles: list[Any], previous_tiles: dict[str, dict[str, Any]]) -> None:
+    if not previous_tiles:
+        return
+    for tile in tiles:
+        if not isinstance(tile, dict):
+            continue
+        key = tile.get("key")
+        if not isinstance(key, str):
+            continue
+        current = _metric_tile_number(tile)
+        previous = _metric_tile_number(previous_tiles.get(key, {}))
+        if current is None or previous is None:
+            continue
+        delta = current - previous
+        tile["refresh_delta"] = delta
+        if abs(previous) > 1e-12:
+            tile["refresh_delta_percent"] = (delta / abs(previous)) * 100
+
+
+def _metric_tile_number(tile: dict[str, Any]) -> float | None:
+    value = tile.get("value")
+    if isinstance(value, (int, float)):
+        return float(value)
+    if not isinstance(value, str):
+        return None
+    match = _NUMBER_RE.search(value.replace("−", "-"))
+    if not match:
+        return None
+    try:
+        return float(match.group(0).replace(",", ""))
+    except ValueError:
+        return None
 
 
 def _public_events(db: Session) -> dict[str, list[dict[str, Any]]]:

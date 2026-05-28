@@ -20,21 +20,30 @@ export function ScenarioBasketPage() {
   const data = query.data.data;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid min-w-0 gap-6">
       <SnapshotBanner snapshot={query.data} />
-      <section>
+      <section className="min-w-0">
         <div className="flex items-center gap-2 text-sm font-semibold text-accent">
           <TrendingUp className="h-4 w-4" />
           Scenario basket
         </div>
-        <h1 className="mt-2 text-4xl font-bold">{data.name}</h1>
-        <p className="mt-3 max-w-4xl text-base leading-7 text-muted">{data.thesis}</p>
+        <h1 className="safe-text mt-2 text-3xl font-bold sm:text-4xl">{data.name}</h1>
+        <p className="safe-text mt-3 max-w-4xl text-base leading-7 text-muted">{data.thesis}</p>
       </section>
-      <section className="grid gap-4 lg:grid-cols-[1fr_0.8fr]">
+      <section className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
         <div className="panel p-4">
           <h2 className="text-xl font-bold">Illustrative methodology</h2>
-          <p className="mt-3 text-sm leading-6 text-muted">{data.methodology}</p>
-          <div className="mt-4 overflow-x-auto">
+          <p className="safe-text mt-3 text-sm leading-6 text-muted">{data.methodology}</p>
+          <div className="mt-4 grid gap-2 md:hidden">
+            {data.included_objects.map((object) => (
+              <article key={object.object_key} className="rounded-md border border-line bg-panelAlt p-3">
+                <div className="safe-text text-sm font-semibold">{object.name}</div>
+                <p className="safe-text mt-2 text-xs leading-5 text-muted">{object.reason}</p>
+                <div className="mt-2 text-xs font-semibold uppercase text-accent">{object.illustrative_weight}</div>
+              </article>
+            ))}
+          </div>
+          <div className="mt-4 hidden overflow-x-auto md:block" data-allow-horizontal-scroll aria-label="Scenario basket included objects table">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-panelAlt text-xs uppercase text-muted">
                 <tr>
@@ -58,16 +67,16 @@ export function ScenarioBasketPage() {
         <aside className="grid gap-4">
           <div className="panel p-4">
             <h2 className="font-semibold">Risk summary</h2>
-            <p className="mt-2 text-sm leading-6 text-muted">{data.risk_summary}</p>
+            <p className="safe-text mt-2 text-sm leading-6 text-muted">{data.risk_summary}</p>
           </div>
-          <div className="signal-warning p-4 text-sm leading-6">
+          <div className="signal-warning safe-text p-4 text-sm leading-6">
             <div className="mb-2 flex items-center gap-2 font-semibold">
               <Scale className="h-4 w-4" />
               Research boundary
             </div>
             {data.disclaimer}
           </div>
-          <div className="panel p-4 text-sm text-muted">{data.data_delay_warning}</div>
+          <div className="panel safe-text p-4 text-sm text-muted">{data.data_delay_warning}</div>
         </aside>
       </section>
     </div>

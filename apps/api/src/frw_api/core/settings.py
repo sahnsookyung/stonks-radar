@@ -83,6 +83,8 @@ class Settings(BaseSettings):
     trump_disclosure_oge_poll_seconds: int = Field(default=86400, ge=21600)
     worker_scheduler_enabled: bool = True
     worker_scheduler_tick_seconds: int = Field(default=60, ge=10, le=3600)
+    worker_job_lease_seconds: int = Field(default=900, ge=60, le=3600)
+    snapshot_refresh_seconds: int = Field(default=900, ge=300)
     alternative_signal_refresh_seconds: int = Field(default=900, ge=60)
 
     public_api_rate_limit_per_minute: int = 60

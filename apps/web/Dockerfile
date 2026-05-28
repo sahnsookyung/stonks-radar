@@ -6,7 +6,7 @@ COPY apps/web/package.json apps/web/package.json
 COPY packages/shared-types/package.json packages/shared-types/package.json
 RUN npm install
 COPY . .
-RUN npm run seed:snapshots && npm run web:build
+RUN npm run build
 
 FROM caddy:2-alpine
 COPY --from=build /app/apps/web/dist /srv

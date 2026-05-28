@@ -1,5 +1,8 @@
 services:
   postgres:
+    env_file:
+      - path: .secrets/stonks-radar.production.env
+        required: false
     mem_limit: 4g
     cpus: 1.0
     restart: unless-stopped
@@ -10,11 +13,17 @@ services:
     restart: unless-stopped
 
   api:
+    env_file:
+      - path: .secrets/stonks-radar.production.env
+        required: false
     mem_limit: 1536m
     cpus: 0.75
     restart: unless-stopped
 
   worker:
+    env_file:
+      - path: .secrets/stonks-radar.production.env
+        required: false
     mem_limit: 2g
     cpus: 0.75
     restart: unless-stopped
@@ -33,6 +42,8 @@ services:
     image: caddy:2-alpine
     env_file:
       - path: .env
+        required: false
+      - path: .secrets/stonks-radar.production.env
         required: false
     mem_limit: 256m
     cpus: 0.25

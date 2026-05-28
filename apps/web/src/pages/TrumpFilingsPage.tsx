@@ -7,6 +7,7 @@ import { SeverityBadge, SourceBadge } from "../components/Badge";
 import { ErrorState, LoadingState } from "../components/LoadingState";
 import { SnapshotBanner } from "../components/SnapshotBanner";
 import { apiGet } from "../lib/api";
+import { disclosureTransactionBucket, disclosureTransactionCaveat, disclosureTransactionLabel } from "../lib/disclosureLabels";
 import { useLocale } from "../lib/locale";
 import { snapshotQueries } from "../lib/snapshots";
 
@@ -99,14 +100,19 @@ export function TrumpFilingsPage() {
             <FileText className="h-6 w-6 text-accent" />
             {t("trumpFilings")}
           </h1>
-          <p className="mt-3 max-w-4xl text-sm leading-6 text-muted">
+          <p className="safe-text mt-3 max-w-4xl text-sm leading-6 text-muted">
             {locale === "ko"
               ? "트럼프 관련 공개 주식 공시를 출처 연결형 데이터베이스로 표시합니다. 사설 계좌 활동이나 실시간 거래 신호를 추정하지 않습니다."
               : "A source-linked public disclosure database for Trump-related stock disclosures. It does not infer private brokerage activity or real-time trading signals."}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {lane ? <SourceBadge label={lane.cadence} /> : null}
+        <div className="flex min-w-0 flex-wrap gap-2">
+          {lane ? (
+            <>
+              <SourceBadge label={locale === "ko" ? "출처 연결형" : "source-linked"} />
+              <span className="safe-text max-w-full text-xs leading-5 text-muted">{lane.cadence}</span>
+            </>
+          ) : null}
           {hasApiData ? (
             <SourceBadge
               label={
@@ -119,10 +125,10 @@ export function TrumpFilingsPage() {
         </div>
       </section>
 
-      <section className="signal-warning p-4">
+      <section className="signal-warning min-w-0 p-4">
         <div className="flex items-start gap-3">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
-          <p className="text-sm font-semibold leading-6">
+          <p className="safe-text min-w-0 text-sm font-semibold leading-6">
             {locale === "ko"
               ? "OGE 공개 재무공개 보고서는 불법 목적, 일반 대중 대상 보도/미디어 배포 외 상업 목적, 신용평가 목적, 모금 권유 목적으로 취득하거나 사용할 수 없습니다."
               : disclosure?.legal_use_warning ??
@@ -137,7 +143,7 @@ export function TrumpFilingsPage() {
             <AlertTriangle className="h-4 w-4" />
             {locale === "ko" ? "공개 공시 API 대기 중" : "Disclosure API pending"}
           </div>
-          <p className="mt-2 text-sm leading-6 text-muted">
+          <p className="safe-text mt-2 text-sm leading-6 text-muted">
             {locale === "ko"
               ? "백엔드 공시 데이터베이스를 읽을 수 없어 스냅샷 요약으로 대체합니다."
               : "The backend disclosure database is not readable from this session, so the page is falling back to the static snapshot digest."}
@@ -230,7 +236,7 @@ export function TrumpFilingsPage() {
               />
               <ul className="mt-4 grid gap-2 text-sm leading-6 text-muted">
                 {(disclosure?.limitations ?? []).map((limitation) => (
-                  <li key={limitation} className="rounded-md border border-line bg-panelAlt px-3 py-2">
+                  <li key={limitation} className="safe-text rounded-md border border-line bg-panelAlt px-3 py-2">
                     {locale === "ko" ? translateLimitation(limitation) : limitation}
                   </li>
                 ))}
@@ -265,7 +271,7 @@ export function TrumpFilingsPage() {
             <Sparkles className="h-4 w-4" />
             {summaryItem.label}
           </div>
-          <p className="mt-2 text-sm leading-6 text-muted">{summaryItem.detail}</p>
+          <p className="safe-text mt-2 text-sm leading-6 text-muted">{summaryItem.detail}</p>
           <div className="mt-3">
             <SeverityBadge value={summaryItem.severity} />
           </div>
@@ -285,12 +291,12 @@ function SectionHeader({
   subtitle: string;
 }) {
   return (
-    <div>
-      <h2 className="flex items-center gap-2 text-lg font-bold leading-7">
+    <div className="min-w-0">
+      <h2 className="safe-text flex items-center gap-2 text-lg font-bold leading-7">
         <span className="text-accent">{icon}</span>
         {title}
       </h2>
-      <p className="mt-1 text-sm leading-6 text-muted">{subtitle}</p>
+      <p className="safe-text mt-1 text-sm leading-6 text-muted">{subtitle}</p>
     </div>
   );
 }
@@ -307,13 +313,13 @@ function StatCard({
   detail: string;
 }) {
   return (
-    <article className="panel p-4">
+    <article className="panel min-w-0 p-4">
       <div className="flex items-center gap-2 text-sm font-semibold text-muted">
         <span className="text-accent">{icon}</span>
         {label}
       </div>
-      <div className="mt-3 text-3xl font-bold">{value}</div>
-      <p className="mt-1 text-sm leading-6 text-muted">{detail}</p>
+      <div className="safe-text mt-3 text-3xl font-bold">{value}</div>
+      <p className="safe-text mt-1 text-sm leading-6 text-muted">{detail}</p>
     </article>
   );
 }
@@ -326,9 +332,12 @@ function TransactionRow({
   locale: "en" | "ko";
 }) {
   const value = transaction.source === "OGE" ? formatOgeAmount(transaction) : formatSecAmount(transaction);
+  const label = disclosureTransactionLabel(transaction, locale);
+  const bucket = disclosureTransactionBucket(transaction, locale);
+  const caveat = disclosureTransactionCaveat(transaction, locale);
   return (
     <a
-      className="focus-ring grid gap-3 rounded-md border border-line bg-panelAlt p-4 hover:border-accent md:grid-cols-[minmax(0,1fr)_170px_120px]"
+      className="focus-ring grid min-h-11 gap-3 rounded-md border border-line bg-panelAlt p-4 hover:border-accent md:grid-cols-[minmax(0,1fr)_170px_120px]"
       href={transaction.source_url}
       target="_blank"
       rel="noreferrer"
@@ -341,19 +350,21 @@ function TransactionRow({
             {transaction.form_type}
           </span>
         </div>
-        <h3 className="mt-2 truncate text-sm font-semibold leading-5">
+        <h3 className="safe-text mt-2 text-sm font-semibold leading-5">
           {transaction.issuer_name || transaction.asset_description || "Disclosure row"}
         </h3>
-        <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted">{transaction.asset_description}</p>
+        <p className="safe-text mt-1 text-xs leading-5 text-muted">{transaction.asset_description}</p>
       </div>
       <div>
         <div className="text-xs font-semibold uppercase leading-5 text-muted">
           {locale === "ko" ? "거래" : "Transaction"}
         </div>
         <div className="mt-1 text-sm font-bold leading-5">
-          {transaction.transaction_type || transaction.transaction_code || "reported"}
+          {label}
         </div>
+        <div className="mt-1 inline-flex rounded border border-line bg-panel px-2 py-1 text-[11px] font-semibold uppercase leading-4 text-muted">{bucket}</div>
         <div className="mt-1 text-xs leading-5 text-muted">{transaction.transaction_date || "date pending"}</div>
+        {caveat ? <div className="mt-1 text-xs leading-5 text-warning">{caveat}</div> : null}
       </div>
       <div>
         <div className="text-xs font-semibold uppercase leading-5 text-muted">
@@ -372,7 +383,7 @@ function TransactionRow({
 function FilingRow({ filing, locale }: { filing: DisclosureFiling; locale: "en" | "ko" }) {
   return (
     <a
-      className="focus-ring block rounded-md border border-line bg-panelAlt p-4 hover:border-accent"
+      className="focus-ring block min-h-11 rounded-md border border-line bg-panelAlt p-4 hover:border-accent"
       href={filing.source_url}
       target="_blank"
       rel="noreferrer"
@@ -384,7 +395,7 @@ function FilingRow({ filing, locale }: { filing: DisclosureFiling; locale: "en" 
             <span className="badge border-line bg-panel">{filing.form_type}</span>
             {filing.ticker ? <span className="badge border-line bg-panel">{filing.ticker}</span> : null}
           </div>
-          <h3 className="mt-3 truncate text-sm font-semibold leading-5">
+          <h3 className="safe-text mt-3 text-sm font-semibold leading-5">
             {filing.issuer_name || filing.filer_name || filing.accession_number || "Public filing"}
           </h3>
           <p className="mt-1 text-xs leading-5 text-muted">
@@ -403,21 +414,21 @@ function FilingRow({ filing, locale }: { filing: DisclosureFiling; locale: "en" 
 function WatchPerson({ person }: { person: WatchedPerson }) {
   const tags = [...person.tickers, ...person.sec_ciks].filter(Boolean);
   return (
-    <article className="rounded-md border border-line bg-panelAlt p-3">
+    <article className="min-w-0 rounded-md border border-line bg-panelAlt p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-sm font-semibold leading-5">{person.canonical_name}</h3>
+        <h3 className="safe-text text-sm font-semibold leading-5">{person.canonical_name}</h3>
         <span className="badge border-line bg-panel">{person.category}</span>
       </div>
       {tags.length ? (
         <div className="mt-2 flex flex-wrap gap-2">
           {tags.map((tag) => (
-            <span key={tag} className="rounded border border-line px-2 py-1 text-xs text-muted">
+            <span key={tag} className="safe-text rounded border border-line px-2 py-1 text-xs text-muted">
               {tag}
             </span>
           ))}
         </div>
       ) : null}
-      {person.notes ? <p className="mt-2 text-xs leading-5 text-muted">{person.notes}</p> : null}
+      {person.notes ? <p className="safe-text mt-2 text-xs leading-5 text-muted">{person.notes}</p> : null}
     </article>
   );
 }
@@ -426,10 +437,10 @@ function FallbackCard({ item, locale }: { item: AlternativeSignalItem; locale: "
   const content = (
     <>
       <div className="flex items-start justify-between gap-3">
-        <h3 className="min-w-0 text-sm font-semibold leading-5">{item.label}</h3>
-        <div className="shrink-0 text-xs font-semibold leading-5 text-accent">{item.value}</div>
+        <h3 className="safe-text min-w-0 text-sm font-semibold leading-5">{item.label}</h3>
+        <div className="safe-text shrink-0 text-xs font-semibold leading-5 text-accent">{item.value}</div>
       </div>
-      <p className="mt-2 text-xs leading-5 text-muted">{item.detail}</p>
+      <p className="safe-text mt-2 text-xs leading-5 text-muted">{item.detail}</p>
       {item.source_url ? (
         <div className="mt-3 flex items-center gap-1 text-xs font-semibold leading-5 text-accent">
           {locale === "ko" ? "출처" : "Source"}
@@ -450,7 +461,7 @@ function FallbackCard({ item, locale }: { item: AlternativeSignalItem; locale: "
 }
 
 function EmptyState({ text }: { text: string }) {
-  return <div className="mt-4 rounded-md border border-dashed border-line p-5 text-sm leading-6 text-muted">{text}</div>;
+  return <div className="safe-text mt-4 rounded-md border border-dashed border-line p-5 text-sm leading-6 text-muted">{text}</div>;
 }
 
 function formatOgeAmount(transaction: DisclosureTransaction) {

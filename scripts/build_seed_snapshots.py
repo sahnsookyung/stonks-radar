@@ -12,11 +12,13 @@ from datetime import datetime, timedelta, timezone
 from html import unescape
 from pathlib import Path
 from typing import Any
-from urllib import parse, request
+from urllib import error, parse, request
 from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parents[1]
-PUBLIC_ROOT = ROOT / "apps" / "web" / "public" / "public"
+PUBLIC_ROOT = Path(
+    os.getenv("STONKS_SNAPSHOT_PUBLIC_ROOT", str(ROOT / "apps" / "web" / "public" / "public"))
+).expanduser()
 VERSION = 1
 LOCALES = ["en", "ko"]
 FRED_API_BASE_URL = "https://api.stlouisfed.org/fred"
@@ -26,7 +28,10 @@ GOOGLE_NEWS_RSS_URL = "https://news.google.com/rss/search"
 YAHOO_FINANCE_RSS_URL = "https://feeds.finance.yahoo.com/rss/2.0/headline"
 MOF_JGB_CSV_URL = "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/historical/jgbcme_all.csv"
 MOF_JGB_PAGE_URL = "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm"
+ISHARES_EWY_URL = "https://www.ishares.com/us/products/239681/ishares-msci-south-korea-etf"
 KRX_OPEN_API_BASE_URL = "https://data-dbg.krx.co.kr/svc/apis"
+KRX_SAMPLE_API_BASE_URL = "https://data-dbg.krx.co.kr/svc/sample/apis"
+KRX_INDEX_DAILY_PATH = "idx/krx_dd_trd"
 KRX_ETF_DAILY_PATH = "etp/etf_bydd_trd"
 KRX_FUTURES_DAILY_PATH = "drv/fut_bydd_trd"
 FRED_REQUEST_MIN_INTERVAL_SECONDS = 0.55
@@ -47,6 +52,7 @@ OFFICIAL_POLICY_CALENDAR_URLS = {
     "bcb": "https://www.bcb.gov.br/detalhenoticia/20739/nota",
 }
 KRX_DOC_URLS = {
+    "index_daily": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES001_S2.cmd?BO_ID=SsgXTEspyJESKvyXZtCU",
     "etf_daily": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES003_S2.cmd?BO_ID=nrEpCLaZpoLCTzPUMxuF",
     "futures_daily": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES005_S2.cmd?BO_ID=ilaVYOabbaicHbKTsqga",
 }
@@ -54,10 +60,12 @@ _RUNTIME_ENV: dict[str, str] | None = None
 _FRED_CACHE: dict[str, dict[str, Any] | None] = {}
 _MOF_JGB_CACHE: list[dict[str, Any]] | None = None
 _KRX_ROWS_CACHE: dict[tuple[str, str], list[dict[str, Any]]] = {}
+_KRX_ERROR_CACHE: dict[tuple[str, str], str] = {}
 _FINRA_TOKEN_CACHE: dict[str, Any] = {"token": None, "expires_at": 0.0}
 _FINRA_ROWS_CACHE: dict[str, list[dict[str, Any]]] = {}
 _SEC_SUBMISSIONS_CACHE: dict[str, dict[str, Any] | None] = {}
 _WEB_METADATA_CACHE: dict[str, dict[str, str] | None] = {}
+_ISHARES_FUND_CACHE: dict[str, dict[str, Any] | None] = {}
 _PENTAGON_PIZZA_CACHE: dict[str, dict[str, Any] | None] = {}
 _GDELT_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
 _RSS_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
@@ -152,6 +160,7 @@ SCENARIOS = {
 
 
 def build_snapshots() -> None:
+    _reset_runtime_caches()
     generated_at = datetime.now(timezone.utc).replace(microsecond=0)
     stale_after = generated_at + timedelta(hours=12)
     hard_expires_at = generated_at + timedelta(days=7)
@@ -165,6 +174,7 @@ def build_snapshots() -> None:
     for locale in LOCALES:
         events = _events(locale, generated_at)
         calendar = _calendar(locale)
+        macro_tiles = _preserve_previous_active_macro_tiles(locale, _macro_tiles(locale, generated_at))
         sector_tiles = [_sector_tile(key, locale, events) for key in SECTORS]
         scenario_summaries = [_scenario_summary(key, locale) for key in SCENARIOS]
 
@@ -195,7 +205,7 @@ def build_snapshots() -> None:
                         "backend_dependency": "none_for_public_pages",
                     },
                     "top_events": events,
-                    "macro_tiles": _macro_tiles(locale, generated_at),
+                    "macro_tiles": macro_tiles,
                     "alternative_signals": _alternative_signals(locale, generated_at),
                     "sector_tiles": sector_tiles,
                     "calendar_preview": calendar[:6],
@@ -340,6 +350,27 @@ def build_snapshots() -> None:
     latest = PUBLIC_ROOT / "latest"
     latest.mkdir(parents=True, exist_ok=True)
     (latest / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
+
+
+def _reset_runtime_caches() -> None:
+    global _RUNTIME_ENV, _MOF_JGB_CACHE, _LAST_FRED_REQUEST_AT, _LAST_KRX_REQUEST_AT, _LAST_FINRA_REQUEST_AT
+    _RUNTIME_ENV = None
+    _FRED_CACHE.clear()
+    _MOF_JGB_CACHE = None
+    _KRX_ROWS_CACHE.clear()
+    _KRX_ERROR_CACHE.clear()
+    _FINRA_TOKEN_CACHE.clear()
+    _FINRA_TOKEN_CACHE.update({"token": None, "expires_at": 0.0})
+    _FINRA_ROWS_CACHE.clear()
+    _SEC_SUBMISSIONS_CACHE.clear()
+    _WEB_METADATA_CACHE.clear()
+    _ISHARES_FUND_CACHE.clear()
+    _PENTAGON_PIZZA_CACHE.clear()
+    _GDELT_ARTICLE_CACHE.clear()
+    _RSS_ARTICLE_CACHE.clear()
+    _LAST_FRED_REQUEST_AT = 0.0
+    _LAST_KRX_REQUEST_AT = 0.0
+    _LAST_FINRA_REQUEST_AT = 0.0
 
 
 def _runtime_env() -> dict[str, str]:
@@ -513,27 +544,77 @@ def _krx_rows(path: str, bas_dd: str) -> list[dict[str, Any]]:
     if elapsed < KRX_REQUEST_MIN_INTERVAL_SECONDS:
         time.sleep(KRX_REQUEST_MIN_INTERVAL_SECONDS - elapsed)
 
-    base_url = str(_runtime_env().get("KRX_OPEN_API_BASE_URL") or KRX_OPEN_API_BASE_URL).rstrip("/")
     params = parse.urlencode({"basDd": bas_dd})
-    try:
-        payload = _http_json(
-            f"{base_url}/{path}.json?{params}",
-            headers={"Accept": "application/json", "AUTH_KEY": auth_key},
-            timeout=20,
-        )
-    except Exception:
-        _KRX_ROWS_CACHE[cache_key] = []
-    else:
-        rows = payload.get("OutBlock_1") if isinstance(payload, dict) else []
-        _KRX_ROWS_CACHE[cache_key] = [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
-    finally:
-        _LAST_KRX_REQUEST_AT = time.monotonic()
+    for base_url in _krx_base_urls():
+        try:
+            payload = _http_json(
+                f"{base_url.rstrip('/')}/{path}.json?{params}",
+                headers={"Accept": "application/json", "AUTH_KEY": auth_key},
+                timeout=20,
+            )
+        except error.HTTPError as exc:
+            _KRX_ROWS_CACHE[cache_key] = []
+            _KRX_ERROR_CACHE[cache_key] = _krx_error_from_http_error(exc)
+        except Exception as exc:
+            _KRX_ROWS_CACHE[cache_key] = []
+            _KRX_ERROR_CACHE[cache_key] = f"KRX request failed: {exc.__class__.__name__}"
+        else:
+            rows = payload.get("OutBlock_1") if isinstance(payload, dict) else []
+            _KRX_ROWS_CACHE[cache_key] = [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+            _KRX_ERROR_CACHE.pop(cache_key, None)
+            if _KRX_ROWS_CACHE[cache_key]:
+                break
+        finally:
+            _LAST_KRX_REQUEST_AT = time.monotonic()
     return _KRX_ROWS_CACHE[cache_key]
+
+
+def _krx_base_urls() -> list[str]:
+    env = _runtime_env()
+    configured_base = str(env.get("KRX_OPEN_API_BASE_URL") or "").strip()
+    if configured_base:
+        return [configured_base]
+    urls = [KRX_OPEN_API_BASE_URL]
+    if _truthy(env.get("KRX_ALLOW_SAMPLE_API_FALLBACK")):
+        urls.append(str(env.get("KRX_SAMPLE_API_BASE_URL") or KRX_SAMPLE_API_BASE_URL))
+    return urls
+
+
+def _krx_error_from_http_error(exc: error.HTTPError) -> str:
+    body = ""
+    try:
+        body = exc.read(2_000).decode("utf-8", errors="ignore")
+    except Exception:
+        body = ""
+    message = ""
+    try:
+        payload = json.loads(body) if body else {}
+    except ValueError:
+        payload = {}
+    if isinstance(payload, dict):
+        message = str(payload.get("respMsg") or payload.get("message") or "").strip()
+    if exc.code == 401 and message:
+        return f"KRX returned 401 {message}; confirm the API key is approved for this Open API service"
+    if message:
+        return f"KRX returned HTTP {exc.code}: {message}"
+    return f"KRX returned HTTP {exc.code}"
+
+
+def _krx_recent_error(path: str, generated_at: datetime) -> str | None:
+    for bas_dd in _recent_krx_dates(generated_at):
+        message = _KRX_ERROR_CACHE.get((path, bas_dd))
+        if message:
+            return message
+    return None
 
 
 def _krx_auth_key() -> str:
     env = _runtime_env()
     return str(env.get("KRX_OPEN_API_AUTH_KEY") or env.get("KRX_AUTH_KEY") or env.get("KRX_API_KEY") or "").strip()
+
+
+def _truthy(value: Any) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _recent_krx_dates(generated_at: datetime, lookback_days: int = 12) -> list[str]:
@@ -714,6 +795,74 @@ def _http_text(url: str, *, headers: dict[str, str] | None = None, timeout: int 
             return response.read(max_bytes).decode("utf-8", errors="ignore")
     except Exception:
         return None
+
+
+def _ishares_ewy_nav_series() -> dict[str, Any] | None:
+    if ISHARES_EWY_URL in _ISHARES_FUND_CACHE:
+        return _ISHARES_FUND_CACHE[ISHARES_EWY_URL]
+    user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
+    html = _http_text(
+        ISHARES_EWY_URL,
+        headers={"User-Agent": user_agent, "Accept": "text/html,application/xhtml+xml"},
+        timeout=20,
+        max_bytes=1_200_000,
+    )
+    if not html:
+        _ISHARES_FUND_CACHE[ISHARES_EWY_URL] = None
+        return None
+    text = unescape(html)
+    nav = _ishares_metric(text, "fundHeader.fundNav.navAmount")
+    change = _ishares_metric(text, "fundHeader.fundNav.navAmountChange")
+    percent = _ishares_metric(text, "fundHeader.fundNav.percentChange")
+    if not nav or nav.get("value") is None:
+        _ISHARES_FUND_CACHE[ISHARES_EWY_URL] = None
+        return None
+    date_text = _iso_date(str(nav.get("asOfDate") or "")) or _parse_ishares_formatted_date(str(nav.get("formattedAsOfDate") or ""))
+    if not date_text:
+        _ISHARES_FUND_CACHE[ISHARES_EWY_URL] = None
+        return None
+    value = float(nav["value"])
+    points = [{"date": date_text, "value": value}]
+    delta = _numeric_value(change.get("value")) if change else None
+    if delta is not None:
+        try:
+            prior_date = (datetime.strptime(date_text, "%Y-%m-%d").date() - timedelta(days=1)).isoformat()
+        except ValueError:
+            prior_date = date_text
+        points.insert(0, {"date": prior_date, "value": value - delta})
+    result = {
+        "date": date_text,
+        "value": value,
+        "points": points,
+        "change": delta,
+        "percent_change": _numeric_value(percent.get("value")) if percent else None,
+    }
+    _ISHARES_FUND_CACHE[ISHARES_EWY_URL] = result
+    return result
+
+
+def _ishares_metric(text: str, full_name: str) -> dict[str, Any] | None:
+    escaped = re.escape(full_name)
+    match = re.search(r'\{[^{}]*"fullName"\s*:\s*"' + escaped + r'"[^{}]*\}', text)
+    if not match:
+        return None
+    try:
+        payload = json.loads(match.group(0))
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _parse_ishares_formatted_date(value: str) -> str | None:
+    text = value.strip()
+    if not text:
+        return None
+    for fmt in ("%b %d, %Y", "%B %d, %Y"):
+        try:
+            return datetime.strptime(text, fmt).date().isoformat()
+        except ValueError:
+            continue
+    return None
 
 
 def _pentagon_pizza_payload(base_url: str) -> dict[str, Any] | None:
@@ -1228,6 +1377,54 @@ def _events(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
     ]
 
 
+def _preserve_previous_active_macro_tiles(locale: str, tiles: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    previous = _previous_macro_tiles(locale)
+    if not previous:
+        return tiles
+    preserved: list[dict[str, Any]] = []
+    for tile in tiles:
+        previous_tile = previous.get(str(tile.get("key")))
+        if not _is_metric_tile_unavailable(tile) or not previous_tile or _is_metric_tile_unavailable(previous_tile):
+            preserved.append(tile)
+            continue
+        fallback = dict(previous_tile)
+        fallback["freshness"] = "watch"
+        fallback["delay_label"] = _t(
+            locale,
+            f"Using last published value; current refresh unavailable: {tile.get('delay_label', 'source unavailable')}",
+            f"마지막 게시 값을 사용 중입니다. 현재 갱신 불가: {tile.get('delay_label', '출처 사용 불가')}",
+        )
+        preserved.append(fallback)
+    return preserved
+
+
+def _previous_macro_tiles(locale: str) -> dict[str, dict[str, Any]]:
+    path = PUBLIC_ROOT / f"v{VERSION}" / locale / "home.json"
+    if not path.exists():
+        return {}
+    try:
+        snapshot = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return {}
+    tiles = snapshot.get("data", {}).get("macro_tiles", [])
+    if not isinstance(tiles, list):
+        return {}
+    return {
+        str(tile["key"]): tile
+        for tile in tiles
+        if isinstance(tile, dict) and isinstance(tile.get("key"), str)
+    }
+
+
+def _is_metric_tile_unavailable(tile: dict[str, Any]) -> bool:
+    value = str(tile.get("value", "")).strip().lower()
+    return (
+        tile.get("coverage_status") == "coverage_gap"
+        or tile.get("freshness") == "unsupported"
+        or value in {"source gap", "출처 공백", "not connected"}
+    )
+
+
 def _calendar(locale: str) -> list[dict[str, Any]]:
     items = [
         ("cal_fomc", "FOMC policy decision", "FOMC 정책 결정", "USA", "central_bank", "2026-06-17", "America/New_York", "official_projection", "Summary of Economic Projections meeting", "Federal Reserve"),
@@ -1445,13 +1642,20 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             )
         series = _krx_series(path, generated_at, predicate=predicate, value_keys=value_keys)
         if not series:
+            error_message = _krx_recent_error(path, generated_at)
+            reason_en = error_message or "KRX credentials are configured, but recent official rows were unavailable for this instrument"
+            reason_ko = (
+                "KRX 키가 구성되었지만 한국거래소 Open API 서비스에서 이 요청을 승인하지 않았습니다."
+                if error_message and "401" in error_message
+                else "KRX 자격 증명은 구성되었지만 이 상품의 최근 공식 행을 가져오지 못했습니다."
+            )
             return coverage_gap_tile(
                 key,
                 label_en,
                 label_ko,
                 source,
-                "KRX credentials are configured, but recent official rows were unavailable for this instrument",
-                "KRX 자격 증명은 구성되었지만 이 상품의 최근 공식 행을 가져오지 못했습니다.",
+                reason_en,
+                reason_ko,
                 unit,
                 source_url,
                 refresh_seconds,
@@ -1471,6 +1675,73 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             None,
             refresh_seconds,
         )
+
+    def ewy_korea_proxy_tile() -> dict[str, Any]:
+        series = _ishares_ewy_nav_series()
+        source = "iShares / BlackRock EWY"
+        if not series:
+            return coverage_gap_tile(
+                "ewy_korea_proxy",
+                "EWY Korea ETF NAV proxy",
+                "EWY 한국 ETF NAV 프록시",
+                source,
+                "iShares EWY public NAV page unavailable during snapshot build",
+                "스냅샷 생성 중 iShares EWY 공개 NAV 페이지를 사용할 수 없습니다.",
+                "$",
+                ISHARES_EWY_URL,
+            )
+        detail = _t(
+            locale,
+            f"iShares EWY NAV actual through {series['date']}; proxy for Korean equity exposure, not local exchange tape",
+            f"iShares EWY NAV 실제값, {series['date']}까지; 한국 주식 노출 프록시이며 현지 거래소 시세가 아닙니다.",
+        )
+        payload = tile(
+            "ewy_korea_proxy",
+            "EWY Korea ETF NAV proxy",
+            "EWY 한국 ETF NAV 프록시",
+            _format_metric_value(float(series["value"]), 2),
+            source,
+            detail,
+            "fresh",
+            "$",
+            ISHARES_EWY_URL,
+            series.get("points"),
+            "active",
+            None,
+            900,
+        )
+        if series.get("change") is not None:
+            payload["refresh_delta"] = series["change"]
+        if series.get("percent_change") is not None:
+            payload["refresh_delta_percent"] = series["percent_change"]
+        return payload
+
+    def korea_equity_tiles() -> list[dict[str, Any]]:
+        krx_tiles = [
+            krx_tile(
+                "krx_300",
+                "KRX 300",
+                "KRX 300",
+                KRX_INDEX_DAILY_PATH,
+                lambda row: str(row.get("IDX_NM") or "").replace(" ", "") == "KRX300",
+                ("CLSPRC_IDX",),
+                "KRX index daily trading",
+                KRX_DOC_URLS["index_daily"],
+            ),
+            krx_tile(
+                "krx_300_it",
+                "KRX 300 IT",
+                "KRX 300 정보기술",
+                KRX_INDEX_DAILY_PATH,
+                lambda row: str(row.get("IDX_NM") or "").replace(" ", "") in {"KRX300정보기술", "KRX300IT"},
+                ("CLSPRC_IDX",),
+                "KRX index daily trading",
+                KRX_DOC_URLS["index_daily"],
+            ),
+        ]
+        if all(tile.get("coverage_status") == "active" for tile in krx_tiles):
+            return krx_tiles
+        return [ewy_korea_proxy_tile()]
 
     def coverage_gap_tile(
         key: str,
@@ -1570,30 +1841,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "FRED / OECD Korea share prices",
             "FRED SPASTT01KRM661N",
         ),
-        krx_tile(
-            "kodex_200",
-            "KODEX 200 ETF",
-            "KODEX 200 ETF",
-            KRX_ETF_DAILY_PATH,
-            lambda row: row.get("ISU_CD") == "069500" or "KODEX 200" in str(row.get("ISU_NM") or ""),
-            ("TDD_CLSPRC",),
-            "KRX ETF daily trading",
-            KRX_DOC_URLS["etf_daily"],
-            "KRW",
-            0,
-        ),
-        krx_tile(
-            "kospi_200_futures",
-            "KOSPI 200 futures",
-            "코스피200 선물",
-            KRX_FUTURES_DAILY_PATH,
-            lambda row: row.get("PROD_NM") == "코스피200 선물"
-            and row.get("MKT_NM") == "정규"
-            and bool(str(row.get("TDD_CLSPRC") or row.get("SETL_PRC") or "").strip()),
-            ("TDD_CLSPRC", "SETL_PRC"),
-            "KRX derivatives daily trading",
-            KRX_DOC_URLS["futures_daily"],
-        ),
+        *korea_equity_tiles(),
         fred_tile("wti_crude", "WTI crude oil", "WTI 원유", "DCOILWTICO", "FRED / EIA", "FRED DCOILWTICO", "$", 2),
         fred_tile("vix", "VIX", "VIX", "VIXCLS", "FRED / Cboe", "FRED VIXCLS"),
         fred_tile("usd_krw", "USD/KRW", "달러/원", "DEXKOUS", "FRED / Federal Reserve H.10", "FRED DEXKOUS", "KRW", 2),
@@ -2133,11 +2381,12 @@ def _source_status() -> dict[str, Any]:
     finnhub_status, finnhub_warning = status_for("FINNHUB_API_KEY", "FINNHUB_API_KEY enables future market/fundamental fallback")
     nasdaq_status, nasdaq_warning = status_for("NASDAQ_DATA_LINK_API_KEY", "NASDAQ_DATA_LINK_API_KEY enables future Nasdaq Data Link datasets")
     if any(_env_has(env, key) for key in ("KRX_OPEN_API_AUTH_KEY", "KRX_AUTH_KEY", "KRX_API_KEY")):
-        krx_status, krx_warning = "ready", None
+        krx_warning = _krx_recent_error(KRX_INDEX_DAILY_PATH, datetime.now(timezone.utc))
+        krx_status = "degraded" if krx_warning else "ready"
     else:
         krx_status, krx_warning = (
             "missing_credentials",
-            "KRX_OPEN_API_AUTH_KEY, KRX_AUTH_KEY, or KRX_API_KEY required for KODEX 200 and KOSPI 200 futures ingest",
+            "KRX_OPEN_API_AUTH_KEY, KRX_AUTH_KEY, or KRX_API_KEY required for KRX index daily-trading ingest",
         )
     if _env_has(env, "FINRA_API_TOKEN") or (_env_has(env, "FINRA_API_CLIENT_ID") and _env_has(env, "FINRA_API_CLIENT_SECRET")):
         finra_status, finra_warning = "ready", None

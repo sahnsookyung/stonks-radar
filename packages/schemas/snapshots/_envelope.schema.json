@@ -147,6 +147,8 @@
         "updated_at": { "type": "string" },
         "coverage_status": { "enum": ["active", "coverage_gap"] },
         "refresh_seconds": { "type": "integer", "minimum": 60 },
+        "refresh_delta": { "type": "number" },
+        "refresh_delta_percent": { "type": "number" },
         "next_event": {
           "type": "object",
           "required": ["title", "date", "timezone", "source"],

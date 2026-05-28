@@ -24,15 +24,15 @@ export function CountryRegionPage({ type }: { type: "country" | "region" }) {
   const data = query.data.data;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid min-w-0 gap-6">
       <SnapshotBanner snapshot={query.data} />
-      <section>
+      <section className="min-w-0">
         <div className="flex items-center gap-2 text-sm font-semibold text-accent">
           <Landmark className="h-4 w-4" />
           {data.type}
         </div>
-        <h1 className="mt-2 text-4xl font-bold">{data.name}</h1>
-        <p className="mt-3 max-w-4xl text-base leading-7 text-muted">{data.overview}</p>
+        <h1 className="safe-text mt-2 text-3xl font-bold sm:text-4xl">{data.name}</h1>
+        <p className="safe-text mt-3 max-w-4xl text-base leading-7 text-muted">{data.overview}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <FreshnessBadge value={data.freshness} />
           <SourceBadge label={data.source_strength} />
@@ -40,10 +40,10 @@ export function CountryRegionPage({ type }: { type: "country" | "region" }) {
       </section>
       <section className="grid gap-4 md:grid-cols-3">
         {data.indicators.map((tile) => (
-          <article key={tile.key} className="panel p-4">
-            <div className="text-sm text-muted">{tile.label}</div>
-            <div className="mt-1 text-2xl font-bold">{tile.value}</div>
-            <div className="mt-2 text-xs text-muted">{tile.source}</div>
+          <article key={tile.key} className="panel min-w-0 p-4">
+            <div className="safe-text text-sm text-muted">{tile.label}</div>
+            <div className="safe-text mt-1 text-2xl font-bold">{tile.value}</div>
+            <div className="safe-text mt-2 text-xs text-muted">{tile.source}</div>
             {tile.points ? <LineChart points={tile.points} label={tile.label} /> : null}
           </article>
         ))}

@@ -7,9 +7,9 @@ const target = new URL("../apps/web/public/map/natural-earth/countries-110m.geoj
 
 const world = JSON.parse(await readFile(source, "utf8"));
 const countries = feature(world, world.objects.countries);
+const ANTIMERIDIAN_EPSILON = 0.001;
 
-repairAntimeridianFeatures(countries);
-dropKnownAntimeridianFragments(countries);
+splitAntimeridianFeatures(countries);
 markAntimeridianFeatures(countries);
 markAntimeridianHoverUnsafeFeatures(countries);
 
@@ -24,108 +24,133 @@ await mkdir(new URL("./", target), { recursive: true });
 await writeFile(target, JSON.stringify(countries));
 console.log(`Wrote ${target.pathname.replace(root.pathname, "")}`);
 
-function repairAntimeridianFeatures(collection) {
+function splitAntimeridianFeatures(collection) {
   for (const item of collection.features ?? []) {
-    const repairedGeometry = repairAntimeridianGeometry(item.geometry);
+    const repairedGeometry = splitAntimeridianGeometry(item.geometry);
     if (!repairedGeometry) continue;
-    item.geometry = repairedGeometry;
+    item.geometry = insetAntimeridianGeometry(repairedGeometry);
     item.properties = item.properties ?? {};
-    item.properties.antimeridianRepaired = true;
+    item.properties.antimeridianSplit = true;
   }
 }
 
-function dropKnownAntimeridianFragments(collection) {
-  for (const item of collection.features ?? []) {
-    if (item.properties?.name !== "Russia" || item.geometry?.type !== "MultiPolygon") continue;
-    const originalCount = item.geometry.coordinates.length;
-    const coordinates = item.geometry.coordinates.filter((polygon) => !isWesternAntimeridianFragment(polygon));
-    if (coordinates.length === originalCount || coordinates.length === 0) continue;
-    item.geometry = { ...item.geometry, coordinates };
-    item.properties = item.properties ?? {};
-    item.properties.antimeridianFragmentDropped = true;
+function insetAntimeridianGeometry(geometry) {
+  return {
+    ...geometry,
+    coordinates: insetAntimeridianCoordinates(geometry.coordinates)
+  };
+}
+
+function insetAntimeridianCoordinates(value) {
+  if (typeof value === "number") {
+    if (value === 180 || value === -180) return antimeridianInsetLongitude(value);
+    return value;
   }
-}
-
-function isWesternAntimeridianFragment(polygon) {
-  const bounds = polygonBounds(polygon);
-  if (!bounds) return false;
-  const [minLng, minLat, maxLng, maxLat] = bounds;
-  const width = maxLng - minLng;
-  const height = maxLat - minLat;
-  return maxLng <= -170 && width <= 20 && height <= 20;
-}
-
-function polygonBounds(polygon) {
-  let minLng = Infinity;
-  let minLat = Infinity;
-  let maxLng = -Infinity;
-  let maxLat = -Infinity;
-  for (const ring of polygon ?? []) {
-    for (const point of ring ?? []) {
-      const [lng, lat] = point;
-      if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
-      minLng = Math.min(minLng, lng);
-      minLat = Math.min(minLat, lat);
-      maxLng = Math.max(maxLng, lng);
-      maxLat = Math.max(maxLat, lat);
-    }
+  if (Array.isArray(value)) {
+    return value.map(insetAntimeridianCoordinates);
   }
-  if (!Number.isFinite(minLng)) return null;
-  return [minLng, minLat, maxLng, maxLat];
+  return value;
 }
 
-function repairAntimeridianGeometry(geometry) {
+function splitAntimeridianGeometry(geometry) {
   if (!geometry?.coordinates) return null;
   if (geometry.type === "Polygon") {
-    const polygon = repairPolygon(geometry.coordinates);
-    return polygon ? { ...geometry, coordinates: polygon } : null;
+    const polygons = splitPolygon(geometry.coordinates);
+    if (!polygons) return null;
+    return polygons.length === 1
+      ? { ...geometry, coordinates: polygons[0] }
+      : { ...geometry, type: "MultiPolygon", coordinates: polygons };
   }
   if (geometry.type === "MultiPolygon") {
     let repaired = false;
-    const coordinates = geometry.coordinates.map((polygon) => {
-      const next = repairPolygon(polygon);
-      if (!next) return polygon;
+    const coordinates = [];
+    for (const polygon of geometry.coordinates) {
+      const polygons = splitPolygon(polygon);
+      if (!polygons) {
+        coordinates.push(polygon);
+        continue;
+      }
       repaired = true;
-      return next;
-    });
+      coordinates.push(...polygons);
+    }
     return repaired ? { ...geometry, coordinates } : null;
   }
   return null;
 }
 
-function repairPolygon(polygon) {
-  let repaired = false;
-  const rings = polygon.map((ring) => {
-    const next = repairRing(ring);
-    if (next === ring) return ring;
-    repaired = true;
-    return next;
-  });
-  return repaired ? rings : null;
+function splitPolygon(polygon) {
+  if (polygon.length !== 1) return null;
+  const rings = splitRing(polygon[0]);
+  return rings ? rings.map((ring) => [ring]) : null;
 }
 
-function repairRing(ring) {
-  const jumps = antimeridianJumpIndexes(ring);
-  if (jumps.length !== 2) return ring;
+function splitRing(ring) {
+  const jumps = antimeridianJumps(ring);
+  if (jumps.length !== 2) return null;
   const [firstJump, secondJump] = jumps;
-  const wrappedPointCount = secondJump - firstJump;
-  const remainingPointCount = ring.length - wrappedPointCount;
-  const repaired =
-    wrappedPointCount <= remainingPointCount
-      ? [...ring.slice(0, firstJump + 1), ...ring.slice(secondJump + 1)]
-      : ring.slice(firstJump + 1, secondJump + 1);
-  const closed = closeRing(repaired);
-  return closed.length >= 4 ? closed : ring;
+  const firstSegment = completeAntimeridianSegment(
+    ring.slice(firstJump.nextIndex, secondJump.index + 1),
+    firstJump.from,
+    secondJump.to,
+    secondJump.from,
+    firstJump.to
+  );
+  const secondSegment = completeAntimeridianSegment(
+    [...ring.slice(secondJump.nextIndex), ...ring.slice(0, firstJump.index + 1)],
+    secondJump.from,
+    firstJump.to,
+    firstJump.from,
+    secondJump.to
+  );
+  const rings = [firstSegment, secondSegment].filter((candidate) => candidate.length >= 4);
+  return rings.length >= 2 ? rings : null;
 }
 
-function antimeridianJumpIndexes(ring) {
+function antimeridianJumps(ring) {
   const indexes = [];
   for (let index = 1; index < ring.length; index += 1) {
     if (Math.abs(ring[index][0] - ring[index - 1][0]) > 180) {
-      indexes.push(index - 1);
+      indexes.push({
+        index: index - 1,
+        nextIndex: index,
+        from: ring[index - 1],
+        to: ring[index]
+      });
     }
   }
   return indexes;
+}
+
+function completeAntimeridianSegment(segment, segmentEnd, segmentStart, boundaryStart, boundaryEnd) {
+  const sideLongitude = antimeridianInsetLongitude(dominantSideLongitude(segment));
+  return closeRing(
+    dedupeConsecutivePoints([
+      ...segment,
+      [sideLongitude, boundaryStart[1]],
+      [sideLongitude, boundaryEnd[1]],
+      [sideLongitude, segmentStart[1]],
+      [sideLongitude, segmentEnd[1]]
+    ])
+  );
+}
+
+function dominantSideLongitude(points) {
+  const sum = points.reduce((total, [longitude]) => total + longitude, 0);
+  return sum >= 0 ? 180 : -180;
+}
+
+function antimeridianInsetLongitude(longitude) {
+  return longitude >= 0 ? 180 - ANTIMERIDIAN_EPSILON : -180 + ANTIMERIDIAN_EPSILON;
+}
+
+function dedupeConsecutivePoints(ring) {
+  const deduped = [];
+  for (const point of ring) {
+    const previous = deduped.at(-1);
+    if (previous && previous[0] === point[0] && previous[1] === point[1]) continue;
+    deduped.push(point);
+  }
+  return deduped;
 }
 
 function closeRing(ring) {
@@ -146,7 +171,7 @@ function markAntimeridianFeatures(collection) {
 
 function markAntimeridianHoverUnsafeFeatures(collection) {
   for (const item of collection.features ?? []) {
-    if (!item.properties?.antimeridianRepaired && !item.properties?.crossesAntimeridian) continue;
+    if (!item.properties?.crossesAntimeridian) continue;
     item.properties = item.properties ?? {};
     item.properties.antimeridianHoverUnsafe = true;
   }

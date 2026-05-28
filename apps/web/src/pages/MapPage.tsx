@@ -28,20 +28,20 @@ export function MapPage() {
   );
 
   return (
-    <div className="grid gap-6">
+    <div className="grid min-w-0 gap-6">
       <SnapshotBanner snapshot={query.data} />
-      <section className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+      <section className="flex min-w-0 flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm font-semibold text-accent">
             <MapPinned className="h-4 w-4" />
             MapLibre static event layer
           </div>
-          <h1 className="mt-2 text-4xl font-bold">Global Intelligence Map</h1>
+          <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Global Intelligence Map</h1>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
           <Filter className="h-4 w-4 text-muted" />
           <select
-            className="input-control"
+            className="input-control w-full sm:w-auto"
             value={severity}
             onChange={(event) => setSeverity(event.target.value as Severity | "all")}
           >
@@ -53,7 +53,7 @@ export function MapPage() {
             ))}
           </select>
           <select
-            className="input-control"
+            className="input-control w-full sm:w-auto"
             value={sector}
             onChange={(event) => setSector(event.target.value)}
           >
@@ -68,7 +68,7 @@ export function MapPage() {
       </section>
       <EventMap
         events={events}
-        heightClass="h-[560px] min-h-[560px] md:h-[720px] xl:h-[calc(100vh-260px)]"
+        heightClass="h-[clamp(420px,60svh,640px)] md:h-[720px] xl:h-[calc(100vh-260px)]"
         loadStrategy="idle-visible"
       />
       <EventList events={events} />

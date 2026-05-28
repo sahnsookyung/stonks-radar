@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
-from frw_api.services.job_queue import fail_job, payload_hash
+from frw_api.services.job_queue import complete_job, fail_job, payload_hash
 
 
 def test_payload_hash_is_stable():
@@ -58,3 +58,64 @@ def test_fail_job_can_park_in_quota_wait():
 
     assert row.status == "quota_wait"
     assert row.last_error_class == "rate_limited"
+
+
+def test_complete_job_clears_stale_error_state():
+    engine = create_engine("sqlite+pysqlite:///:memory:", future=True)
+    with engine.begin() as conn:
+        conn.connection.driver_connection.create_function(
+            "now",
+            0,
+            lambda: datetime.now(timezone.utc).isoformat(),
+        )
+        conn.execute(
+            text(
+                """
+                create table job_queue (
+                  id text primary key,
+                  status text,
+                  result_hash text,
+                  locked_by text,
+                  locked_at timestamp,
+                  lease_expires_at timestamp,
+                  last_error_class text,
+                  last_error_message text,
+                  updated_at timestamp
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                insert into job_queue(
+                  id, status, locked_by, locked_at, lease_expires_at,
+                  last_error_class, last_error_message
+                )
+                values (
+                  'job-1', 'running', 'worker-1', '2026-05-26T00:00:00Z',
+                  '2026-05-26T00:02:00Z', 'PermissionError', 'old failure'
+                )
+                """
+            )
+        )
+    with Session(engine) as db:
+        complete_job(db, job_id="job-1", result={"ok": True})
+        row = db.execute(
+            text(
+                """
+                select status, result_hash, locked_by, locked_at, lease_expires_at,
+                       last_error_class, last_error_message
+                from job_queue
+                where id = 'job-1'
+                """
+            )
+        ).one()
+
+    assert row.status == "succeeded"
+    assert row.result_hash == payload_hash({"ok": True})
+    assert row.locked_by is None
+    assert row.locked_at is None
+    assert row.lease_expires_at is None
+    assert row.last_error_class is None
+    assert row.last_error_message is None

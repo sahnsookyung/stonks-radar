@@ -19,17 +19,17 @@ export function CalendarPage({ centralBanksOnly = false }: { centralBanksOnly?: 
   const items = centralBanksOnly ? query.data.data.central_banks : query.data.data.items;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid min-w-0 gap-6">
       <SnapshotBanner snapshot={query.data} />
-      <section>
+      <section className="min-w-0">
         <div className="flex items-center gap-2 text-sm font-semibold text-accent">
           <CalendarClock className="h-4 w-4" />
           Expectations are labeled by taxonomy
         </div>
-        <h1 className="mt-2 text-4xl font-bold">
+        <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
           {centralBanksOnly ? "Central-bank Calendar" : "Economic Calendar"}
         </h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">{query.data.data.methodology}</p>
+        <p className="safe-text mt-3 max-w-3xl text-sm leading-6 text-muted">{query.data.data.methodology}</p>
       </section>
       <CalendarTable items={items} />
     </div>

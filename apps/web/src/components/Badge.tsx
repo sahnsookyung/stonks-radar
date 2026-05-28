@@ -17,14 +17,14 @@ const severityClass: Record<Severity, string> = {
 
 export function FreshnessBadge({ value }: { value: Freshness }) {
   const { t } = useTranslation();
-  return <span className={`badge ${freshnessClass[value]}`}>{t(`freshnessStates.${value}`)}</span>;
+  return <span className={`badge whitespace-nowrap ${freshnessClass[value]}`}>{t(`freshnessStates.${value}`)}</span>;
 }
 
 export function SeverityBadge({ value }: { value: Severity }) {
   const { t } = useTranslation();
-  return <span className={`badge ${severityClass[value]}`}>{t(`severityStates.${value}`)}</span>;
+  return <span className={`badge whitespace-nowrap ${severityClass[value]}`}>{t(`severityStates.${value}`)}</span>;
 }
 
 export function SourceBadge({ label }: { label: string }) {
-  return <span className="badge border-line bg-panelLift text-ink">{label}</span>;
+  return <span className="badge whitespace-normal border-line bg-panelLift text-ink">{label}</span>;
 }

@@ -198,6 +198,32 @@ export function EventMap({
     syncMarkers(maplibreRef.current, mapRef.current, markerRefs, events);
   }, [events]);
 
+  useEffect(() => {
+    if (!shouldLoad || !containerRef.current) return;
+    const element = containerRef.current;
+    let frame = 0;
+    const scheduleResize = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => mapRef.current?.resize());
+    };
+    const ResizeObserverCtor = window.ResizeObserver;
+    if (typeof ResizeObserverCtor === "function") {
+      const observer = new ResizeObserverCtor(scheduleResize);
+      observer.observe(element);
+      scheduleResize();
+      return () => {
+        observer.disconnect();
+        window.cancelAnimationFrame(frame);
+      };
+    }
+    window.addEventListener("resize", scheduleResize);
+    scheduleResize();
+    return () => {
+      window.removeEventListener("resize", scheduleResize);
+      window.cancelAnimationFrame(frame);
+    };
+  }, [shouldLoad]);
+
   return (
     <div className={`relative overflow-hidden rounded-md border border-line bg-panel contain-layout ${heightClass}`}>
       <div ref={containerRef} className="h-full w-full" data-testid="event-map-container" />
@@ -219,7 +245,7 @@ export function EventMap({
           <span>{shouldLoad ? "Loading map" : "Map loads on view"}</span>
         </div>
       ) : null}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-panel/90 px-5 py-3 text-xs leading-5 text-muted">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-panel/90 px-4 py-3 text-xs leading-5 text-muted sm:px-5">
         {footer}
       </div>
     </div>

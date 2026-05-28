@@ -23,15 +23,15 @@ export function SectorPage() {
   const data = query.data.data;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid min-w-0 gap-6">
       <SnapshotBanner snapshot={query.data} />
-      <section>
+      <section className="min-w-0">
         <div className="flex items-center gap-2 text-sm font-semibold text-accent">
           <Factory className="h-4 w-4" />
           Sector module
         </div>
-        <h1 className="mt-2 text-4xl font-bold">{data.name}</h1>
-        <p className="mt-3 max-w-4xl text-base leading-7 text-muted">{data.overview}</p>
+        <h1 className="safe-text mt-2 text-3xl font-bold sm:text-4xl">{data.name}</h1>
+        <p className="safe-text mt-3 max-w-4xl text-base leading-7 text-muted">{data.overview}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <FreshnessBadge value={data.freshness} />
           <SourceBadge label={data.source_strength} />
@@ -52,14 +52,14 @@ export function SectorPage() {
       </section>
       <section className="grid gap-4 lg:grid-cols-2">
         <InfoList title="Macro/geopolitical drivers" items={data.macro_geopolitical_drivers} />
-        <div className="panel p-4">
+        <div className="panel min-w-0 p-4">
           <div className="mb-3 flex items-center gap-2 font-semibold">
             <ShieldAlert className="h-4 w-4" />
             Risks and caveats
           </div>
           <ul className="grid gap-2 text-sm leading-6 text-muted">
             {data.risks_and_caveats.map((item) => (
-              <li key={item}>{item}</li>
+              <li key={item} className="safe-text">{item}</li>
             ))}
           </ul>
         </div>
@@ -74,8 +74,8 @@ export function SectorPage() {
               params={{ locale, basketKey: basket.key }}
               className="panel focus-ring block p-4 hover:border-accent"
             >
-              <div className="font-semibold">{basket.name}</div>
-              <p className="mt-2 text-sm leading-6 text-muted">{basket.thesis}</p>
+              <div className="safe-text font-semibold">{basket.name}</div>
+              <p className="safe-text mt-2 text-sm leading-6 text-muted">{basket.thesis}</p>
             </Link>
           ))}
         </div>
@@ -86,11 +86,11 @@ export function SectorPage() {
 
 function InfoList({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="panel p-4">
+    <div className="panel min-w-0 p-4">
       <h2 className="font-semibold">{title}</h2>
       <ul className="mt-3 grid gap-2 text-sm text-muted">
         {items.map((item) => (
-          <li key={item}>{item}</li>
+          <li key={item} className="safe-text">{item}</li>
         ))}
       </ul>
     </div>
