@@ -58,7 +58,6 @@ async def main() -> None:
 
             result = await handle_job(job, beat)
         except Exception as exc:  # noqa: BLE001 - worker must classify unknown failures
-            logger.exception("job_failed id=%s", job["id"])
             retry_after_seconds = None
             status_override = None
             retryable = True
@@ -68,6 +67,19 @@ async def main() -> None:
                 retry_after_seconds = exc.retry_after_seconds
                 retryable = exc.retryable
                 status_override = "quota_wait" if exc.quota_related else None
+                if retryable and retry_after_seconds is not None:
+                    logger.warning(
+                        "job_deferred id=%s error_class=%s provider=%s endpoint=%s retry_after_seconds=%s",
+                        job["id"],
+                        error_class,
+                        exc.provider_key,
+                        exc.endpoint_key,
+                        retry_after_seconds,
+                    )
+                else:
+                    logger.exception("job_failed id=%s", job["id"])
+            else:
+                logger.exception("job_failed id=%s", job["id"])
             with SessionLocal() as db:
                 fail_job(
                     db,

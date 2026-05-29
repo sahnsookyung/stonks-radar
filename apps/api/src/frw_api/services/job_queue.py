@@ -214,7 +214,7 @@ def fail_job(
             jitter = random.randint(0, max(1, row["backoff_seconds"]))
             run_after = datetime.now(timezone.utc) + timedelta(seconds=row["backoff_seconds"] * 2 + jitter)
         status = status_override
-    elif retryable and not exhausted:
+    elif retryable and (not exhausted or retry_after_seconds is not None):
         if retry_after_seconds is not None:
             status = "retry_wait"
             run_after = datetime.now(timezone.utc) + timedelta(seconds=max(1, retry_after_seconds))

@@ -110,6 +110,56 @@ def test_fail_job_keeps_quota_wait_after_attempts_exhausted():
     assert row.last_error_class == "quota_exhausted"
 
 
+def test_fail_job_keeps_retry_after_wait_after_attempts_exhausted():
+    engine = create_engine("sqlite+pysqlite:///:memory:", future=True)
+    with engine.begin() as conn:
+        conn.connection.driver_connection.create_function(
+            "now",
+            0,
+            lambda: datetime.now(timezone.utc).isoformat(),
+        )
+        conn.execute(
+            text(
+                """
+                create table job_queue (
+                  id text primary key,
+                  attempt_count int not null,
+                  max_attempts int not null,
+                  backoff_seconds int not null,
+                  status text,
+                  run_after timestamp,
+                  locked_by text,
+                  lease_expires_at timestamp,
+                  last_error_class text,
+                  last_error_message text,
+                  updated_at timestamp
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                insert into job_queue(id, attempt_count, max_attempts, backoff_seconds, status)
+                values ('job-1', 5, 5, 30, 'running')
+                """
+            )
+        )
+    with Session(engine) as db:
+        fail_job(
+            db,
+            job_id="job-1",
+            error_class="upstream_5xx",
+            error_message="company page returned 503",
+            retryable=True,
+            retry_after_seconds=900,
+        )
+        row = db.execute(text("select status, last_error_class from job_queue where id = 'job-1'")).one()
+
+    assert row.status == "retry_wait"
+    assert row.last_error_class == "upstream_5xx"
+
+
 def test_complete_job_clears_stale_error_state():
     engine = create_engine("sqlite+pysqlite:///:memory:", future=True)
     with engine.begin() as conn:
