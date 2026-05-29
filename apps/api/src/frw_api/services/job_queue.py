@@ -207,13 +207,20 @@ def fail_job(
         {"job_id": job_id},
     ).mappings().one()
     exhausted = row["attempt_count"] >= row["max_attempts"]
-    if retryable and not exhausted:
+    if status_override:
         if retry_after_seconds is not None:
-            status = status_override or "retry_wait"
             run_after = datetime.now(timezone.utc) + timedelta(seconds=max(1, retry_after_seconds))
         else:
             jitter = random.randint(0, max(1, row["backoff_seconds"]))
-            status = status_override or "retry_wait"
+            run_after = datetime.now(timezone.utc) + timedelta(seconds=row["backoff_seconds"] * 2 + jitter)
+        status = status_override
+    elif retryable and not exhausted:
+        if retry_after_seconds is not None:
+            status = "retry_wait"
+            run_after = datetime.now(timezone.utc) + timedelta(seconds=max(1, retry_after_seconds))
+        else:
+            jitter = random.randint(0, max(1, row["backoff_seconds"]))
+            status = "retry_wait"
             run_after = datetime.now(timezone.utc) + timedelta(seconds=row["backoff_seconds"] * 2 + jitter)
     else:
         status = "dead_letter" if exhausted else "failed_permanent"
