@@ -5,7 +5,6 @@ import {
   ArrowRight,
   CalendarDays,
   DatabaseZap,
-  Layers3,
   MapPinned,
   Radar
 } from "lucide-react";
@@ -40,6 +39,7 @@ export function HomePage() {
     data.calendar_preview.filter((item) => item.release_type === "central_bank")
   );
   const dashboardSignals = data.alternative_signals.filter((lane) => dashboardSignalKeys.has(lane.key));
+  const mapEvents = dashboardMapEvents(data.top_events, dashboardSignals, locale);
   const priorityEvent = data.top_events[0];
 
   return (
@@ -62,26 +62,28 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="min-w-0" aria-labelledby="event-geography-title">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 id="event-geography-title" className="flex items-center gap-2 text-sm font-semibold text-accent">
-              <MapPinned className="h-4 w-4" />
-              {t("eventGeography")}
-            </h2>
-            <Link to="/$locale/map" params={{ locale }} className="secondary-action min-h-11 py-2">
-              {t("map")}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <EventMap
-            events={data.top_events}
-            heightClass="h-[clamp(360px,55svh,520px)] md:h-[720px] xl:h-[760px]"
-            footer={t("eventMapFooter")}
-            loadStrategy="idle-visible"
-          />
-      </section>
+      <section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(340px,0.7fr)] 2xl:grid-cols-[minmax(0,1.7fr)_minmax(400px,0.62fr)]">
+        <div className="min-w-0" aria-labelledby="event-geography-title">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 id="event-geography-title" className="flex items-center gap-2 text-sm font-semibold text-accent">
+                <MapPinned className="h-4 w-4" />
+                {t("eventGeography")}
+              </h2>
+              <Link to="/$locale/map" params={{ locale }} className="secondary-action min-h-11 py-2">
+                {t("map")}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <EventMap
+              events={mapEvents}
+              heightClass="h-[clamp(330px,48svh,500px)] md:h-[560px] xl:h-[610px]"
+              footer={t("eventMapFooter")}
+              loadStrategy="idle-visible"
+            />
+        </div>
 
-      <DashboardSignalRadar lanes={dashboardSignals} />
+        <DashboardSignalRadar lanes={dashboardSignals} />
+      </section>
 
       <section className="grid min-w-0 gap-5 lg:grid-cols-[1fr_0.6fr]">
         {priorityEvent ? <PriorityEvent event={priorityEvent} /> : null}
@@ -104,30 +106,6 @@ export function HomePage() {
             {t("calendar")}
             <ArrowRight className="h-4 w-4" />
           </Link>
-        </div>
-      </section>
-
-      <section>
-        <div className="mb-3 flex items-center gap-2 text-muted">
-          <Layers3 className="h-5 w-5" />
-          <h2 className="text-xl font-bold text-ink">{t("sectors")}</h2>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          {data.sector_tiles.map((sector) => (
-            <Link
-              key={sector.key}
-              to="/$locale/sectors/$sectorKey"
-              params={{ locale, sectorKey: sector.key }}
-              className="panel focus-ring block p-5 hover:border-accent"
-            >
-              <div className="text-lg font-semibold">{sector.name}</div>
-              <p className="mt-2 min-h-20 text-sm leading-6 text-muted">{sector.summary}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <FreshnessBadge value={sector.freshness} />
-                <SourceBadge label={sector.source_strength} />
-              </div>
-            </Link>
-          ))}
         </div>
       </section>
 
@@ -194,7 +172,7 @@ function DashboardSignalRadar({ lanes }: { lanes: AlternativeSignalLane[] }) {
   const { t } = useTranslation();
   if (lanes.length === 0) return null;
   return (
-    <section aria-labelledby="breaking-news-title">
+    <section className="min-w-0" aria-labelledby="breaking-news-title">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 id="breaking-news-title" className="flex items-center gap-2 text-sm font-semibold text-warning">
@@ -204,7 +182,7 @@ function DashboardSignalRadar({ lanes }: { lanes: AlternativeSignalLane[] }) {
           <p className="mt-1 max-w-4xl text-sm leading-6 text-muted">{t("breakingNewsRadarSummary")}</p>
         </div>
       </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 xl:max-h-[610px] xl:overflow-y-auto xl:pr-1">
         {lanes.map((lane) => (
           <AlternativeSignalCard key={lane.key} lane={lane} />
         ))}
@@ -217,7 +195,7 @@ function AlternativeSignalCard({ lane }: { lane: AlternativeSignalLane }) {
   const { t } = useTranslation();
   const visibleItems = lane.items.slice(0, 4);
   return (
-    <article className="panel flex min-h-[240px] min-w-0 flex-col p-4 sm:min-h-[280px]">
+    <article className="panel flex min-h-[220px] min-w-0 flex-col p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-sm font-semibold leading-5">{lane.title}</h3>
@@ -262,4 +240,49 @@ function AlternativeSignalCard({ lane }: { lane: AlternativeSignalLane }) {
       </div>
     </article>
   );
+}
+
+function dashboardMapEvents(events: PublicEvent[], lanes: AlternativeSignalLane[], locale: "en" | "ko") {
+  const breakingLane = lanes.find((lane) => lane.key === "breaking_market_news");
+  const chokepointItems =
+    breakingLane?.items.filter((item) => /hormuz|strait of hormuz|iran|red sea/i.test(`${item.label} ${item.detail}`)) ?? [];
+  if (!breakingLane || chokepointItems.length === 0 || events.some((event) => event.id === "event_breaking_hormuz_watch")) {
+    return events;
+  }
+  const primaryItem = chokepointItems[0];
+  const publishedAt = primaryItem.updated_at || new Date().toISOString();
+  const sourceLinks = primaryItem.source_url
+    ? [
+        {
+          label: primaryItem.source || "News metadata",
+          url: primaryItem.source_url,
+          source_key: "news_headline_metadata",
+          policy_version: 1
+        }
+      ]
+    : [];
+  return [
+    {
+      id: "event_breaking_hormuz_watch",
+      title: locale === "ko" ? "호르무즈 해협 시장 속보 워치" : "Hormuz chokepoint market-news watch",
+      summary: primaryItem.label,
+      why_it_matters: primaryItem.detail,
+      occurred_at: publishedAt,
+      published_at: publishedAt,
+      country_region_keys: ["MIDDLE_EAST_OPEC_GCC"],
+      sector_keys: ["oil-energy"],
+      event_type: "breaking_market_news",
+      severity: primaryItem.severity,
+      confidence: 0.62,
+      source_strength: "public_headline_metadata",
+      freshness: primaryItem.freshness,
+      evidence_count: chokepointItems.length,
+      latitude: 26.566,
+      longitude: 56.25,
+      affected_objects: ["WTI", "shipping", "energy equities"],
+      source_links: sourceLinks,
+      correction_status: "none"
+    },
+    ...events
+  ];
 }

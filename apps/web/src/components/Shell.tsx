@@ -47,8 +47,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-paper text-ink">
       <header className="sticky top-0 z-20 overflow-x-hidden border-b border-line bg-panel/95 shadow-insetLine backdrop-blur [contain:paint]">
-        <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2 sm:px-4 md:flex-wrap md:justify-between md:gap-4 md:py-3 lg:px-6">
-          <Link to="/$locale" params={{ locale }} className="focus-ring flex min-h-11 min-w-0 shrink-0 items-center gap-2 md:gap-3">
+        <div className="flex w-full items-center gap-2 px-3 py-2 sm:px-4 md:gap-4 md:py-3 lg:px-6 2xl:px-8">
+          <Link to="/$locale" params={{ locale }} className="focus-ring flex min-h-11 min-w-[190px] shrink-0 items-center gap-2 md:gap-3 lg:min-w-[270px]">
             <div className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-accent text-paper shadow-insetLine md:h-10 md:w-10">
               <SearchCheck className="h-5 w-5" />
             </div>
@@ -58,22 +58,23 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </div>
           </Link>
           <nav
-            className="scroll-fade-x -mr-3 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto py-1 pr-3 text-sm [contain:paint] md:mr-0 md:basis-auto md:flex-wrap md:justify-end md:overflow-visible md:pr-0"
+            className="scroll-fade-x -mr-3 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto py-1 pr-3 text-sm [contain:paint] md:mr-0 md:pr-0"
             data-allow-horizontal-scroll
             aria-label={locale === "ko" ? "기본 탐색" : "Primary navigation"}
           >
-            <NavLink navKey="dashboard" registerRef={registerPrimaryNavRef} to="/$locale" params={{ locale }} icon={<LayoutDashboard />} label={t("dashboard")} />
-            <NavLink navKey="map" registerRef={registerPrimaryNavRef} to="/$locale/map" params={{ locale }} icon={<Map />} label={t("map")} />
-            <NavLink navKey="calendar" registerRef={registerPrimaryNavRef} to="/$locale/calendar" params={{ locale }} icon={<Activity />} label={t("calendar")} />
-            <NavLink navKey="market-pulse" registerRef={registerPrimaryNavRef} to="/$locale/market-pulse" params={{ locale }} icon={<TrendingUp />} label={t("marketPulse")} />
-            <NavLink navKey="portfolio" registerRef={registerPrimaryNavRef} to="/$locale/portfolio" params={{ locale }} icon={<Calculator />} label={t("portfolio")} />
-            <NavLink navKey="tickers" registerRef={registerPrimaryNavRef} to="/$locale/tickers/$symbol" params={{ locale, symbol: "NVDA" }} icon={<TrendingUp />} label={t("tickers")} />
-            <NavLink navKey="news" registerRef={registerPrimaryNavRef} to="/$locale/news" params={{ locale }} icon={<Newspaper />} label={t("news")} />
-            <NavLink navKey="shorts" registerRef={registerPrimaryNavRef} to="/$locale/shorts" params={{ locale }} icon={<ShieldAlert />} label={t("shorts")} />
-            <NavLink navKey="trump-filings" registerRef={registerPrimaryNavRef} to="/$locale/trump-filings" params={{ locale }} icon={<FileText />} label={t("trumpFilings")} />
-            <NavLink navKey="sources" registerRef={registerPrimaryNavRef} to="/$locale/sources" params={{ locale }} icon={<Database />} label={t("sources")} />
-            <NavLink navKey="status" registerRef={registerPrimaryNavRef} to="/$locale/status" params={{ locale }} icon={<Globe2 />} label={t("status")} />
+            <NavLink active={activePrimaryNavKey === "dashboard"} navKey="dashboard" registerRef={registerPrimaryNavRef} to="/$locale" params={{ locale }} icon={<LayoutDashboard />} label={t("dashboard")} />
+            <NavLink active={activePrimaryNavKey === "map"} navKey="map" registerRef={registerPrimaryNavRef} to="/$locale/map" params={{ locale }} icon={<Map />} label={t("map")} />
+            <NavLink active={activePrimaryNavKey === "calendar"} navKey="calendar" registerRef={registerPrimaryNavRef} to="/$locale/calendar" params={{ locale }} icon={<Activity />} label={t("calendar")} />
+            <NavLink active={activePrimaryNavKey === "market-pulse"} navKey="market-pulse" registerRef={registerPrimaryNavRef} to="/$locale/market-pulse" params={{ locale }} icon={<TrendingUp />} label={t("marketPulse")} />
+            <NavLink active={activePrimaryNavKey === "portfolio"} navKey="portfolio" registerRef={registerPrimaryNavRef} to="/$locale/portfolio" params={{ locale }} icon={<Calculator />} label={t("portfolio")} />
+            <NavLink active={activePrimaryNavKey === "tickers"} navKey="tickers" registerRef={registerPrimaryNavRef} to="/$locale/tickers/$symbol" params={{ locale, symbol: "NVDA" }} icon={<TrendingUp />} label={t("tickers")} />
+            <NavLink active={activePrimaryNavKey === "news"} navKey="news" registerRef={registerPrimaryNavRef} to="/$locale/news" params={{ locale }} icon={<Newspaper />} label={t("news")} />
+            <NavLink active={activePrimaryNavKey === "shorts"} navKey="shorts" registerRef={registerPrimaryNavRef} to="/$locale/shorts" params={{ locale }} icon={<ShieldAlert />} label={t("shorts")} />
+            <NavLink active={activePrimaryNavKey === "trump-filings"} navKey="trump-filings" registerRef={registerPrimaryNavRef} to="/$locale/trump-filings" params={{ locale }} icon={<FileText />} label={t("trumpFilings")} />
+            <NavLink active={activePrimaryNavKey === "sources"} navKey="sources" registerRef={registerPrimaryNavRef} to="/$locale/sources" params={{ locale }} icon={<Database />} label={t("sources")} />
+            <NavLink active={activePrimaryNavKey === "status"} navKey="status" registerRef={registerPrimaryNavRef} to="/$locale/status" params={{ locale }} icon={<Globe2 />} label={t("status")} />
             <NavLink
+              active={activePrimaryNavKey === "legal"}
               navKey="legal"
               registerRef={registerPrimaryNavRef}
               to="/$locale/$legalSlug"
@@ -97,25 +98,25 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
         <div
-          className="scroll-fade-x mx-auto flex max-w-7xl min-w-0 gap-3 overflow-x-auto px-3 pb-2 text-xs [contain:paint] sm:px-4 md:pb-3 lg:px-6"
+          className="scroll-fade-x flex w-full min-w-0 gap-2 overflow-x-auto px-3 pb-2 text-xs [contain:paint] sm:px-4 md:pb-3 lg:px-6 2xl:px-8"
           data-allow-horizontal-scroll
           aria-label={locale === "ko" ? "시장 범위 탐색" : "Market coverage navigation"}
         >
-          <span className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap font-semibold text-muted">
-            {t("sectors")}
+          <span className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-md px-1 font-semibold text-muted">
+            {locale === "ko" ? "테마" : "Themes"}
           </span>
           {sectorLinks.map(([key, labelEn, labelKo]) => (
             <Link
               key={key}
               to="/$locale/sectors/$sectorKey"
               params={{ locale, sectorKey: key }}
-              className="focus-ring inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap rounded-md px-2 hover:text-accent"
+              className="focus-ring inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap rounded-md px-2.5 hover:bg-panelAlt hover:text-accent"
             >
               {locale === "ko" ? labelKo : labelEn}
             </Link>
           ))}
-          <span className="ml-2 inline-flex min-h-11 shrink-0 items-center whitespace-nowrap font-semibold text-muted">
-            {t("countries")}
+          <span className="ml-1 inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-md px-1 font-semibold text-muted">
+            {locale === "ko" ? "지역" : "Regions"}
           </span>
           {countryLinks.map(([key, labelEn, labelKo]) => {
             const route = key === "EUROZONE" ? "/$locale/regions/$objectKey" : "/$locale/countries/$objectKey";
@@ -124,7 +125,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 key={key}
                 to={route}
                 params={{ locale: asLocale(locale), objectKey: key }}
-                className="focus-ring inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap rounded-md px-2 hover:text-accent"
+                className="focus-ring inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap rounded-md px-2.5 hover:bg-panelAlt hover:text-accent"
               >
                 {locale === "ko" ? labelKo : labelEn}
               </Link>
@@ -132,9 +133,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
           })}
         </div>
       </header>
-      <main className="mx-auto max-w-7xl min-w-0 px-3 py-4 sm:px-4 sm:py-6 lg:px-6">{children}</main>
+      <main className="min-w-0 px-3 py-4 sm:px-4 sm:py-6 lg:px-6 2xl:px-8">{children}</main>
       <footer className="border-t border-line bg-panel">
-        <div className="mx-auto grid max-w-7xl gap-4 px-4 py-6 text-sm text-muted md:grid-cols-4 lg:px-6">
+        <div className="grid gap-4 px-4 py-6 text-sm text-muted md:grid-cols-4 lg:px-6 2xl:px-8">
           <Link to="/$locale/$legalSlug" params={{ locale, legalSlug: "terms" }} className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent">
             {t("legal.terms")}
           </Link>
@@ -159,7 +160,8 @@ function NavLink({
   icon,
   label,
   navKey,
-  registerRef
+  registerRef,
+  active = false
 }: {
   to: string;
   params: Record<string, string>;
@@ -167,6 +169,7 @@ function NavLink({
   label: string;
   navKey?: string;
   registerRef?: (key: string, element: HTMLAnchorElement | null) => void;
+  active?: boolean;
 }) {
   return (
     <Link
@@ -175,7 +178,11 @@ function NavLink({
       }}
       to={to as never}
       params={params as never}
-      className="focus-ring inline-flex h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-md px-3 text-muted hover:bg-panelAlt hover:text-ink [&.active]:bg-accentSoft [&.active]:font-semibold [&.active]:text-accent"
+      activeOptions={{ exact: true }}
+      aria-current={active ? "page" : undefined}
+      className={`focus-ring inline-flex h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-md px-3 transition-colors hover:bg-panelAlt hover:text-ink ${
+        active ? "bg-accentSoft font-semibold text-accent" : "text-muted"
+      }`}
     >
       {icon}
       {label}

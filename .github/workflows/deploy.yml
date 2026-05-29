@@ -103,7 +103,7 @@ jobs:
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
-            'docker run --rm -v stonks-radar_published-snapshots:/dest -v /opt/stonks-radar/apps/web/dist/public:/src:ro alpine:3.22 sh -c "rm -rf /dest/* && cp -a /src/. /dest/"'
+            'cd /opt/stonks-radar && docker compose -f compose.yaml -f infra/docker-compose.prod.yml run --rm --entrypoint sh -v /opt/stonks-radar/apps/web/dist/public:/src:ro worker -c "rm -rf /app/published-public/* && cp -a /src/. /app/published-public/ && chown -R frw:frw /app/published-public"'
 
       - name: Verify origin health
         env:

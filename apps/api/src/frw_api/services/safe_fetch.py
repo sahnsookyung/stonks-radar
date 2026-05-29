@@ -82,9 +82,13 @@ async def _read_limited(response: httpx.Response, max_bytes: int) -> bytes:
 
 
 def _materialized_response(response: httpx.Response, body: bytes) -> httpx.Response:
+    headers = httpx.Headers(response.headers)
+    for decoded_header in ("content-encoding", "content-length"):
+        if decoded_header in headers:
+            del headers[decoded_header]
     return httpx.Response(
         response.status_code,
-        headers=response.headers,
+        headers=headers,
         content=body,
         request=response.request,
         extensions=response.extensions,

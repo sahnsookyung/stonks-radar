@@ -1,3 +1,5 @@
+import gzip
+
 from frw_api.services.fetch_policy import evaluate_url
 from frw_api.services.safe_fetch import SafeFetchError, safe_fetch_bytes
 from frw_api.services.source_ingestion import SourceIngestionError, fetch_source_bytes
@@ -59,3 +61,27 @@ def test_safe_fetch_blocks_private_peer_ip(monkeypatch):
         import asyncio
 
         asyncio.run(safe_fetch_bytes("https://example.com", transport=httpx.MockTransport(handler)))
+
+
+def test_safe_fetch_materializes_decoded_response_without_double_decode(monkeypatch):
+    def fake_evaluate(url: str):
+        return type("Decision", (), {"allowed": True, "reason": "allowed", "resolved_ips": ["93.184.216.34"]})()
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            request=request,
+            headers={"content-encoding": "gzip", "content-length": "999"},
+            content=gzip.compress(b"decoded body"),
+        )
+
+    monkeypatch.setattr("frw_api.services.safe_fetch.evaluate_url", fake_evaluate)
+
+    import asyncio
+
+    result = asyncio.run(safe_fetch_bytes("https://example.com", transport=httpx.MockTransport(handler)))
+
+    assert result.body == b"decoded body"
+    assert result.response.text == "decoded body"
+    assert "content-encoding" not in result.response.headers
+    assert result.response.headers["content-length"] == str(len(b"decoded body"))
