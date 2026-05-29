@@ -117,6 +117,59 @@ def _data_go_kr_status(response: httpx.Response) -> tuple[bool, str | None]:
     return items not in (None, "", []), None if items not in (None, "", []) else "data.go.kr response had no items"
 
 
+def _finnhub_quote_status(response: httpx.Response) -> tuple[bool, str | None]:
+    if response.status_code != 200:
+        return False, f"unexpected status {response.status_code}"
+    try:
+        payload = response.json()
+    except ValueError:
+        return False, "response was not JSON"
+    if not isinstance(payload, dict):
+        return False, "response was not an object"
+    if payload.get("error"):
+        return False, str(payload["error"])
+    price = _floatish(payload.get("c"))
+    timestamp = _floatish(payload.get("t"))
+    if price is None or price <= 0:
+        return False, "quote did not include a positive current price"
+    if timestamp is None or timestamp <= 0:
+        return False, "quote did not include a current timestamp"
+    return True, None
+
+
+def _twelve_data_quote_status(response: httpx.Response) -> tuple[bool, str | None]:
+    if response.status_code != 200:
+        return False, f"unexpected status {response.status_code}"
+    try:
+        payload = response.json()
+    except ValueError:
+        return False, "response was not JSON"
+    if not isinstance(payload, dict):
+        return False, "response was not an object"
+    if str(payload.get("status") or "").lower() == "error":
+        return False, str(payload.get("message") or "Twelve Data returned an error")
+    price = _floatish(payload.get("close"))
+    if price is None or price <= 0:
+        return False, "quote did not include a positive close"
+    return True, None
+
+
+def _stooq_quote_status(response: httpx.Response) -> tuple[bool, str | None]:
+    if response.status_code != 200:
+        return False, f"unexpected status {response.status_code}"
+    body = response.text
+    if "N/D" in body:
+        return False, "Stooq returned N/D for the probe symbol"
+    return ("Close" in body and "Time" in body), None if "Close" in body and "Time" in body else "unexpected Stooq CSV"
+
+
+def _floatish(value: Any) -> float | None:
+    try:
+        return float(str(value).replace(",", ""))
+    except (TypeError, ValueError):
+        return None
+
+
 SOURCES: dict[str, SourceProbe] = {
     "bls": SourceProbe(
         "https://api.bls.gov/publicAPI/v2/timeseries/data/CUUR0000SA0",
@@ -198,6 +251,30 @@ SOURCES: dict[str, SourceProbe] = {
     "ishares_ewy": SourceProbe(
         "https://www.ishares.com/us/products/239681/ishares-msci-south-korea-etf",
         expect=_html_contains("iShares MSCI South Korea ETF", "fundHeader.fundNav.navAmount"),
+    ),
+    "yahoo_finance_delayed_quote": SourceProbe(
+        "https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX",
+        params={"interval": "1m", "range": "1d"},
+        expect=_json_has("chart", "result"),
+    ),
+    "stooq_delayed_quote": SourceProbe(
+        "https://stooq.com/q/l/",
+        params={"s": "^ndx", "f": "sd2t2ohlcv", "h": "", "e": "csv"},
+        expect=_stooq_quote_status,
+    ),
+    "finnhub_quote": SourceProbe(
+        "https://finnhub.io/api/v1/quote",
+        required_env="FINNHUB_API_KEY",
+        params={"symbol": "NVDA"},
+        api_key_param="token",
+        expect=_finnhub_quote_status,
+    ),
+    "twelve_data_fx_quote": SourceProbe(
+        "https://api.twelvedata.com/quote",
+        required_env="TWELVE_DATA_API_KEY",
+        params={"symbol": "USD/KRW"},
+        api_key_param="apikey",
+        expect=_twelve_data_quote_status,
     ),
     "ecb": SourceProbe(
         "https://data-api.ecb.europa.eu/service/dataflow/ECB/EXR/1.0",

@@ -102,6 +102,33 @@ def test_html_contains_accepts_expected_page_markers():
     assert message is None
 
 
+def test_finnhub_quote_probe_requires_positive_price_and_timestamp():
+    response = httpx.Response(200, json={"c": 216.5, "t": 1780073986})
+
+    ready, message = check_source_health._finnhub_quote_status(response)
+
+    assert ready is True
+    assert message is None
+
+
+def test_finnhub_quote_probe_rejects_subscription_errors():
+    response = httpx.Response(200, json={"error": "Market data subscription required"})
+
+    ready, message = check_source_health._finnhub_quote_status(response)
+
+    assert ready is False
+    assert "subscription" in message
+
+
+def test_twelve_data_quote_probe_rejects_quota_errors():
+    response = httpx.Response(200, json={"status": "error", "message": "You have run out of API credits"})
+
+    ready, message = check_source_health._twelve_data_quote_status(response)
+
+    assert ready is False
+    assert "credits" in message
+
+
 def test_probe_url_uses_configured_krx_base(monkeypatch):
     _reset_env(monkeypatch)
     monkeypatch.setenv("KRX_OPEN_API_BASE_URL", "https://data-dbg.krx.co.kr/svc/sample/apis")

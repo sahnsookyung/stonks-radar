@@ -324,6 +324,71 @@ def test_macro_tiles_prefer_current_kospi_and_kodex_quotes(monkeypatch):
     assert "FRED" not in by_key["kospi"]["source"]
 
 
+def test_macro_tiles_choose_freshest_allowed_public_quote_candidate(monkeypatch):
+    build_seed_snapshots._reset_runtime_caches()
+    monkeypatch.setattr(build_seed_snapshots, "_web_metadata", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_payload", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_summary", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_fred_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_treasury_yield_curve_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_mof_jgb_series", lambda *_args, **_kwargs: None)
+
+    def yahoo(symbol):
+        if symbol == "CL=F":
+            return {
+                "date": "2026-05-29",
+                "value": 87.75,
+                "updated_at": "2026-05-29T15:50:35Z",
+                "points": [{"date": "2026-05-29T15:49:00Z", "value": 88.0}, {"date": "2026-05-29T15:50:35Z", "value": 87.75}],
+                "change": -0.25,
+                "source_url": "https://finance.yahoo.com/quote/CL%3DF",
+            }
+        return None
+
+    def stooq(symbol):
+        if symbol == "cl.f":
+            return {
+                "date": "2026-05-29",
+                "value": 86.87,
+                "updated_at": "2026-05-29T17:05:36Z",
+                "points": [{"date": "2026-05-29T17:04:00Z", "value": 87.0}, {"date": "2026-05-29T17:05:36Z", "value": 86.87}],
+                "change": -0.13,
+                "source_url": "https://stooq.com/q/?s=cl.f",
+            }
+        return None
+
+    monkeypatch.setattr(build_seed_snapshots, "_yahoo_chart_series", yahoo)
+    monkeypatch.setattr(build_seed_snapshots, "_stooq_quote_series", stooq)
+
+    tiles = build_seed_snapshots._macro_tiles("en", datetime(2026, 5, 29, 19, 10, tzinfo=timezone.utc))
+    by_key = {tile["key"]: tile for tile in tiles}
+
+    assert by_key["wti_crude"]["value"] == "86.87"
+    assert by_key["wti_crude"]["source"] == "Stooq delayed quote"
+    assert by_key["wti_crude"]["updated_at"] == "2026-05-29T17:05:36Z"
+
+
+def test_twelve_data_quote_series_treats_date_only_payload_as_daily(monkeypatch):
+    build_seed_snapshots._reset_runtime_caches()
+    monkeypatch.setattr(build_seed_snapshots, "_runtime_env", lambda: {"TWELVE_DATA_API_KEY": "test-key"})
+    monkeypatch.setattr(
+        build_seed_snapshots,
+        "_http_json",
+        lambda *_args, **_kwargs: {
+            "datetime": "2026-05-29",
+            "close": "1504.21",
+            "previous_close": "1499.00",
+        },
+    )
+
+    series = build_seed_snapshots._twelve_data_quote_series("USD/KRW")
+
+    assert series is not None
+    assert series["updated_at"] == "2026-05-29T00:00:00Z"
+    assert series["points"][0]["date"] == "2026-05-28T00:00:00Z"
+    assert series["points"][1]["date"] == "2026-05-29T00:00:00Z"
+
+
 def test_macro_tiles_use_treasury_xml_for_us_rates(monkeypatch):
     build_seed_snapshots._reset_runtime_caches()
     monkeypatch.setattr(build_seed_snapshots, "_web_metadata", lambda *_args, **_kwargs: None)

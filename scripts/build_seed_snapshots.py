@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 from urllib import error, parse, request
 from xml.etree import ElementTree
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_ROOT = Path(
@@ -30,6 +31,9 @@ YAHOO_FINANCE_RSS_URL = "https://feeds.finance.yahoo.com/rss/2.0/headline"
 YAHOO_FINANCE_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart"
 YAHOO_FINANCE_QUOTE_URL = "https://finance.yahoo.com/quote"
 STOOQ_QUOTE_URL = "https://stooq.com/q/l/"
+STOOQ_QUOTE_TIMEZONE = ZoneInfo("Europe/Warsaw")
+FINNHUB_QUOTE_URL = "https://finnhub.io/api/v1/quote"
+TWELVE_DATA_QUOTE_URL = "https://api.twelvedata.com/quote"
 TREASURY_YIELD_XML_URL = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml"
 TREASURY_YIELD_FEED_DOC_URL = "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed"
 MOF_JGB_CSV_URL = "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/historical/jgbcme_all.csv"
@@ -89,6 +93,8 @@ _ISHARES_FUND_CACHE: dict[str, dict[str, Any] | None] = {}
 _PENTAGON_PIZZA_CACHE: dict[str, dict[str, Any] | None] = {}
 _YAHOO_QUOTE_CACHE: dict[str, dict[str, Any] | None] = {}
 _STOOQ_QUOTE_CACHE: dict[str, dict[str, Any] | None] = {}
+_FINNHUB_QUOTE_CACHE: dict[str, dict[str, Any] | None] = {}
+_TWELVE_DATA_QUOTE_CACHE: dict[str, dict[str, Any] | None] = {}
 _TREASURY_YIELD_CACHE: dict[str, Any] | None = None
 _GDELT_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
 _RSS_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
@@ -477,6 +483,8 @@ def _reset_runtime_caches() -> None:
     _PENTAGON_PIZZA_CACHE.clear()
     _YAHOO_QUOTE_CACHE.clear()
     _STOOQ_QUOTE_CACHE.clear()
+    _FINNHUB_QUOTE_CACHE.clear()
+    _TWELVE_DATA_QUOTE_CACHE.clear()
     _TREASURY_YIELD_CACHE = None
     _GDELT_ARTICLE_CACHE.clear()
     _RSS_ARTICLE_CACHE.clear()
@@ -1088,6 +1096,133 @@ def _stooq_quote_series(symbol: str) -> dict[str, Any] | None:
     return result_payload
 
 
+def _finnhub_quote_series(symbol: str) -> dict[str, Any] | None:
+    cache_key = symbol.upper()
+    if cache_key in _FINNHUB_QUOTE_CACHE:
+        return _FINNHUB_QUOTE_CACHE[cache_key]
+    token = str(_runtime_env().get("FINNHUB_API_KEY") or "").strip()
+    if not token:
+        _FINNHUB_QUOTE_CACHE[cache_key] = None
+        return None
+    params = parse.urlencode({"symbol": symbol, "token": token})
+    try:
+        payload = _http_json(
+            f"{FINNHUB_QUOTE_URL}?{params}",
+            headers={"Accept": "application/json"},
+            timeout=12,
+        )
+    except Exception:
+        _FINNHUB_QUOTE_CACHE[cache_key] = None
+        return None
+    price = _numeric_value(payload.get("c")) if isinstance(payload, dict) else None
+    timestamp = _numeric_value(payload.get("t")) if isinstance(payload, dict) else None
+    previous = _numeric_value(payload.get("pc")) if isinstance(payload, dict) else None
+    if price is None or price <= 0 or timestamp is None or timestamp <= 0:
+        _FINNHUB_QUOTE_CACHE[cache_key] = None
+        return None
+    updated_at = datetime.fromtimestamp(float(timestamp), tz=timezone.utc).isoformat().replace("+00:00", "Z")
+    points = [{"date": updated_at, "value": price}]
+    if previous is not None and previous > 0:
+        prior_date = (datetime.fromtimestamp(float(timestamp), tz=timezone.utc) - timedelta(days=1)).isoformat().replace("+00:00", "Z")
+        points.insert(0, {"date": prior_date, "value": previous})
+    result_payload: dict[str, Any] = {
+        "date": updated_at[:10],
+        "value": price,
+        "updated_at": updated_at,
+        "points": points,
+        "source_url": f"https://finnhub.io/api/v1/quote?symbol={parse.quote(symbol)}",
+    }
+    if previous is not None:
+        result_payload["change"] = price - previous
+        if previous:
+            result_payload["percent_change"] = ((price - previous) / previous) * 100
+    _FINNHUB_QUOTE_CACHE[cache_key] = result_payload
+    return result_payload
+
+
+def _twelve_data_quote_series(symbol: str) -> dict[str, Any] | None:
+    cache_key = symbol.upper()
+    if cache_key in _TWELVE_DATA_QUOTE_CACHE:
+        return _TWELVE_DATA_QUOTE_CACHE[cache_key]
+    api_key = str(_runtime_env().get("TWELVE_DATA_API_KEY") or "").strip()
+    if not api_key:
+        _TWELVE_DATA_QUOTE_CACHE[cache_key] = None
+        return None
+    params = parse.urlencode({"symbol": symbol, "apikey": api_key})
+    try:
+        payload = _http_json(
+            f"{TWELVE_DATA_QUOTE_URL}?{params}",
+            headers={"Accept": "application/json"},
+            timeout=12,
+        )
+    except Exception:
+        _TWELVE_DATA_QUOTE_CACHE[cache_key] = None
+        return None
+    if not isinstance(payload, dict) or str(payload.get("status") or "").lower() == "error":
+        _TWELVE_DATA_QUOTE_CACHE[cache_key] = None
+        return None
+    price = _numeric_value(payload.get("close"))
+    previous = _numeric_value(payload.get("previous_close"))
+    date_text = _iso_date(str(payload.get("datetime") or ""))
+    if price is None or price <= 0 or not date_text:
+        _TWELVE_DATA_QUOTE_CACHE[cache_key] = None
+        return None
+    updated_at = f"{date_text}T00:00:00Z"
+    points = [{"date": updated_at, "value": price}]
+    if previous is not None and previous > 0:
+        prior_date = (datetime.fromisoformat(date_text).replace(tzinfo=timezone.utc) - timedelta(days=1)).date().isoformat()
+        points.insert(0, {"date": f"{prior_date}T00:00:00Z", "value": previous})
+    result_payload: dict[str, Any] = {
+        "date": date_text,
+        "value": price,
+        "updated_at": updated_at,
+        "points": points,
+        "source_url": "https://twelvedata.com/",
+    }
+    if previous is not None:
+        result_payload["change"] = price - previous
+        if previous:
+            result_payload["percent_change"] = ((price - previous) / previous) * 100
+    _TWELVE_DATA_QUOTE_CACHE[cache_key] = result_payload
+    return result_payload
+
+
+def _freshest_quote_candidate(candidates: list[tuple[str, dict[str, Any] | None]]) -> tuple[str, dict[str, Any]] | None:
+    valid: list[tuple[datetime, str, dict[str, Any]]] = []
+    for source_name, series in candidates:
+        if not series:
+            continue
+        timestamp = _parse_snapshot_datetime(str(series.get("updated_at") or ""))
+        if timestamp is None:
+            continue
+        valid.append((timestamp, source_name, series))
+    if not valid:
+        return None
+    _timestamp, source_name, series = max(valid, key=lambda item: item[0])
+    return source_name, series
+
+
+def _parse_snapshot_datetime(value: str) -> datetime | None:
+    text = value.strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _market_pulse_public_provider_allowed(provider_key: str) -> bool:
+    allowlist = str(_runtime_env().get("MARKET_PULSE_PUBLIC_PROVIDER_ALLOWLIST") or "").strip().lower()
+    if not allowlist:
+        return False
+    values = {item.strip() for item in allowlist.split(",") if item.strip()}
+    return "all" in values or provider_key.lower() in values
+
+
 def _treasury_yield_curve_series(term_key: str, generated_at: datetime) -> dict[str, Any] | None:
     rows = _treasury_yield_curve_rows(generated_at)
     points: list[dict[str, Any]] = []
@@ -1146,7 +1281,8 @@ def _treasury_yield_curve_rows(generated_at: datetime) -> list[dict[str, str]]:
 def _quote_timestamp(date: str, time_value: str) -> str:
     if time_value and time_value != "N/D":
         try:
-            return datetime.strptime(f"{date} {time_value}", "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
+            local_time = datetime.strptime(f"{date} {time_value}", "%Y-%m-%d %H:%M:%S").replace(tzinfo=STOOQ_QUOTE_TIMEZONE)
+            return local_time.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
         except ValueError:
             pass
     return f"{date}T21:00:00Z"
@@ -2813,6 +2949,8 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         *,
         yahoo_symbol: str | None = None,
         stooq_symbol: str | None = None,
+        finnhub_symbol: str | None = None,
+        twelve_data_symbol: str | None = None,
         source_name: str,
         unit: str | None = None,
         decimals: int = 2,
@@ -2820,9 +2958,18 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         fresh_after_minutes: int = 90,
         stale_after_hours: int = 36,
     ) -> dict[str, Any]:
-        series = _yahoo_chart_series(yahoo_symbol) if yahoo_symbol else None
-        if not series and stooq_symbol:
-            series = _stooq_quote_series(stooq_symbol)
+        candidates: list[tuple[str, dict[str, Any] | None]] = []
+        if yahoo_symbol:
+            candidates.append(("Yahoo Finance delayed quote", _yahoo_chart_series(yahoo_symbol)))
+        if stooq_symbol:
+            candidates.append(("Stooq delayed quote", _stooq_quote_series(stooq_symbol)))
+        if finnhub_symbol and _market_pulse_public_provider_allowed("finnhub"):
+            candidates.append(("Finnhub quote", _finnhub_quote_series(finnhub_symbol)))
+        if twelve_data_symbol and _market_pulse_public_provider_allowed("twelve_data"):
+            candidates.append(("Twelve Data quote", _twelve_data_quote_series(twelve_data_symbol)))
+        selected = _freshest_quote_candidate(candidates)
+        selected_source_name = selected[0] if selected else source_name
+        series = selected[1] if selected else None
         source_url = str(series.get("source_url") or "") if series else None
         if not series:
             return coverage_gap_tile(
@@ -2848,11 +2995,11 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             label_en,
             label_ko,
             _format_metric_value(float(series["value"]), decimals),
-            source_name,
+            selected_source_name,
             _t(
                 locale,
-                f"{source_name} observed at {series['updated_at']}",
-                f"{source_name} 관측 {series['updated_at']}",
+                f"{selected_source_name} observed at {series['updated_at']}",
+                f"{selected_source_name} 관측 {series['updated_at']}",
             ),
             freshness,
             unit,
@@ -3079,6 +3226,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "USD/KRW",
             "달러/원",
             yahoo_symbol="KRW=X",
+            twelve_data_symbol="USD/KRW",
             source_name="Yahoo Finance delayed FX quote",
             unit="KRW",
             decimals=2,
@@ -3090,6 +3238,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "USD/JPY",
             "달러/엔",
             yahoo_symbol="JPY=X",
+            twelve_data_symbol="USD/JPY",
             source_name="Yahoo Finance delayed FX quote",
             unit="JPY",
             decimals=2,
@@ -3622,10 +3771,10 @@ def _source_status() -> dict[str, Any]:
     sec_user_agent = env.get("SEC_USER_AGENT", "")
     sec_status = "ready" if "@" in sec_user_agent and "contact@example.com" not in sec_user_agent else "degraded"
     sec_warning = None if sec_status == "ready" else "SEC_USER_AGENT must contain a real contact in production"
-    twelve_status, twelve_warning = status_for("TWELVE_DATA_API_KEY", "TWELVE_DATA_API_KEY enables portfolio history primary")
+    twelve_status, twelve_warning = status_for("TWELVE_DATA_API_KEY", "TWELVE_DATA_API_KEY enables sparse equity/FX fallback checks; free quota is too small for broad market-pulse polling")
     alpha_status, alpha_warning = status_for("ALPHA_VANTAGE_API_KEY", "ALPHA_VANTAGE_API_KEY enables portfolio history fallback")
     fmp_status, fmp_warning = status_for("FMP_API_KEY", "FMP_API_KEY enables EOD/fundamental fallback")
-    finnhub_status, finnhub_warning = status_for("FINNHUB_API_KEY", "FINNHUB_API_KEY enables future market/fundamental fallback")
+    finnhub_status, finnhub_warning = status_for("FINNHUB_API_KEY", "FINNHUB_API_KEY enables current US equity quote probes; public display requires MARKET_PULSE_PUBLIC_PROVIDER_ALLOWLIST=finnhub after source-policy approval")
     nasdaq_status, nasdaq_warning = status_for("NASDAQ_DATA_LINK_API_KEY", "NASDAQ_DATA_LINK_API_KEY enables future Nasdaq Data Link datasets")
     if any(_env_has(env, key) for key in ("DATA_GO_KR_SERVICE_KEY", "DATA_GO_KR_API_KEY", "PUBLIC_DATA_API_KEY", "KOREA_PUBLIC_DATA_API_KEY")):
         data_go_status, data_go_warning = "ready", None
@@ -3683,8 +3832,8 @@ def _source_status() -> dict[str, Any]:
         ("nasdaq_data_link", "market_data", nasdaq_status, "FREE_ONLY", nasdaq_warning),
         ("krx_open_api", "official_api", krx_status, "FREE_ONLY", krx_warning),
         ("data_go_kr", "official_api", data_go_status, "FREE_ONLY", data_go_warning),
-        ("yahoo_finance_delayed_quote", "market_data", "ready", "FREE_ONLY", "Fallback for time-sensitive quote tiles when official/FRED series are stale; not treated as licensed realtime tape"),
-        ("stooq_delayed_quote", "market_data", "ready", "FREE_ONLY", "Fallback for delayed index/futures quote tiles; not treated as licensed realtime tape"),
+        ("yahoo_finance_delayed_quote", "market_data", "ready", "FREE_ONLY", "Public delayed quote fallback for time-sensitive tiles when official/FRED series are stale; the snapshot builder now compares candidates and uses the freshest allowed quote"),
+        ("stooq_delayed_quote", "market_data", "ready", "FREE_ONLY", "Public delayed quote fallback for indexes/futures; selected when fresher than Yahoo for the same tile"),
         ("treasury_xml_feed", "official_xml", "ready", "FREE_ONLY", None),
         ("japan_mof_jgb_csv", "official_csv", "ready", "FREE_ONLY", None),
         ("finra", "official_api", finra_status, "FREE_ONLY", finra_warning),
