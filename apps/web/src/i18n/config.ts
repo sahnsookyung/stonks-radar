@@ -42,7 +42,7 @@ const resources = {
       marketPulseSummary: "Delayed/reference values. Cards link to source pages; update times show the snapshot age.",
       scrollLeft: "Scroll left",
       scrollRight: "Scroll right",
-      breakingNewsRadar: "Breaking market watch",
+      breakingNewsRadar: "Breaking Market Watch",
       breakingNewsRadarSummary: "Geopolitical and tracked-ticker headlines are pulled into the dashboard so users can scan the result before opening source evidence.",
       sourceLinksOnCards: "source links on cards",
       priorityEvent: "Priority event",

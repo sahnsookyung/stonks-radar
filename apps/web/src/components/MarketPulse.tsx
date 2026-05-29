@@ -77,7 +77,7 @@ export function MarketPulseTickerBar({ tiles }: { tiles: MetricTile[] }) {
       </div>
       <div
         ref={scrollRef}
-        className="scroll-fade-x -mx-1 flex max-w-full snap-x gap-2 overflow-x-auto px-1 pb-4 sm:pb-5"
+        className="scroll-fade-x -mx-1 flex max-w-full snap-x gap-2 overflow-x-auto px-1 pb-5 sm:pb-6"
         data-testid="market-pulse-strip"
         data-allow-horizontal-scroll
         aria-label={locale === "ko" ? "시장 펄스 티커 스트립" : "Market pulse ticker strip"}

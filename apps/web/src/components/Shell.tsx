@@ -48,7 +48,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-paper text-ink">
       <header className="sticky top-0 z-20 overflow-x-hidden border-b border-line bg-panel/95 shadow-insetLine backdrop-blur [contain:paint]">
         <div className="flex w-full items-center gap-2 px-3 py-2 sm:px-4 md:gap-4 md:py-3 lg:px-6 2xl:px-8">
-          <Link to="/$locale" params={{ locale }} className="focus-ring flex min-h-11 min-w-[190px] shrink-0 items-center gap-2 md:gap-3 lg:min-w-[270px]">
+          <Link
+            to="/$locale"
+            params={{ locale }}
+            activeOptions={{ exact: true }}
+            className="focus-ring flex min-h-11 min-w-[190px] shrink-0 items-center gap-2 md:gap-3 lg:min-w-[270px]"
+          >
             <div className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-accent text-paper shadow-insetLine md:h-10 md:w-10">
               <SearchCheck className="h-5 w-5" />
             </div>
