@@ -9,6 +9,7 @@ import re
 import time
 from base64 import b64encode
 from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 from html import unescape
 from pathlib import Path
 from typing import Any
@@ -26,6 +27,9 @@ FRED_SERIES_BASE_URL = "https://fred.stlouisfed.org/series"
 GDELT_DOC_API_URL = "https://api.gdeltproject.org/api/v2/doc/doc"
 GOOGLE_NEWS_RSS_URL = "https://news.google.com/rss/search"
 YAHOO_FINANCE_RSS_URL = "https://feeds.finance.yahoo.com/rss/2.0/headline"
+YAHOO_FINANCE_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart"
+YAHOO_FINANCE_QUOTE_URL = "https://finance.yahoo.com/quote"
+STOOQ_QUOTE_URL = "https://stooq.com/q/l/"
 MOF_JGB_CSV_URL = "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/historical/jgbcme_all.csv"
 MOF_JGB_PAGE_URL = "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm"
 ISHARES_EWY_URL = "https://www.ishares.com/us/products/239681/ishares-msci-south-korea-etf"
@@ -67,6 +71,8 @@ _SEC_SUBMISSIONS_CACHE: dict[str, dict[str, Any] | None] = {}
 _WEB_METADATA_CACHE: dict[str, dict[str, str] | None] = {}
 _ISHARES_FUND_CACHE: dict[str, dict[str, Any] | None] = {}
 _PENTAGON_PIZZA_CACHE: dict[str, dict[str, Any] | None] = {}
+_YAHOO_QUOTE_CACHE: dict[str, dict[str, Any] | None] = {}
+_STOOQ_QUOTE_CACHE: dict[str, dict[str, Any] | None] = {}
 _GDELT_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
 _RSS_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
 _LAST_FRED_REQUEST_AT = 0.0
@@ -452,6 +458,8 @@ def _reset_runtime_caches() -> None:
     _WEB_METADATA_CACHE.clear()
     _ISHARES_FUND_CACHE.clear()
     _PENTAGON_PIZZA_CACHE.clear()
+    _YAHOO_QUOTE_CACHE.clear()
+    _STOOQ_QUOTE_CACHE.clear()
     _GDELT_ARTICLE_CACHE.clear()
     _RSS_ARTICLE_CACHE.clear()
     _LAST_FRED_REQUEST_AT = 0.0
@@ -951,6 +959,151 @@ def _parse_ishares_formatted_date(value: str) -> str | None:
     return None
 
 
+def _yahoo_chart_series(symbol: str) -> dict[str, Any] | None:
+    cache_key = symbol.upper()
+    if cache_key in _YAHOO_QUOTE_CACHE:
+        return _YAHOO_QUOTE_CACHE[cache_key]
+    encoded_symbol = parse.quote(symbol, safe="")
+    params = parse.urlencode({"interval": "1m", "range": "1d"})
+    user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
+    try:
+        payload = _http_json(
+            f"{YAHOO_FINANCE_CHART_URL}/{encoded_symbol}?{params}",
+            headers={"Accept": "application/json", "User-Agent": user_agent},
+            timeout=12,
+        )
+    except Exception:
+        _YAHOO_QUOTE_CACHE[cache_key] = None
+        return None
+    result = _list_item(payload.get("chart", {}).get("result"), 0) if isinstance(payload, dict) else None
+    if not isinstance(result, dict):
+        _YAHOO_QUOTE_CACHE[cache_key] = None
+        return None
+    meta = result.get("meta") if isinstance(result.get("meta"), dict) else {}
+    price = _numeric_value(meta.get("regularMarketPrice"))
+    timestamp = _numeric_value(meta.get("regularMarketTime"))
+    if price is None or timestamp is None:
+        _YAHOO_QUOTE_CACHE[cache_key] = None
+        return None
+    previous = _numeric_value(meta.get("previousClose"))
+    points = _yahoo_chart_points(result)
+    updated_at = datetime.fromtimestamp(float(timestamp), tz=timezone.utc).isoformat().replace("+00:00", "Z")
+    date = updated_at[:10]
+    result_payload: dict[str, Any] = {
+        "date": date,
+        "value": price,
+        "updated_at": updated_at,
+        "points": points or [{"date": updated_at, "value": price}],
+        "source_url": f"{YAHOO_FINANCE_QUOTE_URL}/{parse.quote(symbol, safe='')}",
+    }
+    if previous is not None:
+        result_payload["change"] = price - previous
+        if previous:
+            result_payload["percent_change"] = ((price - previous) / previous) * 100
+    _YAHOO_QUOTE_CACHE[cache_key] = result_payload
+    return result_payload
+
+
+def _yahoo_chart_points(result: dict[str, Any]) -> list[dict[str, Any]]:
+    timestamps = result.get("timestamp")
+    indicators = result.get("indicators") if isinstance(result.get("indicators"), dict) else {}
+    quote = _list_item(indicators.get("quote"), 0)
+    closes = quote.get("close") if isinstance(quote, dict) else None
+    if not isinstance(timestamps, list) or not isinstance(closes, list):
+        return []
+    points: list[dict[str, Any]] = []
+    for timestamp, close in zip(timestamps, closes):
+        value = _numeric_value(close)
+        if value is None:
+            continue
+        try:
+            date = datetime.fromtimestamp(float(timestamp), tz=timezone.utc).isoformat().replace("+00:00", "Z")
+        except (OSError, ValueError, TypeError):
+            continue
+        points.append({"date": date, "value": value})
+    if len(points) <= 8:
+        return points
+    step = max(1, len(points) // 8)
+    sampled = points[::step]
+    if sampled[-1] != points[-1]:
+        sampled.append(points[-1])
+    return sampled[-8:]
+
+
+def _stooq_quote_series(symbol: str) -> dict[str, Any] | None:
+    cache_key = symbol.upper()
+    if cache_key in _STOOQ_QUOTE_CACHE:
+        return _STOOQ_QUOTE_CACHE[cache_key]
+    params = parse.urlencode({"s": symbol, "f": "sd2t2ohlcv", "h": "", "e": "csv"})
+    user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
+    text = _http_text(
+        f"{STOOQ_QUOTE_URL}?{params}",
+        headers={"Accept": "text/csv,*/*", "User-Agent": user_agent},
+        timeout=12,
+        max_bytes=80_000,
+    )
+    if not text:
+        _STOOQ_QUOTE_CACHE[cache_key] = None
+        return None
+    rows = list(csv.DictReader(io.StringIO(text)))
+    row = rows[0] if rows else {}
+    close = _numeric_value(row.get("Close"))
+    date = _iso_date(str(row.get("Date") or ""))
+    time_value = str(row.get("Time") or "").strip()
+    if close is None or not date or date == "N/D":
+        _STOOQ_QUOTE_CACHE[cache_key] = None
+        return None
+    updated_at = _quote_timestamp(date, time_value)
+    previous = _numeric_value(row.get("Open"))
+    result_payload: dict[str, Any] = {
+        "date": date,
+        "value": close,
+        "updated_at": updated_at,
+        "points": _ohlc_points(date, row),
+        "source_url": f"https://stooq.com/q/?s={parse.quote(symbol)}",
+    }
+    if previous is not None:
+        result_payload["change"] = close - previous
+        if previous:
+            result_payload["percent_change"] = ((close - previous) / previous) * 100
+    _STOOQ_QUOTE_CACHE[cache_key] = result_payload
+    return result_payload
+
+
+def _quote_timestamp(date: str, time_value: str) -> str:
+    if time_value and time_value != "N/D":
+        try:
+            return datetime.strptime(f"{date} {time_value}", "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
+        except ValueError:
+            pass
+    return f"{date}T21:00:00Z"
+
+
+def _ohlc_points(date: str, row: dict[str, Any]) -> list[dict[str, Any]]:
+    points = []
+    for offset, key in enumerate(("Open", "Low", "High", "Close")):
+        value = _numeric_value(row.get(key))
+        if value is not None:
+            points.append({"date": f"{date}T{12 + offset:02d}:00:00Z", "value": value})
+    return points
+
+
+def _observation_updated_at(date: str) -> str:
+    iso_date = _iso_date(date) or date[:10]
+    return f"{iso_date}T21:00:00Z"
+
+
+def _observation_freshness(date: str, generated_at: datetime, *, max_age_days: int = 3) -> str:
+    iso_date = _iso_date(date)
+    if not iso_date:
+        return "watch"
+    try:
+        observed = datetime.strptime(iso_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return "watch"
+    return "fresh" if generated_at - observed <= timedelta(days=max_age_days) else "watch"
+
+
 def _pentagon_pizza_payload(base_url: str) -> dict[str, Any] | None:
     if base_url in _PENTAGON_PIZZA_CACHE:
         return _PENTAGON_PIZZA_CACHE[base_url]
@@ -1052,8 +1205,14 @@ def _pentagon_pizza_points(summary: dict[str, Any], generated_at: datetime) -> l
     ]
 
 
-def _gdelt_articles(query: str, *, maxrecords: int = 5) -> list[dict[str, str]]:
-    cache_key = f"{query}:{maxrecords}"
+def _gdelt_articles(
+    query: str,
+    *,
+    maxrecords: int = 5,
+    generated_at: datetime | None = None,
+    max_age_hours: int = 24,
+) -> list[dict[str, str]]:
+    cache_key = f"{query}:{maxrecords}:{generated_at.isoformat() if generated_at else 'now'}:{max_age_hours}"
     if cache_key in _GDELT_ARTICLE_CACHE:
         return _GDELT_ARTICLE_CACHE[cache_key]
     params = parse.urlencode(
@@ -1061,7 +1220,8 @@ def _gdelt_articles(query: str, *, maxrecords: int = 5) -> list[dict[str, str]]:
             "query": query,
             "mode": "artlist",
             "format": "json",
-            "sort": "hybridrel",
+            "sort": "datedesc",
+            "timespan": f"{max_age_hours}h",
             "maxrecords": str(maxrecords),
         }
     )
@@ -1079,6 +1239,9 @@ def _gdelt_articles(query: str, *, maxrecords: int = 5) -> list[dict[str, str]]:
         url = str(article.get("url") or "").strip()
         if not title or not url:
             continue
+        seen_at = _parse_gdelt_seen_datetime(str(article.get("seendate") or ""))
+        if generated_at and not _is_recent_timestamp(seen_at, generated_at, max_age_hours=max_age_hours):
+            continue
         rows.append(
             {
                 "key": hashlib.sha1(f"{query}:{index}:{url}".encode()).hexdigest()[:12],
@@ -1086,6 +1249,7 @@ def _gdelt_articles(query: str, *, maxrecords: int = 5) -> list[dict[str, str]]:
                 "url": url,
                 "domain": str(article.get("domain") or parse.urlparse(url).netloc or "news").strip()[:80],
                 "seen_date": str(article.get("seendate") or "")[:14],
+                "seen_at": seen_at or "",
                 "language": str(article.get("language") or "").strip()[:24],
             }
         )
@@ -1093,27 +1257,38 @@ def _gdelt_articles(query: str, *, maxrecords: int = 5) -> list[dict[str, str]]:
     return rows
 
 
-def _rss_articles(url: str, *, cache_key: str, maxrecords: int = 5) -> list[dict[str, str]]:
-    if cache_key in _RSS_ARTICLE_CACHE:
-        return _RSS_ARTICLE_CACHE[cache_key]
+def _rss_articles(
+    url: str,
+    *,
+    cache_key: str,
+    maxrecords: int = 5,
+    generated_at: datetime | None = None,
+    max_age_hours: int = 24,
+) -> list[dict[str, str]]:
+    cache_id = f"{cache_key}:{generated_at.isoformat() if generated_at else 'now'}:{max_age_hours}"
+    if cache_id in _RSS_ARTICLE_CACHE:
+        return _RSS_ARTICLE_CACHE[cache_id]
     user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
     try:
         req = request.Request(url, headers={"User-Agent": user_agent, "Accept": "application/rss+xml, application/xml"})
         with request.urlopen(req, timeout=8) as response:
             xml_text = response.read(800_000).decode("utf-8", errors="ignore")
     except Exception:
-        _RSS_ARTICLE_CACHE[cache_key] = []
+        _RSS_ARTICLE_CACHE[cache_id] = []
         return []
     try:
         root = ElementTree.fromstring(xml_text)
     except ElementTree.ParseError:
-        _RSS_ARTICLE_CACHE[cache_key] = []
+        _RSS_ARTICLE_CACHE[cache_id] = []
         return []
     rows: list[dict[str, str]] = []
     for index, item in enumerate(root.findall(".//item")):
         title = _xml_text(item, "title")
         link = _xml_text(item, "link")
         if not title or not link:
+            continue
+        seen_at = _parse_rss_datetime(_xml_text(item, "pubDate"))
+        if generated_at and not _is_recent_timestamp(seen_at, generated_at, max_age_hours=max_age_hours):
             continue
         domain = parse.urlparse(link).netloc or _xml_text(item, "source") or "rss"
         rows.append(
@@ -1123,12 +1298,48 @@ def _rss_articles(url: str, *, cache_key: str, maxrecords: int = 5) -> list[dict
                 "url": link,
                 "domain": domain[:80],
                 "seen_date": _xml_text(item, "pubDate")[:32],
+                "seen_at": seen_at or "",
             }
         )
         if len(rows) >= maxrecords:
             break
-    _RSS_ARTICLE_CACHE[cache_key] = rows
+    _RSS_ARTICLE_CACHE[cache_id] = rows
     return rows
+
+
+def _parse_gdelt_seen_datetime(value: str) -> str | None:
+    text = value.strip()
+    if not text:
+        return None
+    for fmt, length in (("%Y%m%d%H%M%S", 14), ("%Y%m%d%H%M", 12)):
+        try:
+            return datetime.strptime(text[:length], fmt).replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
+        except ValueError:
+            continue
+    return None
+
+
+def _parse_rss_datetime(value: str) -> str | None:
+    text = value.strip()
+    if not text:
+        return None
+    try:
+        parsed = parsedate_to_datetime(text)
+    except (TypeError, ValueError, IndexError, OverflowError):
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _is_recent_timestamp(value: str | None, generated_at: datetime, *, max_age_hours: int) -> bool:
+    if not value:
+        return False
+    try:
+        observed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return timedelta(0) <= generated_at - observed <= timedelta(hours=max_age_hours)
 
 
 def _xml_text(item: ElementTree.Element, tag: str) -> str:
@@ -1354,6 +1565,8 @@ def _envelope(
             {"source_key": "gdelt", "policy_version": 1},
             {"source_key": "google_news_rss", "policy_version": 1},
             {"source_key": "yahoo_finance_rss", "policy_version": 1},
+            {"source_key": "yahoo_finance_delayed_quote", "policy_version": 1},
+            {"source_key": "stooq_delayed_quote", "policy_version": 1},
             {"source_key": "bis", "policy_version": 1},
             {"source_key": "who", "policy_version": 1},
             {"source_key": "cdc", "policy_version": 1},
@@ -2333,13 +2546,14 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             _format_metric_value(series["value"], decimals),
             source,
             _actual_delay_label(locale, source_label, series["date"]),
-            "fresh",
+            _observation_freshness(str(series["date"]), generated_at),
             unit,
             f"{FRED_SERIES_BASE_URL}/{series_id}",
             series["points"],
             "active",
             next_event,
             refresh_seconds,
+            _observation_updated_at(str(series["date"])),
         )
 
     def mof_jgb_tile(
@@ -2378,13 +2592,14 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             _format_metric_value(series["value"], 2),
             "Japan MOF JGB yield curve",
             _actual_delay_label(locale, f"MOF {term} JGB", series["date"]),
-            "fresh",
+            _observation_freshness(str(series["date"]), generated_at),
             "%",
             MOF_JGB_PAGE_URL,
             series["points"],
             "active",
             next_event,
             refresh_seconds,
+            _observation_updated_at(str(series["date"])),
         )
 
     def krx_tile(
@@ -2439,13 +2654,81 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             _format_metric_value(series["value"], decimals),
             source,
             _actual_delay_label(locale, source, series["date"]),
-            "fresh",
+            _observation_freshness(str(series["date"]), generated_at),
             unit,
             source_url,
             series["points"],
             "active",
             None,
             refresh_seconds,
+            _observation_updated_at(str(series["date"])),
+        )
+
+    def market_quote_tile(
+        key: str,
+        label_en: str,
+        label_ko: str,
+        *,
+        yahoo_symbol: str | None = None,
+        stooq_symbol: str | None = None,
+        source_name: str,
+        unit: str | None = None,
+        decimals: int = 2,
+        refresh_seconds: int = 900,
+    ) -> dict[str, Any]:
+        series = _yahoo_chart_series(yahoo_symbol) if yahoo_symbol else None
+        if not series and stooq_symbol:
+            series = _stooq_quote_series(stooq_symbol)
+        source_url = str(series.get("source_url") or "") if series else None
+        if not series:
+            return coverage_gap_tile(
+                key,
+                label_en,
+                label_ko,
+                source_name,
+                f"{source_name} quote unavailable during snapshot build; stale FRED replacement is intentionally blocked for this time-sensitive tile",
+                f"스냅샷 생성 중 {source_name} 시세를 사용할 수 없어, 시간 민감 항목에 오래된 FRED 대체값을 사용하지 않았습니다.",
+                unit,
+                source_url,
+                refresh_seconds,
+            )
+        payload = tile(
+            key,
+            label_en,
+            label_ko,
+            _format_metric_value(float(series["value"]), decimals),
+            source_name,
+            _t(
+                locale,
+                f"{source_name} delayed quote observed at {series['updated_at']}",
+                f"{source_name} 지연 시세 관측 {series['updated_at']}",
+            ),
+            _observation_freshness(str(series["date"]), generated_at, max_age_days=2),
+            unit,
+            source_url,
+            series.get("points"),
+            "active",
+            None,
+            refresh_seconds,
+            str(series["updated_at"]),
+        )
+        if series.get("change") is not None:
+            payload["refresh_delta"] = series["change"]
+        if series.get("percent_change") is not None:
+            payload["refresh_delta_percent"] = series["percent_change"]
+        return payload
+
+    def boj_policy_rate_tile() -> dict[str, Any]:
+        return coverage_gap_tile(
+            "japan_policy_rate",
+            "BoJ policy rate",
+            "일본은행 정책금리",
+            "Bank of Japan official releases",
+            "Stale FRED/OECD monthly BoJ policy-rate data is blocked; wire an official current BoJ rate feed before displaying this tile.",
+            "오래된 FRED/OECD 월간 일본은행 정책금리 데이터는 차단했습니다. 이 항목을 표시하려면 일본은행 공식 현재 금리 출처 연결이 필요합니다.",
+            "%",
+            OFFICIAL_POLICY_CALENDAR_URLS["bank_of_japan"],
+            43200,
         )
 
     def ewy_korea_proxy_tile() -> dict[str, Any]:
@@ -2489,6 +2772,27 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         return payload
 
     def korea_equity_tiles() -> list[dict[str, Any]]:
+        direct_tiles = [
+            market_quote_tile(
+                "kospi",
+                "KOSPI",
+                "코스피",
+                yahoo_symbol="^KS11",
+                stooq_symbol="^kospi",
+                source_name="Yahoo/Stooq delayed quote",
+            ),
+            market_quote_tile(
+                "kodex_200",
+                "KODEX 200 ETF",
+                "KODEX 200 ETF",
+                yahoo_symbol="069500.KS",
+                source_name="Yahoo Finance delayed quote",
+                unit="KRW",
+                decimals=0,
+            ),
+        ]
+        if all(tile.get("coverage_status") == "active" for tile in direct_tiles):
+            return direct_tiles
         krx_tiles = [
             krx_tile(
                 "krx_300",
@@ -2534,7 +2838,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             source,
             _unsupported_delay_label(locale, reason_en, reason_ko),
             "watch",
-            None,
+            unit,
             source_url,
             None,
             "coverage_gap",
@@ -2589,50 +2893,56 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         )
 
     return [
-        fred_tile(
+        market_quote_tile(
             "nasdaq_composite",
             "Nasdaq Composite",
             "나스닥 종합",
-            "NASDAQCOM",
-            "FRED / Nasdaq",
-            "FRED NASDAQCOM",
+            yahoo_symbol="^IXIC",
+            source_name="Yahoo Finance delayed quote",
         ),
-        fred_tile(
+        market_quote_tile(
             "nasdaq_100",
             "Nasdaq 100",
             "나스닥 100",
-            "NASDAQ100",
-            "FRED / Nasdaq",
-            "FRED NASDAQ100",
-        ),
-        fred_tile(
-            "kospi",
-            "Korea share price index",
-            "한국 주가지수",
-            "SPASTT01KRM661N",
-            "FRED / OECD Korea share prices",
-            "FRED SPASTT01KRM661N",
+            yahoo_symbol="^NDX",
+            stooq_symbol="^ndx",
+            source_name="Yahoo/Stooq delayed quote",
         ),
         *korea_equity_tiles(),
-        fred_tile("wti_crude", "WTI crude oil", "WTI 원유", "DCOILWTICO", "FRED / EIA", "FRED DCOILWTICO", "$", 2),
-        fred_tile("vix", "VIX", "VIX", "VIXCLS", "FRED / Cboe", "FRED VIXCLS"),
-        fred_tile("usd_krw", "USD/KRW", "달러/원", "DEXKOUS", "FRED / Federal Reserve H.10", "FRED DEXKOUS", "KRW", 2),
-        fred_tile("usd_jpy", "USD/JPY", "달러/엔", "DEXJPUS", "FRED / Federal Reserve H.10", "FRED DEXJPUS", "JPY", 2),
+        market_quote_tile(
+            "wti_crude",
+            "WTI crude oil futures",
+            "WTI 원유 선물",
+            yahoo_symbol="CL=F",
+            stooq_symbol="cl.f",
+            source_name="Yahoo/Stooq delayed futures quote",
+            unit="$",
+            decimals=2,
+        ),
+        market_quote_tile("vix", "VIX", "VIX", yahoo_symbol="^VIX", source_name="Yahoo Finance delayed quote"),
+        market_quote_tile(
+            "usd_krw",
+            "USD/KRW",
+            "달러/원",
+            yahoo_symbol="KRW=X",
+            source_name="Yahoo Finance delayed FX quote",
+            unit="KRW",
+            decimals=2,
+        ),
+        market_quote_tile(
+            "usd_jpy",
+            "USD/JPY",
+            "달러/엔",
+            yahoo_symbol="JPY=X",
+            source_name="Yahoo Finance delayed FX quote",
+            unit="JPY",
+            decimals=2,
+        ),
         fred_tile("us_2y", "US Treasury 2Y", "미국 국채 2년", "DGS2", "FRED / US Treasury", "FRED DGS2", "%", 2, rate_event("us")),
         fred_tile("us_3y", "US Treasury 3Y", "미국 국채 3년", "DGS3", "FRED / US Treasury", "FRED DGS3", "%", 2, rate_event("us")),
         fred_tile("us_5y", "US Treasury 5Y", "미국 국채 5년", "DGS5", "FRED / US Treasury", "FRED DGS5", "%", 2, rate_event("us")),
         fred_tile("us_10y", "US Treasury 10Y", "미국 국채 10년", "DGS10", "FRED / US Treasury", "FRED DGS10", "%", 2, rate_event("us")),
-        fred_tile(
-            "japan_policy_rate",
-            "BoJ policy rate",
-            "일본은행 정책금리",
-            "IRSTCB01JPM156N",
-            "FRED / OECD Japan central bank rate",
-            "FRED IRSTCB01JPM156N",
-            "%",
-            2,
-            rate_event("japan"),
-        ),
+        boj_policy_rate_tile(),
         mof_jgb_tile("japan_2y", "Japan govt 2Y", "일본 국채 2년", "2Y", rate_event("japan")),
         mof_jgb_tile("japan_5y", "Japan govt 5Y", "일본 국채 5년", "5Y", rate_event("japan")),
         mof_jgb_tile(
@@ -2662,6 +2972,7 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
         severity: str = "medium",
         freshness: str = "watch",
         source_url: str | None = None,
+        updated_at: str | None = None,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "key": f"{lane_key}_{key}",
@@ -2671,7 +2982,7 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
             "source": source,
             "freshness": freshness,
             "severity": severity,
-            "updated_at": updated,
+            "updated_at": updated_at or updated,
         }
         if source_url:
             payload["source_url"] = source_url
@@ -2694,6 +3005,7 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
         )
     )
     summary_status = _t(locale, "ready", "준비됨") if ai_summary_ready else _t(locale, "local LLM needed", "로컬 LLM 필요")
+    news_max_age_hours = 24
     news_queries = [
         (
             "geopolitical",
@@ -2711,7 +3023,7 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
     ]
     market_news_items: list[dict[str, Any]] = []
     for query_key, label_en, label_ko, query in news_queries:
-        for article in _gdelt_articles(query, maxrecords=4):
+        for article in _gdelt_articles(query, maxrecords=8, generated_at=generated_at, max_age_hours=news_max_age_hours):
             seen = article["seen_date"][:8]
             market_news_items.append(
                 item(
@@ -2726,6 +3038,7 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
                     "high" if query_key == "geopolitical" else "medium",
                     "fresh",
                     article["url"],
+                    article.get("seen_at") or None,
                 )
             )
     ticker_watchlist = ",".join(_symbol_list(env.get("NEWS_TICKER_WATCHLIST") or DEFAULT_NEWS_TICKERS))
@@ -2736,7 +3049,7 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
             "Geopolitical market risk",
             "지정학 시장 리스크",
             "Google News RSS",
-            f"{GOOGLE_NEWS_RSS_URL}?{parse.urlencode({'q': 'Iran OR Hormuz OR Taiwan export controls oil markets', 'hl': 'en-US', 'gl': 'US', 'ceid': 'US:en'})}",
+            f"{GOOGLE_NEWS_RSS_URL}?{parse.urlencode({'q': '(Iran OR Hormuz OR Taiwan OR \"Red Sea\") (oil OR shipping OR markets) when:1d', 'hl': 'en-US', 'gl': 'US', 'ceid': 'US:en'})}",
             "high",
         ),
         (
@@ -2750,7 +3063,7 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
     ]
     seen_news_urls = {str(item.get("source_url") or "") for item in market_news_items}
     for source_key, label_en, label_ko, source_name, url, severity in rss_sources:
-        for article in _rss_articles(url, cache_key=source_key, maxrecords=4):
+        for article in _rss_articles(url, cache_key=source_key, maxrecords=8, generated_at=generated_at, max_age_hours=news_max_age_hours):
             if article["url"] in seen_news_urls:
                 continue
             seen_news_urls.add(article["url"])
@@ -2767,6 +3080,7 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
                     severity,
                     "fresh",
                     article["url"],
+                    article.get("seen_at") or None,
                 )
             )
     if not market_news_items:
@@ -2778,8 +3092,8 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
                 "Breaking-news watchlist",
                 "속보 워치리스트",
                 _t(locale, "watch", "감시"),
-                "GDELT and public RSS metadata are queried for geopolitical shocks and tracked ticker headlines when snapshots build.",
-                "스냅샷 빌드 시 GDELT와 공개 RSS 메타데이터로 지정학 충격 및 추적 티커 헤드라인을 조회합니다.",
+                "No max-24h breaking headlines passed the recency gate during this snapshot build.",
+                "이번 스냅샷 빌드에서 최대 24시간 이내 속보 헤드라인이 통과하지 못했습니다.",
                 "GDELT/RSS",
                 "high",
                 "watch",
@@ -2978,8 +3292,8 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
             ),
             "value": _t(locale, f"{market_news_article_count} headlines", f"헤드라인 {market_news_article_count}개")
             if market_news_article_count
-            else _t(locale, "watchlist ready", "워치리스트 준비"),
-            "cadence": _t(locale, "5-minute target for breaking-news metadata; source pages remain one click away.", "속보 메타데이터 5분 목표; 원문은 한 번의 클릭으로 이동합니다."),
+            else _t(locale, "no current headlines", "현재 속보 없음"),
+            "cadence": _t(locale, "5-minute target; only max-24h headlines are shown as breaking.", "5분 목표; 최대 24시간 이내 헤드라인만 속보로 표시합니다."),
             "source": "GDELT Doc API",
             "source_url": "https://www.gdeltproject.org/",
             "freshness": "fresh" if market_news_article_count else "watch",
@@ -3141,7 +3455,7 @@ def _source_status() -> dict[str, Any]:
             ready = all(_env_has(env, key) for key in keys)
         return ("ready", None) if ready else ("missing_credentials", warning)
 
-    fred_status, fred_warning = status_for("FRED_API_KEY", "FRED_API_KEY required for live ingest")
+    fred_status, fred_warning = status_for("FRED_API_KEY", "FRED_API_KEY required for non-realtime daily reference series only")
     bls_status, bls_warning = status_for("BLS_API_KEY", "BLS_API_KEY enables higher-limit BLS ingest")
     eia_status, eia_warning = status_for("EIA_API_KEY", "EIA_API_KEY required for live ingest")
     sec_user_agent = env.get("SEC_USER_AGENT", "")
@@ -3188,6 +3502,8 @@ def _source_status() -> dict[str, Any]:
         ("finnhub", "market_data", finnhub_status, "FREE_ONLY", finnhub_warning),
         ("nasdaq_data_link", "market_data", nasdaq_status, "FREE_ONLY", nasdaq_warning),
         ("krx_open_api", "official_api", krx_status, "FREE_ONLY", krx_warning),
+        ("yahoo_finance_delayed_quote", "market_data", "ready", "FREE_ONLY", "Fallback for time-sensitive quote tiles when official/FRED series are stale; not treated as licensed realtime tape"),
+        ("stooq_delayed_quote", "market_data", "ready", "FREE_ONLY", "Fallback for delayed index/futures quote tiles; not treated as licensed realtime tape"),
         ("japan_mof_jgb_csv", "official_csv", "ready", "FREE_ONLY", None),
         ("finra", "official_api", finra_status, "FREE_ONLY", finra_warning),
         ("gdelt", "news_metadata", "ready", "FREE_ONLY", None),

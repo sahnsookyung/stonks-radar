@@ -10,6 +10,7 @@ export const marketOrder = [
   "nasdaq_composite",
   "nasdaq_100",
   "kospi",
+  "kodex_200",
   "krx_300",
   "krx_300_it",
   "ewy_korea_proxy",

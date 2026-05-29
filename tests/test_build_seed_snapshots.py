@@ -153,6 +153,8 @@ def test_macro_tiles_derive_korea_indices_from_krx_index_service(monkeypatch):
     monkeypatch.setattr(build_seed_snapshots, "_web_metadata", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_payload", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_summary", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_yahoo_chart_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_stooq_quote_series", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         build_seed_snapshots,
         "_fred_series",
@@ -208,6 +210,8 @@ def test_macro_tiles_use_ewy_proxy_when_krx_is_unavailable(monkeypatch):
     monkeypatch.setattr(build_seed_snapshots, "_web_metadata", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_payload", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_summary", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_yahoo_chart_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_stooq_quote_series", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         build_seed_snapshots,
         "_fred_series",
@@ -250,6 +254,30 @@ def test_macro_tiles_use_ewy_proxy_when_krx_is_unavailable(monkeypatch):
     assert "krx_300_it" not in by_key
 
 
+def test_macro_tiles_prefer_current_kospi_and_kodex_quotes(monkeypatch):
+    build_seed_snapshots._reset_runtime_caches()
+    monkeypatch.setattr(build_seed_snapshots, "_web_metadata", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_payload", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_summary", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_fred_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_mof_jgb_series", lambda *_args, **_kwargs: None)
+    values = {
+        "^KS11": {"date": "2026-05-29", "value": 8476.15, "updated_at": "2026-05-29T09:05:40Z", "points": [{"date": "2026-05-29T09:04:00Z", "value": 8460.0}, {"date": "2026-05-29T09:05:40Z", "value": 8476.15}], "change": 290.86, "source_url": "https://finance.yahoo.com/quote/%5EKS11"},
+        "069500.KS": {"date": "2026-05-29", "value": 134815.0, "updated_at": "2026-05-29T06:30:07Z", "points": [{"date": "2026-05-29T06:29:00Z", "value": 134000.0}, {"date": "2026-05-29T06:30:07Z", "value": 134815.0}], "change": 4825.0, "source_url": "https://finance.yahoo.com/quote/069500.KS"},
+    }
+    monkeypatch.setattr(build_seed_snapshots, "_yahoo_chart_series", lambda symbol: values.get(symbol))
+    monkeypatch.setattr(build_seed_snapshots, "_stooq_quote_series", lambda *_args, **_kwargs: None)
+
+    tiles = build_seed_snapshots._macro_tiles("en", datetime(2026, 5, 29, 12, tzinfo=timezone.utc))
+    by_key = {tile["key"]: tile for tile in tiles}
+
+    assert by_key["kospi"]["value"] == "8,476.15"
+    assert by_key["kospi"]["updated_at"] == "2026-05-29T09:05:40Z"
+    assert by_key["kodex_200"]["value"] == "134,815"
+    assert by_key["kodex_200"]["refresh_delta"] == 4825.0
+    assert "FRED" not in by_key["kospi"]["source"]
+
+
 def test_ishares_metric_parses_embedded_fund_metric():
     html = (
         '{"navAmount":{"active":true,"asOfDate":20260526,'
@@ -285,6 +313,8 @@ def test_build_snapshots_writes_news_seed_snapshots(tmp_path, monkeypatch):
     monkeypatch.setattr(build_seed_snapshots, "_fred_series", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_mof_jgb_series", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_ishares_ewy_nav_series", lambda: None)
+    monkeypatch.setattr(build_seed_snapshots, "_yahoo_chart_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_stooq_quote_series", lambda *_args, **_kwargs: None)
 
     build_seed_snapshots.build_snapshots()
 
