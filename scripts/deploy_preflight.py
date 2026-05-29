@@ -12,8 +12,8 @@ except ModuleNotFoundError:  # pragma: no cover - supports pytest namespace impo
     from scripts.verify_free_tiers import _build_report
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_REQUIRED_PROVIDER_COVERAGE = ("fred_macro_pulse", "krx_korea_pulse", "finra_shorts")
-DEFAULT_REQUIRED_SOURCE_HEALTH = ("fred", "korea_market_data")
+DEFAULT_REQUIRED_PROVIDER_COVERAGE = ("delayed_market_pulse", "krx_korea_pulse", "finra_shorts")
+DEFAULT_REQUIRED_SOURCE_HEALTH = ("treasury_xml_feed", "korea_market_data")
 
 
 def main() -> None:

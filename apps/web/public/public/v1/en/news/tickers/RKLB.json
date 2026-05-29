@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-28T07:32:34Z",
-  "stale_after": "2026-05-28T19:32:34Z",
-  "hard_expires_at": "2026-06-04T07:32:34Z",
+  "generated_at": "2026-05-29T15:26:56Z",
+  "stale_after": "2026-05-30T03:26:56Z",
+  "hard_expires_at": "2026-06-05T15:26:56Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_RKLB",
-  "content_hash": "sha256:61cbb8372d73293d5e38e296da626e935affd688e9437569f01a1dd4c2ff25a9",
+  "content_hash": "sha256:aa72a49f04530cd5d73a7372296f31aef556b318ffd54c90bb56339fd41752e0",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -35,6 +35,30 @@
     },
     {
       "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "stooq_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "treasury_xml_feed",
+      "policy_version": 1
+    },
+    {
+      "source_key": "krx_open_api",
+      "policy_version": 1
+    },
+    {
+      "source_key": "data_go_kr",
+      "policy_version": 1
+    },
+    {
+      "source_key": "japan_mof_jgb_csv",
       "policy_version": 1
     },
     {
@@ -88,18 +112,18 @@
   ],
   "data": {
     "symbol": "RKLB",
-    "name": "Rocket Lab USA",
-    "generated_label": "2026-05-28T07:32:34Z",
-    "summary": "Rocket Lab USA has 1 approved, source-linked news event(s) in the public snapshot.",
+    "name": "Rocket Lab USA, Inc.",
+    "generated_label": "2026-05-29T15:26:56Z",
+    "summary": "Rocket Lab USA, Inc. has 1 approved, source-linked news event(s) in the public snapshot.",
     "events": [
       {
         "id": "rklb_launch_window_seed",
         "title": "Rocket Lab launch-window monitoring is linked to source evidence for RKLB",
         "summary": "Company and filing sources are grouped into a ticker-specific event for Rocket Lab launch-cadence monitoring.",
         "event_type": "company_update",
-        "first_seen_at": "2026-05-27T13:32:34Z",
-        "last_seen_at": "2026-05-28T07:32:34Z",
-        "published_at": "2026-05-28T07:32:34Z",
+        "first_seen_at": "2026-05-28T21:26:56Z",
+        "last_seen_at": "2026-05-29T15:26:56Z",
+        "published_at": "2026-05-29T15:26:56Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.8,
@@ -109,7 +133,7 @@
         "tickers": [
           {
             "symbol": "RKLB",
-            "name": "Rocket Lab USA",
+            "name": "Rocket Lab USA, Inc.",
             "exchange": "NASDAQ",
             "relationship": "direct_subject",
             "confidence": 0.92
@@ -155,7 +179,7 @@
             "source_key": "rocket_lab_ir",
             "policy_version": 1,
             "title": "Rocket Lab updates",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -165,7 +189,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "Rocket Lab SEC filings",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           }

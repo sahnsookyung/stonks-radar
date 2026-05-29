@@ -76,7 +76,7 @@ def test_deploy_preflight_requires_market_pulse_coverage_by_default(monkeypatch)
     monkeypatch.delenv("DEPLOY_REQUIRED_PROVIDER_COVERAGE", raising=False)
     report = {
         "coverage": {
-            "fred_macro_pulse": {"status": "configured"},
+            "delayed_market_pulse": {"status": "configured"},
             "krx_korea_pulse": {"status": "missing", "required_any": ["KRX_OPEN_API_AUTH_KEY"]},
             "finra_shorts": {
                 "status": "missing",
@@ -98,10 +98,10 @@ def test_deploy_preflight_provider_coverage_gate_can_be_relaxed(monkeypatch) -> 
     assert deploy_preflight._provider_coverage_failures({"coverage": {}}) == []
 
 
-def test_deploy_preflight_verifies_fred_and_krx_source_health_by_default(monkeypatch) -> None:
+def test_deploy_preflight_verifies_treasury_and_korea_source_health_by_default(monkeypatch) -> None:
     monkeypatch.delenv("DEPLOY_REQUIRED_SOURCE_HEALTH", raising=False)
 
-    assert deploy_preflight._required_source_health_sources() == ["fred", "korea_market_data"]
+    assert deploy_preflight._required_source_health_sources() == ["treasury_xml_feed", "korea_market_data"]
 
 
 def test_deploy_preflight_source_health_gate_can_be_relaxed(monkeypatch) -> None:

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-28T07:32:34Z",
-  "stale_after": "2026-05-28T19:32:34Z",
-  "hard_expires_at": "2026-06-04T07:32:34Z",
+  "generated_at": "2026-05-29T15:26:56Z",
+  "stale_after": "2026-05-30T03:26:56Z",
+  "hard_expires_at": "2026-06-05T15:26:56Z",
   "object_type": "map_events",
   "object_key": "events",
-  "content_hash": "sha256:11c776e81242685ab00fd0f8db26758e7c68b6f333c59af3a97e981eb50d8faf",
+  "content_hash": "sha256:e4332281257fdf26fa9b4c0e5793d894e17a979c9d8679a3ccca695488c2744e",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -35,6 +35,30 @@
     },
     {
       "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "stooq_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "treasury_xml_feed",
+      "policy_version": 1
+    },
+    {
+      "source_key": "krx_open_api",
+      "policy_version": 1
+    },
+    {
+      "source_key": "data_go_kr",
+      "policy_version": 1
+    },
+    {
+      "source_key": "japan_mof_jgb_csv",
       "policy_version": 1
     },
     {
@@ -93,8 +117,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-28T07:32:34Z",
-        "published_at": "2026-05-28T07:32:34Z",
+        "occurred_at": "2026-05-29T15:26:56Z",
+        "published_at": "2026-05-29T15:26:56Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -136,8 +160,8 @@
         "title": "Energy inventory calendar is active for oil supply monitoring",
         "summary": "EIA-linked inventory releases are tracked as official structured data before publication.",
         "why_it_matters": "Inventory surprises can affect energy equities, inflation inputs, and geopolitical risk interpretation.",
-        "occurred_at": "2026-05-28T07:32:34Z",
-        "published_at": "2026-05-28T07:32:34Z",
+        "occurred_at": "2026-05-29T15:26:56Z",
+        "published_at": "2026-05-29T15:26:56Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -174,8 +198,8 @@
         "title": "Central-bank calendar coverage seeded across six policy committees",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
         "why_it_matters": "Calendar visibility reduces silent coverage gaps and makes stale policy data visible.",
-        "occurred_at": "2026-05-28T07:32:34Z",
-        "published_at": "2026-05-28T07:32:34Z",
+        "occurred_at": "2026-05-29T15:26:56Z",
+        "published_at": "2026-05-29T15:26:56Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",

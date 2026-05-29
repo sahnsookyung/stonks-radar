@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-28T07:32:34Z",
-  "stale_after": "2026-05-28T19:32:34Z",
-  "hard_expires_at": "2026-06-04T07:32:34Z",
+  "generated_at": "2026-05-29T15:26:56Z",
+  "stale_after": "2026-05-30T03:26:56Z",
+  "hard_expires_at": "2026-06-05T15:26:56Z",
   "object_type": "news_topic",
   "object_key": "news_topic_energy",
-  "content_hash": "sha256:51b3a039298e5449810baf8ac332eab193b0a2bd1591d013faf17082b4c8acf8",
+  "content_hash": "sha256:2d2496266205a9ee259c3e80619df2a23a810d1e2fd5972d880c9062244a5248",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -35,6 +35,30 @@
     },
     {
       "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "stooq_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "treasury_xml_feed",
+      "policy_version": 1
+    },
+    {
+      "source_key": "krx_open_api",
+      "policy_version": 1
+    },
+    {
+      "source_key": "data_go_kr",
+      "policy_version": 1
+    },
+    {
+      "source_key": "japan_mof_jgb_csv",
       "policy_version": 1
     },
     {
@@ -89,7 +113,7 @@
   "data": {
     "key": "energy",
     "label": "에너지",
-    "generated_label": "2026-05-28T07:32:34Z",
+    "generated_label": "2026-05-29T15:26:56Z",
     "topic_brief": "에너지에는 출처 연결 공개 메타데이터에서 만든 승인 이벤트 클러스터 1건이 포함됩니다.",
     "events": [
       {
@@ -97,9 +121,9 @@
         "title": "에너지 공급 리스크 워치가 해상 요충지, 재고, 인플레이션 민감 시장을 연결",
         "summary": "공식 에너지 데이터와 검토된 지정학 맥락을 미국, 유럽, 중국, 한국, 일본, 브라질에 영향을 줄 수 있는 공급 리스크 이벤트로 묶습니다.",
         "event_type": "geopolitical_supply_risk",
-        "first_seen_at": "2026-05-26T07:32:34Z",
-        "last_seen_at": "2026-05-28T07:32:34Z",
-        "published_at": "2026-05-28T07:32:34Z",
+        "first_seen_at": "2026-05-27T15:26:56Z",
+        "last_seen_at": "2026-05-29T15:26:56Z",
+        "published_at": "2026-05-29T15:26:56Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.72,
@@ -170,7 +194,7 @@
             "source_key": "eia",
             "policy_version": 1,
             "title": "주간 석유 현황 보고서",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -180,7 +204,7 @@
             "source_key": "iea",
             "policy_version": 1,
             "title": "석유 시장 보고서",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           },
@@ -190,7 +214,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "공식 에너지 데이터 맥락",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }

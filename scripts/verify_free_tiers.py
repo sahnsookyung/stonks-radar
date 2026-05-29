@@ -19,7 +19,7 @@ DEFAULT_PROVIDER_ENV_FILES = (
 _LOADED_PROVIDER_ENV_FILES: list[str] | None = None
 
 PROVIDERS = {
-    "FRED_API_KEY": "FRED live ingest",
+    "FRED_API_KEY": "FRED non-realtime reference ingest",
     "BLS_API_KEY": "BLS higher-limit ingest",
     "EIA_API_KEY": "EIA live ingest",
     "MARKET_DATA_API_KEY": "licensed market-data ingest",
@@ -55,9 +55,9 @@ OCI_ALWAYS_FREE_LIMITS = {
 TERMINAL_STATES = {"TERMINATED", "TERMINATING"}
 
 PROVIDER_COVERAGE_GROUPS = {
-    "fred_macro_pulse": {
-        "required_any": ("FRED_API_KEY",),
-        "description": "FRED-backed macro, rates, volatility, FX, and commodity pulse tiles",
+    "delayed_market_pulse": {
+        "required_any": ("ALWAYS_FREE_PUBLIC_HTTP",),
+        "description": "Always-free delayed quote fallbacks for market-pulse tiles; FRED is not used for time-sensitive values",
     },
     "krx_korea_pulse": {
         "required_any": (
@@ -323,7 +323,9 @@ def _oci_capacity() -> dict[str, Any]:
 
 def _provider_status() -> dict[str, str]:
     _load_provider_env_files()
-    return {env_name: "configured" if os.getenv(env_name) else "missing" for env_name in PROVIDERS}
+    status = {env_name: "configured" if os.getenv(env_name) else "missing" for env_name in PROVIDERS}
+    status["ALWAYS_FREE_PUBLIC_HTTP"] = "configured"
+    return status
 
 
 def _coverage_status() -> dict[str, dict[str, Any]]:
@@ -332,7 +334,7 @@ def _coverage_status() -> dict[str, dict[str, Any]]:
     for name, spec in PROVIDER_COVERAGE_GROUPS.items():
         required_any = spec.get("required_any", ())
         required_groups_any = spec.get("required_groups_any", ())
-        satisfied_by_any = [key for key in required_any if os.getenv(key)]
+        satisfied_by_any = [key for key in required_any if key == "ALWAYS_FREE_PUBLIC_HTTP" or os.getenv(key)]
         satisfied_by_group = [
             list(group) for group in required_groups_any if all(os.getenv(key) for key in group)
         ]
@@ -344,7 +346,7 @@ def _coverage_status() -> dict[str, dict[str, Any]]:
             "required_groups_any": [list(group) for group in required_groups_any],
             "satisfied_by_any": satisfied_by_any,
             "satisfied_by_group": satisfied_by_group,
-            "missing_any": [] if configured else [key for key in required_any if not os.getenv(key)],
+            "missing_any": [] if configured else [key for key in required_any if key != "ALWAYS_FREE_PUBLIC_HTTP" and not os.getenv(key)],
             "missing_groups_any": []
             if configured
             else [

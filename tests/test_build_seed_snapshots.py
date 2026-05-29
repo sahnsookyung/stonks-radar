@@ -15,12 +15,12 @@ def test_preserve_previous_active_macro_tile_when_refresh_source_is_unavailable(
                 "data": {
                     "macro_tiles": [
                         {
-                            "key": "nasdaq_composite",
-                            "label": "Nasdaq Composite",
-                            "value": "26,343.97",
-                            "source": "FRED / Nasdaq",
+                            "key": "us_2y",
+                            "label": "US Treasury 2Y",
+                            "value": "4.03",
+                            "source": "U.S. Treasury XML feed",
                             "freshness": "fresh",
-                            "delay_label": "FRED NASDAQCOM actual through 2026-05-22",
+                            "delay_label": "Treasury 2Y actual through 2026-05-22",
                             "updated_at": "2026-05-26T01:00:50Z",
                             "coverage_status": "active",
                             "refresh_seconds": 900,
@@ -36,12 +36,12 @@ def test_preserve_previous_active_macro_tile_when_refresh_source_is_unavailable(
         "en",
         [
             {
-                "key": "nasdaq_composite",
-                "label": "Nasdaq Composite",
+                "key": "us_2y",
+                "label": "US Treasury 2Y",
                 "value": "Source gap",
-                "source": "FRED / Nasdaq",
+                "source": "U.S. Treasury XML feed",
                 "freshness": "watch",
-                "delay_label": "FRED_API_KEY missing",
+                "delay_label": "Treasury XML feed unavailable",
                 "updated_at": "2026-05-27T00:00:00Z",
                 "coverage_status": "coverage_gap",
                 "refresh_seconds": 900,
@@ -49,11 +49,54 @@ def test_preserve_previous_active_macro_tile_when_refresh_source_is_unavailable(
         ],
     )
 
-    assert tile["value"] == "26,343.97"
+    assert tile["value"] == "4.03"
     assert tile["freshness"] == "watch"
     assert tile["coverage_status"] == "active"
     assert tile["updated_at"] == "2026-05-26T01:00:50Z"
     assert "Using last published value" in tile["delay_label"]
+
+
+def test_preserve_previous_active_macro_tile_blocks_time_sensitive_fallback(tmp_path, monkeypatch):
+    home_path = tmp_path / "v1" / "en" / "home.json"
+    home_path.parent.mkdir(parents=True)
+    home_path.write_text(
+        json.dumps(
+            {
+                "data": {
+                    "macro_tiles": [
+                        {
+                            "key": "wti_crude",
+                            "label": "WTI crude oil futures",
+                            "value": "97.63",
+                            "source": "FRED / EIA",
+                            "freshness": "fresh",
+                            "delay_label": "stale old source",
+                            "updated_at": "2026-05-26T21:00:00Z",
+                            "coverage_status": "active",
+                            "refresh_seconds": 900,
+                        }
+                    ]
+                }
+            }
+        )
+    )
+    monkeypatch.setattr(build_seed_snapshots, "PUBLIC_ROOT", tmp_path)
+
+    [tile] = build_seed_snapshots._preserve_previous_active_macro_tiles(
+        "en",
+        [
+            {
+                "key": "wti_crude",
+                "value": "Source gap",
+                "freshness": "watch",
+                "coverage_status": "coverage_gap",
+                "delay_label": "current quote unavailable",
+            }
+        ],
+    )
+
+    assert tile["value"] == "Source gap"
+    assert tile["coverage_status"] == "coverage_gap"
 
 
 def test_preserve_previous_active_macro_tile_does_not_keep_previous_gap(tmp_path, monkeypatch):
@@ -155,6 +198,7 @@ def test_macro_tiles_derive_korea_indices_from_krx_index_service(monkeypatch):
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_summary", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_yahoo_chart_series", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_stooq_quote_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_treasury_yield_curve_series", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         build_seed_snapshots,
         "_fred_series",
@@ -212,6 +256,7 @@ def test_macro_tiles_use_ewy_proxy_when_krx_is_unavailable(monkeypatch):
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_summary", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_yahoo_chart_series", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_stooq_quote_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_treasury_yield_curve_series", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         build_seed_snapshots,
         "_fred_series",
@@ -260,6 +305,7 @@ def test_macro_tiles_prefer_current_kospi_and_kodex_quotes(monkeypatch):
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_payload", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_summary", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_fred_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_treasury_yield_curve_series", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_mof_jgb_series", lambda *_args, **_kwargs: None)
     values = {
         "^KS11": {"date": "2026-05-29", "value": 8476.15, "updated_at": "2026-05-29T09:05:40Z", "points": [{"date": "2026-05-29T09:04:00Z", "value": 8460.0}, {"date": "2026-05-29T09:05:40Z", "value": 8476.15}], "change": 290.86, "source_url": "https://finance.yahoo.com/quote/%5EKS11"},
@@ -276,6 +322,30 @@ def test_macro_tiles_prefer_current_kospi_and_kodex_quotes(monkeypatch):
     assert by_key["kodex_200"]["value"] == "134,815"
     assert by_key["kodex_200"]["refresh_delta"] == 4825.0
     assert "FRED" not in by_key["kospi"]["source"]
+
+
+def test_macro_tiles_use_treasury_xml_for_us_rates(monkeypatch):
+    build_seed_snapshots._reset_runtime_caches()
+    monkeypatch.setattr(build_seed_snapshots, "_web_metadata", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_payload", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_summary", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_yahoo_chart_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_stooq_quote_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_mof_jgb_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        build_seed_snapshots,
+        "_treasury_yield_curve_rows",
+        lambda _generated_at: [
+            {"NEW_DATE": "2026-05-28T00:00:00", "BC_2YEAR": "4.01", "BC_3YEAR": "4.09", "BC_5YEAR": "4.17", "BC_10YEAR": "4.48"},
+        ],
+    )
+
+    tiles = build_seed_snapshots._macro_tiles("en", datetime(2026, 5, 29, 12, tzinfo=timezone.utc))
+    by_key = {tile["key"]: tile for tile in tiles}
+
+    assert by_key["us_10y"]["value"] == "4.48"
+    assert by_key["us_10y"]["source"] == "U.S. Treasury XML feed"
+    assert "FRED" not in by_key["us_10y"]["source"]
 
 
 def test_ishares_metric_parses_embedded_fund_metric():
@@ -311,6 +381,7 @@ def test_build_snapshots_writes_news_seed_snapshots(tmp_path, monkeypatch):
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_payload", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_summary", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_fred_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_treasury_yield_curve_series", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_mof_jgb_series", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_ishares_ewy_nav_series", lambda: None)
     monkeypatch.setattr(build_seed_snapshots, "_yahoo_chart_series", lambda *_args, **_kwargs: None)

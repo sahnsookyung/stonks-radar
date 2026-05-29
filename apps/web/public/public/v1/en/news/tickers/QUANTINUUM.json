@@ -1,13 +1,13 @@
 {
   "schema_version": "1.0",
   "snapshot_version": 1,
-  "locale": "ko",
+  "locale": "en",
   "generated_at": "2026-05-29T15:26:56Z",
   "stale_after": "2026-05-30T03:26:56Z",
   "hard_expires_at": "2026-06-05T15:26:56Z",
   "object_type": "news_ticker",
-  "object_key": "news_ticker_TLT",
-  "content_hash": "sha256:3e3d0d6bef6145a2b3264edc0b697c837e9a67693117f0c1fcf419bca799ea05",
+  "object_key": "news_ticker_QUANTINUUM",
+  "content_hash": "sha256:f0bc5db7b2f1f4b29d8b48d46aea724687da4fa648b7a0d4c7fbf4756abb8d71",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -111,16 +111,16 @@
     }
   ],
   "data": {
-    "symbol": "TLT",
-    "name": "아이셰어즈 장기 미국채 ETF",
+    "symbol": "QUANTINUUM",
+    "name": "Quantinuum",
     "generated_label": "2026-05-29T15:26:56Z",
-    "summary": "TLT에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
+    "summary": "No approved news events are currently linked to QUANTINUUM.",
     "events": []
   },
   "warnings": [
     {
       "code": "reference_delayed_market_data",
-      "message": "시장 지표는 라이선스가 없는 한 지연/참조 데이터입니다.",
+      "message": "Market indicators are delayed/reference unless licensed.",
       "severity": "info"
     }
   ],

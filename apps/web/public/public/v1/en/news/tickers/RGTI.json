@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-28T07:32:34Z",
-  "stale_after": "2026-05-28T19:32:34Z",
-  "hard_expires_at": "2026-06-04T07:32:34Z",
+  "generated_at": "2026-05-29T15:26:56Z",
+  "stale_after": "2026-05-30T03:26:56Z",
+  "hard_expires_at": "2026-06-05T15:26:56Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_RGTI",
-  "content_hash": "sha256:d800962c76b84476c947e68c734e1e7b58c311d8c847cf003b62c5842e33cd06",
+  "content_hash": "sha256:e3d6965ae7f95bc67f4e30840e8d1f6ac9d68b3ab6ad43b22f627618d48719e4",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -35,6 +35,30 @@
     },
     {
       "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "stooq_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "treasury_xml_feed",
+      "policy_version": 1
+    },
+    {
+      "source_key": "krx_open_api",
+      "policy_version": 1
+    },
+    {
+      "source_key": "data_go_kr",
+      "policy_version": 1
+    },
+    {
+      "source_key": "japan_mof_jgb_csv",
       "policy_version": 1
     },
     {
@@ -88,8 +112,8 @@
   ],
   "data": {
     "symbol": "RGTI",
-    "name": "Rigetti Computing",
-    "generated_label": "2026-05-28T07:32:34Z",
+    "name": "Rigetti Computing, Inc.",
+    "generated_label": "2026-05-29T15:26:56Z",
     "summary": "No approved news events are currently linked to RGTI.",
     "events": []
   },

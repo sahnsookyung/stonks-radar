@@ -49,7 +49,7 @@ def test_build_report_loads_default_production_env_file(tmp_path, monkeypatch):
     assert report["providers"]["DATA_GO_KR_SERVICE_KEY"] == "configured"
     assert report["providers"]["FINRA_API_CLIENT_ID"] == "configured"
     assert report["providers"]["FINRA_API_CLIENT_SECRET"] == "configured"
-    assert report["coverage"]["fred_macro_pulse"]["status"] == "configured"
+    assert report["coverage"]["delayed_market_pulse"]["status"] == "configured"
     assert report["coverage"]["krx_korea_pulse"]["status"] == "configured"
     assert report["coverage"]["finra_shorts"]["status"] == "configured"
     assert report["provider_env_files_loaded"] == [str(secrets_dir / "stonks-radar.production.env")]

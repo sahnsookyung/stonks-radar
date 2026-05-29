@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-28T07:32:34Z",
-  "stale_after": "2026-05-28T19:32:34Z",
-  "hard_expires_at": "2026-06-04T07:32:34Z",
+  "generated_at": "2026-05-29T15:26:56Z",
+  "stale_after": "2026-05-30T03:26:56Z",
+  "hard_expires_at": "2026-06-05T15:26:56Z",
   "object_type": "sector_page",
   "object_key": "quantum",
-  "content_hash": "sha256:9914102a1f1c54c4001cafe72d569db0580fa0dc99167fb737dc42575d88154a",
+  "content_hash": "sha256:29b2f562abae6d762b983c6f065854e108bd5c82729eeb0ba2cecf00f24caaa2",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -35,6 +35,30 @@
     },
     {
       "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "stooq_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "treasury_xml_feed",
+      "policy_version": 1
+    },
+    {
+      "source_key": "krx_open_api",
+      "policy_version": 1
+    },
+    {
+      "source_key": "data_go_kr",
+      "policy_version": 1
+    },
+    {
+      "source_key": "japan_mof_jgb_csv",
       "policy_version": 1
     },
     {
@@ -94,6 +118,7 @@
       "IONQ",
       "Rigetti",
       "D-Wave",
+      "Quantinuum (private/reference)",
       "Quantum Computing Inc.",
       "Big Tech quantum divisions"
     ],
@@ -101,7 +126,7 @@
       "IONQ reference/security metadata",
       "Rigetti reference/security metadata",
       "D-Wave reference/security metadata",
-      "Quantum Computing Inc. reference/security metadata"
+      "Quantinuum (private/reference) reference/security metadata"
     ],
     "country_region_exposure": [
       "USA",
@@ -114,8 +139,8 @@
         "title": "반도체 수출통제 모니터링 강도 유지",
         "summary": "승인된 시드 이벤트가 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
         "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다.",
-        "occurred_at": "2026-05-28T07:32:34Z",
-        "published_at": "2026-05-28T07:32:34Z",
+        "occurred_at": "2026-05-29T15:26:56Z",
+        "published_at": "2026-05-29T15:26:56Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -236,26 +261,98 @@
       {
         "key": "nasdaq_composite",
         "label": "나스닥 종합",
-        "value": "출처 공백",
-        "source": "FRED / Nasdaq",
-        "freshness": "watch",
-        "delay_label": "FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
-        "updated_at": "2026-05-28T07:32:34Z",
-        "coverage_status": "coverage_gap",
+        "value": "26,978.24",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-05-29T15:27:03Z",
+        "updated_at": "2026-05-29T15:27:03Z",
+        "coverage_status": "active",
         "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/NASDAQCOM"
+        "source_url": "https://finance.yahoo.com/quote/%5EIXIC",
+        "points": [
+          {
+            "date": "2026-05-29T13:58:00Z",
+            "value": 27081.16015625
+          },
+          {
+            "date": "2026-05-29T14:12:00Z",
+            "value": 27055.6796875
+          },
+          {
+            "date": "2026-05-29T14:26:00Z",
+            "value": 26914.375
+          },
+          {
+            "date": "2026-05-29T14:40:00Z",
+            "value": 26917.126953125
+          },
+          {
+            "date": "2026-05-29T14:54:00Z",
+            "value": 26926.265625
+          },
+          {
+            "date": "2026-05-29T15:08:00Z",
+            "value": 26978.59375
+          },
+          {
+            "date": "2026-05-29T15:22:00Z",
+            "value": 26977.2265625
+          },
+          {
+            "date": "2026-05-29T15:27:03Z",
+            "value": 26978.236328125
+          }
+        ],
+        "refresh_delta": 60.76599999999962,
+        "refresh_delta_percent": 0.22574929961842483
       },
       {
         "key": "nasdaq_100",
         "label": "나스닥 100",
-        "value": "출처 공백",
-        "source": "FRED / Nasdaq",
-        "freshness": "watch",
-        "delay_label": "FRED_API_KEY가 없거나 FRED 시리즈를 사용할 수 없습니다.",
-        "updated_at": "2026-05-28T07:32:34Z",
-        "coverage_status": "coverage_gap",
+        "value": "30,328.14",
+        "source": "Yahoo/Stooq delayed quote",
+        "freshness": "fresh",
+        "delay_label": "Yahoo/Stooq delayed quote 관측 2026-05-29T15:27:01Z",
+        "updated_at": "2026-05-29T15:27:01Z",
+        "coverage_status": "active",
         "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/NASDAQ100"
+        "source_url": "https://finance.yahoo.com/quote/%5ENDX",
+        "points": [
+          {
+            "date": "2026-05-29T13:58:00Z",
+            "value": 30447.72265625
+          },
+          {
+            "date": "2026-05-29T14:12:00Z",
+            "value": 30438.69921875
+          },
+          {
+            "date": "2026-05-29T14:26:00Z",
+            "value": 30279.810546875
+          },
+          {
+            "date": "2026-05-29T14:40:00Z",
+            "value": 30270.87109375
+          },
+          {
+            "date": "2026-05-29T14:54:00Z",
+            "value": 30279.587890625
+          },
+          {
+            "date": "2026-05-29T15:08:00Z",
+            "value": 30329.033203125
+          },
+          {
+            "date": "2026-05-29T15:22:00Z",
+            "value": 30328.48046875
+          },
+          {
+            "date": "2026-05-29T15:27:01Z",
+            "value": 30328.140625
+          }
+        ],
+        "refresh_delta": 104.2510000000002,
+        "refresh_delta_percent": 0.3449291386690846
       }
     ],
     "scenario_baskets": [

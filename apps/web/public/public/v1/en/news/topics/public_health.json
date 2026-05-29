@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-28T07:32:34Z",
-  "stale_after": "2026-05-28T19:32:34Z",
-  "hard_expires_at": "2026-06-04T07:32:34Z",
+  "generated_at": "2026-05-29T15:26:56Z",
+  "stale_after": "2026-05-30T03:26:56Z",
+  "hard_expires_at": "2026-06-05T15:26:56Z",
   "object_type": "news_topic",
   "object_key": "news_topic_public_health",
-  "content_hash": "sha256:a3633123b808b21a2084c28e6211bf2e11b5d8ca4f1b93c2278ce3f8f6ebbd4b",
+  "content_hash": "sha256:2d06e2e5b49b03fa7e5b111649139916e3034a0ba954916521d8a12a332dea40",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -35,6 +35,30 @@
     },
     {
       "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "stooq_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "treasury_xml_feed",
+      "policy_version": 1
+    },
+    {
+      "source_key": "krx_open_api",
+      "policy_version": 1
+    },
+    {
+      "source_key": "data_go_kr",
+      "policy_version": 1
+    },
+    {
+      "source_key": "japan_mof_jgb_csv",
       "policy_version": 1
     },
     {
@@ -89,7 +113,7 @@
   "data": {
     "key": "public_health",
     "label": "Public health",
-    "generated_label": "2026-05-28T07:32:34Z",
+    "generated_label": "2026-05-29T15:26:56Z",
     "topic_brief": "Public health includes 1 approved event cluster(s) built from source-linked public metadata.",
     "events": [
       {
@@ -97,9 +121,9 @@
         "title": "Public-health alert monitoring covers Brazil, US, Europe, and Asia travel-sensitive markets",
         "summary": "Official public-health feeds are classified separately from financial news and surfaced only as market-context risk.",
         "event_type": "public_health_alert",
-        "first_seen_at": "2026-05-26T07:32:34Z",
-        "last_seen_at": "2026-05-28T03:32:34Z",
-        "published_at": "2026-05-28T03:32:34Z",
+        "first_seen_at": "2026-05-27T15:26:56Z",
+        "last_seen_at": "2026-05-29T11:26:56Z",
+        "published_at": "2026-05-29T11:26:56Z",
         "freshness": "watch",
         "severity": "medium",
         "confidence": 0.74,
@@ -159,7 +183,7 @@
             "source_key": "who",
             "policy_version": 1,
             "title": "Disease Outbreak News",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -169,7 +193,7 @@
             "source_key": "cdc",
             "policy_version": 1,
             "title": "Travel health notices",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": false
           }

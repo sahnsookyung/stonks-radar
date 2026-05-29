@@ -136,6 +136,11 @@ SOURCES: dict[str, SourceProbe] = {
         "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
         expect=_status_200,
     ),
+    "treasury_xml_feed": SourceProbe(
+        "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml",
+        params={"data": "daily_treasury_yield_curve", "field_tdr_date_value": "2026"},
+        expect=_html_contains("DailyTreasuryYieldCurveRateData", "BC_10YEAR"),
+    ),
     "sec_edgar": SourceProbe(
         "https://data.sec.gov/submissions/CIK0000320193.json",
         expect=_json_has("cik"),

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-28T07:32:34Z",
-  "stale_after": "2026-05-28T19:32:34Z",
-  "hard_expires_at": "2026-06-04T07:32:34Z",
+  "generated_at": "2026-05-29T15:26:56Z",
+  "stale_after": "2026-05-30T03:26:56Z",
+  "hard_expires_at": "2026-06-05T15:26:56Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_IONQ",
-  "content_hash": "sha256:59a98d899f4f2d107d329dc5e2ea48ea994b991e7bee6ca7549409e73b0f30de",
+  "content_hash": "sha256:3ab5a3fdb172fef4ab538e80bbe30dc783bd848b328da13c3876ef99de1f3e33",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -35,6 +35,30 @@
     },
     {
       "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "stooq_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "treasury_xml_feed",
+      "policy_version": 1
+    },
+    {
+      "source_key": "krx_open_api",
+      "policy_version": 1
+    },
+    {
+      "source_key": "data_go_kr",
+      "policy_version": 1
+    },
+    {
+      "source_key": "japan_mof_jgb_csv",
       "policy_version": 1
     },
     {
@@ -88,18 +112,18 @@
   ],
   "data": {
     "symbol": "IONQ",
-    "name": "IonQ",
-    "generated_label": "2026-05-28T07:32:34Z",
-    "summary": "IonQ has 1 approved, source-linked news event(s) in the public snapshot.",
+    "name": "IonQ, Inc.",
+    "generated_label": "2026-05-29T15:26:56Z",
+    "summary": "IonQ, Inc. has 1 approved, source-linked news event(s) in the public snapshot.",
     "events": [
       {
         "id": "ionq_contract_watch_seed",
         "title": "IonQ contract and funding news is classified as quantum-sector ticker context",
         "summary": "IONQ appears in the ticker news layer only when company, filing, or sector-context evidence is present.",
         "event_type": "company_update",
-        "first_seen_at": "2026-05-27T13:32:34Z",
-        "last_seen_at": "2026-05-28T03:32:34Z",
-        "published_at": "2026-05-28T03:32:34Z",
+        "first_seen_at": "2026-05-28T21:26:56Z",
+        "last_seen_at": "2026-05-29T11:26:56Z",
+        "published_at": "2026-05-29T11:26:56Z",
         "freshness": "watch",
         "severity": "medium",
         "confidence": 0.76,
@@ -109,7 +133,7 @@
         "tickers": [
           {
             "symbol": "IONQ",
-            "name": "IonQ",
+            "name": "IonQ, Inc.",
             "exchange": "NYSE",
             "relationship": "direct_subject",
             "confidence": 0.9
@@ -161,7 +185,7 @@
             "source_key": "ionq_ir",
             "policy_version": 1,
             "title": "IonQ news",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -171,7 +195,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "IonQ SEC filings",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           }

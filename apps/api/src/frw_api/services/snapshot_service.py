@@ -215,7 +215,6 @@ def _build_snapshot_tree(
     corrections = _corrections(db)
     db_events = _public_events(db)
     db_calendar = _calendar_items(db)
-    status_data = _source_status_data(db)
     previous_macro_tiles = _published_home_macro_tiles()
     db_news_by_locale = {
         locale: build_reviewed_news_snapshots(db, locale=locale, generated_label=_iso(generated_at))
@@ -250,7 +249,8 @@ def _build_snapshot_tree(
                 snapshot["data"]["items"] = db_calendar
                 snapshot["data"]["central_banks"] = [item for item in db_calendar if "bank" in item["release_type"]]
             elif snapshot["object_type"] == "source_status":
-                snapshot["data"] = status_data
+                seed_status = snapshot.get("data") if isinstance(snapshot.get("data"), dict) else None
+                snapshot["data"] = _source_status_data(db, seed_status=seed_status)
             elif snapshot["object_type"] == "correction_log":
                 snapshot["data"]["entries"] = corrections
             elif snapshot["object_type"] == "news_index" and db_news_by_locale.get(locale):
@@ -466,9 +466,9 @@ def _calendar_items(db: Session) -> list[dict[str, Any]]:
     ]
 
 
-def _source_status_data(db: Session) -> dict[str, Any]:
-    providers = [
-        {
+def _source_status_data(db: Session, *, seed_status: dict[str, Any] | None = None) -> dict[str, Any]:
+    providers_by_key = {
+        row["provider_key"]: {
             "provider_key": row["provider_key"],
             "provider_type": row["provider_type"],
             "status": "kill_switch" if row["kill_switch_enabled"] else "ready",
@@ -486,7 +486,29 @@ def _source_status_data(db: Session) -> dict[str, Any]:
                 """
             )
         ).mappings().all()
-    ]
+    }
+    for provider in (seed_status or {}).get("providers", []):
+        if not isinstance(provider, dict) or not isinstance(provider.get("provider_key"), str):
+            continue
+        key = provider["provider_key"]
+        existing = providers_by_key.get(key)
+        if existing is None:
+            providers_by_key[key] = {
+                "provider_key": key,
+                "provider_type": provider.get("provider_type", "unknown"),
+                "status": provider.get("status", "ready"),
+                "mode": provider.get("mode", "FREE_ONLY"),
+                "last_verified_at": provider.get("last_verified_at"),
+                "warning": provider.get("warning"),
+            }
+            continue
+        if provider.get("status") and provider.get("status") != "ready":
+            existing["status"] = provider["status"]
+        if provider.get("warning") and not existing.get("warning"):
+            existing["warning"] = provider["warning"]
+        if provider.get("provider_type") and existing.get("provider_type") in {None, "market_data"}:
+            existing["provider_type"] = provider["provider_type"]
+    providers = sorted(providers_by_key.values(), key=lambda provider: provider["provider_key"])
     operations = {
         row["status_key"]: row["status_value"]
         for row in db.execute(text("select status_key, status_value from operation_status")).mappings().all()

@@ -6,8 +6,8 @@
   "stale_after": "2026-05-30T03:26:56Z",
   "hard_expires_at": "2026-06-05T15:26:56Z",
   "object_type": "news_ticker",
-  "object_key": "news_ticker_TLT",
-  "content_hash": "sha256:3e3d0d6bef6145a2b3264edc0b697c837e9a67693117f0c1fcf419bca799ea05",
+  "object_key": "news_ticker_QUANTINUUM",
+  "content_hash": "sha256:e6b5a69008ac73d46bf255403eb41c3753b9dca605e805d462fbfa67396ec3c2",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -111,10 +111,10 @@
     }
   ],
   "data": {
-    "symbol": "TLT",
-    "name": "아이셰어즈 장기 미국채 ETF",
+    "symbol": "QUANTINUUM",
+    "name": "퀀티넘",
     "generated_label": "2026-05-29T15:26:56Z",
-    "summary": "TLT에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
+    "summary": "QUANTINUUM에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
     "events": []
   },
   "warnings": [

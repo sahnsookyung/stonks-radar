@@ -30,6 +30,8 @@ YAHOO_FINANCE_RSS_URL = "https://feeds.finance.yahoo.com/rss/2.0/headline"
 YAHOO_FINANCE_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart"
 YAHOO_FINANCE_QUOTE_URL = "https://finance.yahoo.com/quote"
 STOOQ_QUOTE_URL = "https://stooq.com/q/l/"
+TREASURY_YIELD_XML_URL = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml"
+TREASURY_YIELD_FEED_DOC_URL = "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed"
 MOF_JGB_CSV_URL = "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/historical/jgbcme_all.csv"
 MOF_JGB_PAGE_URL = "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm"
 ISHARES_EWY_URL = "https://www.ishares.com/us/products/239681/ishares-msci-south-korea-etf"
@@ -46,6 +48,20 @@ FINRA_REQUEST_MIN_INTERVAL_SECONDS = 0.25
 DEFAULT_SHORT_TICKERS = "DJT,TSLA,NVDA"
 DEFAULT_NEWS_TICKERS = "DJT,TSLA,NVDA,RKLB,IONQ,RGTI,QBTS,QUANTINUUM,LUNR,ASTS,RDW,AMD,AAPL,MSFT,TLT,005930.KS"
 DEFAULT_TRUMP_CIKS = {"DJT": "0001849635"}
+TIME_SENSITIVE_MARKET_TILE_KEYS = {
+    "nasdaq_composite",
+    "nasdaq_100",
+    "kospi",
+    "kodex_200",
+    "krx_300",
+    "krx_300_it",
+    "ewy_korea_proxy",
+    "wti_crude",
+    "vix",
+    "usd_krw",
+    "usd_jpy",
+    "japan_policy_rate",
+}
 PENTAGON_PIZZA_URL = "https://pentagon.pizza/"
 OFFICIAL_POLICY_CALENDAR_URLS = {
     "federal_reserve": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
@@ -73,6 +89,7 @@ _ISHARES_FUND_CACHE: dict[str, dict[str, Any] | None] = {}
 _PENTAGON_PIZZA_CACHE: dict[str, dict[str, Any] | None] = {}
 _YAHOO_QUOTE_CACHE: dict[str, dict[str, Any] | None] = {}
 _STOOQ_QUOTE_CACHE: dict[str, dict[str, Any] | None] = {}
+_TREASURY_YIELD_CACHE: dict[str, Any] | None = None
 _GDELT_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
 _RSS_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
 _LAST_FRED_REQUEST_AT = 0.0
@@ -445,7 +462,7 @@ def build_snapshots() -> None:
 
 
 def _reset_runtime_caches() -> None:
-    global _RUNTIME_ENV, _MOF_JGB_CACHE, _LAST_FRED_REQUEST_AT, _LAST_KRX_REQUEST_AT, _LAST_FINRA_REQUEST_AT
+    global _RUNTIME_ENV, _MOF_JGB_CACHE, _TREASURY_YIELD_CACHE, _LAST_FRED_REQUEST_AT, _LAST_KRX_REQUEST_AT, _LAST_FINRA_REQUEST_AT
     _RUNTIME_ENV = None
     _FRED_CACHE.clear()
     _MOF_JGB_CACHE = None
@@ -460,6 +477,7 @@ def _reset_runtime_caches() -> None:
     _PENTAGON_PIZZA_CACHE.clear()
     _YAHOO_QUOTE_CACHE.clear()
     _STOOQ_QUOTE_CACHE.clear()
+    _TREASURY_YIELD_CACHE = None
     _GDELT_ARTICLE_CACHE.clear()
     _RSS_ARTICLE_CACHE.clear()
     _LAST_FRED_REQUEST_AT = 0.0
@@ -1070,6 +1088,61 @@ def _stooq_quote_series(symbol: str) -> dict[str, Any] | None:
     return result_payload
 
 
+def _treasury_yield_curve_series(term_key: str, generated_at: datetime) -> dict[str, Any] | None:
+    rows = _treasury_yield_curve_rows(generated_at)
+    points: list[dict[str, Any]] = []
+    for row in rows:
+        value = _numeric_value(row.get(term_key))
+        date = _iso_date(str(row.get("NEW_DATE") or "").split("T", 1)[0])
+        if value is None or not date:
+            continue
+        points.append({"date": date, "value": value})
+    if not points:
+        return None
+    points = sorted(points, key=lambda point: point["date"])[-8:]
+    latest_point = points[-1]
+    return {"date": latest_point["date"], "value": latest_point["value"], "points": points}
+
+
+def _treasury_yield_curve_rows(generated_at: datetime) -> list[dict[str, str]]:
+    global _TREASURY_YIELD_CACHE
+    if _TREASURY_YIELD_CACHE is not None:
+        return _TREASURY_YIELD_CACHE
+    params = parse.urlencode({"data": "daily_treasury_yield_curve", "field_tdr_date_value": str(generated_at.year)})
+    user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
+    text = _http_text(
+        f"{TREASURY_YIELD_XML_URL}?{params}",
+        headers={"Accept": "application/xml,text/xml,*/*", "User-Agent": user_agent},
+        timeout=20,
+        max_bytes=2_500_000,
+    )
+    if not text:
+        _TREASURY_YIELD_CACHE = []
+        return _TREASURY_YIELD_CACHE
+    try:
+        root = ElementTree.fromstring(text)
+    except ElementTree.ParseError:
+        _TREASURY_YIELD_CACHE = []
+        return _TREASURY_YIELD_CACHE
+    ns = {
+        "atom": "http://www.w3.org/2005/Atom",
+        "m": "http://schemas.microsoft.com/ado/2007/08/dataservices/metadata",
+    }
+    rows: list[dict[str, str]] = []
+    for entry in root.findall("atom:entry", ns):
+        props = entry.find("atom:content/m:properties", ns)
+        if props is None:
+            continue
+        row: dict[str, str] = {}
+        for child in list(props):
+            tag = child.tag.rsplit("}", 1)[-1]
+            row[tag] = (child.text or "").strip()
+        if row.get("NEW_DATE"):
+            rows.append(row)
+    _TREASURY_YIELD_CACHE = rows
+    return _TREASURY_YIELD_CACHE
+
+
 def _quote_timestamp(date: str, time_value: str) -> str:
     if time_value and time_value != "N/D":
         try:
@@ -1102,6 +1175,27 @@ def _observation_freshness(date: str, generated_at: datetime, *, max_age_days: i
     except ValueError:
         return "watch"
     return "fresh" if generated_at - observed <= timedelta(days=max_age_days) else "watch"
+
+
+def _timestamp_freshness(
+    updated_at: str,
+    generated_at: datetime,
+    *,
+    fresh_after_minutes: int,
+    stale_after_hours: int,
+) -> str:
+    try:
+        observed = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
+    except ValueError:
+        return "watch"
+    age = generated_at - observed.astimezone(timezone.utc)
+    if age < timedelta(minutes=-5):
+        return "watch"
+    if age <= timedelta(minutes=fresh_after_minutes):
+        return "fresh"
+    if age <= timedelta(hours=stale_after_hours):
+        return "watch"
+    return "stale"
 
 
 def _pentagon_pizza_payload(base_url: str) -> dict[str, Any] | None:
@@ -1567,6 +1661,10 @@ def _envelope(
             {"source_key": "yahoo_finance_rss", "policy_version": 1},
             {"source_key": "yahoo_finance_delayed_quote", "policy_version": 1},
             {"source_key": "stooq_delayed_quote", "policy_version": 1},
+            {"source_key": "treasury_xml_feed", "policy_version": 1},
+            {"source_key": "krx_open_api", "policy_version": 1},
+            {"source_key": "data_go_kr", "policy_version": 1},
+            {"source_key": "japan_mof_jgb_csv", "policy_version": 1},
             {"source_key": "bis", "policy_version": 1},
             {"source_key": "who", "policy_version": 1},
             {"source_key": "cdc", "policy_version": 1},
@@ -2369,6 +2467,9 @@ def _preserve_previous_active_macro_tiles(locale: str, tiles: list[dict[str, Any
     preserved: list[dict[str, Any]] = []
     for tile in tiles:
         previous_tile = previous.get(str(tile.get("key")))
+        if str(tile.get("key")) in TIME_SENSITIVE_MARKET_TILE_KEYS and _is_metric_tile_unavailable(tile):
+            preserved.append(tile)
+            continue
         if not _is_metric_tile_unavailable(tile) or not previous_tile or _is_metric_tile_unavailable(previous_tile):
             preserved.append(tile)
             continue
@@ -2562,7 +2663,7 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         label_ko: str,
         term: str,
         next_event: dict[str, str] | None = None,
-        refresh_seconds: int = 900,
+        refresh_seconds: int = 2_592_000,
     ) -> dict[str, Any]:
         series = _mof_jgb_series(term)
         if not series:
@@ -2602,6 +2703,45 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             _observation_updated_at(str(series["date"])),
         )
 
+    def treasury_tile(
+        key: str,
+        label_en: str,
+        label_ko: str,
+        term_key: str,
+        term_label: str,
+        next_event: dict[str, str] | None = None,
+        refresh_seconds: int = 43200,
+    ) -> dict[str, Any]:
+        series = _treasury_yield_curve_series(term_key, generated_at)
+        if not series:
+            return coverage_gap_tile(
+                key,
+                label_en,
+                label_ko,
+                "U.S. Treasury XML feed",
+                "Treasury Daily Interest Rate XML feed unavailable during snapshot build",
+                "스냅샷 생성 중 미국 재무부 일일 금리 XML 피드를 사용할 수 없습니다.",
+                "%",
+                TREASURY_YIELD_FEED_DOC_URL,
+                refresh_seconds,
+            )
+        return tile(
+            key,
+            label_en,
+            label_ko,
+            _format_metric_value(series["value"], 2),
+            "U.S. Treasury XML feed",
+            _actual_delay_label(locale, f"Treasury {term_label}", series["date"]),
+            _observation_freshness(str(series["date"]), generated_at),
+            "%",
+            TREASURY_YIELD_FEED_DOC_URL,
+            series["points"],
+            "active",
+            next_event,
+            refresh_seconds,
+            _observation_updated_at(str(series["date"])),
+        )
+
     def krx_tile(
         key: str,
         label_en: str,
@@ -2614,6 +2754,8 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         unit: str | None = None,
         decimals: int = 2,
         refresh_seconds: int = 900,
+        fresh_after_minutes: int = 90,
+        stale_after_hours: int = 36,
     ) -> dict[str, Any]:
         if not _krx_auth_key():
             return coverage_gap_tile(
@@ -2675,6 +2817,8 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         unit: str | None = None,
         decimals: int = 2,
         refresh_seconds: int = 900,
+        fresh_after_minutes: int = 90,
+        stale_after_hours: int = 36,
     ) -> dict[str, Any]:
         series = _yahoo_chart_series(yahoo_symbol) if yahoo_symbol else None
         if not series and stooq_symbol:
@@ -2692,6 +2836,13 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
                 source_url,
                 refresh_seconds,
             )
+        freshness = _timestamp_freshness(
+            str(series["updated_at"]),
+            generated_at,
+            fresh_after_minutes=fresh_after_minutes,
+            stale_after_hours=stale_after_hours,
+        )
+        effective_refresh_seconds = refresh_seconds if freshness == "fresh" else max(refresh_seconds, 43200)
         payload = tile(
             key,
             label_en,
@@ -2700,16 +2851,16 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             source_name,
             _t(
                 locale,
-                f"{source_name} delayed quote observed at {series['updated_at']}",
-                f"{source_name} 지연 시세 관측 {series['updated_at']}",
+                f"{source_name} observed at {series['updated_at']}",
+                f"{source_name} 관측 {series['updated_at']}",
             ),
-            _observation_freshness(str(series["date"]), generated_at, max_age_days=2),
+            freshness,
             unit,
             source_url,
             series.get("points"),
             "active",
             None,
-            refresh_seconds,
+            effective_refresh_seconds,
             str(series["updated_at"]),
         )
         if series.get("change") is not None:
@@ -2757,13 +2908,14 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             _format_metric_value(float(series["value"]), 2),
             source,
             detail,
-            "fresh",
+            _observation_freshness(str(series["date"]), generated_at),
             "$",
             ISHARES_EWY_URL,
             series.get("points"),
             "active",
             None,
-            900,
+            43200,
+            _observation_updated_at(str(series["date"])),
         )
         if series.get("change") is not None:
             payload["refresh_delta"] = series["change"]
@@ -2918,8 +3070,10 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             source_name="Yahoo/Stooq delayed futures quote",
             unit="$",
             decimals=2,
+            fresh_after_minutes=45,
+            stale_after_hours=24,
         ),
-        market_quote_tile("vix", "VIX", "VIX", yahoo_symbol="^VIX", source_name="Yahoo Finance delayed quote"),
+        market_quote_tile("vix", "VIX", "VIX", yahoo_symbol="^VIX", source_name="Yahoo Finance delayed quote", fresh_after_minutes=45, stale_after_hours=24),
         market_quote_tile(
             "usd_krw",
             "USD/KRW",
@@ -2928,6 +3082,8 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             source_name="Yahoo Finance delayed FX quote",
             unit="KRW",
             decimals=2,
+            fresh_after_minutes=30,
+            stale_after_hours=24,
         ),
         market_quote_tile(
             "usd_jpy",
@@ -2937,11 +3093,13 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             source_name="Yahoo Finance delayed FX quote",
             unit="JPY",
             decimals=2,
+            fresh_after_minutes=30,
+            stale_after_hours=24,
         ),
-        fred_tile("us_2y", "US Treasury 2Y", "미국 국채 2년", "DGS2", "FRED / US Treasury", "FRED DGS2", "%", 2, rate_event("us")),
-        fred_tile("us_3y", "US Treasury 3Y", "미국 국채 3년", "DGS3", "FRED / US Treasury", "FRED DGS3", "%", 2, rate_event("us")),
-        fred_tile("us_5y", "US Treasury 5Y", "미국 국채 5년", "DGS5", "FRED / US Treasury", "FRED DGS5", "%", 2, rate_event("us")),
-        fred_tile("us_10y", "US Treasury 10Y", "미국 국채 10년", "DGS10", "FRED / US Treasury", "FRED DGS10", "%", 2, rate_event("us")),
+        treasury_tile("us_2y", "US Treasury 2Y", "미국 국채 2년", "BC_2YEAR", "2Y", rate_event("us")),
+        treasury_tile("us_3y", "US Treasury 3Y", "미국 국채 3년", "BC_3YEAR", "3Y", rate_event("us")),
+        treasury_tile("us_5y", "US Treasury 5Y", "미국 국채 5년", "BC_5YEAR", "5Y", rate_event("us")),
+        treasury_tile("us_10y", "US Treasury 10Y", "미국 국채 10년", "BC_10YEAR", "10Y", rate_event("us")),
         boj_policy_rate_tile(),
         mof_jgb_tile("japan_2y", "Japan govt 2Y", "일본 국채 2년", "2Y", rate_event("japan")),
         mof_jgb_tile("japan_5y", "Japan govt 5Y", "일본 국채 5년", "5Y", rate_event("japan")),
@@ -3455,7 +3613,10 @@ def _source_status() -> dict[str, Any]:
             ready = all(_env_has(env, key) for key in keys)
         return ("ready", None) if ready else ("missing_credentials", warning)
 
-    fred_status, fred_warning = status_for("FRED_API_KEY", "FRED_API_KEY required for non-realtime daily reference series only")
+    if _env_has(env, "FRED_API_KEY"):
+        fred_status, fred_warning = "ready", "FRED is reference-only; do not use it for intraday or time-sensitive market pulse tiles"
+    else:
+        fred_status, fred_warning = "missing_credentials", "FRED_API_KEY only enables non-realtime reference series"
     bls_status, bls_warning = status_for("BLS_API_KEY", "BLS_API_KEY enables higher-limit BLS ingest")
     eia_status, eia_warning = status_for("EIA_API_KEY", "EIA_API_KEY required for live ingest")
     sec_user_agent = env.get("SEC_USER_AGENT", "")
@@ -3466,9 +3627,28 @@ def _source_status() -> dict[str, Any]:
     fmp_status, fmp_warning = status_for("FMP_API_KEY", "FMP_API_KEY enables EOD/fundamental fallback")
     finnhub_status, finnhub_warning = status_for("FINNHUB_API_KEY", "FINNHUB_API_KEY enables future market/fundamental fallback")
     nasdaq_status, nasdaq_warning = status_for("NASDAQ_DATA_LINK_API_KEY", "NASDAQ_DATA_LINK_API_KEY enables future Nasdaq Data Link datasets")
+    if any(_env_has(env, key) for key in ("DATA_GO_KR_SERVICE_KEY", "DATA_GO_KR_API_KEY", "PUBLIC_DATA_API_KEY", "KOREA_PUBLIC_DATA_API_KEY")):
+        data_go_status, data_go_warning = "ready", None
+    else:
+        data_go_status, data_go_warning = (
+            "missing_credentials",
+            "DATA_GO_KR_SERVICE_KEY or alias enables official Korea public-data portal market-data fallbacks",
+        )
     if any(_env_has(env, key) for key in ("KRX_OPEN_API_AUTH_KEY", "KRX_AUTH_KEY", "KRX_API_KEY")):
         krx_warning = _krx_recent_error(KRX_INDEX_DAILY_PATH, datetime.now(timezone.utc))
-        krx_status = "degraded" if krx_warning else "ready"
+        if krx_warning:
+            krx_status = "degraded"
+        else:
+            krx_probe_date = _recent_krx_dates(datetime.now(timezone.utc))[0]
+            krx_probe_rows = _krx_rows(KRX_INDEX_DAILY_PATH, krx_probe_date)
+            krx_warning = _krx_recent_error(KRX_INDEX_DAILY_PATH, datetime.now(timezone.utc))
+            if krx_warning:
+                krx_status = "degraded"
+            elif krx_probe_rows:
+                krx_status = "ready"
+            else:
+                krx_status = "degraded"
+                krx_warning = "KRX key is configured, but the index daily-trading probe returned no rows"
     else:
         krx_status, krx_warning = (
             "missing_credentials",
@@ -3502,8 +3682,10 @@ def _source_status() -> dict[str, Any]:
         ("finnhub", "market_data", finnhub_status, "FREE_ONLY", finnhub_warning),
         ("nasdaq_data_link", "market_data", nasdaq_status, "FREE_ONLY", nasdaq_warning),
         ("krx_open_api", "official_api", krx_status, "FREE_ONLY", krx_warning),
+        ("data_go_kr", "official_api", data_go_status, "FREE_ONLY", data_go_warning),
         ("yahoo_finance_delayed_quote", "market_data", "ready", "FREE_ONLY", "Fallback for time-sensitive quote tiles when official/FRED series are stale; not treated as licensed realtime tape"),
         ("stooq_delayed_quote", "market_data", "ready", "FREE_ONLY", "Fallback for delayed index/futures quote tiles; not treated as licensed realtime tape"),
+        ("treasury_xml_feed", "official_xml", "ready", "FREE_ONLY", None),
         ("japan_mof_jgb_csv", "official_csv", "ready", "FREE_ONLY", None),
         ("finra", "official_api", finra_status, "FREE_ONLY", finra_warning),
         ("gdelt", "news_metadata", "ready", "FREE_ONLY", None),

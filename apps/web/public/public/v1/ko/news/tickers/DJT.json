@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-28T07:32:34Z",
-  "stale_after": "2026-05-28T19:32:34Z",
-  "hard_expires_at": "2026-06-04T07:32:34Z",
+  "generated_at": "2026-05-29T15:26:56Z",
+  "stale_after": "2026-05-30T03:26:56Z",
+  "hard_expires_at": "2026-06-05T15:26:56Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_DJT",
-  "content_hash": "sha256:6deb94c3298f3984c99089e17d2608f0f35719942384f53c64ecd61e388adaf3",
+  "content_hash": "sha256:a226b28dd463720f4f1b90e9f0de34542a49474bf5eb7094ffd1c2cd389a81bb",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -35,6 +35,30 @@
     },
     {
       "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "stooq_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "treasury_xml_feed",
+      "policy_version": 1
+    },
+    {
+      "source_key": "krx_open_api",
+      "policy_version": 1
+    },
+    {
+      "source_key": "data_go_kr",
+      "policy_version": 1
+    },
+    {
+      "source_key": "japan_mof_jgb_csv",
       "policy_version": 1
     },
     {
@@ -89,7 +113,7 @@
   "data": {
     "symbol": "DJT",
     "name": "트럼프 미디어",
-    "generated_label": "2026-05-28T07:32:34Z",
+    "generated_label": "2026-05-29T15:26:56Z",
     "summary": "DJT에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
     "events": []
   },

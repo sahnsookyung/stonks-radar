@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-28T07:32:34Z",
-  "stale_after": "2026-05-28T19:32:34Z",
-  "hard_expires_at": "2026-06-04T07:32:34Z",
+  "generated_at": "2026-05-29T15:26:56Z",
+  "stale_after": "2026-05-30T03:26:56Z",
+  "hard_expires_at": "2026-06-05T15:26:56Z",
   "object_type": "sector_page",
   "object_key": "semiconductors",
-  "content_hash": "sha256:58f106c1e3060a2c71b26dd6aa9b72ed489a5f1529c5c1b9c03d1e78650c4e86",
+  "content_hash": "sha256:52384d7d7dee47134a12fa22aa49100d363333828c6b79ed86729b5661bc0698",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -35,6 +35,30 @@
     },
     {
       "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "stooq_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "treasury_xml_feed",
+      "policy_version": 1
+    },
+    {
+      "source_key": "krx_open_api",
+      "policy_version": 1
+    },
+    {
+      "source_key": "data_go_kr",
+      "policy_version": 1
+    },
+    {
+      "source_key": "japan_mof_jgb_csv",
       "policy_version": 1
     },
     {
@@ -120,8 +144,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-28T07:32:34Z",
-        "published_at": "2026-05-28T07:32:34Z",
+        "occurred_at": "2026-05-29T15:26:56Z",
+        "published_at": "2026-05-29T15:26:56Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -163,8 +187,8 @@
         "title": "Central-bank calendar coverage seeded across six policy committees",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
         "why_it_matters": "Calendar visibility reduces silent coverage gaps and makes stale policy data visible.",
-        "occurred_at": "2026-05-28T07:32:34Z",
-        "published_at": "2026-05-28T07:32:34Z",
+        "occurred_at": "2026-05-29T15:26:56Z",
+        "published_at": "2026-05-29T15:26:56Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -320,26 +344,98 @@
       {
         "key": "nasdaq_composite",
         "label": "Nasdaq Composite",
-        "value": "Source gap",
-        "source": "FRED / Nasdaq",
-        "freshness": "watch",
-        "delay_label": "FRED_API_KEY missing or FRED series unavailable",
-        "updated_at": "2026-05-28T07:32:34Z",
-        "coverage_status": "coverage_gap",
+        "value": "26,978.24",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-05-29T15:27:03Z",
+        "updated_at": "2026-05-29T15:27:03Z",
+        "coverage_status": "active",
         "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/NASDAQCOM"
+        "source_url": "https://finance.yahoo.com/quote/%5EIXIC",
+        "points": [
+          {
+            "date": "2026-05-29T13:58:00Z",
+            "value": 27081.16015625
+          },
+          {
+            "date": "2026-05-29T14:12:00Z",
+            "value": 27055.6796875
+          },
+          {
+            "date": "2026-05-29T14:26:00Z",
+            "value": 26914.375
+          },
+          {
+            "date": "2026-05-29T14:40:00Z",
+            "value": 26917.126953125
+          },
+          {
+            "date": "2026-05-29T14:54:00Z",
+            "value": 26926.265625
+          },
+          {
+            "date": "2026-05-29T15:08:00Z",
+            "value": 26978.59375
+          },
+          {
+            "date": "2026-05-29T15:22:00Z",
+            "value": 26977.2265625
+          },
+          {
+            "date": "2026-05-29T15:27:03Z",
+            "value": 26978.236328125
+          }
+        ],
+        "refresh_delta": 60.76599999999962,
+        "refresh_delta_percent": 0.22574929961842483
       },
       {
         "key": "nasdaq_100",
         "label": "Nasdaq 100",
-        "value": "Source gap",
-        "source": "FRED / Nasdaq",
-        "freshness": "watch",
-        "delay_label": "FRED_API_KEY missing or FRED series unavailable",
-        "updated_at": "2026-05-28T07:32:34Z",
-        "coverage_status": "coverage_gap",
+        "value": "30,328.14",
+        "source": "Yahoo/Stooq delayed quote",
+        "freshness": "fresh",
+        "delay_label": "Yahoo/Stooq delayed quote observed at 2026-05-29T15:27:01Z",
+        "updated_at": "2026-05-29T15:27:01Z",
+        "coverage_status": "active",
         "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/NASDAQ100"
+        "source_url": "https://finance.yahoo.com/quote/%5ENDX",
+        "points": [
+          {
+            "date": "2026-05-29T13:58:00Z",
+            "value": 30447.72265625
+          },
+          {
+            "date": "2026-05-29T14:12:00Z",
+            "value": 30438.69921875
+          },
+          {
+            "date": "2026-05-29T14:26:00Z",
+            "value": 30279.810546875
+          },
+          {
+            "date": "2026-05-29T14:40:00Z",
+            "value": 30270.87109375
+          },
+          {
+            "date": "2026-05-29T14:54:00Z",
+            "value": 30279.587890625
+          },
+          {
+            "date": "2026-05-29T15:08:00Z",
+            "value": 30329.033203125
+          },
+          {
+            "date": "2026-05-29T15:22:00Z",
+            "value": 30328.48046875
+          },
+          {
+            "date": "2026-05-29T15:27:01Z",
+            "value": 30328.140625
+          }
+        ],
+        "refresh_delta": 104.2510000000002,
+        "refresh_delta_percent": 0.3449291386690846
       }
     ],
     "scenario_baskets": [

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-28T07:32:34Z",
-  "stale_after": "2026-05-28T19:32:34Z",
-  "hard_expires_at": "2026-06-04T07:32:34Z",
+  "generated_at": "2026-05-29T15:26:56Z",
+  "stale_after": "2026-05-30T03:26:56Z",
+  "hard_expires_at": "2026-06-05T15:26:56Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_NVDA",
-  "content_hash": "sha256:b3e6bf371f236a9806ec7defe1715abb7555a2e8de8d2aff7afb2c6888b30795",
+  "content_hash": "sha256:fdfb54c36bbb93c444bd7c6e9361065850dc89313536839c59bc64b67d024ee0",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -35,6 +35,30 @@
     },
     {
       "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "stooq_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "treasury_xml_feed",
+      "policy_version": 1
+    },
+    {
+      "source_key": "krx_open_api",
+      "policy_version": 1
+    },
+    {
+      "source_key": "data_go_kr",
+      "policy_version": 1
+    },
+    {
+      "source_key": "japan_mof_jgb_csv",
       "policy_version": 1
     },
     {
@@ -89,7 +113,7 @@
   "data": {
     "symbol": "NVDA",
     "name": "NVIDIA Corporation",
-    "generated_label": "2026-05-28T07:32:34Z",
+    "generated_label": "2026-05-29T15:26:56Z",
     "summary": "NVIDIA Corporation has 1 approved, source-linked news event(s) in the public snapshot.",
     "events": [
       {
@@ -97,9 +121,9 @@
         "title": "China-origin export-control risk remains elevated for AI-chip supply chains",
         "summary": "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.",
         "event_type": "trade_policy",
-        "first_seen_at": "2026-05-26T07:32:34Z",
-        "last_seen_at": "2026-05-28T07:32:34Z",
-        "published_at": "2026-05-28T07:32:34Z",
+        "first_seen_at": "2026-05-27T15:26:56Z",
+        "last_seen_at": "2026-05-29T15:26:56Z",
+        "published_at": "2026-05-29T15:26:56Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.78,
@@ -116,7 +140,7 @@
           },
           {
             "symbol": "005930.KS",
-            "name": "Samsung Electronics",
+            "name": "Samsung Electronics Co., Ltd.",
             "exchange": "KRX",
             "relationship": "affected_company",
             "confidence": 0.84
@@ -196,7 +220,7 @@
             "source_key": "bis",
             "policy_version": 1,
             "title": "Bureau of Industry and Security export controls",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -206,7 +230,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "Issuer filings for affected companies",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           },
@@ -216,7 +240,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "Export Administration Regulations reference",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }

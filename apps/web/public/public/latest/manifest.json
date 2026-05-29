@@ -1,6 +1,6 @@
 {
   "current_version": 1,
-  "generated_at": "2026-05-28T07:32:34Z",
+  "generated_at": "2026-05-29T15:26:56Z",
   "locales": [
     "en",
     "ko"
@@ -146,10 +146,6 @@
       "en": "public/v1/en/news/tickers/NVDA.json",
       "ko": "public/v1/ko/news/tickers/NVDA.json"
     },
-    "news_ticker_005930_KS": {
-      "en": "public/v1/en/news/tickers/005930_KS.json",
-      "ko": "public/v1/ko/news/tickers/005930_KS.json"
-    },
     "news_ticker_RKLB": {
       "en": "public/v1/en/news/tickers/RKLB.json",
       "ko": "public/v1/ko/news/tickers/RKLB.json"
@@ -165,6 +161,10 @@
     "news_ticker_QBTS": {
       "en": "public/v1/en/news/tickers/QBTS.json",
       "ko": "public/v1/ko/news/tickers/QBTS.json"
+    },
+    "news_ticker_QUANTINUUM": {
+      "en": "public/v1/en/news/tickers/QUANTINUUM.json",
+      "ko": "public/v1/ko/news/tickers/QUANTINUUM.json"
     },
     "news_ticker_LUNR": {
       "en": "public/v1/en/news/tickers/LUNR.json",
@@ -193,6 +193,10 @@
     "news_ticker_TLT": {
       "en": "public/v1/en/news/tickers/TLT.json",
       "ko": "public/v1/ko/news/tickers/TLT.json"
+    },
+    "news_ticker_005930_KS": {
+      "en": "public/v1/en/news/tickers/005930_KS.json",
+      "ko": "public/v1/ko/news/tickers/005930_KS.json"
     },
     "news_region_USA": {
       "en": "public/v1/en/news/regions/USA.json",

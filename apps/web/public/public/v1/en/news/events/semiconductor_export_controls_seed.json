@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-28T07:32:34Z",
-  "stale_after": "2026-05-28T19:32:34Z",
-  "hard_expires_at": "2026-06-04T07:32:34Z",
+  "generated_at": "2026-05-29T15:26:56Z",
+  "stale_after": "2026-05-30T03:26:56Z",
+  "hard_expires_at": "2026-06-05T15:26:56Z",
   "object_type": "news_event",
   "object_key": "news_event_semiconductor_export_controls_seed",
-  "content_hash": "sha256:9e52f912a62aaf9843b9321fdca54c3a3cacc7265706e6bca8a27c94faf11cfc",
+  "content_hash": "sha256:834b8a0805852d793aacd56e428878f4d6cb02055457cd6cbc98c211e530ddf9",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -35,6 +35,30 @@
     },
     {
       "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "stooq_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "treasury_xml_feed",
+      "policy_version": 1
+    },
+    {
+      "source_key": "krx_open_api",
+      "policy_version": 1
+    },
+    {
+      "source_key": "data_go_kr",
+      "policy_version": 1
+    },
+    {
+      "source_key": "japan_mof_jgb_csv",
       "policy_version": 1
     },
     {
@@ -91,9 +115,9 @@
     "title": "China-origin export-control risk remains elevated for AI-chip supply chains",
     "summary": "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.",
     "event_type": "trade_policy",
-    "first_seen_at": "2026-05-26T07:32:34Z",
-    "last_seen_at": "2026-05-28T07:32:34Z",
-    "published_at": "2026-05-28T07:32:34Z",
+    "first_seen_at": "2026-05-27T15:26:56Z",
+    "last_seen_at": "2026-05-29T15:26:56Z",
+    "published_at": "2026-05-29T15:26:56Z",
     "freshness": "fresh",
     "severity": "high",
     "confidence": 0.78,
@@ -110,7 +134,7 @@
       },
       {
         "symbol": "005930.KS",
-        "name": "Samsung Electronics",
+        "name": "Samsung Electronics Co., Ltd.",
         "exchange": "KRX",
         "relationship": "affected_company",
         "confidence": 0.84
@@ -190,7 +214,7 @@
         "source_key": "bis",
         "policy_version": 1,
         "title": "Bureau of Industry and Security export controls",
-        "published_at": "2026-05-27T13:32:34Z",
+        "published_at": "2026-05-28T21:26:56Z",
         "trust_tier": "T0_OFFICIAL",
         "is_primary": true
       },
@@ -200,7 +224,7 @@
         "source_key": "sec_edgar",
         "policy_version": 1,
         "title": "Issuer filings for affected companies",
-        "published_at": "2026-05-27T13:32:34Z",
+        "published_at": "2026-05-28T21:26:56Z",
         "trust_tier": "T1_REGULATED_FILING",
         "is_primary": false
       },
@@ -210,7 +234,7 @@
         "source_key": "source_policy",
         "policy_version": 1,
         "title": "Export Administration Regulations reference",
-        "published_at": "2026-05-27T13:32:34Z",
+        "published_at": "2026-05-28T21:26:56Z",
         "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
         "is_primary": false
       }
@@ -245,9 +269,9 @@
         "title": "Central-bank decision calendar clusters FOMC, BoJ, BoK, ECB, and Brazil COPOM risk",
         "summary": "Official calendars are grouped into one policy-event watch so users can scan rate dates without leaving the app.",
         "event_type": "central_bank_calendar",
-        "first_seen_at": "2026-05-26T07:32:34Z",
-        "last_seen_at": "2026-05-28T07:32:34Z",
-        "published_at": "2026-05-28T07:32:34Z",
+        "first_seen_at": "2026-05-27T15:26:56Z",
+        "last_seen_at": "2026-05-29T15:26:56Z",
+        "published_at": "2026-05-29T15:26:56Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.86,
@@ -257,7 +281,7 @@
         "tickers": [
           {
             "symbol": "005930.KS",
-            "name": "Samsung Electronics",
+            "name": "Samsung Electronics Co., Ltd.",
             "exchange": "KRX",
             "relationship": "affected_company",
             "confidence": 0.58
@@ -327,7 +351,7 @@
             "source_key": "federal_reserve",
             "policy_version": 1,
             "title": "FOMC calendars",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -337,7 +361,7 @@
             "source_key": "bank_of_korea",
             "policy_version": 1,
             "title": "Monetary policy schedule",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -347,7 +371,7 @@
             "source_key": "bank_of_japan",
             "policy_version": 1,
             "title": "Monetary policy meetings",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -357,7 +381,7 @@
             "source_key": "ecb",
             "policy_version": 1,
             "title": "Governing Council calendars",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -367,7 +391,7 @@
             "source_key": "bcb",
             "policy_version": 1,
             "title": "COPOM calendar",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           }
@@ -378,9 +402,9 @@
         "title": "Public-health alert monitoring covers Brazil, US, Europe, and Asia travel-sensitive markets",
         "summary": "Official public-health feeds are classified separately from financial news and surfaced only as market-context risk.",
         "event_type": "public_health_alert",
-        "first_seen_at": "2026-05-26T07:32:34Z",
-        "last_seen_at": "2026-05-28T03:32:34Z",
-        "published_at": "2026-05-28T03:32:34Z",
+        "first_seen_at": "2026-05-27T15:26:56Z",
+        "last_seen_at": "2026-05-29T11:26:56Z",
+        "published_at": "2026-05-29T11:26:56Z",
         "freshness": "watch",
         "severity": "medium",
         "confidence": 0.74,
@@ -440,7 +464,7 @@
             "source_key": "who",
             "policy_version": 1,
             "title": "Disease Outbreak News",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -450,7 +474,7 @@
             "source_key": "cdc",
             "policy_version": 1,
             "title": "Travel health notices",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": false
           }
@@ -461,9 +485,9 @@
         "title": "Rocket Lab launch-window monitoring is linked to source evidence for RKLB",
         "summary": "Company and filing sources are grouped into a ticker-specific event for Rocket Lab launch-cadence monitoring.",
         "event_type": "company_update",
-        "first_seen_at": "2026-05-27T13:32:34Z",
-        "last_seen_at": "2026-05-28T07:32:34Z",
-        "published_at": "2026-05-28T07:32:34Z",
+        "first_seen_at": "2026-05-28T21:26:56Z",
+        "last_seen_at": "2026-05-29T15:26:56Z",
+        "published_at": "2026-05-29T15:26:56Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.8,
@@ -473,7 +497,7 @@
         "tickers": [
           {
             "symbol": "RKLB",
-            "name": "Rocket Lab USA",
+            "name": "Rocket Lab USA, Inc.",
             "exchange": "NASDAQ",
             "relationship": "direct_subject",
             "confidence": 0.92
@@ -519,7 +543,7 @@
             "source_key": "rocket_lab_ir",
             "policy_version": 1,
             "title": "Rocket Lab updates",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -529,7 +553,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "Rocket Lab SEC filings",
-            "published_at": "2026-05-27T13:32:34Z",
+            "published_at": "2026-05-28T21:26:56Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           }

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-28T07:32:34Z",
-  "stale_after": "2026-05-28T19:32:34Z",
-  "hard_expires_at": "2026-06-04T07:32:34Z",
+  "generated_at": "2026-05-29T15:26:56Z",
+  "stale_after": "2026-05-30T03:26:56Z",
+  "hard_expires_at": "2026-06-05T15:26:56Z",
   "object_type": "country_region",
   "object_key": "EU",
-  "content_hash": "sha256:3038fa3d251ee855420505e685a587834409e6ce0f9768ddb5a00fac1aadc54d",
+  "content_hash": "sha256:363f514dc5394f1a17f3801d9ea2656cd839a3fe564b8ab6d6eb7e7e9eeb3e3b",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -35,6 +35,30 @@
     },
     {
       "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "stooq_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "treasury_xml_feed",
+      "policy_version": 1
+    },
+    {
+      "source_key": "krx_open_api",
+      "policy_version": 1
+    },
+    {
+      "source_key": "data_go_kr",
+      "policy_version": 1
+    },
+    {
+      "source_key": "japan_mof_jgb_csv",
       "policy_version": 1
     },
     {
@@ -106,10 +130,10 @@
       {
         "key": "quantum",
         "name": "Quantum",
-        "summary": "Monitoring 5 entities with approved event and calendar links.",
+        "summary": "Monitoring 6 entities with approved event and calendar links.",
         "source_strength": "seeded_review_policy",
         "freshness": "fresh",
-        "monitored_count": 5,
+        "monitored_count": 6,
         "event_count": 0
       },
       {
@@ -146,8 +170,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-28T07:32:34Z",
-        "published_at": "2026-05-28T07:32:34Z",
+        "occurred_at": "2026-05-29T15:26:56Z",
+        "published_at": "2026-05-29T15:26:56Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -227,123 +251,437 @@
       {
         "key": "nasdaq_composite",
         "label": "Nasdaq Composite",
-        "value": "Source gap",
-        "source": "FRED / Nasdaq",
-        "freshness": "watch",
-        "delay_label": "FRED_API_KEY missing or FRED series unavailable",
-        "updated_at": "2026-05-28T07:32:34Z",
-        "coverage_status": "coverage_gap",
+        "value": "26,978.24",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-05-29T15:27:03Z",
+        "updated_at": "2026-05-29T15:27:03Z",
+        "coverage_status": "active",
         "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/NASDAQCOM"
+        "source_url": "https://finance.yahoo.com/quote/%5EIXIC",
+        "points": [
+          {
+            "date": "2026-05-29T13:58:00Z",
+            "value": 27081.16015625
+          },
+          {
+            "date": "2026-05-29T14:12:00Z",
+            "value": 27055.6796875
+          },
+          {
+            "date": "2026-05-29T14:26:00Z",
+            "value": 26914.375
+          },
+          {
+            "date": "2026-05-29T14:40:00Z",
+            "value": 26917.126953125
+          },
+          {
+            "date": "2026-05-29T14:54:00Z",
+            "value": 26926.265625
+          },
+          {
+            "date": "2026-05-29T15:08:00Z",
+            "value": 26978.59375
+          },
+          {
+            "date": "2026-05-29T15:22:00Z",
+            "value": 26977.2265625
+          },
+          {
+            "date": "2026-05-29T15:27:03Z",
+            "value": 26978.236328125
+          }
+        ],
+        "refresh_delta": 60.76599999999962,
+        "refresh_delta_percent": 0.22574929961842483
       },
       {
         "key": "nasdaq_100",
         "label": "Nasdaq 100",
-        "value": "Source gap",
-        "source": "FRED / Nasdaq",
-        "freshness": "watch",
-        "delay_label": "FRED_API_KEY missing or FRED series unavailable",
-        "updated_at": "2026-05-28T07:32:34Z",
-        "coverage_status": "coverage_gap",
+        "value": "30,328.14",
+        "source": "Yahoo/Stooq delayed quote",
+        "freshness": "fresh",
+        "delay_label": "Yahoo/Stooq delayed quote observed at 2026-05-29T15:27:01Z",
+        "updated_at": "2026-05-29T15:27:01Z",
+        "coverage_status": "active",
         "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/NASDAQ100"
+        "source_url": "https://finance.yahoo.com/quote/%5ENDX",
+        "points": [
+          {
+            "date": "2026-05-29T13:58:00Z",
+            "value": 30447.72265625
+          },
+          {
+            "date": "2026-05-29T14:12:00Z",
+            "value": 30438.69921875
+          },
+          {
+            "date": "2026-05-29T14:26:00Z",
+            "value": 30279.810546875
+          },
+          {
+            "date": "2026-05-29T14:40:00Z",
+            "value": 30270.87109375
+          },
+          {
+            "date": "2026-05-29T14:54:00Z",
+            "value": 30279.587890625
+          },
+          {
+            "date": "2026-05-29T15:08:00Z",
+            "value": 30329.033203125
+          },
+          {
+            "date": "2026-05-29T15:22:00Z",
+            "value": 30328.48046875
+          },
+          {
+            "date": "2026-05-29T15:27:01Z",
+            "value": 30328.140625
+          }
+        ],
+        "refresh_delta": 104.2510000000002,
+        "refresh_delta_percent": 0.3449291386690846
       },
       {
         "key": "kospi",
-        "label": "Korea share price index",
-        "value": "Source gap",
-        "source": "FRED / OECD Korea share prices",
+        "label": "KOSPI",
+        "value": "8,476.15",
+        "source": "Yahoo/Stooq delayed quote",
         "freshness": "watch",
-        "delay_label": "FRED_API_KEY missing or FRED series unavailable",
-        "updated_at": "2026-05-28T07:32:34Z",
-        "coverage_status": "coverage_gap",
-        "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/SPASTT01KRM661N"
-      },
-      {
-        "key": "ewy_korea_proxy",
-        "label": "EWY Korea ETF NAV proxy",
-        "value": "199.3",
-        "source": "iShares / BlackRock EWY",
-        "freshness": "fresh",
-        "delay_label": "iShares EWY NAV actual through 2026-05-27; proxy for Korean equity exposure, not local exchange tape",
-        "updated_at": "2026-05-28T07:32:34Z",
+        "delay_label": "Yahoo/Stooq delayed quote observed at 2026-05-29T09:05:40Z",
+        "updated_at": "2026-05-29T09:05:40Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
-        "unit": "$",
-        "source_url": "https://www.ishares.com/us/products/239681/ishares-msci-south-korea-etf",
+        "refresh_seconds": 43200,
+        "source_url": "https://finance.yahoo.com/quote/%5EKS11",
         "points": [
           {
-            "date": "2026-05-26",
-            "value": 197.709462
+            "date": "2026-05-29T00:45:00Z",
+            "value": 8358.9599609375
           },
           {
-            "date": "2026-05-27",
-            "value": 199.303267
+            "date": "2026-05-29T01:30:00Z",
+            "value": 8351.91015625
+          },
+          {
+            "date": "2026-05-29T02:15:00Z",
+            "value": 8359.8203125
+          },
+          {
+            "date": "2026-05-29T03:00:00Z",
+            "value": 8363.2998046875
+          },
+          {
+            "date": "2026-05-29T03:45:00Z",
+            "value": 8394.169921875
+          },
+          {
+            "date": "2026-05-29T04:30:00Z",
+            "value": 8433.1298828125
+          },
+          {
+            "date": "2026-05-29T05:15:00Z",
+            "value": 8453.6904296875
+          },
+          {
+            "date": "2026-05-29T06:00:00Z",
+            "value": 8476.150390625
           }
         ],
-        "refresh_delta": 1.593805,
-        "refresh_delta_percent": 0.8061349132597407
+        "refresh_delta": 290.8599999999997,
+        "refresh_delta_percent": 3.5534477092442627
+      },
+      {
+        "key": "kodex_200",
+        "label": "KODEX 200 ETF",
+        "value": "134,815",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "watch",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-05-29T06:30:07Z",
+        "updated_at": "2026-05-29T06:30:07Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "KRW",
+        "source_url": "https://finance.yahoo.com/quote/069500.KS",
+        "points": [
+          {
+            "date": "2026-05-29T00:45:00Z",
+            "value": 133470.0
+          },
+          {
+            "date": "2026-05-29T01:30:00Z",
+            "value": 133425.0
+          },
+          {
+            "date": "2026-05-29T02:15:00Z",
+            "value": 133400.0
+          },
+          {
+            "date": "2026-05-29T03:00:00Z",
+            "value": 133310.0
+          },
+          {
+            "date": "2026-05-29T03:45:00Z",
+            "value": 133745.0
+          },
+          {
+            "date": "2026-05-29T04:30:00Z",
+            "value": 134340.0
+          },
+          {
+            "date": "2026-05-29T05:15:00Z",
+            "value": 134750.0
+          },
+          {
+            "date": "2026-05-29T06:00:00Z",
+            "value": 134815.0
+          }
+        ],
+        "refresh_delta": 4825.0,
+        "refresh_delta_percent": 3.7118239864604967
       },
       {
         "key": "wti_crude",
-        "label": "WTI crude oil",
-        "value": "Source gap",
-        "source": "FRED / EIA",
-        "freshness": "watch",
-        "delay_label": "FRED_API_KEY missing or FRED series unavailable",
-        "updated_at": "2026-05-28T07:32:34Z",
-        "coverage_status": "coverage_gap",
+        "label": "WTI crude oil futures",
+        "value": "86.66",
+        "source": "Yahoo/Stooq delayed futures quote",
+        "freshness": "fresh",
+        "delay_label": "Yahoo/Stooq delayed futures quote observed at 2026-05-29T15:17:05Z",
+        "updated_at": "2026-05-29T15:17:05Z",
+        "coverage_status": "active",
         "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/DCOILWTICO"
+        "unit": "$",
+        "source_url": "https://finance.yahoo.com/quote/CL%3DF",
+        "points": [
+          {
+            "date": "2026-05-29T06:48:00Z",
+            "value": 87.54000091552734
+          },
+          {
+            "date": "2026-05-29T08:12:00Z",
+            "value": 88.91000366210938
+          },
+          {
+            "date": "2026-05-29T09:36:00Z",
+            "value": 87.31999969482422
+          },
+          {
+            "date": "2026-05-29T11:00:00Z",
+            "value": 87.43000030517578
+          },
+          {
+            "date": "2026-05-29T12:24:00Z",
+            "value": 87.66000366210938
+          },
+          {
+            "date": "2026-05-29T13:48:00Z",
+            "value": 87.30000305175781
+          },
+          {
+            "date": "2026-05-29T15:12:00Z",
+            "value": 86.68000030517578
+          },
+          {
+            "date": "2026-05-29T15:17:05Z",
+            "value": 86.66000366210938
+          }
+        ],
+        "refresh_delta": -2.240000000000009,
+        "refresh_delta_percent": -2.519685039370089
       },
       {
         "key": "vix",
         "label": "VIX",
-        "value": "Source gap",
-        "source": "FRED / Cboe",
-        "freshness": "watch",
-        "delay_label": "FRED_API_KEY missing or FRED series unavailable",
-        "updated_at": "2026-05-28T07:32:34Z",
-        "coverage_status": "coverage_gap",
+        "value": "15.55",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-05-29T15:11:46Z",
+        "updated_at": "2026-05-29T15:11:46Z",
+        "coverage_status": "active",
         "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/VIXCLS"
+        "source_url": "https://finance.yahoo.com/quote/%5EVIX",
+        "points": [
+          {
+            "date": "2026-05-29T08:14:00Z",
+            "value": 15.819999694824219
+          },
+          {
+            "date": "2026-05-29T09:13:00Z",
+            "value": 15.789999961853027
+          },
+          {
+            "date": "2026-05-29T10:12:00Z",
+            "value": 15.859999656677246
+          },
+          {
+            "date": "2026-05-29T11:11:00Z",
+            "value": 15.789999961853027
+          },
+          {
+            "date": "2026-05-29T12:10:00Z",
+            "value": 15.8100004196167
+          },
+          {
+            "date": "2026-05-29T13:09:00Z",
+            "value": 15.699999809265137
+          },
+          {
+            "date": "2026-05-29T14:13:00Z",
+            "value": 15.59000015258789
+          },
+          {
+            "date": "2026-05-29T15:11:46Z",
+            "value": 15.550000190734863
+          }
+        ],
+        "refresh_delta": -0.1899999999999995,
+        "refresh_delta_percent": -1.2071156289707718
       },
       {
         "key": "usd_krw",
         "label": "USD/KRW",
-        "value": "Source gap",
-        "source": "FRED / Federal Reserve H.10",
-        "freshness": "watch",
-        "delay_label": "FRED_API_KEY missing or FRED series unavailable",
-        "updated_at": "2026-05-28T07:32:34Z",
-        "coverage_status": "coverage_gap",
+        "value": "1,502.79",
+        "source": "Yahoo Finance delayed FX quote",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed FX quote observed at 2026-05-29T15:27:04Z",
+        "updated_at": "2026-05-29T15:27:04Z",
+        "coverage_status": "active",
         "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/DEXKOUS"
+        "unit": "KRW",
+        "source_url": "https://finance.yahoo.com/quote/KRW%3DX",
+        "points": [
+          {
+            "date": "2026-05-29T01:56:00Z",
+            "value": 1501.1800537109375
+          },
+          {
+            "date": "2026-05-29T03:52:00Z",
+            "value": 1503.780029296875
+          },
+          {
+            "date": "2026-05-29T05:48:00Z",
+            "value": 1503.97998046875
+          },
+          {
+            "date": "2026-05-29T07:44:00Z",
+            "value": 1507.5799560546875
+          },
+          {
+            "date": "2026-05-29T09:40:00Z",
+            "value": 1508.4200439453125
+          },
+          {
+            "date": "2026-05-29T11:36:00Z",
+            "value": 1506.8800048828125
+          },
+          {
+            "date": "2026-05-29T13:32:00Z",
+            "value": 1505.760009765625
+          },
+          {
+            "date": "2026-05-29T15:27:04Z",
+            "value": 1502.7900390625
+          }
+        ],
+        "refresh_delta": 9.0,
+        "refresh_delta_percent": 0.6024943265117587
       },
       {
         "key": "usd_jpy",
         "label": "USD/JPY",
-        "value": "Source gap",
-        "source": "FRED / Federal Reserve H.10",
-        "freshness": "watch",
-        "delay_label": "FRED_API_KEY missing or FRED series unavailable",
-        "updated_at": "2026-05-28T07:32:34Z",
-        "coverage_status": "coverage_gap",
+        "value": "159.16",
+        "source": "Yahoo Finance delayed FX quote",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed FX quote observed at 2026-05-29T15:27:05Z",
+        "updated_at": "2026-05-29T15:27:05Z",
+        "coverage_status": "active",
         "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/DEXJPUS"
+        "unit": "JPY",
+        "source_url": "https://finance.yahoo.com/quote/JPY%3DX",
+        "points": [
+          {
+            "date": "2026-05-29T03:06:00Z",
+            "value": 159.32000732421875
+          },
+          {
+            "date": "2026-05-29T05:09:00Z",
+            "value": 159.29800415039062
+          },
+          {
+            "date": "2026-05-29T07:12:00Z",
+            "value": 159.22900390625
+          },
+          {
+            "date": "2026-05-29T09:15:00Z",
+            "value": 159.26699829101562
+          },
+          {
+            "date": "2026-05-29T11:18:00Z",
+            "value": 159.28599548339844
+          },
+          {
+            "date": "2026-05-29T13:21:00Z",
+            "value": 159.26100158691406
+          },
+          {
+            "date": "2026-05-29T15:24:00Z",
+            "value": 159.15499877929688
+          },
+          {
+            "date": "2026-05-29T15:27:05Z",
+            "value": 159.16099548339844
+          }
+        ],
+        "refresh_delta": -0.056000000000011596,
+        "refresh_delta_percent": -0.03517212357977577
       },
       {
         "key": "us_2y",
         "label": "US Treasury 2Y",
-        "value": "Source gap",
-        "source": "FRED / US Treasury",
-        "freshness": "watch",
-        "delay_label": "FRED_API_KEY missing or FRED series unavailable",
-        "updated_at": "2026-05-28T07:32:34Z",
-        "coverage_status": "coverage_gap",
-        "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/DGS2",
+        "value": "3.99",
+        "source": "U.S. Treasury XML feed",
+        "freshness": "fresh",
+        "delay_label": "Treasury 2Y actual through 2026-05-28",
+        "updated_at": "2026-05-28T21:00:00Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "%",
+        "source_url": "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed",
+        "points": [
+          {
+            "date": "2026-05-18",
+            "value": 4.07
+          },
+          {
+            "date": "2026-05-19",
+            "value": 4.13
+          },
+          {
+            "date": "2026-05-20",
+            "value": 4.04
+          },
+          {
+            "date": "2026-05-21",
+            "value": 4.08
+          },
+          {
+            "date": "2026-05-22",
+            "value": 4.13
+          },
+          {
+            "date": "2026-05-26",
+            "value": 4.01
+          },
+          {
+            "date": "2026-05-27",
+            "value": 4.0
+          },
+          {
+            "date": "2026-05-28",
+            "value": 3.99
+          }
+        ],
         "next_event": {
           "title": "FOMC policy decision",
           "date": "2026-06-17",
@@ -354,14 +692,49 @@
       {
         "key": "us_3y",
         "label": "US Treasury 3Y",
-        "value": "Source gap",
-        "source": "FRED / US Treasury",
-        "freshness": "watch",
-        "delay_label": "FRED_API_KEY missing or FRED series unavailable",
-        "updated_at": "2026-05-28T07:32:34Z",
-        "coverage_status": "coverage_gap",
-        "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/DGS3",
+        "value": "4.07",
+        "source": "U.S. Treasury XML feed",
+        "freshness": "fresh",
+        "delay_label": "Treasury 3Y actual through 2026-05-28",
+        "updated_at": "2026-05-28T21:00:00Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "%",
+        "source_url": "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed",
+        "points": [
+          {
+            "date": "2026-05-18",
+            "value": 4.14
+          },
+          {
+            "date": "2026-05-19",
+            "value": 4.2
+          },
+          {
+            "date": "2026-05-20",
+            "value": 4.11
+          },
+          {
+            "date": "2026-05-21",
+            "value": 4.13
+          },
+          {
+            "date": "2026-05-22",
+            "value": 4.18
+          },
+          {
+            "date": "2026-05-26",
+            "value": 4.1
+          },
+          {
+            "date": "2026-05-27",
+            "value": 4.09
+          },
+          {
+            "date": "2026-05-28",
+            "value": 4.07
+          }
+        ],
         "next_event": {
           "title": "FOMC policy decision",
           "date": "2026-06-17",
@@ -372,14 +745,49 @@
       {
         "key": "us_5y",
         "label": "US Treasury 5Y",
-        "value": "Source gap",
-        "source": "FRED / US Treasury",
-        "freshness": "watch",
-        "delay_label": "FRED_API_KEY missing or FRED series unavailable",
-        "updated_at": "2026-05-28T07:32:34Z",
-        "coverage_status": "coverage_gap",
-        "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/DGS5",
+        "value": "4.15",
+        "source": "U.S. Treasury XML feed",
+        "freshness": "fresh",
+        "delay_label": "Treasury 5Y actual through 2026-05-28",
+        "updated_at": "2026-05-28T21:00:00Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "%",
+        "source_url": "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed",
+        "points": [
+          {
+            "date": "2026-05-18",
+            "value": 4.27
+          },
+          {
+            "date": "2026-05-19",
+            "value": 4.32
+          },
+          {
+            "date": "2026-05-20",
+            "value": 4.22
+          },
+          {
+            "date": "2026-05-21",
+            "value": 4.25
+          },
+          {
+            "date": "2026-05-22",
+            "value": 4.27
+          },
+          {
+            "date": "2026-05-26",
+            "value": 4.19
+          },
+          {
+            "date": "2026-05-27",
+            "value": 4.17
+          },
+          {
+            "date": "2026-05-28",
+            "value": 4.15
+          }
+        ],
         "next_event": {
           "title": "FOMC policy decision",
           "date": "2026-06-17",
@@ -390,14 +798,49 @@
       {
         "key": "us_10y",
         "label": "US Treasury 10Y",
-        "value": "Source gap",
-        "source": "FRED / US Treasury",
-        "freshness": "watch",
-        "delay_label": "FRED_API_KEY missing or FRED series unavailable",
-        "updated_at": "2026-05-28T07:32:34Z",
-        "coverage_status": "coverage_gap",
-        "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/DGS10",
+        "value": "4.45",
+        "source": "U.S. Treasury XML feed",
+        "freshness": "fresh",
+        "delay_label": "Treasury 10Y actual through 2026-05-28",
+        "updated_at": "2026-05-28T21:00:00Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "%",
+        "source_url": "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed",
+        "points": [
+          {
+            "date": "2026-05-18",
+            "value": 4.61
+          },
+          {
+            "date": "2026-05-19",
+            "value": 4.67
+          },
+          {
+            "date": "2026-05-20",
+            "value": 4.57
+          },
+          {
+            "date": "2026-05-21",
+            "value": 4.57
+          },
+          {
+            "date": "2026-05-22",
+            "value": 4.56
+          },
+          {
+            "date": "2026-05-26",
+            "value": 4.5
+          },
+          {
+            "date": "2026-05-27",
+            "value": 4.48
+          },
+          {
+            "date": "2026-05-28",
+            "value": 4.45
+          }
+        ],
         "next_event": {
           "title": "FOMC policy decision",
           "date": "2026-06-17",
@@ -409,30 +852,25 @@
         "key": "japan_policy_rate",
         "label": "BoJ policy rate",
         "value": "Source gap",
-        "source": "FRED / OECD Japan central bank rate",
+        "source": "Bank of Japan official releases",
         "freshness": "watch",
-        "delay_label": "FRED_API_KEY missing or FRED series unavailable",
-        "updated_at": "2026-05-28T07:32:34Z",
+        "delay_label": "Stale FRED/OECD monthly BoJ policy-rate data is blocked; wire an official current BoJ rate feed before displaying this tile.",
+        "updated_at": "2026-05-29T15:26:56Z",
         "coverage_status": "coverage_gap",
-        "refresh_seconds": 900,
-        "source_url": "https://fred.stlouisfed.org/series/IRSTCB01JPM156N",
-        "next_event": {
-          "title": "BoJ monetary-policy meeting",
-          "date": "2026-06-16",
-          "timezone": "Asia/Tokyo",
-          "source": "Bank of Japan MPM calendar"
-        }
+        "refresh_seconds": 43200,
+        "unit": "%",
+        "source_url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm"
       },
       {
         "key": "japan_2y",
         "label": "Japan govt 2Y",
         "value": "1.4",
         "source": "Japan MOF JGB yield curve",
-        "freshness": "fresh",
+        "freshness": "watch",
         "delay_label": "MOF 2Y JGB actual through 2026-04-30",
-        "updated_at": "2026-05-28T07:32:34Z",
+        "updated_at": "2026-04-30T21:00:00Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 2592000,
         "unit": "%",
         "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
         "points": [
@@ -465,11 +903,11 @@
         "label": "Japan govt 5Y",
         "value": "1.9",
         "source": "Japan MOF JGB yield curve",
-        "freshness": "fresh",
+        "freshness": "watch",
         "delay_label": "MOF 5Y JGB actual through 2026-04-30",
-        "updated_at": "2026-05-28T07:32:34Z",
+        "updated_at": "2026-04-30T21:00:00Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 2592000,
         "unit": "%",
         "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
         "points": [
@@ -502,11 +940,11 @@
         "label": "Japan govt 10Y",
         "value": "2.52",
         "source": "Japan MOF JGB yield curve",
-        "freshness": "fresh",
+        "freshness": "watch",
         "delay_label": "MOF 10Y JGB actual through 2026-04-30",
-        "updated_at": "2026-05-28T07:32:34Z",
+        "updated_at": "2026-04-30T21:00:00Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 2592000,
         "unit": "%",
         "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
         "points": [
@@ -537,31 +975,31 @@
       {
         "key": "pentagon_pizza_index",
         "label": "Pentagon pizza index",
-        "value": "4.2",
+        "value": "33.9",
         "source": "Pentagon.Pizza",
         "freshness": "fresh",
-        "delay_label": "Pentagon.Pizza average busyness across 18 monitored sites; 2 anomalies through 2026-05-28",
-        "updated_at": "2026-05-28T07:32:38.938Z",
+        "delay_label": "Pentagon.Pizza average busyness across 18 monitored sites; 0 anomalies through 2026-05-29",
+        "updated_at": "2026-05-29T15:27:02.277Z",
         "coverage_status": "active",
         "refresh_seconds": 300,
         "unit": "/100",
         "source_url": "https://pentagon.pizza/",
         "points": [
           {
-            "date": "2026-05-28T06:47:34Z",
-            "value": 0.0
+            "date": "2026-05-29T14:41:56Z",
+            "value": 22.0
           },
           {
-            "date": "2026-05-28T07:02:34Z",
-            "value": 2.0
+            "date": "2026-05-29T14:56:56Z",
+            "value": 28.0
           },
           {
-            "date": "2026-05-28T07:17:34Z",
-            "value": 6.0
+            "date": "2026-05-29T15:11:56Z",
+            "value": 38.0
           },
           {
-            "date": "2026-05-28T07:32:34Z",
-            "value": 15.0
+            "date": "2026-05-29T15:26:56Z",
+            "value": 48.0
           }
         ]
       }

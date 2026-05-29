@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-28T07:32:34Z",
-  "stale_after": "2026-05-28T19:32:34Z",
-  "hard_expires_at": "2026-06-04T07:32:34Z",
+  "generated_at": "2026-05-29T15:26:56Z",
+  "stale_after": "2026-05-30T03:26:56Z",
+  "hard_expires_at": "2026-06-05T15:26:56Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_QBTS",
-  "content_hash": "sha256:a5e4deab83bfe300160556506fde9225e2332ef0de75981c88ba7ca7878f8483",
+  "content_hash": "sha256:caa1761da96b80fb49e8ce57f9810ea330df5061b8ec46b11df767fb149cbc75",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -35,6 +35,30 @@
     },
     {
       "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "stooq_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "treasury_xml_feed",
+      "policy_version": 1
+    },
+    {
+      "source_key": "krx_open_api",
+      "policy_version": 1
+    },
+    {
+      "source_key": "data_go_kr",
+      "policy_version": 1
+    },
+    {
+      "source_key": "japan_mof_jgb_csv",
       "policy_version": 1
     },
     {
@@ -88,8 +112,8 @@
   ],
   "data": {
     "symbol": "QBTS",
-    "name": "D-Wave Quantum",
-    "generated_label": "2026-05-28T07:32:34Z",
+    "name": "D-Wave Quantum Inc.",
+    "generated_label": "2026-05-29T15:26:56Z",
     "summary": "No approved news events are currently linked to QBTS.",
     "events": []
   },
