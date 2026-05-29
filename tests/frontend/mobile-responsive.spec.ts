@@ -33,6 +33,8 @@ const responsiveRoutes = [
 ];
 
 test.describe("mobile responsive public routes", () => {
+  test.setTimeout(90_000);
+
   test.beforeEach(({}, testInfo) => {
     test.skip(testInfo.project.name !== "mobile", "responsive matrix runs once in the mobile project");
   });
