@@ -4,6 +4,8 @@ import argparse
 import asyncio
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 import json
 import os
 from pathlib import Path
@@ -26,6 +28,8 @@ KOREA_MARKET_DATA_SOURCES = (
     "fsc_derivatives",
     "ishares_ewy",
 )
+RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
+MAX_RETRY_DELAY_SECONDS = 3.0
 
 
 @dataclass(frozen=True)
@@ -41,6 +45,7 @@ class SourceProbe:
     expect: Callable[[httpx.Response], tuple[bool, str | None]] | None = None
     timeout_seconds: float = 10.0
     follow_redirects: bool = False
+    max_attempts: int = 2
 
 
 @dataclass(frozen=True)
@@ -365,7 +370,19 @@ async def check(name: str, probe: SourceProbe) -> SourceHealthResult:
             headers=headers,
             trust_env=False,
         ) as client:
-            response = await client.get(url, params=params)
+            response: httpx.Response | None = None
+            attempts = max(1, probe.max_attempts)
+            actual_attempts = 0
+            for attempt in range(attempts):
+                actual_attempts = attempt + 1
+                response = await client.get(url, params=params)
+                if response.status_code not in RETRYABLE_STATUS_CODES or attempt + 1 >= attempts:
+                    break
+                delay = _retry_delay_seconds(response, attempt)
+                if delay is None:
+                    break
+                await asyncio.sleep(delay)
+            assert response is not None
             elapsed = int((time.perf_counter() - start) * 1000)
             expect = probe.expect or _status_200
             ready, error = expect(response)
@@ -380,6 +397,7 @@ async def check(name: str, probe: SourceProbe) -> SourceHealthResult:
                     "required_env": probe.required_env,
                     "content_type": response.headers.get("content-type"),
                     "credential_env": required_env,
+                    "attempts": actual_attempts,
                 },
             )
     except Exception as exc:  # noqa: BLE001
@@ -391,6 +409,30 @@ async def check(name: str, probe: SourceProbe) -> SourceHealthResult:
             error=str(exc),
             details={"url": url, "required_env": _required_env_label(probe), "credential_env": required_env},
         )
+
+
+def _retry_delay_seconds(response: httpx.Response, attempt: int) -> float | None:
+    retry_after = _retry_after_seconds(response.headers.get("Retry-After"))
+    if retry_after is not None:
+        return retry_after if retry_after <= MAX_RETRY_DELAY_SECONDS else None
+    return min(MAX_RETRY_DELAY_SECONDS, 0.5 * (2**attempt))
+
+
+def _retry_after_seconds(value: str | None) -> float | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return max(0.0, float(text))
+    except ValueError:
+        pass
+    try:
+        retry_at = parsedate_to_datetime(text)
+    except (TypeError, ValueError):
+        return None
+    if retry_at.tzinfo is None:
+        retry_at = retry_at.replace(tzinfo=timezone.utc)
+    return max(0.0, (retry_at.astimezone(timezone.utc) - datetime.now(timezone.utc)).total_seconds())
 
 
 def _probe_url(probe: SourceProbe) -> str:

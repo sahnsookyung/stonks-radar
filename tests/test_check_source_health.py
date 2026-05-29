@@ -129,6 +129,18 @@ def test_twelve_data_quote_probe_rejects_quota_errors():
     assert "credits" in message
 
 
+def test_source_health_retry_delay_honors_short_retry_after():
+    response = httpx.Response(429, headers={"Retry-After": "2"})
+
+    assert check_source_health._retry_delay_seconds(response, 0) == 2.0
+
+
+def test_source_health_retry_delay_skips_long_retry_after():
+    response = httpx.Response(429, headers={"Retry-After": "60"})
+
+    assert check_source_health._retry_delay_seconds(response, 0) is None
+
+
 def test_probe_url_uses_configured_krx_base(monkeypatch):
     _reset_env(monkeypatch)
     monkeypatch.setenv("KRX_OPEN_API_BASE_URL", "https://data-dbg.krx.co.kr/svc/sample/apis")

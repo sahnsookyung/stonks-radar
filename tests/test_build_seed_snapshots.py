@@ -366,6 +366,43 @@ def test_macro_tiles_choose_freshest_allowed_public_quote_candidate(monkeypatch)
     assert by_key["wti_crude"]["value"] == "86.87"
     assert by_key["wti_crude"]["source"] == "Stooq delayed quote"
     assert by_key["wti_crude"]["updated_at"] == "2026-05-29T17:05:36Z"
+    assert "not guaranteed realtime exchange tape" in by_key["wti_crude"]["delay_label"]
+
+
+def test_http_json_retries_retryable_status(monkeypatch):
+    calls = []
+    sleeps = []
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self, _size=-1):
+            return b'{"ok": true}'
+
+    def fake_urlopen(req, timeout):
+        calls.append((req.full_url, timeout))
+        if len(calls) == 1:
+            raise error.HTTPError(
+                req.full_url,
+                429,
+                "Too Many Requests",
+                {"Retry-After": "0"},
+                BytesIO(),
+            )
+        return FakeResponse()
+
+    monkeypatch.setattr(build_seed_snapshots.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(build_seed_snapshots.time, "sleep", lambda seconds: sleeps.append(seconds))
+
+    payload = build_seed_snapshots._http_json("https://example.test/data.json")
+
+    assert payload == {"ok": True}
+    assert len(calls) == 2
+    assert sleeps == [0.0]
 
 
 def test_twelve_data_quote_series_treats_date_only_payload_as_daily(monkeypatch):

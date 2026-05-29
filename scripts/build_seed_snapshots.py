@@ -101,6 +101,22 @@ _RSS_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
 _LAST_FRED_REQUEST_AT = 0.0
 _LAST_KRX_REQUEST_AT = 0.0
 _LAST_FINRA_REQUEST_AT = 0.0
+_LAST_HTTP_PROVIDER_REQUEST_AT: dict[str, float] = {}
+
+HTTP_RETRY_STATUS_CODES = {408, 429, 500, 502, 503, 504}
+HTTP_DEFAULT_MAX_ATTEMPTS = 2
+HTTP_DEFAULT_MAX_RETRY_DELAY_SECONDS = 3.0
+HTTP_PROVIDER_MIN_INTERVAL_SECONDS = {
+    "fred": FRED_REQUEST_MIN_INTERVAL_SECONDS,
+    "krx": KRX_REQUEST_MIN_INTERVAL_SECONDS,
+    "finra": FINRA_REQUEST_MIN_INTERVAL_SECONDS,
+    "yahoo_finance_delayed_quote": 0.25,
+    "stooq_delayed_quote": 0.45,
+    "finnhub_quote": 2.1,
+    "twelve_data_quote": 10.2,
+    "ishares_ewy": 1.0,
+    "gdelt_doc": 0.5,
+}
 
 SECTORS = {
     "space": {
@@ -491,6 +507,7 @@ def _reset_runtime_caches() -> None:
     _LAST_FRED_REQUEST_AT = 0.0
     _LAST_KRX_REQUEST_AT = 0.0
     _LAST_FINRA_REQUEST_AT = 0.0
+    _LAST_HTTP_PROVIDER_REQUEST_AT.clear()
 
 
 def _runtime_env() -> dict[str, str]:
@@ -828,6 +845,7 @@ def _finra_dataset_rows(
                 payload=payload,
                 timeout=25,
                 throttle_key="finra",
+                max_bytes=8_000_000,
             )
         except Exception:
             continue
@@ -859,6 +877,7 @@ def _finra_bearer_token() -> str | None:
             headers={"Accept": "application/json", "Authorization": f"Basic {encoded}"},
             timeout=20,
             throttle_key="finra",
+            max_bytes=120_000,
         )
     except Exception:
         return None
@@ -892,10 +911,17 @@ def _web_metadata(url: str) -> dict[str, str] | None:
         return _WEB_METADATA_CACHE[url]
     user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
     try:
-        req = request.Request(url, headers={"User-Agent": user_agent, "Accept": "text/html"})
-        with request.urlopen(req, timeout=20) as response:
-            html = response.read(600_000).decode("utf-8", errors="ignore")
+        html = _http_text(
+            url,
+            headers={"User-Agent": user_agent, "Accept": "text/html"},
+            timeout=8,
+            max_bytes=300_000,
+            max_attempts=1,
+        )
     except Exception:
+        _WEB_METADATA_CACHE[url] = None
+        return None
+    if not html:
         _WEB_METADATA_CACHE[url] = None
         return None
     title = _html_field(html, r"<title[^>]*>(.*?)</title>") or parse.urlparse(url).netloc
@@ -908,11 +934,24 @@ def _web_metadata(url: str) -> dict[str, str] | None:
     return _WEB_METADATA_CACHE[url]
 
 
-def _http_text(url: str, *, headers: dict[str, str] | None = None, timeout: int = 20, max_bytes: int = 600_000) -> str | None:
+def _http_text(
+    url: str,
+    *,
+    headers: dict[str, str] | None = None,
+    timeout: int = 20,
+    max_bytes: int = 600_000,
+    throttle_key: str | None = None,
+    max_attempts: int = HTTP_DEFAULT_MAX_ATTEMPTS,
+) -> str | None:
     try:
-        req = request.Request(url, headers=headers or {})
-        with request.urlopen(req, timeout=timeout) as response:
-            return response.read(max_bytes).decode("utf-8", errors="ignore")
+        return _http_bytes(
+            url,
+            headers=headers,
+            timeout=timeout,
+            max_bytes=max_bytes,
+            throttle_key=throttle_key,
+            max_attempts=max_attempts,
+        ).decode("utf-8", errors="ignore")
     except Exception:
         return None
 
@@ -926,6 +965,7 @@ def _ishares_ewy_nav_series() -> dict[str, Any] | None:
         headers={"User-Agent": user_agent, "Accept": "text/html,application/xhtml+xml"},
         timeout=20,
         max_bytes=1_200_000,
+        throttle_key="ishares_ewy",
     )
     if not html:
         _ISHARES_FUND_CACHE[ISHARES_EWY_URL] = None
@@ -997,6 +1037,8 @@ def _yahoo_chart_series(symbol: str) -> dict[str, Any] | None:
             f"{YAHOO_FINANCE_CHART_URL}/{encoded_symbol}?{params}",
             headers={"Accept": "application/json", "User-Agent": user_agent},
             timeout=12,
+            throttle_key="yahoo_finance_delayed_quote",
+            max_bytes=1_000_000,
         )
     except Exception:
         _YAHOO_QUOTE_CACHE[cache_key] = None
@@ -1067,6 +1109,7 @@ def _stooq_quote_series(symbol: str) -> dict[str, Any] | None:
         headers={"Accept": "text/csv,*/*", "User-Agent": user_agent},
         timeout=12,
         max_bytes=80_000,
+        throttle_key="stooq_delayed_quote",
     )
     if not text:
         _STOOQ_QUOTE_CACHE[cache_key] = None
@@ -1110,6 +1153,8 @@ def _finnhub_quote_series(symbol: str) -> dict[str, Any] | None:
             f"{FINNHUB_QUOTE_URL}?{params}",
             headers={"Accept": "application/json"},
             timeout=12,
+            throttle_key="finnhub_quote",
+            max_bytes=80_000,
         )
     except Exception:
         _FINNHUB_QUOTE_CACHE[cache_key] = None
@@ -1154,6 +1199,8 @@ def _twelve_data_quote_series(symbol: str) -> dict[str, Any] | None:
             f"{TWELVE_DATA_QUOTE_URL}?{params}",
             headers={"Accept": "application/json"},
             timeout=12,
+            throttle_key="twelve_data_quote",
+            max_bytes=120_000,
         )
     except Exception:
         _TWELVE_DATA_QUOTE_CACHE[cache_key] = None
@@ -1341,7 +1388,13 @@ def _pentagon_pizza_payload(base_url: str) -> dict[str, Any] | None:
     user_agent = env.get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
     function_url = str(env.get("PENTAGON_PIZZA_FUNCTION_URL") or "").strip()
     anon_key = str(env.get("PENTAGON_PIZZA_SUPABASE_ANON_KEY") or "").strip()
-    html = _http_text(base_url, headers={"User-Agent": user_agent, "Accept": "text/html"})
+    html = _http_text(
+        base_url,
+        headers={"User-Agent": user_agent, "Accept": "text/html"},
+        timeout=8,
+        max_bytes=500_000,
+        max_attempts=1,
+    )
     if (not function_url or not anon_key) and html:
         discovered = _discover_pentagon_pizza_api(base_url, html, user_agent)
         if discovered:
@@ -1456,7 +1509,14 @@ def _gdelt_articles(
         }
     )
     try:
-        payload = _http_json(f"{GDELT_DOC_API_URL}?{params}", headers={"Accept": "application/json"}, timeout=8)
+        payload = _http_json(
+            f"{GDELT_DOC_API_URL}?{params}",
+            headers={"Accept": "application/json"},
+            timeout=5,
+            throttle_key="gdelt_doc",
+            max_bytes=1_000_000,
+            max_attempts=1,
+        )
     except Exception:
         _GDELT_ARTICLE_CACHE[cache_key] = []
         return []
@@ -1500,10 +1560,17 @@ def _rss_articles(
         return _RSS_ARTICLE_CACHE[cache_id]
     user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
     try:
-        req = request.Request(url, headers={"User-Agent": user_agent, "Accept": "application/rss+xml, application/xml"})
-        with request.urlopen(req, timeout=8) as response:
-            xml_text = response.read(800_000).decode("utf-8", errors="ignore")
+        xml_text = _http_text(
+            url,
+            headers={"User-Agent": user_agent, "Accept": "application/rss+xml, application/xml"},
+            timeout=5,
+            max_bytes=800_000,
+            max_attempts=1,
+        )
     except Exception:
+        _RSS_ARTICLE_CACHE[cache_id] = []
+        return []
+    if not xml_text:
         _RSS_ARTICLE_CACHE[cache_id] = []
         return []
     try:
@@ -1587,20 +1654,113 @@ def _http_json(
     payload: dict[str, Any] | None = None,
     timeout: int = 20,
     throttle_key: str | None = None,
+    max_bytes: int = 2_000_000,
+    max_attempts: int = HTTP_DEFAULT_MAX_ATTEMPTS,
 ) -> Any:
-    global _LAST_FINRA_REQUEST_AT
-    if throttle_key == "finra":
-        elapsed = time.monotonic() - _LAST_FINRA_REQUEST_AT
-        if elapsed < FINRA_REQUEST_MIN_INTERVAL_SECONDS:
-            time.sleep(FINRA_REQUEST_MIN_INTERVAL_SECONDS - elapsed)
     data = json.dumps(payload).encode() if payload is not None else None
-    req = request.Request(url, data=data, headers=headers or {}, method=method)
+    body = _http_bytes(
+        url,
+        method=method,
+        headers=headers,
+        data=data,
+        timeout=timeout,
+        throttle_key=throttle_key,
+        max_bytes=max_bytes,
+        max_attempts=max_attempts,
+    )
+    return json.loads(body.decode())
+
+
+def _http_bytes(
+    url: str,
+    *,
+    method: str = "GET",
+    headers: dict[str, str] | None = None,
+    data: bytes | None = None,
+    timeout: int = 20,
+    throttle_key: str | None = None,
+    max_bytes: int = 2_000_000,
+    max_attempts: int = HTTP_DEFAULT_MAX_ATTEMPTS,
+) -> bytes:
+    attempts = max(1, max_attempts)
+    last_error: Exception | None = None
+    for attempt in range(attempts):
+        _throttle_http_provider(throttle_key)
+        req = request.Request(url, data=data, headers=headers or {}, method=method)
+        try:
+            with request.urlopen(req, timeout=timeout) as response:
+                body = response.read(max_bytes + 1)
+            if len(body) > max_bytes:
+                raise ValueError(f"response exceeded {max_bytes} bytes")
+            _mark_http_provider(throttle_key)
+            return body
+        except error.HTTPError as exc:
+            _mark_http_provider(throttle_key)
+            last_error = exc
+            delay = _http_retry_delay(exc, attempt)
+            if exc.code in HTTP_RETRY_STATUS_CODES and delay is not None and attempt + 1 < attempts:
+                time.sleep(delay)
+                continue
+            raise
+        except (TimeoutError, error.URLError) as exc:
+            _mark_http_provider(throttle_key)
+            last_error = exc
+            delay = _http_retry_delay(exc, attempt)
+            if delay is not None and attempt + 1 < attempts:
+                time.sleep(delay)
+                continue
+            raise
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError("HTTP request failed before an attempt was made")
+
+
+def _throttle_http_provider(throttle_key: str | None) -> None:
+    if not throttle_key:
+        return
+    min_interval = HTTP_PROVIDER_MIN_INTERVAL_SECONDS.get(throttle_key)
+    if min_interval is None:
+        return
+    elapsed = time.monotonic() - _LAST_HTTP_PROVIDER_REQUEST_AT.get(throttle_key, 0.0)
+    if elapsed < min_interval:
+        time.sleep(min_interval - elapsed)
+
+
+def _mark_http_provider(throttle_key: str | None) -> None:
+    if throttle_key:
+        _LAST_HTTP_PROVIDER_REQUEST_AT[throttle_key] = time.monotonic()
+
+
+def _http_retry_delay(exc: Exception, attempt: int) -> float | None:
+    retry_after = _http_retry_after_seconds(exc)
+    if retry_after is not None:
+        if retry_after > HTTP_DEFAULT_MAX_RETRY_DELAY_SECONDS:
+            return None
+        return max(0.0, retry_after)
+    return min(HTTP_DEFAULT_MAX_RETRY_DELAY_SECONDS, 0.5 * (2**attempt))
+
+
+def _http_retry_after_seconds(exc: Exception) -> float | None:
+    headers = getattr(exc, "headers", None)
+    if not headers:
+        return None
+    raw_value = headers.get("Retry-After") if hasattr(headers, "get") else None
+    if raw_value is None:
+        return None
+    text = str(raw_value).strip()
+    if not text:
+        return None
     try:
-        with request.urlopen(req, timeout=timeout) as response:
-            return json.loads(response.read().decode())
-    finally:
-        if throttle_key == "finra":
-            _LAST_FINRA_REQUEST_AT = time.monotonic()
+        return max(0.0, float(text))
+    except ValueError:
+        pass
+    try:
+        retry_at = parsedate_to_datetime(text)
+    except (TypeError, ValueError):
+        return None
+    if retry_at.tzinfo is None:
+        retry_at = retry_at.replace(tzinfo=timezone.utc)
+    return max(0.0, (retry_at.astimezone(timezone.utc) - datetime.now(timezone.utc)).total_seconds())
 
 
 def _json_rows(payload: Any) -> list[dict[str, Any]]:
@@ -2990,17 +3150,35 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             stale_after_hours=stale_after_hours,
         )
         effective_refresh_seconds = refresh_seconds if freshness == "fresh" else max(refresh_seconds, 43200)
+        source_label = (
+            selected_source_name
+            if selected_source_name.lower().endswith("quote")
+            else f"{selected_source_name} quote"
+        )
+        detail_en = (
+            f"{source_label} observed at {series['updated_at']}; "
+            "not guaranteed realtime exchange tape."
+        )
+        detail_ko = (
+            f"{source_label} 관측 {series['updated_at']}; "
+            "실시간 거래소 시세를 보장하지 않습니다."
+        )
+        if freshness != "fresh":
+            detail_en = (
+                f"Latest available {source_label} observed at {series['updated_at']}; "
+                "market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape."
+            )
+            detail_ko = (
+                f"사용 가능한 최신 {source_label} 관측 {series['updated_at']}; "
+                "시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다."
+            )
         payload = tile(
             key,
             label_en,
             label_ko,
             _format_metric_value(float(series["value"]), decimals),
             selected_source_name,
-            _t(
-                locale,
-                f"{selected_source_name} observed at {series['updated_at']}",
-                f"{selected_source_name} 관측 {series['updated_at']}",
-            ),
+            _t(locale, detail_en, detail_ko),
             freshness,
             unit,
             source_url,
@@ -3771,10 +3949,10 @@ def _source_status() -> dict[str, Any]:
     sec_user_agent = env.get("SEC_USER_AGENT", "")
     sec_status = "ready" if "@" in sec_user_agent and "contact@example.com" not in sec_user_agent else "degraded"
     sec_warning = None if sec_status == "ready" else "SEC_USER_AGENT must contain a real contact in production"
-    twelve_status, twelve_warning = status_for("TWELVE_DATA_API_KEY", "TWELVE_DATA_API_KEY enables sparse equity/FX fallback checks; free quota is too small for broad market-pulse polling")
+    twelve_status, twelve_warning = status_for("TWELVE_DATA_API_KEY", "TWELVE_DATA_API_KEY enables sparse equity/FX fallback checks; free quota is too small for broad market-pulse polling, so snapshots throttle it to at most one request every 10 seconds when allowlisted")
     alpha_status, alpha_warning = status_for("ALPHA_VANTAGE_API_KEY", "ALPHA_VANTAGE_API_KEY enables portfolio history fallback")
     fmp_status, fmp_warning = status_for("FMP_API_KEY", "FMP_API_KEY enables EOD/fundamental fallback")
-    finnhub_status, finnhub_warning = status_for("FINNHUB_API_KEY", "FINNHUB_API_KEY enables current US equity quote probes; public display requires MARKET_PULSE_PUBLIC_PROVIDER_ALLOWLIST=finnhub after source-policy approval")
+    finnhub_status, finnhub_warning = status_for("FINNHUB_API_KEY", "FINNHUB_API_KEY enables current US equity quote probes with conservative throttling; public display requires MARKET_PULSE_PUBLIC_PROVIDER_ALLOWLIST=finnhub after source-policy approval")
     nasdaq_status, nasdaq_warning = status_for("NASDAQ_DATA_LINK_API_KEY", "NASDAQ_DATA_LINK_API_KEY enables future Nasdaq Data Link datasets")
     if any(_env_has(env, key) for key in ("DATA_GO_KR_SERVICE_KEY", "DATA_GO_KR_API_KEY", "PUBLIC_DATA_API_KEY", "KOREA_PUBLIC_DATA_API_KEY")):
         data_go_status, data_go_warning = "ready", None
@@ -3830,10 +4008,10 @@ def _source_status() -> dict[str, Any]:
         ("fmp", "market_data", fmp_status, "FREE_ONLY", fmp_warning),
         ("finnhub", "market_data", finnhub_status, "FREE_ONLY", finnhub_warning),
         ("nasdaq_data_link", "market_data", nasdaq_status, "FREE_ONLY", nasdaq_warning),
-        ("krx_open_api", "official_api", krx_status, "FREE_ONLY", krx_warning),
+        ("krx_open_api", "official_api", krx_status, "FREE_ONLY", krx_warning or "Official Korea Exchange data is preferred when authorized; fall back to delayed public quotes while KRX service approval is unavailable"),
         ("data_go_kr", "official_api", data_go_status, "FREE_ONLY", data_go_warning),
-        ("yahoo_finance_delayed_quote", "market_data", "ready", "FREE_ONLY", "Public delayed quote fallback for time-sensitive tiles when official/FRED series are stale; the snapshot builder now compares candidates and uses the freshest allowed quote"),
-        ("stooq_delayed_quote", "market_data", "ready", "FREE_ONLY", "Public delayed quote fallback for indexes/futures; selected when fresher than Yahoo for the same tile"),
+        ("yahoo_finance_delayed_quote", "market_data", "ready", "FREE_ONLY", "Public delayed quote fallback for time-sensitive tiles when official/FRED series are stale; throttled and treated as not guaranteed realtime tape"),
+        ("stooq_delayed_quote", "market_data", "ready", "FREE_ONLY", "Public delayed quote fallback for indexes/futures; selected only when fresher than Yahoo and throttled as an unofficial public feed"),
         ("treasury_xml_feed", "official_xml", "ready", "FREE_ONLY", None),
         ("japan_mof_jgb_csv", "official_csv", "ready", "FREE_ONLY", None),
         ("finra", "official_api", finra_status, "FREE_ONLY", finra_warning),
