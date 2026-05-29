@@ -39,6 +39,8 @@ class SourceProbe:
     api_key_param: str | None = "api_key"
     auth_header: str | None = None
     expect: Callable[[httpx.Response], tuple[bool, str | None]] | None = None
+    timeout_seconds: float = 10.0
+    follow_redirects: bool = False
 
 
 @dataclass(frozen=True)
@@ -140,6 +142,7 @@ SOURCES: dict[str, SourceProbe] = {
         "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml",
         params={"data": "daily_treasury_yield_curve", "field_tdr_date_value": "2026"},
         expect=_html_contains("DailyTreasuryYieldCurveRateData", "BC_10YEAR"),
+        timeout_seconds=20.0,
     ),
     "sec_edgar": SourceProbe(
         "https://data.sec.gov/submissions/CIK0000320193.json",
@@ -279,7 +282,12 @@ async def check(name: str, probe: SourceProbe) -> SourceHealthResult:
     url = _probe_url(probe)
     start = time.perf_counter()
     try:
-        async with httpx.AsyncClient(timeout=10, follow_redirects=False, headers=headers) as client:
+        async with httpx.AsyncClient(
+            timeout=probe.timeout_seconds,
+            follow_redirects=probe.follow_redirects,
+            headers=headers,
+            trust_env=False,
+        ) as client:
             response = await client.get(url, params=params)
             elapsed = int((time.perf_counter() - start) * 1000)
             expect = probe.expect or _status_200
