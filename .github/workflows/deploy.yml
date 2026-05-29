@@ -103,7 +103,7 @@ jobs:
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
-            'cd /opt/stonks-radar && docker compose -f compose.yaml -f infra/docker-compose.prod.yml run --rm worker python scripts/publish_runtime_snapshots.py --generated-by github-actions-deploy'
+            'cd /opt/stonks-radar && docker compose -f compose.yaml -f infra/docker-compose.prod.yml run --rm -e PYTHONPATH=/app worker python scripts/publish_runtime_snapshots.py --generated-by github-actions-deploy'
 
       - name: Verify origin health
         env:
