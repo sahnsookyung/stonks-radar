@@ -5,6 +5,7 @@ import json
 import os
 import re
 import shutil
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -19,7 +20,27 @@ from sqlalchemy.orm import Session
 from frw_api.services.news.snapshot_builder import build_reviewed_news_snapshots
 from frw_api.services.publication_gate import EventGateInput, can_publish_event
 
-ROOT = Path(__file__).resolve().parents[5]
+
+def _resolve_repo_root() -> Path:
+    current = Path(__file__).resolve()
+    candidates: list[Path] = []
+    for env_name in ("STONKS_REPO_ROOT", "APP_ROOT"):
+        if raw := os.getenv(env_name):
+            candidates.append(Path(raw))
+    candidates.extend([Path.cwd(), Path("/app")])
+    candidates.extend(current.parents)
+    for candidate in candidates:
+        root = candidate.resolve()
+        if (root / "packages" / "schemas" / "snapshots").is_dir() and (
+            root / "apps" / "web" / "public" / "public"
+        ).is_dir():
+            return root
+    return current.parents[5]
+
+
+ROOT = _resolve_repo_root()
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 WEB_PUBLIC = ROOT / "apps" / "web" / "public" / "public"
 SCHEMA_DIR = ROOT / "packages" / "schemas" / "snapshots"
 LOCAL_ARTIFACTS = Path(os.getenv("SNAPSHOT_ARTIFACT_DIR", str(ROOT / "artifacts" / "snapshots")))
