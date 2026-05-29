@@ -20,6 +20,7 @@ import { useLocale } from "../lib/locale";
 import { snapshotQueries } from "../lib/snapshots";
 
 const dashboardSignalKeys = new Set(["breaking_market_news"]);
+const chokepointNewsPattern = /hormuz|strait of hormuz|iran|red sea/i;
 
 export function HomePage() {
   const locale = useLocale();
@@ -193,7 +194,7 @@ function DashboardSignalRadar({ lanes }: { lanes: AlternativeSignalLane[] }) {
 
 function AlternativeSignalCard({ lane }: { lane: AlternativeSignalLane }) {
   const { t } = useTranslation();
-  const visibleItems = lane.items.slice(0, 4);
+  const visibleItems = visibleAlternativeSignalItems(lane);
   return (
     <article className="panel flex min-h-[220px] min-w-0 flex-col p-4">
       <div className="flex items-start justify-between gap-3">
@@ -242,10 +243,21 @@ function AlternativeSignalCard({ lane }: { lane: AlternativeSignalLane }) {
   );
 }
 
+function visibleAlternativeSignalItems(lane: AlternativeSignalLane) {
+  if (lane.key !== "breaking_market_news") return lane.items.slice(0, 4);
+  return [...lane.items]
+    .sort((left, right) => {
+      const leftMatches = chokepointNewsPattern.test(`${left.label} ${left.detail}`) ? 0 : 1;
+      const rightMatches = chokepointNewsPattern.test(`${right.label} ${right.detail}`) ? 0 : 1;
+      return leftMatches - rightMatches;
+    })
+    .slice(0, 4);
+}
+
 function dashboardMapEvents(events: PublicEvent[], lanes: AlternativeSignalLane[], locale: "en" | "ko") {
   const breakingLane = lanes.find((lane) => lane.key === "breaking_market_news");
   const chokepointItems =
-    breakingLane?.items.filter((item) => /hormuz|strait of hormuz|iran|red sea/i.test(`${item.label} ${item.detail}`)) ?? [];
+    breakingLane?.items.filter((item) => chokepointNewsPattern.test(`${item.label} ${item.detail}`)) ?? [];
   if (!breakingLane || chokepointItems.length === 0 || events.some((event) => event.id === "event_breaking_hormuz_watch")) {
     return events;
   }
