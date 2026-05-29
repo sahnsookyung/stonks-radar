@@ -253,8 +253,8 @@ function lazyRoute<T extends Record<string, ComponentType>>(
 
 function RouteFallback() {
   return (
-    <main className="grid min-h-screen place-items-center bg-paper text-sm font-semibold text-muted">
+    <div className="grid min-h-[70vh] place-items-center bg-paper text-sm font-semibold text-muted" role="status" aria-live="polite">
       Loading
-    </main>
+    </div>
   );
 }
