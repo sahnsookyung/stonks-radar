@@ -187,7 +187,14 @@
         "source_url": { "type": "string" },
         "freshness": { "enum": ["fresh", "watch", "stale", "unsupported"] },
         "severity": { "enum": ["low", "medium", "high", "critical"] },
-        "updated_at": { "type": "string" }
+        "updated_at": { "type": "string" },
+        "symbols": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "dataset": { "type": "string" },
+        "as_of_date": { "type": "string" },
+        "provider_observation_key": { "type": "string" }
       },
       "additionalProperties": false
     },
