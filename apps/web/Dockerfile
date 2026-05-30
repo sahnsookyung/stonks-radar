@@ -1,6 +1,6 @@
 FROM node:22-alpine AS build
 WORKDIR /app
-RUN apk add --no-cache python3
+RUN apk add --no-cache python3 tzdata
 COPY package.json package-lock*.json ./
 COPY apps/web/package.json apps/web/package.json
 COPY packages/shared-types/package.json packages/shared-types/package.json
