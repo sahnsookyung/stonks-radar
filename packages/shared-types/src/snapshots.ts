@@ -271,6 +271,70 @@ export interface AlternativeSignalItem {
   freshness: Freshness;
   severity: Severity;
   updated_at: string;
+  symbols?: string[];
+  dataset?: string;
+  as_of_date?: string;
+  provider_observation_key?: string;
+}
+
+export type EntityRouteKind = "ticker" | "reference_entity" | "unsupported";
+export type SectorCatalystType =
+  | "earnings"
+  | "filing"
+  | "investor_event"
+  | "launch_window"
+  | "mission_window"
+  | "contract_milestone"
+  | "company_event"
+  | "lockup_warrant"
+  | "source_review";
+export type ShortFactType = "short_interest" | "short_volume" | "short_research";
+
+export interface TrackedEntityRef {
+  entity_id: string;
+  symbol: string;
+  display_symbol: string;
+  name: string;
+  route_kind: EntityRouteKind;
+  route_key: string;
+  sector_keys: string[];
+  tags: string[];
+  source_strength: string;
+  freshness: Freshness;
+}
+
+export interface TickerCalendarItem {
+  id: string;
+  entity_id: string;
+  symbol: string;
+  title: string;
+  catalyst_type: SectorCatalystType;
+  scheduled_at: string | null;
+  scheduled_local_date: string;
+  timezone: string;
+  source: string;
+  source_url: string;
+  freshness: Freshness;
+  confidence: number;
+}
+
+export interface ShortFact {
+  id: string;
+  entity_id: string;
+  symbol: string;
+  fact_type: ShortFactType;
+  dataset: string;
+  as_of_date: string;
+  retrieved_at: string;
+  last_attempted_at: string;
+  attempt_status: string;
+  value: number | null;
+  unit: string;
+  source: string;
+  source_url: string;
+  provider_observation_key: string;
+  freshness: Freshness;
+  caveat: string;
 }
 
 export interface SectorTile {
@@ -343,15 +407,83 @@ export interface SectorSnapshotData {
   key: string;
   name: string;
   overview: string;
+  tracked_entities: TrackedEntityRef[];
   monitored_entities: string[];
   monitored_instruments: string[];
   country_region_exposure: string[];
   recent_events: PublicEvent[];
   upcoming_calendar_items: CalendarItem[];
+  ticker_calendar_items: TickerCalendarItem[];
+  sector_news: NewsEventListItem[];
+  sector_short_facts: ShortFact[];
   macro_geopolitical_drivers: string[];
   reference_indicators: MetricTile[];
   scenario_baskets: ScenarioBasketSummary[];
   risks_and_caveats: string[];
+  freshness: Freshness;
+  source_strength: string;
+}
+
+export interface ReferenceEntitySnapshotData {
+  entity: TrackedEntityRef;
+  summary: string;
+  source_links: SourceLink[];
+  latest_news: NewsEventListItem[];
+  ticker_calendar_items: TickerCalendarItem[];
+  related_entities: TrackedEntityRef[];
+  caveats: string[];
+  freshness: Freshness;
+}
+
+export type FundHoldingKind = "stock" | "call" | "put" | "other";
+
+export interface FundPortfolioHolding {
+  id: string;
+  symbol: string | null;
+  issuer_name: string;
+  title_of_class: string;
+  cusip: string;
+  value_usd: number;
+  shares: number | null;
+  share_type: string | null;
+  put_call: "Call" | "Put" | null;
+  holding_kind: FundHoldingKind;
+  portfolio_weight: number;
+  source_url: string;
+  source_lineage: string;
+}
+
+export interface FundPortfolioFiling {
+  source: "SEC_EDGAR_13F";
+  form_type: string;
+  accession_number: string;
+  report_date: string;
+  filed_at: string;
+  primary_document_url: string;
+  information_table_url: string;
+}
+
+export interface FundPortfolioSnapshotData {
+  fund_key: string;
+  display_name: string;
+  manager_name: string;
+  fund_name: string;
+  cik: string;
+  generated_label: string;
+  source_url: string;
+  filing: FundPortfolioFiling | null;
+  summary_metrics: {
+    total_reported_value_usd: number;
+    long_equity_value_usd: number;
+    option_notional_value_usd: number;
+    holding_count: number;
+    equity_holding_count: number;
+    option_holding_count: number;
+  };
+  holdings: FundPortfolioHolding[];
+  top_equity_holdings: FundPortfolioHolding[];
+  option_holdings: FundPortfolioHolding[];
+  caveats: string[];
   freshness: Freshness;
   source_strength: string;
 }

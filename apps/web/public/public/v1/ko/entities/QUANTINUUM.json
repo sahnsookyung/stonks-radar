@@ -1,0 +1,213 @@
+{
+  "schema_version": "1.0",
+  "snapshot_version": 1,
+  "locale": "ko",
+  "generated_at": "2026-05-30T12:30:53Z",
+  "stale_after": "2026-05-31T00:30:53Z",
+  "hard_expires_at": "2026-06-06T12:30:53Z",
+  "object_type": "reference_entity",
+  "object_key": "QUANTINUUM",
+  "content_hash": "sha256:74b3c1530da266710e6e64417d83fb0f1bb34eda4f75abbe4d0309ce2dbc5b20",
+  "source_policy_versions": [
+    {
+      "source_key": "federal_reserve",
+      "policy_version": 1
+    },
+    {
+      "source_key": "sec_edgar",
+      "policy_version": 1
+    },
+    {
+      "source_key": "eia",
+      "policy_version": 1
+    },
+    {
+      "source_key": "world_bank",
+      "policy_version": 1
+    },
+    {
+      "source_key": "gdelt",
+      "policy_version": 1
+    },
+    {
+      "source_key": "google_news_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "stooq_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "treasury_xml_feed",
+      "policy_version": 1
+    },
+    {
+      "source_key": "krx_open_api",
+      "policy_version": 1
+    },
+    {
+      "source_key": "data_go_kr",
+      "policy_version": 1
+    },
+    {
+      "source_key": "japan_mof_jgb_csv",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bis",
+      "policy_version": 1
+    },
+    {
+      "source_key": "who",
+      "policy_version": 1
+    },
+    {
+      "source_key": "cdc",
+      "policy_version": 1
+    },
+    {
+      "source_key": "company_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ecb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_korea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_japan",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bcb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "rocket_lab_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ionq_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "iea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "source_policy",
+      "policy_version": 1
+    }
+  ],
+  "data": {
+    "entity": {
+      "entity_id": "QUANTINUUM",
+      "symbol": "QUANTINUUM",
+      "display_symbol": "Quantinuum",
+      "name": "Quantinuum",
+      "route_kind": "reference_entity",
+      "route_key": "QUANTINUUM",
+      "sector_keys": [
+        "quantum"
+      ],
+      "tags": [
+        "quantum",
+        "private-reference",
+        "official-news"
+      ],
+      "source_strength": "registry",
+      "freshness": "watch"
+    },
+    "summary": "Quantinuum은 참고 엔티티로 추적됩니다. 비상장 또는 비거래 대상일 수 있어 시장가격 위젯은 표시하지 않습니다.",
+    "source_links": [
+      {
+        "label": "Quantinuum Newsroom",
+        "url": "https://www.quantinuum.com/news/news",
+        "source_key": "quantinuum_newsroom",
+        "policy_version": 1
+      }
+    ],
+    "latest_news": [],
+    "ticker_calendar_items": [],
+    "related_entities": [
+      {
+        "entity_id": "IONQ",
+        "symbol": "IONQ",
+        "display_symbol": "IONQ",
+        "name": "IONQ",
+        "route_kind": "ticker",
+        "route_key": "IONQ",
+        "sector_keys": [
+          "quantum"
+        ],
+        "tags": [
+          "quantum",
+          "government-funding",
+          "high-volatility"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      },
+      {
+        "entity_id": "RGTI",
+        "symbol": "RGTI",
+        "display_symbol": "RGTI",
+        "name": "RGTI",
+        "route_kind": "ticker",
+        "route_key": "RGTI",
+        "sector_keys": [
+          "quantum"
+        ],
+        "tags": [
+          "quantum",
+          "small-cap",
+          "high-volatility"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      },
+      {
+        "entity_id": "QBTS",
+        "symbol": "QBTS",
+        "display_symbol": "QBTS",
+        "name": "QBTS",
+        "route_kind": "ticker",
+        "route_key": "QBTS",
+        "sector_keys": [
+          "quantum"
+        ],
+        "tags": [
+          "quantum",
+          "small-cap",
+          "high-volatility"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      }
+    ],
+    "caveats": [
+      "참고 엔티티는 거래 가능한 공개 증권을 의미하지 않습니다.",
+      "출처 연결 공개 업데이트만 표시합니다."
+    ],
+    "freshness": "watch"
+  },
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "시장 지표는 라이선스가 없는 한 지연/참조 데이터입니다.",
+      "severity": "info"
+    }
+  ],
+  "corrections": []
+}

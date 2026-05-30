@@ -33,6 +33,7 @@ policy changes explicitly.
 | Cerebras | `CEREBRAS_API_KEY` | Free tier is model-specific; current published examples include 10-30 RPM, 100-14,400 RPD, and 60k-64k TPM depending on model | Disabled until key is present; use only manual/offline public-fact tasks. |
 | Mistral | `MISTRAL_API_KEY` | Free API tier exists; limits vary by subscription tier and model, exposed via response headers | Disabled until key is present; use only manual/offline public-fact tasks. |
 | OpenRouter | `OPENROUTER_API_KEY` | Free models: 20 RPM and 50 requests/day before $10 credits; 1,000/day after $10 credits | Disabled while `PAID_USAGE_ALLOWED=false` unless using zero-credit free models under 25/day. |
+| NVIDIA NIM | `NVIDIA_API_KEY` or `NVIDIA_NIM_API_KEY`; optional `NVIDIA_NIM_MODEL_KEY` | NVIDIA-hosted NIM endpoints are OpenAI-compatible; public catalog/free access is model/account specific, so runtime still enforces zero paid overflow and hard daily limits | Preferred external public-facts provider after local LLM when a key is configured and `LLM_GLOBAL_DAILY_HARD_LIMIT` allows calls. |
 | Hugging Face Hub | `HF_TOKEN` | Hub free-user bucket: 1,000 API calls/5 minutes; resolver bucket is separate and higher | Hub metadata/download only; prefer resolver URLs and cache aggressively. |
 | Hugging Face Inference Providers | `HF_TOKEN` | Free routed inference credits are $0.10/month for free users; no pay-as-you-go after credits unless account is paid | Disabled until token is present; embeddings/classification only, no paid overflow. |
 

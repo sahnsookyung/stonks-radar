@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-29T15:26:56Z",
-  "stale_after": "2026-05-30T03:26:56Z",
-  "hard_expires_at": "2026-06-05T15:26:56Z",
+  "generated_at": "2026-05-30T12:30:53Z",
+  "stale_after": "2026-05-31T00:30:53Z",
+  "hard_expires_at": "2026-06-06T12:30:53Z",
   "object_type": "scenario_basket",
   "object_key": "energy-supply-shock",
-  "content_hash": "sha256:02a181760c0b08275e8ba34788bdb91c71d3272acfc28eec256b5dc1f6837157",
+  "content_hash": "sha256:c2fb5747041929ea33728f8e945585b588f61368967a4e9345fff82b2eab6365",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -148,7 +148,7 @@
       }
     ],
     "risk_summary": "출처 데이터가 오래되거나 정책 리스크가 반전되거나 섹터 노출이 예상보다 약하면 시나리오가 실패할 수 있습니다.",
-    "freshness_timestamp": "2026-05-29T15:26:56Z",
+    "freshness_timestamp": "2026-05-30T12:30:53Z",
     "data_delay_warning": "지연/참조 지표만 사용하며 증권사 연결이나 주문 실행은 없습니다.",
     "disclaimer": "리서치 목적입니다. 개인화 금융 조언이 아니며 매수, 매도, 배분 추천으로 해석하지 마십시오.",
     "approval_status": "approved"

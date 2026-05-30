@@ -175,6 +175,51 @@ export function PortfolioLabPage() {
         </div>
       </section>
 
+      <section className="grid gap-3 md:grid-cols-2">
+        <Link
+          to="/$locale/funds/$fundKey"
+          params={{ locale, fundKey: "situational-awareness" }}
+          className="focus-ring panel grid min-h-32 gap-2 p-5 hover:border-accent"
+        >
+          <div className="flex items-center gap-2 text-sm font-semibold uppercase text-accent">
+            <DatabaseZap className="h-4 w-4" />
+            {isKo ? "공개 13F 포트폴리오" : "Public 13F portfolio"}
+          </div>
+          <h2 className="safe-text text-xl font-bold">
+            {isKo ? "레오폴드 아셴브레너 / Situational Awareness" : "Leopold Aschenbrenner / Situational Awareness"}
+          </h2>
+          <p className="safe-text text-sm leading-6 text-muted">
+            {isKo
+              ? "SEC EDGAR XML 정보표에서 지연 분기 보유 종목을 재구성합니다."
+              : "Reconstructs delayed quarterly holdings from SEC EDGAR XML information tables."}
+          </p>
+          <span className="inline-flex items-center gap-2 text-sm font-semibold text-accent">
+            {isKo ? "열기" : "Open"}
+            <ArrowRight className="h-4 w-4" />
+          </span>
+        </Link>
+        <Link
+          to="/$locale/trump-filings"
+          params={{ locale }}
+          className="focus-ring panel grid min-h-32 gap-2 p-5 hover:border-accent"
+        >
+          <div className="flex items-center gap-2 text-sm font-semibold uppercase text-accent">
+            <Info className="h-4 w-4" />
+            {isKo ? "공개 공시 데이터베이스" : "Public disclosure database"}
+          </div>
+          <h2 className="safe-text text-xl font-bold">{isKo ? "트럼프 공개 주식 공시" : "Trump public stock disclosures"}</h2>
+          <p className="safe-text text-sm leading-6 text-muted">
+            {isKo
+              ? "SEC/OGE 원문 연결 거래 행과 재구성 한계를 같이 표시합니다."
+              : "Shows source-linked SEC/OGE transaction rows with reconstruction limits kept visible."}
+          </p>
+          <span className="inline-flex items-center gap-2 text-sm font-semibold text-accent">
+            {isKo ? "열기" : "Open"}
+            <ArrowRight className="h-4 w-4" />
+          </span>
+        </Link>
+      </section>
+
       <section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(360px,0.85fr)_minmax(0,1.15fr)]">
         <div className="grid min-w-0 gap-4">
           <div className="panel p-5">

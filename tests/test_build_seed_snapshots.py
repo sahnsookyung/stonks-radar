@@ -587,6 +587,24 @@ def test_build_snapshots_writes_news_seed_snapshots(tmp_path, monkeypatch):
     monkeypatch.setattr(build_seed_snapshots, "_ishares_ewy_nav_series", lambda: None)
     monkeypatch.setattr(build_seed_snapshots, "_yahoo_chart_series", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_stooq_quote_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        build_seed_snapshots,
+        "_sec_13f_portfolio",
+        lambda _fund_key: {
+            "filing": {
+                "source": "SEC_EDGAR_13F",
+                "form_type": "13F-HR",
+                "accession_number": "0002045724-26-000008",
+                "report_date": "2026-03-31",
+                "filed_at": "2026-05-18",
+                "primary_document_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/primary_doc.xml",
+                "information_table_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
+            },
+            "holdings": [],
+            "top_equity_holdings": [],
+            "option_holdings": [],
+        },
+    )
 
     build_seed_snapshots.build_snapshots()
 
@@ -604,10 +622,14 @@ def test_build_snapshots_writes_news_seed_snapshots(tmp_path, monkeypatch):
         "news_region_EU",
         "news_region_CHN",
         "news_topic_semiconductors",
+        "news_topic_space",
+        "news_topic_quantum",
         "news_topic_geopolitics",
         "news_topic_public_health",
         "news_topic_central_banks",
         "news_topic_energy",
+        "entity_QUANTINUUM",
+        "fund_portfolio_situational-awareness",
     }
 
     assert required.issubset(manifest["objects"])
@@ -627,3 +649,111 @@ def test_build_snapshots_writes_news_seed_snapshots(tmp_path, monkeypatch):
     }.issubset(event_ids)
     assert index["data"]["filters"]["regions"]
     assert index["data"]["filters"]["topics"]
+
+    semiconductor = json.loads((tmp_path / "v1" / "en" / "sectors" / "semiconductors.json").read_text())
+    semiconductor_data = semiconductor["data"]
+
+    assert semiconductor_data["tracked_entities"]
+    assert semiconductor_data["ticker_calendar_items"]
+    assert semiconductor_data["sector_news"]
+    assert all(event["event_type"] != "central_bank_calendar" for event in semiconductor_data["recent_events"])
+    assert semiconductor_data["upcoming_calendar_items"] == []
+    assert all(item["release_type"] != "central_bank" for item in semiconductor_data["upcoming_calendar_items"])
+
+    quantinum = json.loads((tmp_path / "v1" / "en" / "entities" / "QUANTINUUM.json").read_text())
+    assert quantinum["data"]["entity"]["route_kind"] == "reference_entity"
+    assert {item["symbol"] for item in quantinum["data"]["related_entities"]} == {"IONQ", "QBTS", "RGTI"}
+
+    fund = json.loads((tmp_path / "v1" / "en" / "funds" / "situational-awareness.json").read_text())
+    assert fund["data"]["manager_name"] == "Leopold Aschenbrenner"
+    assert fund["data"]["source_strength"] == "SEC EDGAR 13F XML"
+
+
+def test_fund_portfolio_snapshot_uses_sec_13f_payload(tmp_path, monkeypatch):
+    build_seed_snapshots._reset_runtime_caches()
+    monkeypatch.setattr(build_seed_snapshots, "PUBLIC_ROOT", tmp_path)
+    generated_at = datetime(2026, 5, 30, tzinfo=timezone.utc)
+    stale_after = generated_at + build_seed_snapshots.timedelta(hours=12)
+    hard_expires_at = generated_at + build_seed_snapshots.timedelta(days=7)
+    manifest = {"objects": {}}
+    holding = {
+        "id": "nvda-stock",
+        "symbol": "NVDA",
+        "issuer_name": "NVIDIA CORPORATION",
+        "title_of_class": "COM",
+        "cusip": "67066G104",
+        "value_usd": 497912,
+        "shares": 2855,
+        "share_type": "SH",
+        "put_call": None,
+        "holding_kind": "stock",
+        "portfolio_weight": 1.0,
+        "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
+        "source_lineage": "SEC EDGAR 13F information table XML",
+    }
+
+    monkeypatch.setattr(
+        build_seed_snapshots,
+        "_sec_13f_portfolio",
+        lambda fund_key: {
+            "filing": {
+                "source": "SEC_EDGAR_13F",
+                "form_type": "13F-HR",
+                "accession_number": "0002045724-26-000008",
+                "report_date": "2026-03-31",
+                "filed_at": "2026-05-18",
+                "primary_document_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/primary_doc.xml",
+                "information_table_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
+            },
+            "holdings": [holding],
+            "top_equity_holdings": [holding],
+            "option_holdings": [],
+        },
+    )
+
+    build_seed_snapshots._write_fund_portfolio_snapshots(
+        manifest,
+        "en",
+        generated_at,
+        stale_after,
+        hard_expires_at,
+    )
+
+    output = json.loads((tmp_path / "v1" / "en" / "funds" / "situational-awareness.json").read_text())
+    assert manifest["objects"]["fund_portfolio_situational-awareness"]["en"].endswith(
+        "funds/situational-awareness.json"
+    )
+    assert output["data"]["manager_name"] == "Leopold Aschenbrenner"
+    assert output["data"]["filing"]["source"] == "SEC_EDGAR_13F"
+    assert output["data"]["top_equity_holdings"][0]["symbol"] == "NVDA"
+    assert output["data"]["summary_metrics"]["long_equity_value_usd"] == 497912
+
+
+def test_sector_short_facts_use_typed_finra_rows(monkeypatch):
+    build_seed_snapshots._reset_runtime_caches()
+    generated_at = datetime(2026, 5, 30, tzinfo=timezone.utc)
+    monkeypatch.setattr(
+        build_seed_snapshots,
+        "_finra_short_interest_rows",
+        lambda symbols: [
+            {"symbolCode": "NVDA", "settlementDate": "2026-05-15", "currentShortPositionQuantity": "296970000"},
+            {"symbolCode": "TSLA", "settlementDate": "2026-04-01", "currentShortPositionQuantity": "1"},
+        ],
+    )
+    monkeypatch.setattr(
+        build_seed_snapshots,
+        "_finra_short_volume_rows",
+        lambda symbols: [
+            {"securitiesInformationProcessorSymbolIdentifier": "NVDA", "tradeReportDate": "2026-05-29", "shortVolume": "29980000"},
+            {"securitiesInformationProcessorSymbolIdentifier": "TSLA", "tradeReportDate": "2026-05-29", "shortVolume": "123"},
+        ],
+    )
+
+    facts = build_seed_snapshots._sector_short_facts("semiconductors", generated_at)
+    by_id = {fact["id"]: fact for fact in facts}
+
+    assert by_id["short_interest_NVDA_2026-05-15"]["fact_type"] == "short_interest"
+    assert by_id["short_interest_NVDA_2026-05-15"]["value"] == 296970000
+    assert by_id["short_interest_NVDA_2026-05-15"]["provider_observation_key"]
+    assert by_id["short_volume_NVDA_2026-05-29"]["fact_type"] == "short_volume"
+    assert all(fact["symbol"] == "NVDA" for fact in facts)

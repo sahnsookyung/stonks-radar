@@ -9,6 +9,7 @@ from frw_api.adapters.alternative_signals import (
     PentagonPizzaAdapter,
     PublicShortResearchAdapter,
     TrumpFilingsAdapter,
+    _selected_short_research_sources,
 )
 from frw_api.core.settings import get_settings
 
@@ -181,6 +182,13 @@ async def test_public_short_research_adapter_keeps_metadata_only():
     assert result.documents[0]["title"] == "Muddy Waters Research"
     assert result.documents[0]["raw_retained"] is False
     assert result.observations == []
+
+
+def test_public_short_research_excludes_hindenburg():
+    selected = _selected_short_research_sources(["hindenburg", "muddy_waters"])
+
+    assert "hindenburg" not in selected
+    assert selected == {"muddy_waters": "https://www.muddywatersresearch.com/"}
 
 
 @pytest.mark.asyncio

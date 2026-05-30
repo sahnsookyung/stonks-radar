@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-29T15:26:56Z",
-  "stale_after": "2026-05-30T03:26:56Z",
-  "hard_expires_at": "2026-06-05T15:26:56Z",
+  "generated_at": "2026-05-30T12:30:53Z",
+  "stale_after": "2026-05-31T00:30:53Z",
+  "hard_expires_at": "2026-06-06T12:30:53Z",
   "object_type": "news_event",
   "object_key": "news_event_public_health_alert_seed",
-  "content_hash": "sha256:1fa43c271300b542cca6561acb06433aaf8c2fa28571921cd0837e17bc1dbef6",
+  "content_hash": "sha256:e1e1830314c97c8016ecf523d22b1680a024fd46fdaefc90aed01d1821da26d0",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -115,9 +115,9 @@
     "title": "Public-health alert monitoring covers Brazil, US, Europe, and Asia travel-sensitive markets",
     "summary": "Official public-health feeds are classified separately from financial news and surfaced only as market-context risk.",
     "event_type": "public_health_alert",
-    "first_seen_at": "2026-05-27T15:26:56Z",
-    "last_seen_at": "2026-05-29T11:26:56Z",
-    "published_at": "2026-05-29T11:26:56Z",
+    "first_seen_at": "2026-05-28T12:30:53Z",
+    "last_seen_at": "2026-05-30T08:30:53Z",
+    "published_at": "2026-05-30T08:30:53Z",
     "freshness": "watch",
     "severity": "medium",
     "confidence": 0.74,
@@ -177,7 +177,7 @@
         "source_key": "who",
         "policy_version": 1,
         "title": "Disease Outbreak News",
-        "published_at": "2026-05-28T21:26:56Z",
+        "published_at": "2026-05-29T18:30:53Z",
         "trust_tier": "T0_OFFICIAL",
         "is_primary": true
       },
@@ -187,7 +187,7 @@
         "source_key": "cdc",
         "policy_version": 1,
         "title": "Travel health notices",
-        "published_at": "2026-05-28T21:26:56Z",
+        "published_at": "2026-05-29T18:30:53Z",
         "trust_tier": "T0_OFFICIAL",
         "is_primary": false
       }
@@ -219,9 +219,9 @@
         "title": "China-origin export-control risk remains elevated for AI-chip supply chains",
         "summary": "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.",
         "event_type": "trade_policy",
-        "first_seen_at": "2026-05-27T15:26:56Z",
-        "last_seen_at": "2026-05-29T15:26:56Z",
-        "published_at": "2026-05-29T15:26:56Z",
+        "first_seen_at": "2026-05-28T12:30:53Z",
+        "last_seen_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.78,
@@ -318,7 +318,7 @@
             "source_key": "bis",
             "policy_version": 1,
             "title": "Bureau of Industry and Security export controls",
-            "published_at": "2026-05-28T21:26:56Z",
+            "published_at": "2026-05-29T18:30:53Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -328,7 +328,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "Issuer filings for affected companies",
-            "published_at": "2026-05-28T21:26:56Z",
+            "published_at": "2026-05-29T18:30:53Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           },
@@ -338,7 +338,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "Export Administration Regulations reference",
-            "published_at": "2026-05-28T21:26:56Z",
+            "published_at": "2026-05-29T18:30:53Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }
@@ -349,9 +349,9 @@
         "title": "Central-bank decision calendar clusters FOMC, BoJ, BoK, ECB, and Brazil COPOM risk",
         "summary": "Official calendars are grouped into one policy-event watch so users can scan rate dates without leaving the app.",
         "event_type": "central_bank_calendar",
-        "first_seen_at": "2026-05-27T15:26:56Z",
-        "last_seen_at": "2026-05-29T15:26:56Z",
-        "published_at": "2026-05-29T15:26:56Z",
+        "first_seen_at": "2026-05-28T12:30:53Z",
+        "last_seen_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.86,
@@ -431,7 +431,7 @@
             "source_key": "federal_reserve",
             "policy_version": 1,
             "title": "FOMC calendars",
-            "published_at": "2026-05-28T21:26:56Z",
+            "published_at": "2026-05-29T18:30:53Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -441,7 +441,7 @@
             "source_key": "bank_of_korea",
             "policy_version": 1,
             "title": "Monetary policy schedule",
-            "published_at": "2026-05-28T21:26:56Z",
+            "published_at": "2026-05-29T18:30:53Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -451,7 +451,7 @@
             "source_key": "bank_of_japan",
             "policy_version": 1,
             "title": "Monetary policy meetings",
-            "published_at": "2026-05-28T21:26:56Z",
+            "published_at": "2026-05-29T18:30:53Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -461,7 +461,7 @@
             "source_key": "ecb",
             "policy_version": 1,
             "title": "Governing Council calendars",
-            "published_at": "2026-05-28T21:26:56Z",
+            "published_at": "2026-05-29T18:30:53Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -471,7 +471,7 @@
             "source_key": "bcb",
             "policy_version": 1,
             "title": "COPOM calendar",
-            "published_at": "2026-05-28T21:26:56Z",
+            "published_at": "2026-05-29T18:30:53Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           }
@@ -482,9 +482,9 @@
         "title": "Rocket Lab launch-window monitoring is linked to source evidence for RKLB",
         "summary": "Company and filing sources are grouped into a ticker-specific event for Rocket Lab launch-cadence monitoring.",
         "event_type": "company_update",
-        "first_seen_at": "2026-05-28T21:26:56Z",
-        "last_seen_at": "2026-05-29T15:26:56Z",
-        "published_at": "2026-05-29T15:26:56Z",
+        "first_seen_at": "2026-05-29T18:30:53Z",
+        "last_seen_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.8,
@@ -540,7 +540,7 @@
             "source_key": "rocket_lab_ir",
             "policy_version": 1,
             "title": "Rocket Lab updates",
-            "published_at": "2026-05-28T21:26:56Z",
+            "published_at": "2026-05-29T18:30:53Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -550,7 +550,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "Rocket Lab SEC filings",
-            "published_at": "2026-05-28T21:26:56Z",
+            "published_at": "2026-05-29T18:30:53Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           }

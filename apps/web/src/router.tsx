@@ -17,7 +17,9 @@ const CentralBanksPage = lazyRoute(async () => {
   return { default: () => <module.CalendarPage centralBanksOnly /> };
 });
 const PortfolioLabPage = lazyRoute(() => import("./pages/PortfolioLabPage"), "PortfolioLabPage");
+const FundPortfolioPage = lazyRoute(() => import("./pages/FundPortfolioPage"), "FundPortfolioPage");
 const TickerDetailPage = lazyRoute(() => import("./pages/TickerDetailPage"), "TickerDetailPage");
+const EntityPage = lazyRoute(() => import("./pages/EntityPage"), "EntityPage");
 const NewsPage = lazyRoute(() => import("./pages/NewsPage"), "NewsPage");
 const NewsEventPage = lazyRoute(() => import("./pages/NewsEventPage"), "NewsEventPage");
 const ShortsPage = lazyRoute(() => import("./pages/ShortsPage"), "ShortsPage");
@@ -94,10 +96,22 @@ const portfolioRoute = createRoute({
   component: PortfolioLabPage
 });
 
+const fundPortfolioRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "funds/$fundKey",
+  component: FundPortfolioPage
+});
+
 const tickerDetailRoute = createRoute({
   getParentRoute: () => localeRoute,
   path: "tickers/$symbol",
   component: TickerDetailPage
+});
+
+const entityRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "entities/$routeKey",
+  component: EntityPage
 });
 
 const newsRoute = createRoute({
@@ -201,7 +215,9 @@ const routeTree = rootRoute.addChildren([
     marketPulseRoute,
     centralBanksRoute,
     portfolioRoute,
+    fundPortfolioRoute,
     tickerDetailRoute,
+    entityRoute,
     newsRoute,
     newsEventRoute,
     shortsRoute,

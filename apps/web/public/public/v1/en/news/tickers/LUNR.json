@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-29T15:26:56Z",
-  "stale_after": "2026-05-30T03:26:56Z",
-  "hard_expires_at": "2026-06-05T15:26:56Z",
+  "generated_at": "2026-05-30T12:30:53Z",
+  "stale_after": "2026-05-31T00:30:53Z",
+  "hard_expires_at": "2026-06-06T12:30:53Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_LUNR",
-  "content_hash": "sha256:e6453a74d4a8343ace1189b043e7bebda3eaa51a2cce3dfb0c73b497e9db6587",
+  "content_hash": "sha256:a937e49a926a39b8c93665f19ad8c23e9e826578f6960c555955e9f608ec22b0",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "LUNR",
     "name": "Intuitive Machines, Inc.",
-    "generated_label": "2026-05-29T15:26:56Z",
+    "generated_label": "2026-05-30T12:30:53Z",
     "summary": "No approved news events are currently linked to LUNR.",
     "events": []
   },

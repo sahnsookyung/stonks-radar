@@ -21,16 +21,18 @@ import {
   ShieldAlert,
   Sparkles,
   StickyNote,
+  TrendingDown,
   TrendingUp
 } from "lucide-react";
 import type { AlternativeSignalItem, HomeSnapshotData, NewsEventListItem, NewsTickerSnapshotData, SnapshotEnvelope } from "@frw/shared-types";
+import { EntityLink } from "../components/EntityLink";
 import { LineChart } from "../components/LineChart";
 import { NewsEventCard, SourcePill } from "../components/NewsEventCard";
 import { apiGet } from "../lib/api";
 import { disclosureTransactionBucket, disclosureTransactionCaveat, disclosureTransactionLabel } from "../lib/disclosureLabels";
 import { useLocale } from "../lib/locale";
 import { snapshotQueries } from "../lib/snapshots";
-import { getTrackedTicker, trackedTickers, type TrackedTicker } from "../lib/trackedTickers";
+import { getTrackedTicker, relatedTrackedEntities, resolveTrackedEntity, trackedTickers, type TrackedEntity, type TrackedTicker } from "../lib/trackedTickers";
 
 interface MarketHistoryResponse {
   status: string;
@@ -137,7 +139,7 @@ interface InsidersResponse extends TransactionsResponse {
   }[];
 }
 
-type TabKey = "overview" | "chart" | "technicals" | "options" | "news" | "filings" | "fundamentals" | "notes";
+type TabKey = "overview" | "chart" | "technicals" | "options" | "news" | "shorts" | "filings" | "fundamentals" | "notes";
 type ChartPresetKey = "clean" | "trend" | "momentum" | "risk";
 
 const tabs: { key: TabKey; labelEn: string; labelKo: string; icon: ReactNode }[] = [
@@ -146,6 +148,7 @@ const tabs: { key: TabKey; labelEn: string; labelKo: string; icon: ReactNode }[]
   { key: "technicals", labelEn: "Technicals", labelKo: "기술 지표", icon: <BarChart3 className="h-4 w-4" /> },
   { key: "options", labelEn: "Options", labelKo: "옵션", icon: <Activity className="h-4 w-4" /> },
   { key: "news", labelEn: "News", labelKo: "뉴스", icon: <Newspaper className="h-4 w-4" /> },
+  { key: "shorts", labelEn: "Shorts", labelKo: "공매도", icon: <TrendingDown className="h-4 w-4" /> },
   { key: "filings", labelEn: "Filings", labelKo: "공시", icon: <FileText className="h-4 w-4" /> },
   { key: "fundamentals", labelEn: "Fundamentals", labelKo: "펀더멘털", icon: <Database className="h-4 w-4" /> },
   { key: "notes", labelEn: "Notes", labelKo: "노트", icon: <Bell className="h-4 w-4" /> }
@@ -372,8 +375,6 @@ export function TickerDetailPage() {
 
         <section className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
           <div className="grid min-w-0 content-start gap-3">
-          <TradingViewWidget ticker={ticker} preset={chartPreset} locale={locale} />
-
           {activeTab === "overview" ? (
             <OverviewPanel
               ticker={ticker}
@@ -387,15 +388,18 @@ export function TickerDetailPage() {
             />
           ) : null}
           {activeTab === "chart" ? (
-            <ChartPanel
-              ticker={ticker}
-              preset={chartPreset}
-              onPresetChange={setChartPreset}
-              points={sortedPoints}
-              freshness={freshness}
-              canDisplayMarketData={canDisplayMarketData}
-              locale={locale}
-            />
+            <>
+              <TradingViewWidget ticker={ticker} preset={chartPreset} locale={locale} />
+              <ChartPanel
+                ticker={ticker}
+                preset={chartPreset}
+                onPresetChange={setChartPreset}
+                points={sortedPoints}
+                freshness={freshness}
+                canDisplayMarketData={canDisplayMarketData}
+                locale={locale}
+              />
+            </>
           ) : null}
           {activeTab === "technicals" ? <TechnicalsPanel indicators={indicators} ticker={ticker} freshness={freshness} canDisplayMarketData={canDisplayMarketData} locale={locale} /> : null}
           {activeTab === "options" ? <OptionsPanel ticker={ticker} locale={locale} /> : null}
@@ -409,6 +413,7 @@ export function TickerDetailPage() {
               locale={locale}
             />
           ) : null}
+          {activeTab === "shorts" ? <ShortsPanel ticker={ticker} shortItems={shortItems} locale={locale} /> : null}
           {activeTab === "filings" ? (
             <FilingsPanel
               ticker={ticker}
@@ -428,8 +433,6 @@ export function TickerDetailPage() {
           ticker={ticker}
           snapshot={snapshot}
           indicators={indicators}
-          shortItems={shortItems}
-          newsItems={newsItems}
           transactions={transactions}
           freshness={freshness}
           canDisplayMarketData={canDisplayMarketData}
@@ -457,6 +460,7 @@ export function TickerDetailPage() {
 
 function UnknownTicker({ symbol, locale }: { symbol?: string; locale: "en" | "ko" }) {
   const isKo = locale === "ko";
+  const entity = resolveTrackedEntity(symbol);
   return (
     <div className="grid gap-5">
       <section className="panel p-5">
@@ -466,10 +470,17 @@ function UnknownTicker({ symbol, locale }: { symbol?: string; locale: "en" | "ko
         </div>
         <h1 className="mt-3 text-3xl font-bold">{symbol || "unknown"}</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-          {isKo
-            ? "현재 상세 페이지는 승인된 추적 티커만 엽니다."
-            : "The detail page is intentionally limited to approved tracked tickers."}
+          {entity?.routeKind === "reference_entity"
+            ? (isKo ? "이 항목은 거래 티커가 아니라 참고 엔티티입니다." : "This tracked item is a reference entity, not a tradable ticker.")
+            : (isKo
+                ? "현재 상세 페이지는 승인된 추적 티커만 엽니다."
+                : "The detail page is intentionally limited to approved tracked tickers.")}
         </p>
+        {entity?.routeKind === "reference_entity" ? (
+          <EntityLink value={entity} locale={locale} className="primary-action mt-4">
+            {isKo ? "참고 엔티티 페이지 열기" : "Open reference entity page"}
+          </EntityLink>
+        ) : null}
       </section>
       <TickerStrip activeSymbol="" locale={locale} />
     </div>
@@ -488,10 +499,10 @@ function TickerStrip({ activeSymbol, locale }: { activeSymbol: string; locale: "
           <Link
             key={ticker.symbol}
             to="/$locale/tickers/$symbol"
-            params={{ locale, symbol: ticker.symbol }}
+            params={{ locale, symbol: ticker.routeKey }}
             aria-label={`${ticker.symbol} ${ticker.name}`}
             className={`focus-ring inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md border px-3 text-sm font-semibold ${
-              ticker.symbol === activeSymbol
+              (ticker.symbol === activeSymbol || ticker.routeKey === activeSymbol)
                 ? "border-accent bg-accentSoft text-accent"
                 : "border-line bg-panelAlt text-muted hover:border-accent hover:text-ink"
             }`}
@@ -957,6 +968,48 @@ function NewsPanel({
   );
 }
 
+function ShortsPanel({ ticker, shortItems, locale }: { ticker: TrackedTicker; shortItems: TickerSignal[]; locale: "en" | "ko" }) {
+  const isKo = locale === "ko";
+  return (
+    <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="panel p-5">
+        <SectionHeader
+          icon={<TrendingDown className="h-5 w-5" />}
+          title={isKo ? "출처 기반 공매도" : "Source-backed shorts"}
+          subtitle={
+            isKo
+              ? "공매도 잔고와 일별 공매도 거래량을 분리해 표시합니다. 텍스트 추측 매칭은 사용하지 않습니다."
+              : "Short interest and daily short-volume flow are separated. Text-guess matches are not used."
+          }
+        />
+        <div className="mt-4 grid gap-3">
+          {shortItems.length ? (
+            shortItems.map((signal) => <SignalLink key={`${signal.group}-${signal.item.key}`} signal={signal} locale={locale} />)
+          ) : (
+            <EmptyState text={isKo ? "이번 스냅샷에는 이 티커의 구조화된 FINRA 공매도 행이 없습니다." : "No structured FINRA short row is available for this ticker in the current snapshot."} />
+          )}
+        </div>
+      </div>
+      <div className="panel p-5">
+        <SectionHeader
+          icon={<ShieldAlert className="h-5 w-5" />}
+          title={isKo ? "해석 가드레일" : "Interpretation guardrails"}
+          subtitle={isKo ? "공매도 데이터는 직접 매매 신호가 아닙니다." : "Short data is not a standalone trade signal."}
+        />
+        <div className="mt-4 grid gap-2 text-sm leading-6 text-muted">
+          <div>{ticker.displaySymbol}</div>
+          <div>{isKo ? "공매도 잔고는 미청산 포지션이고 보통 지연 공개됩니다." : "Short interest is an open-position figure and is usually published with delay."}</div>
+          <div>{isKo ? "일별 공매도 거래량은 거래 흐름이며 잔고가 아닙니다." : "Daily short volume is transaction flow, not outstanding short interest."}</div>
+          <Link className="focus-ring inline-flex min-h-11 items-center gap-1 rounded-md font-semibold text-accent hover:underline" to="/$locale/shorts" params={{ locale }}>
+            {isKo ? "전체 공매도 탭" : "Open Shorts tab"}
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function TickerNewsEvent({ event, locale }: { event: NewsEventListItem; locale: "en" | "ko" }) {
   return <NewsEventCard event={event} locale={locale} compact />;
 }
@@ -1144,8 +1197,6 @@ function ResearchSidebar({
   ticker,
   snapshot,
   indicators,
-  shortItems,
-  newsItems,
   transactions,
   freshness,
   canDisplayMarketData,
@@ -1154,8 +1205,6 @@ function ResearchSidebar({
   ticker: TrackedTicker;
   snapshot?: SnapshotEnvelope<HomeSnapshotData>;
   indicators: IndicatorSet;
-  shortItems: TickerSignal[];
-  newsItems: TickerSignal[];
   transactions: DisclosureTransaction[];
   freshness: FreshnessMeta;
   canDisplayMarketData: boolean;
@@ -1172,12 +1221,12 @@ function ResearchSidebar({
         </div>
         <div className="divide-y divide-line">
           {railTickers.map((item) => {
-            const isActive = item.symbol === ticker.symbol;
+            const isActive = item.entityId === ticker.entityId;
             return (
-              <Link
-                key={item.symbol}
-                to="/$locale/tickers/$symbol"
-                params={{ locale, symbol: item.symbol }}
+              <EntityLink
+                key={item.entityId}
+                value={item}
+                locale={locale}
                 className={`focus-ring grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-sm hover:bg-panelAlt ${
                   isActive ? "bg-accentSoft text-accent" : "text-ink"
                 }`}
@@ -1187,7 +1236,7 @@ function ResearchSidebar({
                   <span className={`mt-0.5 block truncate text-xs ${isActive ? "text-accent" : "text-muted"}`}>{item.name}</span>
                 </span>
                 <ChevronRight className="h-4 w-4 shrink-0" />
-              </Link>
+              </EntityLink>
             );
           })}
         </div>
@@ -1209,18 +1258,6 @@ function ResearchSidebar({
           </div>
         </div>
       </div>
-      <CompactList
-        title={isKo ? "공매도" : "Shorts"}
-        empty={isKo ? "공매도 스냅샷 행 없음" : "No short snapshot row"}
-        items={shortItems.slice(0, 3)}
-        locale={locale}
-      />
-      <CompactList
-        title={isKo ? "뉴스" : "News"}
-        empty={isKo ? "뉴스 매칭 없음" : "No news match"}
-        items={newsItems.slice(0, 5)}
-        locale={locale}
-      />
       <div className="panel p-4">
         <h2 className="text-sm font-semibold">{isKo ? "논지" : "Thesis"}</h2>
         <div className="mt-3 grid gap-2 text-xs leading-5 text-muted">
@@ -1253,20 +1290,12 @@ function ResearchSidebar({
   );
 }
 
-function sidebarTickerList(ticker: TrackedTicker) {
-  const symbols = new Set<string>([ticker.symbol, ...ticker.related]);
-  for (const item of trackedTickers) {
-    if (item.symbol !== ticker.symbol && item.tags.some((tag) => ticker.tags.includes(tag))) {
-      symbols.add(item.symbol);
-    }
+function sidebarTickerList(ticker: TrackedTicker): TrackedEntity[] {
+  const related = relatedTrackedEntities(ticker, 10);
+  if (related.some((entity) => entity.entityId === ticker.entityId)) {
+    return related;
   }
-  for (const item of trackedTickers) {
-    symbols.add(item.symbol);
-  }
-  return [...symbols]
-    .map((symbol) => getTrackedTicker(symbol))
-    .filter((item): item is TrackedTicker => Boolean(item))
-    .slice(0, 10);
+  return [ticker, ...related].slice(0, 10);
 }
 
 function CompactList({
@@ -1556,11 +1585,9 @@ interface TickerSignal {
 }
 
 function collectTickerSignals(data: HomeSnapshotData, ticker: TrackedTicker): TickerSignal[] {
-  const needles = [ticker.symbol, ticker.name, ...ticker.tags].map((item) => item.toUpperCase());
   const groups = new Map<string, TickerSignal["group"]>([
     ["highest_short_interest", "shorts"],
     ["short_volume_monitor", "shorts"],
-    ["short_research_reports", "shorts"],
     ["breaking_market_news", "news"],
     ["trump_filings", "trump"]
   ]);
@@ -1568,14 +1595,18 @@ function collectTickerSignals(data: HomeSnapshotData, ticker: TrackedTicker): Ti
   return data.alternative_signals.flatMap((lane) => {
     const group = groups.get(lane.key) ?? (lane.key.includes("news") ? "news" : "event");
     return lane.items
-      .filter((item) => matchesTicker(item, needles))
+      .filter((item) => matchesTicker(item, ticker))
       .map((item) => ({ item, context: lane.title || lane.cadence, group }));
   });
 }
 
-function matchesTicker(item: AlternativeSignalItem, needles: string[]) {
-  const haystack = `${item.label} ${item.detail} ${item.value} ${item.source}`.toUpperCase();
-  return needles.some((needle) => needle.length > 2 && haystack.includes(needle));
+function matchesTicker(item: AlternativeSignalItem, ticker: TrackedTicker) {
+  const itemSymbols = item.symbols?.map((symbol) => symbol.toUpperCase()) ?? [];
+  if (itemSymbols.length) {
+    return itemSymbols.includes(ticker.symbol.toUpperCase());
+  }
+  const keySymbol = newsSymbolKey(ticker.symbol).toLowerCase();
+  return item.key.toLowerCase().endsWith(`_${keySymbol}`);
 }
 
 function newsSymbolKey(symbol: string) {

@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ExternalLink } from "lucide-react";
 import type { NewsEventListItem, NewsRegionRelation, NewsSourceRef } from "@frw/shared-types";
+import { EntityLink } from "./EntityLink";
 
 export function NewsEventCard({
   event,
@@ -35,14 +36,9 @@ export function NewsEventCard({
       <p className="safe-text mt-2 text-sm leading-6 text-muted">{event.summary}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {event.tickers.slice(0, compact ? 4 : 8).map((ticker) => (
-          <Link
-            key={`${ticker.symbol}-${ticker.relationship}`}
-            to="/$locale/tickers/$symbol"
-            params={{ locale, symbol: ticker.symbol }}
-            className="badge min-h-11 border-accent/40 bg-accentSoft text-accent hover:border-accent"
-          >
+          <EntityLink key={`${ticker.symbol}-${ticker.relationship}`} value={ticker.symbol} locale={locale}>
             {ticker.symbol}
-          </Link>
+          </EntityLink>
         ))}
         {event.regions.slice(0, compact ? 5 : 10).map((region) => (
           <span key={`${region.key}-${region.relation}`} className="badge border-line bg-panelAlt text-muted">

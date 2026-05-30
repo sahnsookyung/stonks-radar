@@ -18,7 +18,7 @@
     "build:map-assets": "node scripts/build_map_assets.mjs",
     "seed:snapshots": "python3 scripts/build_seed_snapshots.py",
     "seed:snapshots:build": "rm -rf apps/web/.generated-public && mkdir -p apps/web/.generated-public && cp -a apps/web/public/. apps/web/.generated-public/ && STONKS_SNAPSHOT_PUBLIC_ROOT=apps/web/.generated-public/public python3 scripts/build_seed_snapshots.py",
-    "check:schemas": "python3 scripts/validate_snapshots.py",
+    "check:schemas": "python3 scripts/validate_tracked_entities.py --check-generated && python3 scripts/validate_snapshots.py",
     "api:compile": "python3 -m compileall apps/api/src apps/worker/src apps/fetch-sandbox/src scripts",
     "api:test": "PYTHONPATH=apps/api/src:apps/worker/src:apps/fetch-sandbox/src uv run --project apps/api --extra dev --with ./apps/fetch-sandbox python -m pytest -q tests",
     "deploy:preflight": "python3 scripts/deploy_preflight.py",

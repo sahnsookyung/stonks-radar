@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "notes": [
+    "CUSIP-to-ticker mappings are maintained only for public-display convenience.",
+    "SEC 13F XML is issuer/CUSIP based and remains the source of truth.",
+    "Rows with uncertain mappings should be omitted here and displayed by issuer/CUSIP."
+  ],
+  "overrides": {
+    "007903107": "AMD",
+    "038169207": "APLD",
+    "05614L209": "BW",
+    "09173B107": "BITF",
+    "093712107": "BE",
+    "11135F101": "AVGO",
+    "18452B209": "CLSK",
+    "21873S108": "CRWV",
+    "21874A106": "CORZ",
+    "219350105": "GLW",
+    "35834F104": "TE",
+    "433921103": "HIVE",
+    "456788108": "INFY",
+    "458140100": "INTC",
+    "595112103": "MU",
+    "67066G104": "NVDA",
+    "68389X105": "ORCL",
+    "73933G202": "PSIX",
+    "74347M108": "PUMP",
+    "767292105": "RIOT",
+    "80004C200": "SNDK",
+    "83418M103": "SEI",
+    "874039100": "TSM",
+    "92189F676": "SMH",
+    "G11448100": "BTDR",
+    "G96115103": "WYFI",
+    "N07059210": "ASML",
+    "Q4982L109": "IREN"
+  }
+}

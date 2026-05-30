@@ -1,0 +1,1282 @@
+{
+  "version": 1,
+  "entities": [
+    {
+      "entity_id": "DJT",
+      "symbol": "DJT",
+      "display_symbol": "DJT",
+      "route_key": "DJT",
+      "route_kind": "ticker",
+      "name_en": "Trump Media & Technology Group",
+      "name_ko": "트럼프 미디어",
+      "legal_name": "Trump Media & Technology Group",
+      "exchange": "NASDAQ",
+      "asset_type": "Equity",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Media / political event risk",
+      "industry": "Social media",
+      "sector_keys": [],
+      "tags": [
+        "trump-filings",
+        "short-interest",
+        "event-risk"
+      ],
+      "aliases": [
+        "Trump Media",
+        "TMTG",
+        "Truth Social"
+      ],
+      "related_symbols": [
+        "TSLA",
+        "NVDA"
+      ],
+      "sec_cik": "0001849635",
+      "tradingview_symbol": "NASDAQ:DJT",
+      "official_domains": [
+        "trumpmedia.com",
+        "truthsocial.com"
+      ],
+      "sector_terms": [
+        "filing",
+        "insider",
+        "social media",
+        "political event risk"
+      ],
+      "thesis_bull": "Event-driven attention, reflexive retail flow, and public filing catalysts can dominate fundamentals.",
+      "thesis_bear": "High volatility, dilution/insider-sale risk, and weak operating fundamentals can overwhelm narrative demand.",
+      "invalidation": "Treat source-linked filings and liquidity breaks as primary risk triggers.",
+      "source_policy": "metadata_or_public_filing_only",
+      "sources": [
+        {
+          "source_key": "sec_djt_filings",
+          "source_name": "SEC EDGAR - Trump Media",
+          "source_type": "regulated_filing",
+          "base_url": "https://data.sec.gov",
+          "trust_tier": "T1_REGULATED_FILING",
+          "region_coverage": [
+            "USA"
+          ],
+          "topic_coverage": [
+            "filings",
+            "stocks",
+            "political_event_risk"
+          ],
+          "rate_limit_provider_key": "sec_edgar",
+          "rate_limit_endpoint_key": "submissions",
+          "copyright_mode": "public_filing_metadata",
+          "feed_url": "https://data.sec.gov/submissions/CIK0001849635.json",
+          "fetch_kind": "sec_submissions",
+          "official_domains": [
+            "sec.gov"
+          ]
+        }
+      ],
+      "email_sources": [],
+      "source_keys": [
+        "sec_djt_filings"
+      ]
+    },
+    {
+      "entity_id": "TSLA",
+      "symbol": "TSLA",
+      "display_symbol": "TSLA",
+      "route_key": "TSLA",
+      "route_kind": "ticker",
+      "name_en": "Tesla",
+      "name_ko": "테슬라",
+      "legal_name": "Tesla, Inc.",
+      "exchange": "NASDAQ",
+      "asset_type": "Equity",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Big Tech / EV",
+      "industry": "Automobiles",
+      "sector_keys": [
+        "big-tech"
+      ],
+      "tags": [
+        "short-volume",
+        "big-tech",
+        "retail-flow"
+      ],
+      "aliases": [
+        "Tesla"
+      ],
+      "related_symbols": [
+        "NVDA",
+        "AAPL",
+        "DJT"
+      ],
+      "sec_cik": "0001318605",
+      "tradingview_symbol": "NASDAQ:TSLA",
+      "official_domains": [
+        "tesla.com"
+      ],
+      "sector_terms": [
+        "ev",
+        "electric vehicle",
+        "autonomy",
+        "delivery",
+        "automaker"
+      ],
+      "thesis_bull": "Autonomy, energy storage, and optionality can re-rate the business when delivery and price pressure eases.",
+      "thesis_bear": "Margin compression, policy risk, and competition can keep valuation fragile.",
+      "invalidation": "Watch delivery trend breaks, margin revisions, and abnormal short-volume spikes.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "sec_tsla_filings",
+          "source_name": "SEC EDGAR - Tesla",
+          "source_type": "regulated_filing",
+          "base_url": "https://data.sec.gov",
+          "trust_tier": "T1_REGULATED_FILING",
+          "region_coverage": [
+            "USA"
+          ],
+          "topic_coverage": [
+            "filings",
+            "stocks",
+            "ev"
+          ],
+          "rate_limit_provider_key": "sec_edgar",
+          "rate_limit_endpoint_key": "submissions",
+          "copyright_mode": "public_filing_metadata",
+          "feed_url": "https://data.sec.gov/submissions/CIK0001318605.json",
+          "fetch_kind": "sec_submissions",
+          "official_domains": [
+            "sec.gov"
+          ]
+        },
+        {
+          "source_key": "tesla_ir_press",
+          "source_name": "Tesla Investor Relations Press",
+          "source_type": "official",
+          "base_url": "https://ir.tesla.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA"
+          ],
+          "topic_coverage": [
+            "ev",
+            "big_tech",
+            "autos",
+            "earnings"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://ir.tesla.com/press",
+          "fetch_kind": "html_index",
+          "official_domains": [
+            "tesla.com"
+          ],
+          "fetch_profile": "safari",
+          "scheduled_fetch": false
+        }
+      ],
+      "email_sources": [
+        {
+          "signup_url": "https://www.tesla.com/updates",
+          "source_name": "Tesla updates email"
+        }
+      ],
+      "source_keys": [
+        "sec_tsla_filings",
+        "tesla_ir_press"
+      ]
+    },
+    {
+      "entity_id": "NVDA",
+      "symbol": "NVDA",
+      "display_symbol": "NVDA",
+      "route_key": "NVDA",
+      "route_kind": "ticker",
+      "name_en": "NVIDIA",
+      "name_ko": "엔비디아",
+      "legal_name": "NVIDIA Corporation",
+      "exchange": "NASDAQ",
+      "asset_type": "Equity",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Semiconductors / AI infrastructure",
+      "industry": "Semiconductors",
+      "sector_keys": [
+        "semiconductors",
+        "big-tech"
+      ],
+      "tags": [
+        "semiconductors",
+        "ai-infra",
+        "short-interest"
+      ],
+      "aliases": [
+        "Nvidia",
+        "NVIDIA"
+      ],
+      "related_symbols": [
+        "AMD",
+        "TSLA",
+        "005930.KS"
+      ],
+      "sec_cik": "0001045810",
+      "tradingview_symbol": "NASDAQ:NVDA",
+      "official_domains": [
+        "nvidia.com"
+      ],
+      "sector_terms": [
+        "gpu",
+        "ai accelerator",
+        "semiconductor",
+        "chip"
+      ],
+      "thesis_bull": "AI accelerator demand, software ecosystem leverage, and supply-chain control support premium growth.",
+      "thesis_bear": "Export controls, hyperscaler capex digestion, and extreme expectations create downside convexity.",
+      "invalidation": "Track export-control events, datacenter order commentary, and volume-confirmed trend breaks.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "nvidia_newsroom",
+          "source_name": "NVIDIA Newsroom",
+          "source_type": "official",
+          "base_url": "https://nvidianews.nvidia.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA"
+          ],
+          "topic_coverage": [
+            "semiconductors",
+            "ai_infrastructure"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "rss",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://nvidianews.nvidia.com/rss.xml",
+          "official_domains": [
+            "nvidia.com"
+          ]
+        }
+      ],
+      "email_sources": [],
+      "source_keys": [
+        "nvidia_newsroom"
+      ]
+    },
+    {
+      "entity_id": "RKLB",
+      "symbol": "RKLB",
+      "display_symbol": "RKLB",
+      "route_key": "RKLB",
+      "route_kind": "ticker",
+      "name_en": "Rocket Lab",
+      "name_ko": "로켓랩 USA",
+      "legal_name": "Rocket Lab USA, Inc.",
+      "exchange": "NASDAQ",
+      "asset_type": "Equity",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Space",
+      "industry": "Aerospace and defense",
+      "sector_keys": [
+        "space"
+      ],
+      "tags": [
+        "space",
+        "launch-cadence",
+        "tracked-news"
+      ],
+      "aliases": [
+        "Rocket Lab"
+      ],
+      "related_symbols": [
+        "LUNR",
+        "ASTS",
+        "RDW"
+      ],
+      "sec_cik": "0001819994",
+      "tradingview_symbol": "NASDAQ:RKLB",
+      "official_domains": [
+        "rocketlabusa.com",
+        "rocketlabcorp.com"
+      ],
+      "sector_terms": [
+        "launch",
+        "rocket",
+        "space",
+        "mission"
+      ],
+      "thesis_bull": "Launch cadence, defense demand, and Neutron milestones can improve strategic scarcity value.",
+      "thesis_bear": "Execution delays, capital intensity, and dilution risk can pressure small-cap space equities.",
+      "invalidation": "Watch launch delays, offering filings, and cash-runway language.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "rocket_lab_ir",
+          "source_name": "Rocket Lab Investor Relations",
+          "source_type": "official",
+          "base_url": "https://investors.rocketlabcorp.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA",
+            "NZL"
+          ],
+          "topic_coverage": [
+            "space",
+            "defense",
+            "earnings"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://investors.rocketlabcorp.com/news",
+          "fetch_kind": "html_index",
+          "official_domains": [
+            "rocketlabcorp.com",
+            "rocketlabusa.com"
+          ],
+          "fetch_profile": "safari"
+        }
+      ],
+      "email_sources": [
+        {
+          "signup_url": "https://investors.rocketlabcorp.com/news/email-alerts",
+          "source_name": "Rocket Lab IR email alerts"
+        }
+      ],
+      "source_keys": [
+        "rocket_lab_ir"
+      ]
+    },
+    {
+      "entity_id": "IONQ",
+      "symbol": "IONQ",
+      "display_symbol": "IONQ",
+      "route_key": "IONQ",
+      "route_kind": "ticker",
+      "name_en": "IonQ",
+      "name_ko": "아이온큐",
+      "legal_name": "IonQ, Inc.",
+      "exchange": "NYSE",
+      "asset_type": "Equity",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Quantum",
+      "industry": "Quantum computing",
+      "sector_keys": [
+        "quantum"
+      ],
+      "tags": [
+        "quantum",
+        "government-funding",
+        "high-volatility"
+      ],
+      "aliases": [
+        "IonQ"
+      ],
+      "related_symbols": [
+        "RGTI",
+        "QBTS",
+        "QUANTINUUM"
+      ],
+      "sec_cik": "0001824920",
+      "tradingview_symbol": "NYSE:IONQ",
+      "official_domains": [
+        "ionq.com"
+      ],
+      "sector_terms": [
+        "quantum",
+        "qubit",
+        "ion trap"
+      ],
+      "thesis_bull": "Government funding and commercial quantum milestones can keep speculative scarcity bid alive.",
+      "thesis_bear": "Revenue scale, valuation, and hype-cycle reversals can make drawdowns violent.",
+      "invalidation": "Watch 200D trend breaks, funding announcements, and dilution filings.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "ionq_ir",
+          "source_name": "IonQ Investor Relations",
+          "source_type": "official",
+          "base_url": "https://investors.ionq.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA"
+          ],
+          "topic_coverage": [
+            "quantum"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://investors.ionq.com/news/default.aspx",
+          "fetch_kind": "html_index",
+          "official_domains": [
+            "ionq.com"
+          ],
+          "fetch_profile": "ir_vendor",
+          "scheduled_fetch": false
+        }
+      ],
+      "email_sources": [],
+      "source_keys": [
+        "ionq_ir"
+      ]
+    },
+    {
+      "entity_id": "RGTI",
+      "symbol": "RGTI",
+      "display_symbol": "RGTI",
+      "route_key": "RGTI",
+      "route_kind": "ticker",
+      "name_en": "Rigetti Computing",
+      "name_ko": "리게티 컴퓨팅",
+      "legal_name": "Rigetti Computing, Inc.",
+      "exchange": "NASDAQ",
+      "asset_type": "Equity",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Quantum",
+      "industry": "Quantum computing",
+      "sector_keys": [
+        "quantum"
+      ],
+      "tags": [
+        "quantum",
+        "small-cap",
+        "high-volatility"
+      ],
+      "aliases": [
+        "Rigetti",
+        "Rigetti Computing"
+      ],
+      "related_symbols": [
+        "IONQ",
+        "QBTS",
+        "QUANTINUUM"
+      ],
+      "sec_cik": "0001838359",
+      "tradingview_symbol": "NASDAQ:RGTI",
+      "official_domains": [
+        "rigetti.com"
+      ],
+      "sector_terms": [
+        "quantum",
+        "qubit",
+        "superconducting"
+      ],
+      "thesis_bull": "Quantum-sector momentum can produce sharp re-ratings around technical milestones.",
+      "thesis_bear": "Funding needs and commercialization timing remain central risks.",
+      "invalidation": "Treat financing filings and failed milestone updates as key review points.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "rigetti_ir",
+          "source_name": "Rigetti Computing Investor Relations",
+          "source_type": "official",
+          "base_url": "https://www.rigetti.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA"
+          ],
+          "topic_coverage": [
+            "quantum",
+            "earnings"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://www.rigetti.com/rigetti-computing-news",
+          "fetch_kind": "html_article",
+          "official_domains": [
+            "rigetti.com"
+          ],
+          "fetch_profile": "safari"
+        }
+      ],
+      "email_sources": [],
+      "source_keys": [
+        "rigetti_ir"
+      ]
+    },
+    {
+      "entity_id": "QBTS",
+      "symbol": "QBTS",
+      "display_symbol": "QBTS",
+      "route_key": "QBTS",
+      "route_kind": "ticker",
+      "name_en": "D-Wave Quantum",
+      "name_ko": "디웨이브 퀀텀",
+      "legal_name": "D-Wave Quantum Inc.",
+      "exchange": "NYSE",
+      "asset_type": "Equity",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Quantum",
+      "industry": "Quantum computing",
+      "sector_keys": [
+        "quantum"
+      ],
+      "tags": [
+        "quantum",
+        "small-cap",
+        "high-volatility"
+      ],
+      "aliases": [
+        "D-Wave",
+        "D-Wave Quantum"
+      ],
+      "related_symbols": [
+        "IONQ",
+        "RGTI",
+        "QUANTINUUM"
+      ],
+      "sec_cik": "0001907982",
+      "tradingview_symbol": "NYSE:QBTS",
+      "official_domains": [
+        "dwavequantum.com",
+        "dwavesys.com"
+      ],
+      "sector_terms": [
+        "quantum",
+        "annealing",
+        "qubit"
+      ],
+      "thesis_bull": "Annealing use-cases and sector-wide quantum interest can support event-driven upside.",
+      "thesis_bear": "Commercial traction and dilution remain the main constraints.",
+      "invalidation": "Watch liquidity, offering filings, and customer proof points.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "dwave_newsroom",
+          "source_name": "D-Wave Quantum Newsroom",
+          "source_type": "official",
+          "base_url": "https://www.dwavequantum.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA",
+            "CAN"
+          ],
+          "topic_coverage": [
+            "quantum"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://www.dwavequantum.com/company/newsroom/",
+          "fetch_kind": "html_index",
+          "official_domains": [
+            "dwavequantum.com",
+            "dwavesys.com"
+          ]
+        }
+      ],
+      "email_sources": [],
+      "source_keys": [
+        "dwave_newsroom"
+      ]
+    },
+    {
+      "entity_id": "QUANTINUUM",
+      "symbol": "QUANTINUUM",
+      "display_symbol": "Quantinuum",
+      "route_key": "QUANTINUUM",
+      "route_kind": "reference_entity",
+      "name_en": "Quantinuum",
+      "name_ko": "퀀티넘",
+      "legal_name": "Quantinuum",
+      "exchange": "REFERENCE",
+      "asset_type": "Reference",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Quantum",
+      "industry": "Quantum computing",
+      "sector_keys": [
+        "quantum"
+      ],
+      "tags": [
+        "quantum",
+        "private-reference",
+        "official-news"
+      ],
+      "aliases": [
+        "Quantinuum",
+        "Honeywell Quantum Solutions",
+        "Cambridge Quantum"
+      ],
+      "related_symbols": [
+        "IONQ",
+        "RGTI",
+        "QBTS"
+      ],
+      "official_domains": [
+        "quantinuum.com",
+        "honeywell.com"
+      ],
+      "sector_terms": [
+        "quantum",
+        "fault-tolerant",
+        "ion trap",
+        "qubit"
+      ],
+      "thesis_bull": "Private reference entity for official quantum milestones and partner/customer announcements.",
+      "thesis_bear": "Not a directly tradable public ticker; market impact must be routed through exposed public companies.",
+      "invalidation": "Treat as reference/news context only unless a public security becomes explicitly tracked.",
+      "source_policy": "reference_entity_metadata_only",
+      "default_discovery_sources": false,
+      "yahoo_discovery_enabled": false,
+      "sources": [
+        {
+          "source_key": "quantinuum_newsroom",
+          "source_name": "Quantinuum Newsroom",
+          "source_type": "official",
+          "base_url": "https://www.quantinuum.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA",
+            "GBR"
+          ],
+          "topic_coverage": [
+            "quantum"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://www.quantinuum.com/news/news",
+          "fetch_kind": "html_index",
+          "symbols": [
+            "QUANTINUUM",
+            "HON"
+          ],
+          "entity_type": "private_reference",
+          "official_domains": [
+            "quantinuum.com",
+            "honeywell.com"
+          ]
+        }
+      ],
+      "email_sources": [],
+      "source_keys": [
+        "quantinuum_newsroom"
+      ]
+    },
+    {
+      "entity_id": "LUNR",
+      "symbol": "LUNR",
+      "display_symbol": "LUNR",
+      "route_key": "LUNR",
+      "route_kind": "ticker",
+      "name_en": "Intuitive Machines",
+      "name_ko": "인튜이티브 머신스",
+      "legal_name": "Intuitive Machines, Inc.",
+      "exchange": "NASDAQ",
+      "asset_type": "Equity",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Space",
+      "industry": "Aerospace and defense",
+      "sector_keys": [
+        "space"
+      ],
+      "tags": [
+        "space",
+        "lunar",
+        "event-risk"
+      ],
+      "aliases": [
+        "Intuitive Machines"
+      ],
+      "related_symbols": [
+        "RKLB",
+        "ASTS",
+        "RDW"
+      ],
+      "sec_cik": "0001844452",
+      "tradingview_symbol": "NASDAQ:LUNR",
+      "official_domains": [
+        "intuitivemachines.com"
+      ],
+      "sector_terms": [
+        "space",
+        "lunar",
+        "NASA",
+        "mission"
+      ],
+      "thesis_bull": "NASA lunar-services awards and mission milestones can create high-impact catalysts.",
+      "thesis_bear": "Mission execution risk and financing needs can dominate between catalysts.",
+      "invalidation": "Watch mission windows, contract modifications, and cash-runway updates.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "intuitive_machines_ir",
+          "source_name": "Intuitive Machines Investor Relations",
+          "source_type": "official",
+          "base_url": "https://investors.intuitivemachines.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA"
+          ],
+          "topic_coverage": [
+            "space",
+            "moon",
+            "NASA",
+            "earnings"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://investors.intuitivemachines.com/news-releases/news-release-details",
+          "fetch_kind": "html_index",
+          "official_domains": [
+            "intuitivemachines.com"
+          ],
+          "fetch_profile": "ir_vendor",
+          "scheduled_fetch": false
+        }
+      ],
+      "email_sources": [],
+      "source_keys": [
+        "intuitive_machines_ir"
+      ]
+    },
+    {
+      "entity_id": "ASTS",
+      "symbol": "ASTS",
+      "display_symbol": "ASTS",
+      "route_key": "ASTS",
+      "route_kind": "ticker",
+      "name_en": "AST SpaceMobile",
+      "name_ko": "AST 스페이스모바일",
+      "legal_name": "AST SpaceMobile, Inc.",
+      "exchange": "NASDAQ",
+      "asset_type": "Equity",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Space",
+      "industry": "Satellite communications",
+      "sector_keys": [
+        "space"
+      ],
+      "tags": [
+        "space",
+        "satcom",
+        "high-volatility"
+      ],
+      "aliases": [
+        "AST SpaceMobile"
+      ],
+      "related_symbols": [
+        "RKLB",
+        "LUNR",
+        "RDW"
+      ],
+      "sec_cik": "0001780312",
+      "tradingview_symbol": "NASDAQ:ASTS",
+      "official_domains": [
+        "ast-science.com",
+        "astspacemobile.com"
+      ],
+      "sector_terms": [
+        "space",
+        "satellite",
+        "satcom",
+        "direct-to-device"
+      ],
+      "thesis_bull": "Satellite-to-phone milestones and carrier partnerships can expand the addressable narrative.",
+      "thesis_bear": "Capex, launch timing, and commercial deployment risk are material.",
+      "invalidation": "Watch launch cadence, capital raises, and partner-conversion evidence.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "ast_spacemobile_ir",
+          "source_name": "AST SpaceMobile Investor Relations",
+          "source_type": "official",
+          "base_url": "https://investors.ast-science.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA"
+          ],
+          "topic_coverage": [
+            "space",
+            "satcom",
+            "telecom",
+            "earnings"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://investors.ast-science.com/press-releases",
+          "fetch_kind": "html_index",
+          "official_domains": [
+            "ast-science.com",
+            "astspacemobile.com"
+          ],
+          "fetch_profile": "ir_vendor",
+          "scheduled_fetch": false
+        }
+      ],
+      "email_sources": [],
+      "source_keys": [
+        "ast_spacemobile_ir"
+      ]
+    },
+    {
+      "entity_id": "RDW",
+      "symbol": "RDW",
+      "display_symbol": "RDW",
+      "route_key": "RDW",
+      "route_kind": "ticker",
+      "name_en": "Redwire",
+      "name_ko": "레드와이어",
+      "legal_name": "Redwire Corporation",
+      "exchange": "NYSE",
+      "asset_type": "Equity",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Space",
+      "industry": "Space infrastructure",
+      "sector_keys": [
+        "space"
+      ],
+      "tags": [
+        "space",
+        "defense-demand",
+        "small-cap"
+      ],
+      "aliases": [
+        "Redwire"
+      ],
+      "related_symbols": [
+        "RKLB",
+        "LUNR",
+        "ASTS"
+      ],
+      "sec_cik": "0001819810",
+      "tradingview_symbol": "NYSE:RDW",
+      "official_domains": [
+        "redwirespace.com"
+      ],
+      "sector_terms": [
+        "space",
+        "defense",
+        "aerospace",
+        "backlog"
+      ],
+      "thesis_bull": "Space infrastructure and defense demand can support niche backlog growth.",
+      "thesis_bear": "Small-cap liquidity, integration risk, and profitability timing matter.",
+      "invalidation": "Watch backlog quality, margin trend, and financing language.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "redwire_ir",
+          "source_name": "Redwire Investor Relations",
+          "source_type": "official",
+          "base_url": "https://ir.redwirespace.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA"
+          ],
+          "topic_coverage": [
+            "space",
+            "defense"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "rss",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://ir.redwirespace.com/news-events/press-releases/rss",
+          "official_domains": [
+            "redwirespace.com"
+          ]
+        }
+      ],
+      "email_sources": [
+        {
+          "signup_url": "https://ir.redwirespace.com/news-events/email-alerts",
+          "source_name": "Redwire IR email alerts"
+        }
+      ],
+      "source_keys": [
+        "redwire_ir"
+      ]
+    },
+    {
+      "entity_id": "AMD",
+      "symbol": "AMD",
+      "display_symbol": "AMD",
+      "route_key": "AMD",
+      "route_kind": "ticker",
+      "name_en": "Advanced Micro Devices",
+      "name_ko": "AMD",
+      "legal_name": "Advanced Micro Devices, Inc.",
+      "exchange": "NASDAQ",
+      "asset_type": "Equity",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Semiconductors / AI infrastructure",
+      "industry": "Semiconductors",
+      "sector_keys": [
+        "semiconductors"
+      ],
+      "tags": [
+        "semiconductors",
+        "ai-infra",
+        "datacenter"
+      ],
+      "aliases": [
+        "Advanced Micro Devices",
+        "AMD"
+      ],
+      "related_symbols": [
+        "NVDA",
+        "005930.KS"
+      ],
+      "sec_cik": "0000002488",
+      "tradingview_symbol": "NASDAQ:AMD",
+      "official_domains": [
+        "amd.com"
+      ],
+      "sector_terms": [
+        "semiconductor",
+        "gpu",
+        "datacenter",
+        "ai accelerator"
+      ],
+      "thesis_bull": "AI GPU share gains and datacenter CPU demand can narrow the gap versus leader expectations.",
+      "thesis_bear": "Execution, margins, and ecosystem gaps versus NVIDIA can limit upside.",
+      "invalidation": "Watch datacenter guide-downs and failed accelerator ramp evidence.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "amd_ir",
+          "source_name": "AMD Investor Relations",
+          "source_type": "official",
+          "base_url": "https://ir.amd.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA"
+          ],
+          "topic_coverage": [
+            "semiconductors",
+            "ai_infrastructure"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "rss",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://ir.amd.com/news-events/press-releases/rss",
+          "official_domains": [
+            "amd.com"
+          ]
+        }
+      ],
+      "email_sources": [],
+      "source_keys": [
+        "amd_ir"
+      ]
+    },
+    {
+      "entity_id": "AAPL",
+      "symbol": "AAPL",
+      "display_symbol": "AAPL",
+      "route_key": "AAPL",
+      "route_kind": "ticker",
+      "name_en": "Apple",
+      "name_ko": "애플",
+      "legal_name": "Apple Inc.",
+      "exchange": "NASDAQ",
+      "asset_type": "Equity",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Big Tech",
+      "industry": "Consumer electronics",
+      "sector_keys": [
+        "big-tech"
+      ],
+      "tags": [
+        "big-tech",
+        "portfolio-lab",
+        "mega-cap"
+      ],
+      "aliases": [
+        "Apple"
+      ],
+      "related_symbols": [
+        "MSFT",
+        "NVDA"
+      ],
+      "sec_cik": "0000320193",
+      "tradingview_symbol": "NASDAQ:AAPL",
+      "official_domains": [
+        "apple.com"
+      ],
+      "sector_terms": [
+        "iphone",
+        "consumer electronics",
+        "services",
+        "big tech"
+      ],
+      "thesis_bull": "Installed-base monetization, buybacks, and services durability can stabilize earnings.",
+      "thesis_bear": "China demand, AI execution, and hardware-cycle saturation can weigh on multiples.",
+      "invalidation": "Watch revenue revisions, China exposure, and product-cycle response.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "apple_newsroom",
+          "source_name": "Apple Newsroom",
+          "source_type": "official",
+          "base_url": "https://www.apple.com/newsroom",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA"
+          ],
+          "topic_coverage": [
+            "big_tech",
+            "consumer_electronics"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "rss",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://www.apple.com/newsroom/rss-feed.rss",
+          "official_domains": [
+            "apple.com"
+          ],
+          "fetch_profile": "safari"
+        }
+      ],
+      "email_sources": [],
+      "source_keys": [
+        "apple_newsroom"
+      ]
+    },
+    {
+      "entity_id": "MSFT",
+      "symbol": "MSFT",
+      "display_symbol": "MSFT",
+      "route_key": "MSFT",
+      "route_kind": "ticker",
+      "name_en": "Microsoft",
+      "name_ko": "마이크로소프트",
+      "legal_name": "Microsoft Corporation",
+      "exchange": "NASDAQ",
+      "asset_type": "Equity",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Big Tech / AI infrastructure",
+      "industry": "Software and cloud",
+      "sector_keys": [
+        "big-tech"
+      ],
+      "tags": [
+        "big-tech",
+        "portfolio-lab",
+        "ai-infra"
+      ],
+      "aliases": [
+        "Microsoft"
+      ],
+      "related_symbols": [
+        "AAPL",
+        "NVDA",
+        "AMD"
+      ],
+      "sec_cik": "0000789019",
+      "tradingview_symbol": "NASDAQ:MSFT",
+      "official_domains": [
+        "microsoft.com"
+      ],
+      "sector_terms": [
+        "cloud",
+        "azure",
+        "software",
+        "ai infrastructure"
+      ],
+      "thesis_bull": "Cloud, enterprise AI distribution, and software margins support high-quality compounding.",
+      "thesis_bear": "AI capex intensity, antitrust risk, and cloud growth deceleration can pressure returns.",
+      "invalidation": "Watch Azure growth, capex commentary, and margin dilution.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "microsoft_ir",
+          "source_name": "Microsoft News",
+          "source_type": "official",
+          "base_url": "https://news.microsoft.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA"
+          ],
+          "topic_coverage": [
+            "big_tech",
+            "ai_infrastructure"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "rss",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://news.microsoft.com/feed/",
+          "fetch_kind": "feed",
+          "official_domains": [
+            "microsoft.com"
+          ],
+          "discovery_only": true
+        }
+      ],
+      "email_sources": [],
+      "source_keys": [
+        "microsoft_ir"
+      ]
+    },
+    {
+      "entity_id": "TLT",
+      "symbol": "TLT",
+      "display_symbol": "TLT",
+      "route_key": "TLT",
+      "route_kind": "ticker",
+      "name_en": "iShares 20+ Year Treasury Bond ETF",
+      "name_ko": "아이셰어즈 장기 미국채 ETF",
+      "legal_name": "iShares 20+ Year Treasury Bond ETF",
+      "exchange": "NASDAQ",
+      "asset_type": "ETF",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Rates",
+      "industry": "Long-duration Treasuries",
+      "sector_keys": [
+        "big-tech"
+      ],
+      "tags": [
+        "portfolio-lab",
+        "rates",
+        "macro-hedge"
+      ],
+      "aliases": [
+        "iShares 20+ Year Treasury Bond ETF",
+        "long-duration Treasuries"
+      ],
+      "related_symbols": [
+        "AAPL",
+        "MSFT",
+        "NVDA"
+      ],
+      "tradingview_symbol": "NASDAQ:TLT",
+      "official_domains": [
+        "ishares.com",
+        "blackrock.com"
+      ],
+      "sector_terms": [
+        "rates",
+        "treasury",
+        "duration",
+        "bond"
+      ],
+      "thesis_bull": "Duration can rally when growth expectations weaken or real yields fall.",
+      "thesis_bear": "Sticky inflation, term-premium repricing, and heavy issuance can keep pressure on long bonds.",
+      "invalidation": "Watch 10Y/30Y yield breaks and FOMC repricing.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "ishares_tlt",
+          "source_name": "iShares TLT Official Fund Page",
+          "source_type": "official",
+          "base_url": "https://www.ishares.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA"
+          ],
+          "topic_coverage": [
+            "rates",
+            "treasury",
+            "bonds"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://www.ishares.com/us/products/239454/TLT",
+          "fetch_kind": "html_index",
+          "official_domains": [
+            "ishares.com",
+            "blackrock.com"
+          ],
+          "scheduled_fetch": false
+        }
+      ],
+      "email_sources": [],
+      "source_keys": [
+        "ishares_tlt"
+      ]
+    },
+    {
+      "entity_id": "005930_KS",
+      "symbol": "005930.KS",
+      "display_symbol": "005930.KS",
+      "route_key": "005930_KS",
+      "route_kind": "ticker",
+      "name_en": "Samsung Electronics",
+      "name_ko": "삼성전자",
+      "legal_name": "Samsung Electronics Co., Ltd.",
+      "exchange": "KRX",
+      "asset_type": "Equity",
+      "currency": "KRW",
+      "country": "KOR",
+      "sector": "Semiconductors / consumer electronics",
+      "industry": "Memory and electronics",
+      "sector_keys": [
+        "semiconductors",
+        "big-tech"
+      ],
+      "tags": [
+        "semiconductors",
+        "memory",
+        "korea"
+      ],
+      "aliases": [
+        "Samsung Electronics",
+        "Samsung"
+      ],
+      "related_symbols": [
+        "NVDA",
+        "AMD",
+        "AAPL"
+      ],
+      "tradingview_symbol": "KRX:005930",
+      "official_domains": [
+        "samsung.com"
+      ],
+      "sector_terms": [
+        "memory",
+        "semiconductor",
+        "foundry",
+        "korea"
+      ],
+      "thesis_bull": "Memory-cycle recovery, foundry progress, and AI device demand can re-rate Korea semiconductor exposure.",
+      "thesis_bear": "Memory pricing, FX, China exposure, and foundry competition can pressure cycle timing.",
+      "invalidation": "Watch memory price reversals, capex guidance, and KRX/Korea source availability.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "samsung_global_newsroom",
+          "source_name": "Samsung Global Newsroom",
+          "source_type": "official",
+          "base_url": "https://news.samsung.com/global",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "KOR",
+            "GLOBAL"
+          ],
+          "topic_coverage": [
+            "semiconductors",
+            "consumer_electronics"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "rss",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://news.samsung.com/global/feed",
+          "official_domains": [
+            "samsung.com"
+          ],
+          "fetch_profile": "safari"
+        }
+      ],
+      "email_sources": [],
+      "source_keys": [
+        "samsung_global_newsroom"
+      ]
+    }
+  ]
+}

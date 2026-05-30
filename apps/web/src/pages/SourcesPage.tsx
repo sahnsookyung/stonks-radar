@@ -161,16 +161,6 @@ const sourceGroups: { title: string; summary: string; sources: SourceItem[] }[] 
         status: "candidate",
         risk: "medium"
       },
-      {
-        name: "Hindenburg Research archive/news",
-        url: "https://hindenburgresearch.com/",
-        category: "short research archive",
-        signal: "archive and follow-through coverage after the 2025 shutdown",
-        cadence: "news/archive watch",
-        access: "public archive/news",
-        status: "candidate",
-        risk: "medium"
-      }
     ]
   },
   {

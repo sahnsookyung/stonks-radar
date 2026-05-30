@@ -1,13 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
-import { Factory, ShieldAlert } from "lucide-react";
-import { CalendarTable } from "../components/CalendarTable";
+import { CalendarClock, ExternalLink, Factory, Newspaper, ShieldAlert, TrendingDown } from "lucide-react";
 import { FreshnessBadge, SourceBadge } from "../components/Badge";
+import { EntityLink } from "../components/EntityLink";
 import { EventList } from "../components/EventList";
 import { ErrorState, LoadingState } from "../components/LoadingState";
+import { NewsEventCard } from "../components/NewsEventCard";
 import { SnapshotBanner } from "../components/SnapshotBanner";
 import { useLocale } from "../lib/locale";
 import { snapshotQueries } from "../lib/snapshots";
+import type { ShortFact, TickerCalendarItem } from "@frw/shared-types";
 
 export function SectorPage() {
   const locale = useLocale();
@@ -37,21 +39,69 @@ export function SectorPage() {
           <SourceBadge label={data.source_strength} />
         </div>
       </section>
+      <section className="panel min-w-0 p-4">
+        <h2 className="text-sm font-semibold">{locale === "ko" ? "추적 엔티티" : "Tracked entities"}</h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {data.tracked_entities.length ? (
+            data.tracked_entities.map((entity) => (
+              <EntityLink key={entity.entity_id} value={entity.route_key} locale={locale} className="badge min-h-11 border-line bg-panelAlt text-ink hover:border-accent hover:text-accent" />
+            ))
+          ) : (
+            <EmptyState text={locale === "ko" ? "이 섹터에 연결된 추적 엔티티가 없습니다." : "No tracked registry entities are linked to this sector yet."} />
+          )}
+        </div>
+      </section>
       <section className="grid gap-4 lg:grid-cols-3">
-        <InfoList title="Entities" items={data.monitored_entities} />
         <InfoList title="Instruments" items={data.monitored_instruments} />
         <InfoList title="Country/region exposure" items={data.country_region_exposure} />
+        <InfoList title="Sector drivers" items={data.macro_geopolitical_drivers} />
       </section>
       <section>
         <h2 className="mb-3 text-2xl font-bold">Recent approved events</h2>
-        <EventList events={data.recent_events} />
+        {data.recent_events.length ? <EventList events={data.recent_events} /> : <EmptyState text={locale === "ko" ? "현재 이 섹터 전용 승인 이벤트가 없습니다." : "No sector-specific approved events are available in this snapshot."} />}
       </section>
-      <section>
-        <h2 className="mb-3 text-2xl font-bold">Upcoming calendar items</h2>
-        <CalendarTable items={data.upcoming_calendar_items} />
+      <section className="grid gap-4 lg:grid-cols-[0.42fr_0.58fr]">
+        <div className="panel min-w-0 p-4">
+          <div className="mb-3 flex items-center gap-2 font-semibold">
+            <CalendarClock className="h-4 w-4 text-accent" />
+            {locale === "ko" ? "티커별 촉매 일정" : "Ticker Catalyst Calendar"}
+          </div>
+          <div className="grid gap-2">
+            {data.ticker_calendar_items.length ? (
+              data.ticker_calendar_items.map((item) => <TickerCalendarCard key={item.id} item={item} locale={locale} />)
+            ) : (
+              <EmptyState text={locale === "ko" ? "이 섹터에 연결된 티커별 예정 촉매가 없습니다. 거시 일정은 경제 캘린더에서 분리해 표시합니다." : "No ticker-specific upcoming catalysts are linked. Macro calendars stay on the Economic Calendar page."} />
+            )}
+          </div>
+        </div>
+        <div className="panel min-w-0 p-4">
+          <div className="mb-3 flex items-center gap-2 font-semibold">
+            <Newspaper className="h-4 w-4 text-accent" />
+            {locale === "ko" ? "섹터 뉴스" : "Sector News"}
+          </div>
+          <div className="grid gap-3">
+            {data.sector_news.length ? (
+              data.sector_news.map((event) => <NewsEventCard key={event.id} event={event} locale={locale} compact />)
+            ) : (
+              <EmptyState text={locale === "ko" ? "현재 이 섹터 티커와 직접 연결된 뉴스가 없습니다." : "No current news is directly linked to this sector's tracked tickers."} />
+            )}
+          </div>
+        </div>
       </section>
       <section className="grid gap-4 lg:grid-cols-2">
-        <InfoList title="Macro/geopolitical drivers" items={data.macro_geopolitical_drivers} />
+        <div className="panel min-w-0 p-4">
+          <div className="mb-3 flex items-center gap-2 font-semibold">
+            <TrendingDown className="h-4 w-4 text-accent" />
+            {locale === "ko" ? "출처 기반 공매도 사실" : "Source-backed short facts"}
+          </div>
+          <div className="grid gap-2">
+            {data.sector_short_facts.length ? (
+              data.sector_short_facts.map((fact) => <ShortFactCard key={fact.id} fact={fact} locale={locale} />)
+            ) : (
+              <EmptyState text={locale === "ko" ? "이번 스냅샷에는 공식 FINRA 공매도 사실 행이 없습니다." : "No source-backed FINRA short fact rows are available in this snapshot."} />
+            )}
+          </div>
+        </div>
         <div className="panel min-w-0 p-4">
           <div className="mb-3 flex items-center gap-2 font-semibold">
             <ShieldAlert className="h-4 w-4" />
@@ -82,6 +132,65 @@ export function SectorPage() {
       </section>
     </div>
   );
+}
+
+function TickerCalendarCard({ item, locale }: { item: TickerCalendarItem; locale: "en" | "ko" }) {
+  return (
+    <div className="grid min-h-11 gap-2 rounded-md border border-line bg-panelAlt px-3 py-2">
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="safe-text text-sm font-semibold">{item.title}</div>
+          <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted">
+            <EntityLink value={item.symbol} locale={locale} />
+            <span>{item.scheduled_local_date}</span>
+            <span>{item.catalyst_type.replaceAll("_", " ")}</span>
+          </div>
+        </div>
+        <a className="focus-ring inline-flex min-h-11 shrink-0 items-center gap-1 rounded-md text-xs font-semibold text-accent hover:underline" href={item.source_url} target="_blank" rel="noreferrer">
+          {locale === "ko" ? "원문" : "Source"}
+          <ExternalLink className="h-4 w-4" />
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function ShortFactCard({ fact, locale }: { fact: ShortFact; locale: "en" | "ko" }) {
+  const label = fact.fact_type === "short_interest"
+    ? (locale === "ko" ? "공매도 잔고" : "Short interest")
+    : (locale === "ko" ? "일별 공매도 거래량" : "Daily short volume");
+  return (
+    <div className="grid min-h-11 gap-1 rounded-md border border-line bg-panelAlt px-3 py-2">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <EntityLink value={fact.symbol} locale={locale} />
+            <span className="safe-text text-sm font-semibold">{label}</span>
+          </div>
+          <p className="safe-text mt-1 text-xs leading-5 text-muted">{fact.as_of_date} · {fact.caveat}</p>
+        </div>
+        <div className="shrink-0 text-right">
+          <div className="text-sm font-bold text-accent">{formatShares(fact.value)}</div>
+          <div className="text-[11px] text-muted">{fact.freshness}</div>
+        </div>
+      </div>
+      <a className="focus-ring inline-flex min-h-11 w-fit items-center gap-1 rounded-md text-xs font-semibold text-accent hover:underline" href={fact.source_url} target="_blank" rel="noreferrer">
+        {locale === "ko" ? "FINRA 원문" : "FINRA source"}
+        <ExternalLink className="h-4 w-4" />
+      </a>
+    </div>
+  );
+}
+
+function formatShares(value: number | null) {
+  if (value === null || !Number.isFinite(value)) return "pending";
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2).replace(/\.?0+$/, "")}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1).replace(/\.?0+$/, "")}K`;
+  return value.toLocaleString();
+}
+
+function EmptyState({ text }: { text: string }) {
+  return <div className="safe-text min-h-11 rounded-md border border-dashed border-line px-3 py-2 text-sm leading-6 text-muted">{text}</div>;
 }
 
 function InfoList({ title, items }: { title: string; items: string[] }) {

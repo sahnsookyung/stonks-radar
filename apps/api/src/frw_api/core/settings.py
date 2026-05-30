@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     cerebras_api_key: str | None = None
     mistral_api_key: str | None = None
     openrouter_api_key: str | None = None
+    nvidia_api_key: str | None = None
+    nvidia_nim_api_key: str | None = None
+    nvidia_nim_base_url: str = "https://integrate.api.nvidia.com/v1"
+    nvidia_nim_model_key: str = "meta/llama-3.1-8b-instruct"
     hf_token: str | None = None
     local_llm_base_url: str | None = "http://host.docker.internal:11434"
 
@@ -68,7 +72,7 @@ class Settings(BaseSettings):
     finra_api_client_secret: str | None = None
     finra_api_token: str | None = None
     short_volume_monitored_tickers: str = "DJT,TSLA,NVDA"
-    short_research_sources: str = "hindenburg,muddy_waters,viceroy,spruce_point,kerrisdale,culper,blue_orca,grizzly"
+    short_research_sources: str = "muddy_waters,viceroy,spruce_point,kerrisdale,culper,blue_orca,grizzly"
     pentagon_pizza_base_url: str | None = "https://pentagon.pizza"
     pentagon_pizza_function_url: str | None = None
     pentagon_pizza_supabase_anon_key: str | None = None

@@ -127,7 +127,11 @@ class LLMRouter:
                     join provider_budget b on b.provider_key = p.provider_key
                     where p.enabled = true
                     order by
-                      case when p.provider_key = 'local' then 0 else 1 end,
+                      case
+                        when p.provider_key = 'local' then 0
+                        when p.provider_key = 'nvidia_nim' then 1
+                        else 2
+                      end,
                       coalesce((p.quality_scores ->> :task_type)::numeric, 0) desc,
                       coalesce(p.latency_score, 999) asc
                     """
@@ -192,6 +196,7 @@ class LLMRouter:
             "groq": self.settings.groq_api_key,
             "mistral": self.settings.mistral_api_key,
             "cerebras": self.settings.cerebras_api_key,
+            "nvidia_nim": self.settings.nvidia_nim_api_key or self.settings.nvidia_api_key,
         }
         if provider in keys:
             api_key = keys[provider]
@@ -205,6 +210,7 @@ class LLMRouter:
                 "groq": "https://api.groq.com/openai/v1",
                 "mistral": "https://api.mistral.ai/v1",
                 "cerebras": "https://api.cerebras.ai/v1",
+                "nvidia_nim": self.settings.nvidia_nim_base_url,
             }
             return await self._call_openai_compatible(provider, base_urls[provider], api_key, model, messages)
         if provider == "gemini":

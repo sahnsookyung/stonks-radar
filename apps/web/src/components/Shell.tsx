@@ -201,7 +201,7 @@ function getActivePrimaryNavKey(pathname: string) {
   if (path.startsWith("/map")) return "map";
   if (path.startsWith("/calendar") || path.startsWith("/central-banks")) return "calendar";
   if (path.startsWith("/market-pulse")) return "market-pulse";
-  if (path.startsWith("/portfolio")) return "portfolio";
+  if (path.startsWith("/portfolio") || path.startsWith("/funds")) return "portfolio";
   if (path.startsWith("/tickers")) return "tickers";
   if (path.startsWith("/news")) return "news";
   if (path.startsWith("/shorts")) return "shorts";

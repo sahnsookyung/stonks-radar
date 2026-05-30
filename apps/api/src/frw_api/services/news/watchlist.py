@@ -6,14 +6,25 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
-_WATCHLIST_PATH = Path(__file__).with_name("ticker_watchlist.json")
+_GENERATED_WATCHLIST_PATH = Path(__file__).with_name("ticker_watchlist.generated.json")
+_REGISTRY_PATH = Path(__file__).resolve().parents[6] / "config" / "tracked_entities.json"
 
 
 @lru_cache(maxsize=1)
 def ticker_watchlist_payload() -> dict[str, Any]:
-    payload = json.loads(_WATCHLIST_PATH.read_text())
+    path = next(
+        (
+            candidate
+            for candidate in (_GENERATED_WATCHLIST_PATH, _REGISTRY_PATH)
+            if candidate.exists()
+        ),
+        None,
+    )
+    if path is None:
+        raise FileNotFoundError("generated ticker watchlist or config/tracked_entities.json is required")
+    payload = json.loads(path.read_text())
     if not isinstance(payload, dict) or not isinstance(payload.get("entities"), list):
-        raise ValueError("ticker_watchlist.json must contain an entities array")
+        raise ValueError(f"{path.name} must contain an entities array")
     return payload
 
 
@@ -88,7 +99,7 @@ def watchlist_symbols() -> tuple[str, ...]:
 def _required_string(value: dict[str, Any], key: str) -> str:
     item = str(value.get(key) or "").strip()
     if not item:
-        raise ValueError(f"ticker_watchlist.json missing required field: {key}")
+        raise ValueError(f"tracked entity watchlist missing required field: {key}")
     return item
 
 

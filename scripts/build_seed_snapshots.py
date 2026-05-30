@@ -53,6 +53,19 @@ FINRA_REQUEST_MIN_INTERVAL_SECONDS = 0.25
 DEFAULT_SHORT_TICKERS = "DJT,TSLA,NVDA"
 DEFAULT_NEWS_TICKERS = "DJT,TSLA,NVDA,RKLB,IONQ,RGTI,QBTS,QUANTINUUM,LUNR,ASTS,RDW,AMD,AAPL,MSFT,TLT,005930.KS"
 DEFAULT_TRUMP_CIKS = {"DJT": "0001849635"}
+TRACKED_ENTITY_REGISTRY_PATH = ROOT / "config" / "tracked_entities.json"
+CUSIP_TICKER_OVERRIDES_PATH = ROOT / "config" / "cusip_ticker_overrides.json"
+TRACKED_ENTITY_WATCHLIST_PATH = ROOT / "apps" / "api" / "src" / "frw_api" / "services" / "news" / "ticker_watchlist.generated.json"
+FUND_PORTFOLIOS = {
+    "situational-awareness": {
+        "display_name": "Leopold Aschenbrenner 13F Portfolio",
+        "display_name_ko": "레오폴드 아셴브레너 13F 포트폴리오",
+        "manager_name": "Leopold Aschenbrenner",
+        "fund_name": "Situational Awareness LP",
+        "cik": "0002045724",
+        "source_url": "https://www.sec.gov/edgar/browse/?CIK=0002045724",
+    }
+}
 TIME_SENSITIVE_MARKET_TILE_KEYS = {
     "nasdaq_composite",
     "nasdaq_100",
@@ -92,6 +105,8 @@ _KRX_ERROR_CACHE: dict[tuple[str, str], str] = {}
 _FINRA_TOKEN_CACHE: dict[str, Any] = {"token": None, "expires_at": 0.0}
 _FINRA_ROWS_CACHE: dict[str, list[dict[str, Any]]] = {}
 _SEC_SUBMISSIONS_CACHE: dict[str, dict[str, Any] | None] = {}
+_SEC_FUND_PORTFOLIO_CACHE: dict[str, dict[str, Any] | None] = {}
+_CUSIP_TICKER_OVERRIDES_CACHE: dict[str, str | None] | None = None
 _WEB_METADATA_CACHE: dict[str, dict[str, str] | None] = {}
 _ISHARES_FUND_CACHE: dict[str, dict[str, Any] | None] = {}
 _BOJ_SERIES_CACHE: dict[tuple[str, str, str], dict[str, Any] | None] = {}
@@ -103,6 +118,8 @@ _TWELVE_DATA_QUOTE_CACHE: dict[str, dict[str, Any] | None] = {}
 _TREASURY_YIELD_CACHE: dict[str, Any] | None = None
 _GDELT_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
 _RSS_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
+_TRACKED_ENTITY_CACHE: list[dict[str, Any]] | None = None
+_SECTOR_SHORT_FACT_CACHE: dict[tuple[str, str], list[dict[str, Any]]] = {}
 _LAST_FRED_REQUEST_AT = 0.0
 _LAST_KRX_REQUEST_AT = 0.0
 _LAST_FINRA_REQUEST_AT = 0.0
@@ -248,27 +265,59 @@ NEWS_TICKER_EXCHANGES = {
 }
 
 
+def _tracked_entity_records() -> list[dict[str, Any]]:
+    global _TRACKED_ENTITY_CACHE
+    if _TRACKED_ENTITY_CACHE is not None:
+        return _TRACKED_ENTITY_CACHE
+    if TRACKED_ENTITY_REGISTRY_PATH.exists():
+        payload = json.loads(TRACKED_ENTITY_REGISTRY_PATH.read_text())
+    elif TRACKED_ENTITY_WATCHLIST_PATH.exists():
+        payload = json.loads(TRACKED_ENTITY_WATCHLIST_PATH.read_text())
+    else:
+        payload = {"entities": []}
+    records = [entity for entity in payload.get("entities", []) if isinstance(entity, dict)]
+    _TRACKED_ENTITY_CACHE = records
+    return records
+
+
+def _symbol_route_key(symbol: str) -> str:
+    return re.sub(r"[^A-Z0-9]+", "_", symbol.upper()).strip("_")
+
+
 def _load_news_ticker_profiles() -> dict[str, dict[str, str]]:
-    watchlist_path = ROOT / "apps" / "api" / "src" / "frw_api" / "services" / "news" / "ticker_watchlist.json"
-    payload = json.loads(watchlist_path.read_text())
     profiles: dict[str, dict[str, str]] = {}
-    for entity in payload.get("entities", []):
+    for entity in _tracked_entity_records():
         symbol = str(entity.get("symbol") or "").upper()
         if not symbol:
             continue
-        name_en = str(entity.get("legal_name") or symbol)
+        name = entity.get("name") if isinstance(entity.get("name"), dict) else {}
+        display_symbol = str(entity.get("display_symbol") or symbol)
+        name_en = str(name.get("en") or entity.get("legal_name") or display_symbol)
+        name_ko = str(name.get("ko") or NEWS_TICKER_KO_NAMES.get(symbol, name_en))
         profiles[symbol] = {
+            "entity_id": str(entity.get("entity_id") or symbol.lower()),
             "name_en": name_en,
-            "name_ko": NEWS_TICKER_KO_NAMES.get(symbol, name_en),
-            "exchange": NEWS_TICKER_EXCHANGES.get(symbol, "REFERENCE"),
+            "name_ko": name_ko,
+            "exchange": str(entity.get("exchange") or NEWS_TICKER_EXCHANGES.get(symbol, "REFERENCE")),
+            "route_kind": str(entity.get("route_kind") or "ticker"),
+            "route_key": str(entity.get("route_key") or _symbol_route_key(symbol)),
+            "source_strength": str(entity.get("source_strength") or "registry"),
         }
     return profiles
 
 
 NEWS_TICKER_PROFILES = _load_news_ticker_profiles()
 
+
+def _tracked_entity_by_symbol() -> dict[str, dict[str, Any]]:
+    return {str(entity.get("symbol") or "").upper(): entity for entity in _tracked_entity_records()}
+
+
+def _tracked_entity_by_route_key() -> dict[str, dict[str, Any]]:
+    return {str(entity.get("route_key") or _symbol_route_key(str(entity.get("symbol") or ""))).upper(): entity for entity in _tracked_entity_records()}
+
 NEWS_REGION_KEYS = ["USA", "KOR", "JPN", "BRA", "EU", "CHN"]
-NEWS_TOPIC_KEYS = ["semiconductors", "geopolitics", "public_health", "central_banks", "energy"]
+NEWS_TOPIC_KEYS = ["semiconductors", "space", "quantum", "geopolitics", "public_health", "central_banks", "energy"]
 
 NEWS_TOPIC_LABELS = {
     "semiconductors": ("Semiconductors", "반도체"),
@@ -309,6 +358,9 @@ def build_snapshots() -> None:
     for locale in LOCALES:
         events = _events(locale, generated_at)
         calendar = _calendar(locale)
+        news_events = _news_event_details(locale, generated_at)
+        news_list_items = [_news_list_item(event) for event in news_events]
+        news_list_items.sort(key=lambda event: (event["breaking_score"], event["last_seen_at"]), reverse=True)
         macro_tiles = _preserve_previous_active_macro_tiles(locale, _macro_tiles(locale, generated_at))
         sector_tiles = [_sector_tile(key, locale, events) for key in SECTORS]
         scenario_summaries = [_scenario_summary(key, locale) for key in SCENARIOS]
@@ -429,7 +481,7 @@ def build_snapshots() -> None:
                     hard_expires_at,
                     "sector_page",
                     key,
-                    _sector_page(key, locale, events, calendar, generated_at),
+                    _sector_page(key, locale, events, calendar, news_list_items, generated_at),
                 ),
             )
 
@@ -482,7 +534,9 @@ def build_snapshots() -> None:
             ),
         )
 
-        _write_news_snapshots(manifest, locale, generated_at, stale_after, hard_expires_at)
+        _write_news_snapshots(manifest, locale, generated_at, stale_after, hard_expires_at, news_events, news_list_items)
+        _write_reference_entity_snapshots(manifest, locale, generated_at, stale_after, hard_expires_at, news_list_items)
+        _write_fund_portfolio_snapshots(manifest, locale, generated_at, stale_after, hard_expires_at)
 
     latest = PUBLIC_ROOT / "latest"
     latest.mkdir(parents=True, exist_ok=True)
@@ -490,7 +544,7 @@ def build_snapshots() -> None:
 
 
 def _reset_runtime_caches() -> None:
-    global _RUNTIME_ENV, _MOF_JGB_CACHE, _TREASURY_YIELD_CACHE, _LAST_FRED_REQUEST_AT, _LAST_KRX_REQUEST_AT, _LAST_FINRA_REQUEST_AT
+    global _RUNTIME_ENV, _MOF_JGB_CACHE, _TREASURY_YIELD_CACHE, _LAST_FRED_REQUEST_AT, _LAST_KRX_REQUEST_AT, _LAST_FINRA_REQUEST_AT, _CUSIP_TICKER_OVERRIDES_CACHE
     _RUNTIME_ENV = None
     _FRED_CACHE.clear()
     _MOF_JGB_CACHE = None
@@ -500,6 +554,8 @@ def _reset_runtime_caches() -> None:
     _FINRA_TOKEN_CACHE.update({"token": None, "expires_at": 0.0})
     _FINRA_ROWS_CACHE.clear()
     _SEC_SUBMISSIONS_CACHE.clear()
+    _SEC_FUND_PORTFOLIO_CACHE.clear()
+    _CUSIP_TICKER_OVERRIDES_CACHE = None
     _WEB_METADATA_CACHE.clear()
     _ISHARES_FUND_CACHE.clear()
     _BOJ_SERIES_CACHE.clear()
@@ -511,6 +567,7 @@ def _reset_runtime_caches() -> None:
     _TREASURY_YIELD_CACHE = None
     _GDELT_ARTICLE_CACHE.clear()
     _RSS_ARTICLE_CACHE.clear()
+    _SECTOR_SHORT_FACT_CACHE.clear()
     _LAST_FRED_REQUEST_AT = 0.0
     _LAST_KRX_REQUEST_AT = 0.0
     _LAST_FINRA_REQUEST_AT = 0.0
@@ -1001,6 +1058,202 @@ def _sec_submissions(cik: str) -> dict[str, Any] | None:
         payload = None
     _SEC_SUBMISSIONS_CACHE[padded] = payload if isinstance(payload, dict) else None
     return _SEC_SUBMISSIONS_CACHE[padded]
+
+
+def _cusip_ticker_overrides() -> dict[str, str]:
+    global _CUSIP_TICKER_OVERRIDES_CACHE
+    if _CUSIP_TICKER_OVERRIDES_CACHE is not None:
+        return {
+            cusip: ticker
+            for cusip, ticker in _CUSIP_TICKER_OVERRIDES_CACHE.items()
+            if isinstance(ticker, str) and ticker
+        }
+    if not CUSIP_TICKER_OVERRIDES_PATH.exists():
+        _CUSIP_TICKER_OVERRIDES_CACHE = {}
+        return {}
+    try:
+        payload = json.loads(CUSIP_TICKER_OVERRIDES_PATH.read_text())
+    except (OSError, json.JSONDecodeError):
+        _CUSIP_TICKER_OVERRIDES_CACHE = {}
+        return {}
+    raw = payload.get("overrides") if isinstance(payload, dict) else payload
+    if not isinstance(raw, dict):
+        _CUSIP_TICKER_OVERRIDES_CACHE = {}
+        return {}
+    _CUSIP_TICKER_OVERRIDES_CACHE = {
+        str(cusip).strip().upper(): str(ticker).strip().upper()
+        for cusip, ticker in raw.items()
+        if str(cusip).strip() and isinstance(ticker, str) and ticker.strip()
+    }
+    return dict(_CUSIP_TICKER_OVERRIDES_CACHE)
+
+
+def _sec_archive_base_url(cik: str, accession_number: str) -> str:
+    return f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/{accession_number.replace('-', '')}"
+
+
+def _latest_sec_13f_filing(cik: str) -> dict[str, Any] | None:
+    submissions = _sec_submissions(cik)
+    if not submissions:
+        return None
+    recent = submissions.get("filings", {}).get("recent", {})
+    forms = recent.get("form") or []
+    accessions = recent.get("accessionNumber") or []
+    filing_dates = recent.get("filingDate") or []
+    report_dates = recent.get("reportDate") or []
+    primary_documents = recent.get("primaryDocument") or []
+    for index, form_type in enumerate(forms):
+        if str(form_type) not in {"13F-HR", "13F-HR/A"}:
+            continue
+        accession_number = str(accessions[index])
+        primary_document = str(primary_documents[index] or "primary_doc.xml").split("/")[-1]
+        base_url = _sec_archive_base_url(cik, accession_number)
+        return {
+            "form_type": str(form_type),
+            "accession_number": accession_number,
+            "filed_at": str(filing_dates[index]),
+            "report_date": str(report_dates[index]),
+            "archive_base_url": base_url,
+            "primary_document_url": f"{base_url}/{primary_document}",
+        }
+    return None
+
+
+def _sec_filing_index_items(base_url: str) -> list[dict[str, Any]]:
+    user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
+    try:
+        payload = _http_json(
+            f"{base_url}/index.json",
+            headers={"Accept": "application/json", "User-Agent": user_agent},
+            timeout=20,
+            throttle_key="sec_edgar",
+            max_bytes=600_000,
+        )
+    except Exception:
+        return []
+    items = payload.get("directory", {}).get("item", []) if isinstance(payload, dict) else []
+    return [item for item in items if isinstance(item, dict)]
+
+
+def _find_13f_information_table_url(base_url: str) -> str | None:
+    items = _sec_filing_index_items(base_url)
+    xml_names = [
+        str(item.get("name") or "")
+        for item in items
+        if str(item.get("name") or "").lower().endswith(".xml")
+    ]
+    candidates = [
+        name
+        for name in xml_names
+        if name.lower() != "primary_doc.xml" and ("13f" in name.lower() or "infotable" in name.lower() or "xml" in name.lower())
+    ]
+    if not candidates:
+        candidates = [name for name in xml_names if name.lower() != "primary_doc.xml"]
+    if not candidates:
+        return None
+    return f"{base_url}/{candidates[0]}"
+
+
+def _xml_child_text(element: ElementTree.Element, local_name: str) -> str:
+    child = element.find(f".//{{*}}{local_name}")
+    if child is None or child.text is None:
+        return ""
+    return unescape(child.text.strip())
+
+
+def _parse_sec_number(value: str | None) -> float | None:
+    text = str(value or "").replace(",", "").strip()
+    if not text:
+        return None
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+
+def _parse_sec_13f_information_table(xml_text: str, *, source_url: str) -> list[dict[str, Any]]:
+    overrides = _cusip_ticker_overrides()
+    root = ElementTree.fromstring(xml_text.encode())
+    rows: list[dict[str, Any]] = []
+    for index, table in enumerate(root.findall(".//{*}infoTable")):
+        cusip = _xml_child_text(table, "cusip").upper()
+        put_call_text = _xml_child_text(table, "putCall")
+        put_call = put_call_text if put_call_text in {"Call", "Put"} else None
+        holding_kind = str(put_call).lower() if put_call else "stock"
+        value = _parse_sec_number(_xml_child_text(table, "value")) or 0.0
+        shares = _parse_sec_number(_xml_child_text(table, "sshPrnamt"))
+        symbol = overrides.get(cusip)
+        rows.append(
+            {
+                "id": hashlib.sha1(f"{source_url}:{index}:{cusip}:{put_call or 'stock'}".encode()).hexdigest()[:16],
+                "symbol": symbol,
+                "issuer_name": _xml_child_text(table, "nameOfIssuer"),
+                "title_of_class": _xml_child_text(table, "titleOfClass"),
+                "cusip": cusip,
+                "value_usd": round(value),
+                "shares": round(shares) if shares is not None else None,
+                "share_type": _xml_child_text(table, "sshPrnamtType") or None,
+                "put_call": put_call,
+                "holding_kind": holding_kind if holding_kind in {"stock", "call", "put"} else "other",
+                "portfolio_weight": 0.0,
+                "source_url": source_url,
+                "source_lineage": "SEC EDGAR 13F information table XML",
+            }
+        )
+    total_value = sum(float(row["value_usd"] or 0) for row in rows)
+    if total_value > 0:
+        for row in rows:
+            row["portfolio_weight"] = round(float(row["value_usd"] or 0) / total_value, 6)
+    return rows
+
+
+def _sec_13f_portfolio(fund_key: str) -> dict[str, Any] | None:
+    if fund_key in _SEC_FUND_PORTFOLIO_CACHE:
+        return _SEC_FUND_PORTFOLIO_CACHE[fund_key]
+    config = FUND_PORTFOLIOS.get(fund_key)
+    if not config:
+        _SEC_FUND_PORTFOLIO_CACHE[fund_key] = None
+        return None
+    cik = str(config["cik"])
+    filing = _latest_sec_13f_filing(cik)
+    if not filing:
+        _SEC_FUND_PORTFOLIO_CACHE[fund_key] = None
+        return None
+    information_table_url = _find_13f_information_table_url(str(filing["archive_base_url"]))
+    if not information_table_url:
+        _SEC_FUND_PORTFOLIO_CACHE[fund_key] = None
+        return None
+    user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
+    xml_text = _http_text(
+        information_table_url,
+        headers={"Accept": "application/xml,text/xml", "User-Agent": user_agent},
+        timeout=20,
+        max_bytes=3_000_000,
+        throttle_key="sec_edgar",
+    )
+    if not xml_text:
+        _SEC_FUND_PORTFOLIO_CACHE[fund_key] = None
+        return None
+    holdings = _parse_sec_13f_information_table(xml_text, source_url=information_table_url)
+    holdings.sort(key=lambda row: float(row.get("value_usd") or 0), reverse=True)
+    stock_holdings = [holding for holding in holdings if holding["holding_kind"] == "stock"]
+    option_holdings = [holding for holding in holdings if holding["holding_kind"] in {"call", "put"}]
+    payload = {
+        "filing": {
+            "source": "SEC_EDGAR_13F",
+            "form_type": filing["form_type"],
+            "accession_number": filing["accession_number"],
+            "report_date": filing["report_date"],
+            "filed_at": filing["filed_at"],
+            "primary_document_url": filing["primary_document_url"],
+            "information_table_url": information_table_url,
+        },
+        "holdings": holdings,
+        "top_equity_holdings": sorted(stock_holdings, key=lambda row: float(row.get("value_usd") or 0), reverse=True)[:25],
+        "option_holdings": sorted(option_holdings, key=lambda row: float(row.get("value_usd") or 0), reverse=True),
+    }
+    _SEC_FUND_PORTFOLIO_CACHE[fund_key] = payload
+    return payload
 
 
 def _web_metadata(url: str) -> dict[str, str] | None:
@@ -2185,10 +2438,13 @@ def _write_news_snapshots(
     generated_at: datetime,
     stale_after: datetime,
     hard_expires_at: datetime,
+    events: list[dict[str, Any]] | None = None,
+    list_items: list[dict[str, Any]] | None = None,
 ) -> None:
-    events = _news_event_details(locale, generated_at)
-    list_items = [_news_list_item(event) for event in events]
-    list_items.sort(key=lambda event: (event["breaking_score"], event["last_seen_at"]), reverse=True)
+    events = events or _news_event_details(locale, generated_at)
+    if list_items is None:
+        list_items = [_news_list_item(event) for event in events]
+        list_items.sort(key=lambda event: (event["breaking_score"], event["last_seen_at"]), reverse=True)
 
     _write(
         manifest,
@@ -3634,6 +3890,10 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
         freshness: str = "watch",
         source_url: str | None = None,
         updated_at: str | None = None,
+        symbols: list[str] | None = None,
+        dataset: str | None = None,
+        as_of_date: str | None = None,
+        provider_observation_key: str | None = None,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "key": f"{lane_key}_{key}",
@@ -3647,6 +3907,14 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
         }
         if source_url:
             payload["source_url"] = source_url
+        if symbols:
+            payload["symbols"] = symbols
+        if dataset:
+            payload["dataset"] = dataset
+        if as_of_date:
+            payload["as_of_date"] = as_of_date
+        if provider_observation_key:
+            payload["provider_observation_key"] = provider_observation_key
         return payload
 
     symbols = _symbol_list(env.get("SHORT_VOLUME_MONITORED_TICKERS") or DEFAULT_SHORT_TICKERS)
@@ -3777,6 +4045,10 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
             "medium",
             "fresh",
             "https://www.finra.org/finra-data/browse-catalog/equity-short-interest",
+            symbols=[row["symbol"]],
+            dataset="consolidatedShortInterest",
+            as_of_date=row["date"],
+            provider_observation_key=_short_fact_observation_key("consolidatedShortInterest", row["symbol"], row["date"], row["value"]),
         )
         for row in short_interest
     ]
@@ -3824,6 +4096,10 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
             "medium",
             "fresh",
             "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume",
+            symbols=[row["symbol"]],
+            dataset="regShoDaily",
+            as_of_date=row["date"],
+            provider_observation_key=_short_fact_observation_key("regShoDaily", row["symbol"], row["date"], row["value"]),
         )
         for row in short_volume
     ]
@@ -3970,14 +4246,13 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
                 "Tracks public reports from activist short sellers and forensic research publishers.",
                 "액티비스트 숏셀러와 포렌식 리서치 발행사의 공개 보고서를 추적합니다.",
             ),
-            "value": _t(locale, "8 sources", "8개 출처"),
+            "value": _t(locale, "7 sources", "7개 출처"),
             "cadence": _t(locale, "15-minute source checks once live ingestion is enabled.", "라이브 수집 활성화 후 15분 간격으로 출처를 점검합니다."),
             "source": "public research websites/RSS/news",
             "freshness": "watch",
             "severity": "high",
             "refresh_seconds": 900,
             "items": [
-                item("short_research_reports", "hindenburg", "Hindenburg Research", "힌덴버그 리서치", "archived", "Founder announced shutdown; keep archive/news monitoring for follow-through.", "창업자가 폐쇄를 발표했으므로 아카이브/뉴스 후속 추적을 유지합니다.", "Hindenburg/news", "high", "watch", "https://hindenburgresearch.com/"),
                 item("short_research_reports", "muddy_waters", "Muddy Waters", "머디 워터스", "active watch", "Known for public short theses and forensic reports.", "공개 숏 논지와 포렌식 보고서로 알려진 출처입니다.", "Muddy Waters", "high", "watch", "https://www.muddywatersresearch.com/"),
                 item("short_research_reports", "viceroy", "Viceroy Research", "바이스로이 리서치", "active watch", "Known public activist short research publisher.", "공개 액티비스트 숏 리서치 발행사로 알려져 있습니다.", "Viceroy", "medium", "watch", "https://viceroyresearch.org/"),
                 item("short_research_reports", "ai_summary", "AI report summaries", "AI 보고서 요약", summary_status, "Long public reports can be summarized after source-policy review; raw restricted text is not sent to external providers.", "긴 공개 보고서는 출처 정책 검토 후 요약할 수 있으며 제한 원문은 외부 제공자에게 보내지 않습니다.", "LLM router", "medium", "fresh" if ai_summary_ready else "watch"),
@@ -4008,33 +4283,411 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
     ]
 
 
+def _entity_name(entity: dict[str, Any], locale: str) -> str:
+    name = entity.get("name") if isinstance(entity.get("name"), dict) else {}
+    return str(name.get(locale) or name.get("en") or entity.get("display_symbol") or entity.get("symbol") or "Tracked entity")
+
+
+def _tracked_entity_ref(entity: dict[str, Any], locale: str, generated_at: datetime) -> dict[str, Any]:
+    symbol = str(entity.get("symbol") or "").upper()
+    route_kind = str(entity.get("route_kind") or "ticker")
+    if route_kind not in {"ticker", "reference_entity"}:
+        route_kind = "unsupported"
+    return {
+        "entity_id": str(entity.get("entity_id") or symbol.lower()),
+        "symbol": symbol,
+        "display_symbol": str(entity.get("display_symbol") or symbol),
+        "name": _entity_name(entity, locale),
+        "route_kind": route_kind,
+        "route_key": str(entity.get("route_key") or _symbol_route_key(symbol)),
+        "sector_keys": [str(key) for key in entity.get("sector_keys", []) if isinstance(key, str)],
+        "tags": [str(tag) for tag in entity.get("tags", []) if isinstance(tag, str)],
+        "source_strength": str(entity.get("source_strength") or "registry"),
+        "freshness": _entity_registry_freshness(entity, generated_at),
+    }
+
+
+def _entity_registry_freshness(entity: dict[str, Any], generated_at: datetime) -> str:
+    reviewed_at = str(entity.get("last_reviewed_at") or "")
+    if not reviewed_at:
+        return "watch"
+    try:
+        reviewed = datetime.fromisoformat(reviewed_at.replace("Z", "+00:00"))
+    except ValueError:
+        return "watch"
+    return "fresh" if generated_at - reviewed.astimezone(timezone.utc) <= timedelta(days=60) else "watch"
+
+
+def _tracked_entities_for_sector(key: str) -> list[dict[str, Any]]:
+    entities = [
+        entity
+        for entity in _tracked_entity_records()
+        if key in [str(value) for value in entity.get("sector_keys", [])]
+    ]
+    return sorted(entities, key=lambda entity: (str(entity.get("route_kind") or ""), str(entity.get("symbol") or "")))
+
+
+def _sector_news_items(key: str, news_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    sector_symbols = {str(entity.get("symbol") or "").upper() for entity in _tracked_entities_for_sector(key)}
+    direct = [
+        item
+        for item in news_items
+        if any(str(ticker.get("symbol") or "").upper() in sector_symbols for ticker in item.get("tickers", []))
+    ]
+    if direct:
+        return direct[:8]
+    topic_aliases = {
+        "oil-energy": {"energy", "geopolitics", "supply_chain"},
+        "big-tech": {"semiconductors", "trade_policy"},
+    }
+    aliases = topic_aliases.get(key, {key})
+    return [
+        item
+        for item in news_items
+        if any(str(topic.get("key") or "") in aliases for topic in item.get("topics", []))
+    ][:4]
+
+
+def _ticker_calendar_items_for_sector(
+    key: str,
+    locale: str,
+    news_items: list[dict[str, Any]],
+    generated_at: datetime,
+) -> list[dict[str, Any]]:
+    sector_symbols = {str(entity.get("symbol") or "").upper() for entity in _tracked_entities_for_sector(key)}
+    by_symbol = _tracked_entity_by_symbol()
+    items: list[dict[str, Any]] = []
+    for news in news_items:
+        event_type = str(news.get("event_type") or "")
+        catalyst_type = _catalyst_type_from_event(event_type)
+        if catalyst_type is None:
+            continue
+        source_links = [source for source in news.get("source_links", []) if isinstance(source, dict)]
+        source = source_links[0] if source_links else {}
+        if not str(source.get("url") or "").startswith("http"):
+            continue
+        for ticker in news.get("tickers", []):
+            symbol = str(ticker.get("symbol") or "").upper()
+            if symbol not in sector_symbols or symbol not in by_symbol:
+                continue
+            entity = by_symbol[symbol]
+            published_at = str(news.get("published_at") or generated_at.isoformat().replace("+00:00", "Z"))
+            local_date = published_at[:10] if re.match(r"\d{4}-\d{2}-\d{2}", published_at) else generated_at.date().isoformat()
+            items.append(
+                {
+                    "id": f"{key}_{_symbol_route_key(symbol)}_{news['id']}",
+                    "entity_id": str(entity.get("entity_id") or symbol.lower()),
+                    "symbol": symbol,
+                    "title": _t(locale, f"{symbol}: {news['title']}", f"{symbol}: {news['title']}"),
+                    "catalyst_type": catalyst_type,
+                    "scheduled_at": published_at,
+                    "scheduled_local_date": local_date,
+                    "timezone": "UTC",
+                    "source": str(source.get("label") or news.get("source") or "source"),
+                    "source_url": str(source.get("url") or ""),
+                    "freshness": str(news.get("freshness") or "watch"),
+                    "confidence": float(news.get("confidence") or 0.5),
+                }
+            )
+    deduped: dict[str, dict[str, Any]] = {}
+    for item in items:
+        deduped[item["id"]] = item
+    return sorted(deduped.values(), key=lambda item: (item["scheduled_local_date"], item["symbol"]))[:8]
+
+
+def _catalyst_type_from_event(event_type: str) -> str | None:
+    normalized = event_type.lower()
+    if normalized in {"company_update", "trade_policy"}:
+        return "company_event" if normalized == "company_update" else "source_review"
+    if "launch" in normalized:
+        return "launch_window"
+    if "contract" in normalized:
+        return "contract_milestone"
+    if "filing" in normalized:
+        return "filing"
+    return None
+
+
+def _short_fact_observation_key(dataset: str, symbol: str, as_of_date: str, value: float | int | None) -> str:
+    return hashlib.sha256(f"{dataset}|{symbol.upper()}|{as_of_date}|{value}".encode()).hexdigest()
+
+
+def _short_fact_freshness(fact_type: str, as_of_date: str, generated_at: datetime) -> str:
+    try:
+        observed = datetime.strptime(as_of_date[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return "watch"
+    max_fresh = timedelta(days=21 if fact_type == "short_interest" else 3)
+    max_watch = timedelta(days=45 if fact_type == "short_interest" else 7)
+    age = generated_at - observed
+    if age <= max_fresh:
+        return "fresh"
+    if age <= max_watch:
+        return "watch"
+    return "stale"
+
+
+def _sector_short_facts(key: str, generated_at: datetime) -> list[dict[str, Any]]:
+    cache_key = (key, generated_at.date().isoformat())
+    if cache_key in _SECTOR_SHORT_FACT_CACHE:
+        return _SECTOR_SHORT_FACT_CACHE[cache_key]
+    entities = [entity for entity in _tracked_entities_for_sector(key) if str(entity.get("route_kind") or "ticker") == "ticker"]
+    symbols = [str(entity.get("symbol") or "").upper() for entity in entities if str(entity.get("symbol") or "").strip()]
+    if not symbols:
+        _SECTOR_SHORT_FACT_CACHE[cache_key] = []
+        return []
+    by_symbol = {str(entity.get("symbol") or "").upper(): entity for entity in entities}
+    facts: list[dict[str, Any]] = []
+    for row in _latest_short_interest(_finra_short_interest_rows(symbols), symbols):
+        facts.append(_short_fact_from_row("short_interest", "consolidatedShortInterest", row, by_symbol, generated_at))
+    for row in _latest_short_volume(_finra_short_volume_rows(symbols), symbols):
+        facts.append(_short_fact_from_row("short_volume", "regShoDaily", row, by_symbol, generated_at))
+    facts = [
+        fact
+        for fact in facts
+        if fact["freshness"] != "stale"
+    ][:12]
+    _SECTOR_SHORT_FACT_CACHE[cache_key] = facts
+    return facts
+
+
+def _short_fact_from_row(
+    fact_type: str,
+    dataset: str,
+    row: dict[str, Any],
+    by_symbol: dict[str, dict[str, Any]],
+    generated_at: datetime,
+) -> dict[str, Any]:
+    symbol = str(row["symbol"]).upper()
+    entity = by_symbol.get(symbol, {})
+    as_of_date = str(row["date"])
+    value = float(row["value"])
+    observed_key = _short_fact_observation_key(dataset, symbol, as_of_date, value)
+    source_url = (
+        "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
+        if fact_type == "short_interest"
+        else "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
+    )
+    caveat = (
+        "Open short positions, not daily short-sale volume."
+        if fact_type == "short_interest"
+        else "Daily short-sale transaction flow, not outstanding short interest."
+    )
+    return {
+        "id": f"{fact_type}_{_symbol_route_key(symbol)}_{as_of_date}",
+        "entity_id": str(entity.get("entity_id") or symbol.lower()),
+        "symbol": symbol,
+        "fact_type": fact_type,
+        "dataset": dataset,
+        "as_of_date": as_of_date,
+        "retrieved_at": generated_at.isoformat().replace("+00:00", "Z"),
+        "last_attempted_at": generated_at.isoformat().replace("+00:00", "Z"),
+        "attempt_status": "ok",
+        "value": value,
+        "unit": "shares",
+        "source": "FINRA",
+        "source_url": source_url,
+        "provider_observation_key": observed_key,
+        "freshness": _short_fact_freshness(fact_type, as_of_date, generated_at),
+        "caveat": caveat,
+    }
+
+
+def _write_reference_entity_snapshots(
+    manifest: dict[str, Any],
+    locale: str,
+    generated_at: datetime,
+    stale_after: datetime,
+    hard_expires_at: datetime,
+    news_items: list[dict[str, Any]],
+) -> None:
+    references = [entity for entity in _tracked_entity_records() if str(entity.get("route_kind") or "") == "reference_entity"]
+    for entity in references:
+        route_key = str(entity.get("route_key") or _symbol_route_key(str(entity.get("symbol") or "")))
+        symbol = str(entity.get("symbol") or route_key).upper()
+        entity_ref = _tracked_entity_ref(entity, locale, generated_at)
+        related_symbols = {str(value).upper() for value in entity.get("related_symbols", []) if isinstance(value, str)}
+        latest_news = [
+            item
+            for item in news_items
+            if any(str(ticker.get("symbol") or "").upper() == symbol for ticker in item.get("tickers", []))
+        ][:6]
+        related = [
+            _tracked_entity_ref(candidate, locale, generated_at)
+            for candidate in _tracked_entity_records()
+            if str(candidate.get("symbol") or "").upper() in related_symbols
+        ][:8]
+        source_links = []
+        for source in entity.get("sources", []) if isinstance(entity.get("sources"), list) else []:
+            if not isinstance(source, dict):
+                continue
+            url = str(source.get("feed_url") or source.get("base_url") or "")
+            if url.startswith("http"):
+                source_links.append(
+                    {
+                        "label": str(source.get("source_name") or source.get("source_key") or "source"),
+                        "url": url,
+                        "source_key": str(source.get("source_key") or "tracked_entity_registry"),
+                        "policy_version": 1,
+                    }
+                )
+        _write(
+            manifest,
+            f"entity_{route_key}",
+            locale,
+            ["entities", f"{route_key}.json"],
+            _envelope(
+                locale,
+                generated_at,
+                stale_after,
+                hard_expires_at,
+                "reference_entity",
+                route_key,
+                {
+                    "entity": entity_ref,
+                    "summary": _t(
+                        locale,
+                        f"{entity_ref['name']} is tracked as a reference entity. It may be private or non-tradable, so market-price widgets are not shown.",
+                        f"{entity_ref['name']}은 참고 엔티티로 추적됩니다. 비상장 또는 비거래 대상일 수 있어 시장가격 위젯은 표시하지 않습니다.",
+                    ),
+                    "source_links": source_links,
+                    "latest_news": latest_news,
+                    "ticker_calendar_items": _ticker_calendar_items_for_sector(str(entity_ref["sector_keys"][0]) if entity_ref["sector_keys"] else "", locale, latest_news, generated_at),
+                    "related_entities": related,
+                    "caveats": [
+                        _t(locale, "Reference entities do not imply a tradeable public security.", "참고 엔티티는 거래 가능한 공개 증권을 의미하지 않습니다."),
+                        _t(locale, "Only source-linked public updates are shown.", "출처 연결 공개 업데이트만 표시합니다."),
+                    ],
+                    "freshness": entity_ref["freshness"],
+                },
+            ),
+        )
+
+
+def _write_fund_portfolio_snapshots(
+    manifest: dict[str, Any],
+    locale: str,
+    generated_at: datetime,
+    stale_after: datetime,
+    hard_expires_at: datetime,
+) -> None:
+    for fund_key, config in FUND_PORTFOLIOS.items():
+        portfolio = _sec_13f_portfolio(fund_key)
+        holdings = list(portfolio.get("holdings", [])) if portfolio else []
+        top_equity = list(portfolio.get("top_equity_holdings", [])) if portfolio else []
+        options = list(portfolio.get("option_holdings", [])) if portfolio else []
+        equity_holdings = [holding for holding in holdings if holding.get("holding_kind") == "stock"]
+        total_value = sum(float(holding.get("value_usd") or 0) for holding in holdings)
+        equity_value = sum(float(holding.get("value_usd") or 0) for holding in equity_holdings)
+        option_value = sum(float(holding.get("value_usd") or 0) for holding in options)
+        filing = portfolio.get("filing") if portfolio else None
+        freshness = "fresh" if filing and _is_filing_recent(str(filing.get("filed_at") or ""), generated_at, max_age_days=120) else "watch"
+        _write(
+            manifest,
+            f"fund_portfolio_{fund_key}",
+            locale,
+            ["funds", f"{fund_key}.json"],
+            _envelope(
+                locale,
+                generated_at,
+                stale_after,
+                hard_expires_at,
+                "fund_portfolio",
+                fund_key,
+                {
+                    "fund_key": fund_key,
+                    "display_name": _t(locale, str(config["display_name"]), str(config["display_name_ko"])),
+                    "manager_name": str(config["manager_name"]),
+                    "fund_name": str(config["fund_name"]),
+                    "cik": str(config["cik"]),
+                    "generated_label": generated_at.isoformat().replace("+00:00", "Z"),
+                    "source_url": str(config["source_url"]),
+                    "filing": filing,
+                    "summary_metrics": {
+                        "total_reported_value_usd": round(total_value),
+                        "long_equity_value_usd": round(equity_value),
+                        "option_notional_value_usd": round(option_value),
+                        "holding_count": len(holdings),
+                        "equity_holding_count": len(equity_holdings),
+                        "option_holding_count": len(options),
+                    },
+                    "holdings": holdings,
+                    "top_equity_holdings": top_equity,
+                    "option_holdings": options,
+                    "caveats": [
+                        _t(locale, "SEC 13F is quarterly and delayed; it is not a real-time portfolio feed.", "SEC 13F는 분기별 지연 공시이며 실시간 포트폴리오 피드가 아닙니다."),
+                        _t(locale, "13F excludes cash, many shorts, most non-U.S. holdings, and positions below reporting scope.", "13F는 현금, 다수의 숏, 대부분의 비미국 보유, 보고 범위 밖 포지션을 제외합니다."),
+                        _t(locale, "Options are shown as disclosed put/call rows and should not be treated as simple long equity exposure.", "옵션은 공시된 풋/콜 행으로 표시되며 단순 롱 주식 노출로 해석하면 안 됩니다."),
+                        _t(locale, "Ticker mapping comes from a maintained CUSIP override file; unmapped rows remain visible by issuer and CUSIP.", "티커 매핑은 유지관리되는 CUSIP 오버라이드 파일을 사용하며 미매핑 행은 발행사와 CUSIP로 표시합니다."),
+                    ],
+                    "freshness": freshness,
+                    "source_strength": "SEC EDGAR 13F XML",
+                },
+            ),
+        )
+
+
+def _is_filing_recent(date_text: str, generated_at: datetime, *, max_age_days: int) -> bool:
+    try:
+        filed_at = datetime.fromisoformat(date_text).replace(tzinfo=timezone.utc)
+    except ValueError:
+        return False
+    return timedelta(0) <= generated_at - filed_at <= timedelta(days=max_age_days)
+
+
 def _sector_tile(key: str, locale: str, events: list[dict[str, Any]]) -> dict[str, Any]:
     sector = SECTORS[key]
     count = sum(1 for event in events if key in event["sector_keys"])
+    tracked_count = len(_tracked_entities_for_sector(key))
     return {
         "key": key,
         "name": sector[locale],
-        "summary": _t(locale, f"Monitoring {len(sector['entities'])} entities with approved event and calendar links.", f"{len(sector['entities'])}개 객체를 승인 이벤트 및 일정과 함께 모니터링합니다."),
-        "source_strength": "seeded_review_policy",
+        "summary": _t(locale, f"Monitoring {tracked_count} registry-backed entities with source-linked sector events.", f"레지스트리 기반 엔티티 {tracked_count}개를 출처 연결 섹터 이벤트와 함께 모니터링합니다."),
+        "source_strength": "tracked_entity_registry",
         "freshness": "fresh",
-        "monitored_count": len(sector["entities"]),
+        "monitored_count": tracked_count,
         "event_count": count,
     }
 
 
-def _sector_page(key: str, locale: str, events: list[dict[str, Any]], calendar: list[dict[str, Any]], generated_at: datetime) -> dict[str, Any]:
+def _sector_page(
+    key: str,
+    locale: str,
+    events: list[dict[str, Any]],
+    calendar: list[dict[str, Any]],
+    news_items: list[dict[str, Any]],
+    generated_at: datetime,
+) -> dict[str, Any]:
     sector = SECTORS[key]
-    sector_events = [event for event in events if key in event["sector_keys"]]
-    indicators = _macro_tiles(locale, generated_at)[:2]
+    macro_event_types = {"central_bank_calendar", "macro_calendar"}
+    sector_events = [
+        event
+        for event in events
+        if key in event["sector_keys"] and event.get("event_type") not in macro_event_types
+    ]
+    tracked_entities = [_tracked_entity_ref(entity, locale, generated_at) for entity in _tracked_entities_for_sector(key)]
+    sector_news = _sector_news_items(key, news_items)
+    ticker_calendar_items = _ticker_calendar_items_for_sector(key, locale, sector_news, generated_at)
+    short_facts = _sector_short_facts(key, generated_at)
+    instrument_labels = [
+        _t(locale, f"{entity['display_symbol']} source-linked reference", f"{entity['display_symbol']} 출처 연결 참고")
+        for entity in tracked_entities
+        if entity["route_kind"] == "ticker"
+    ][:8]
+    indicators = _sector_reference_indicators(key, locale, generated_at)
     return {
         "key": key,
         "name": sector[locale],
-        "overview": _t(locale, f"{sector['en']} module links monitored entities, country exposure, approved events, source strength, and delayed/reference indicators.", f"{sector['ko']} 모듈은 모니터링 객체, 국가 노출, 승인 이벤트, 출처 강도, 지연/참조 지표를 연결합니다."),
-        "monitored_entities": sector["entities"],
-        "monitored_instruments": [f"{name} reference/security metadata" for name in sector["entities"][:4]],
+        "overview": _t(locale, f"{sector['en']} coverage is now generated from the canonical tracked-entity registry, with ticker-specific news, catalysts, and short facts separated from macro calendars.", f"{sector['ko']} 커버리지는 표준 추적 엔티티 레지스트리에서 생성되며 티커별 뉴스, 촉매, 공매도 사실을 거시 일정과 분리합니다."),
+        "tracked_entities": tracked_entities,
+        "monitored_entities": [entity["name"] for entity in tracked_entities],
+        "monitored_instruments": instrument_labels,
         "country_region_exposure": sector["exposure"],
-        "recent_events": sector_events or events[:1],
-        "upcoming_calendar_items": calendar[:4],
+        "recent_events": sector_events,
+        "upcoming_calendar_items": [],
+        "ticker_calendar_items": ticker_calendar_items,
+        "sector_news": sector_news,
+        "sector_short_facts": short_facts,
         "macro_geopolitical_drivers": sector[f"drivers_{locale}"],
         "reference_indicators": indicators,
         "scenario_baskets": [_scenario_summary(key2, locale) for key2 in SCENARIOS if key == "semiconductors" or key2 != "asia-semiconductor-risk"],
@@ -4044,8 +4697,22 @@ def _sector_page(key: str, locale: str, events: list[dict[str, Any]], calendar: 
             _t(locale, "Scenario baskets are research watchlists, not personalized allocation advice.", "시나리오 바스켓은 리서치 워치리스트이며 개인화 배분 조언이 아닙니다."),
         ],
         "freshness": "fresh",
-        "source_strength": "reviewed_seed",
+        "source_strength": "tracked_registry_and_source_backed_facts",
     }
+
+
+def _sector_reference_indicators(key: str, locale: str, generated_at: datetime) -> list[dict[str, Any]]:
+    macro_tiles = _macro_tiles(locale, generated_at)
+    preferred: dict[str, tuple[str, ...]] = {
+        "oil-energy": ("wti_crude", "gold_futures", "copper_futures", "silver_futures"),
+        "semiconductors": ("nasdaq_composite", "nasdaq_100", "kodex_200", "ewy_korea_proxy"),
+        "big-tech": ("nasdaq_composite", "nasdaq_100", "vix"),
+        "space": ("nasdaq_composite", "vix"),
+        "quantum": ("nasdaq_composite", "vix"),
+    }
+    wanted = preferred.get(key, ())
+    selected = [tile for tile in macro_tiles if tile["key"] in wanted]
+    return selected[:4]
 
 
 def _country_region_data(
@@ -4169,6 +4836,9 @@ def _source_status() -> dict[str, Any]:
     cerebras_status, cerebras_warning = status_for("CEREBRAS_API_KEY", "CEREBRAS_API_KEY optional; public facts only")
     mistral_status, mistral_warning = status_for("MISTRAL_API_KEY", "MISTRAL_API_KEY optional; public facts only")
     openrouter_status, openrouter_warning = status_for("OPENROUTER_API_KEY", "OPENROUTER_API_KEY optional; public facts only")
+    nvidia_status, nvidia_warning = status_for(("NVIDIA_API_KEY",), "NVIDIA_API_KEY optional; NVIDIA NIM public facts only, with zero paid overflow and normal LLM hard-limit accounting")
+    if _env_has(env, "NVIDIA_NIM_API_KEY"):
+        nvidia_status, nvidia_warning = "ready", None
     hf_status, hf_warning = status_for("HF_TOKEN", "HF_TOKEN optional; public facts only")
     local_status = "ready" if _env_has(env, "LOCAL_LLM_BASE_URL") else "missing_credentials"
     local_warning = None if local_status == "ready" else "LOCAL_LLM_BASE_URL enables private local research"
@@ -4201,6 +4871,7 @@ def _source_status() -> dict[str, Any]:
         ("cerebras", "llm_provider", cerebras_status, "FREE_ONLY", cerebras_warning),
         ("mistral", "llm_provider", mistral_status, "FREE_ONLY", mistral_warning),
         ("openrouter", "llm_provider", openrouter_status, "FREE_ONLY", openrouter_warning),
+        ("nvidia_nim", "llm_provider", nvidia_status, "FREE_ONLY", nvidia_warning),
         ("huggingface", "llm_provider", hf_status, "FREE_ONLY", hf_warning),
         ("local", "llm_provider", local_status, "LOCAL_ONLY", local_warning),
     ]

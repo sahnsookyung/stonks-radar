@@ -15,7 +15,11 @@ page mirrors the high-level categories; this file records why each class exists.
 - Filings: SEC EDGAR submissions/companyfacts for issuer, insider, and
   beneficial-ownership monitoring. The production user agent must include a
   working contact.
-- Public short research: Hindenburg archive/news plus Muddy Waters, Viceroy,
+- Public fund portfolios: SEC EDGAR 13F XML information tables for source-linked
+  quarterly holdings. HedgeFollow-style pages may be useful for comparison, but
+  production ingestion uses SEC filings because vendor HTML can be protected,
+  delayed, or policy-ambiguous.
+- Public short research: Muddy Waters, Viceroy,
   Spruce Point, Kerrisdale, Culper, Blue Orca, and Grizzly public report pages.
 - Weak OSINT: Pentagon.Pizza, NASA FIRMS, port/customs/logistics, and ADS-B
   candidates are discovery context only. They cannot publish high-confidence

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-29T15:26:56Z",
-  "stale_after": "2026-05-30T03:26:56Z",
-  "hard_expires_at": "2026-06-05T15:26:56Z",
+  "generated_at": "2026-05-30T12:30:53Z",
+  "stale_after": "2026-05-31T00:30:53Z",
+  "hard_expires_at": "2026-06-06T12:30:53Z",
   "object_type": "sector_page",
   "object_key": "space",
-  "content_hash": "sha256:726a087df9c6284820e0c0e0cf90a0cdf82ecea03b7bcd150d875acbcb3797cc",
+  "content_hash": "sha256:8d4f8125a6a697d90c53113bb48620700ba26cc54625f760c77a41451bd60348",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,19 +113,92 @@
   "data": {
     "key": "space",
     "name": "Space",
-    "overview": "Space module links monitored entities, country exposure, approved events, source strength, and delayed/reference indicators.",
+    "overview": "Space coverage is now generated from the canonical tracked-entity registry, with ticker-specific news, catalysts, and short facts separated from macro calendars.",
+    "tracked_entities": [
+      {
+        "entity_id": "ASTS",
+        "symbol": "ASTS",
+        "display_symbol": "ASTS",
+        "name": "ASTS",
+        "route_kind": "ticker",
+        "route_key": "ASTS",
+        "sector_keys": [
+          "space"
+        ],
+        "tags": [
+          "space",
+          "satcom",
+          "high-volatility"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      },
+      {
+        "entity_id": "LUNR",
+        "symbol": "LUNR",
+        "display_symbol": "LUNR",
+        "name": "LUNR",
+        "route_kind": "ticker",
+        "route_key": "LUNR",
+        "sector_keys": [
+          "space"
+        ],
+        "tags": [
+          "space",
+          "lunar",
+          "event-risk"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      },
+      {
+        "entity_id": "RDW",
+        "symbol": "RDW",
+        "display_symbol": "RDW",
+        "name": "RDW",
+        "route_kind": "ticker",
+        "route_key": "RDW",
+        "sector_keys": [
+          "space"
+        ],
+        "tags": [
+          "space",
+          "defense-demand",
+          "small-cap"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      },
+      {
+        "entity_id": "RKLB",
+        "symbol": "RKLB",
+        "display_symbol": "RKLB",
+        "name": "RKLB",
+        "route_kind": "ticker",
+        "route_key": "RKLB",
+        "sector_keys": [
+          "space"
+        ],
+        "tags": [
+          "space",
+          "launch-cadence",
+          "tracked-news"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      }
+    ],
     "monitored_entities": [
-      "Rocket Lab",
-      "Intuitive Machines",
-      "AST SpaceMobile",
-      "Redwire",
-      "SpaceX (private/reference)"
+      "ASTS",
+      "LUNR",
+      "RDW",
+      "RKLB"
     ],
     "monitored_instruments": [
-      "Rocket Lab reference/security metadata",
-      "Intuitive Machines reference/security metadata",
-      "AST SpaceMobile reference/security metadata",
-      "Redwire reference/security metadata"
+      "ASTS source-linked reference",
+      "LUNR source-linked reference",
+      "RDW source-linked reference",
+      "RKLB source-linked reference"
     ],
     "country_region_exposure": [
       "USA",
@@ -133,125 +206,106 @@
       "JPN",
       "EU"
     ],
-    "recent_events": [
+    "recent_events": [],
+    "upcoming_calendar_items": [],
+    "ticker_calendar_items": [
       {
-        "id": "event_semis_export_controls_seed",
-        "title": "Semiconductor export-control monitoring remains elevated",
-        "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
-        "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-29T15:26:56Z",
-        "published_at": "2026-05-29T15:26:56Z",
-        "country_region_keys": [
-          "USA",
-          "TWN",
-          "KOR",
-          "CHN",
-          "JPN"
-        ],
-        "sector_keys": [
-          "semiconductors",
-          "big-tech"
-        ],
-        "event_type": "policy_risk",
-        "severity": "medium",
-        "confidence": 0.74,
-        "source_strength": "reviewed_structured_seed",
+        "id": "space_RKLB_rklb_launch_window_seed",
+        "entity_id": "RKLB",
+        "symbol": "RKLB",
+        "title": "RKLB: Rocket Lab launch-window monitoring is linked to source evidence for RKLB",
+        "catalyst_type": "company_event",
+        "scheduled_at": "2026-05-30T12:30:53Z",
+        "scheduled_local_date": "2026-05-30",
+        "timezone": "UTC",
+        "source": "Rocket Lab",
+        "source_url": "https://www.rocketlabusa.com/updates/",
         "freshness": "fresh",
-        "evidence_count": 2,
-        "latitude": 23.7,
-        "longitude": 121.0,
-        "affected_objects": [
-          "NVIDIA",
-          "TSMC",
-          "Samsung Electronics",
-          "SK Hynix",
-          "ASML"
-        ],
-        "source_links": [
+        "confidence": 0.8
+      }
+    ],
+    "sector_news": [
+      {
+        "id": "rklb_launch_window_seed",
+        "title": "Rocket Lab launch-window monitoring is linked to source evidence for RKLB",
+        "summary": "Company and filing sources are grouped into a ticker-specific event for Rocket Lab launch-cadence monitoring.",
+        "event_type": "company_update",
+        "first_seen_at": "2026-05-29T18:30:53Z",
+        "last_seen_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
+        "freshness": "fresh",
+        "severity": "medium",
+        "confidence": 0.8,
+        "breaking_score": 68,
+        "trust_score": 90,
+        "source_count": 2,
+        "tickers": [
           {
-            "label": "Source policy seed",
-            "url": "/en/source-policy",
-            "source_key": "sec_edgar",
-            "policy_version": 1
+            "symbol": "RKLB",
+            "name": "Rocket Lab USA, Inc.",
+            "exchange": "NASDAQ",
+            "relationship": "direct_subject",
+            "confidence": 0.92
           }
         ],
-        "correction_status": "none"
+        "regions": [
+          {
+            "key": "USA",
+            "name": "United States",
+            "relation": "company_region",
+            "confidence": 0.84
+          },
+          {
+            "key": "USA",
+            "name": "United States",
+            "relation": "market_region",
+            "confidence": 0.84
+          },
+          {
+            "key": "JPN",
+            "name": "Japan",
+            "relation": "affected_region",
+            "confidence": 0.48
+          }
+        ],
+        "topics": [
+          {
+            "key": "space",
+            "label": "Space",
+            "confidence": 0.94
+          },
+          {
+            "key": "supply_chain",
+            "label": "Supply chain",
+            "confidence": 0.44
+          }
+        ],
+        "market_direction": "mixed",
+        "source_links": [
+          {
+            "label": "Rocket Lab",
+            "url": "https://www.rocketlabusa.com/updates/",
+            "source_key": "rocket_lab_ir",
+            "policy_version": 1,
+            "title": "Rocket Lab updates",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T0_OFFICIAL",
+            "is_primary": true
+          },
+          {
+            "label": "SEC EDGAR",
+            "url": "https://www.sec.gov/edgar/browse/?CIK=1819994",
+            "source_key": "sec_edgar",
+            "policy_version": 1,
+            "title": "Rocket Lab SEC filings",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T1_REGULATED_FILING",
+            "is_primary": false
+          }
+        ]
       }
     ],
-    "upcoming_calendar_items": [
-      {
-        "id": "cal_fomc",
-        "title": "FOMC policy decision",
-        "country_region_key": "USA",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-17T12:00:00Z",
-        "scheduled_local_date": "2026-06-17",
-        "timezone": "America/New_York",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_projection",
-        "expectation_value": "Summary of Economic Projections meeting",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "Federal Reserve",
-        "freshness": "fresh"
-      },
-      {
-        "id": "cal_ecb",
-        "title": "ECB monetary-policy decision",
-        "country_region_key": "EUROZONE",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-11T12:00:00Z",
-        "scheduled_local_date": "2026-06-11",
-        "timezone": "Europe/Frankfurt",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_calendar",
-        "expectation_value": "day 2 with press conference",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "ECB",
-        "freshness": "fresh"
-      },
-      {
-        "id": "cal_boe",
-        "title": "BoE MPC decision",
-        "country_region_key": "GBR",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-18T12:00:00Z",
-        "scheduled_local_date": "2026-06-18",
-        "timezone": "Europe/London",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_calendar",
-        "expectation_value": "MPC announcement and minutes",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "BoE",
-        "freshness": "fresh"
-      },
-      {
-        "id": "cal_boj",
-        "title": "BoJ monetary-policy meeting",
-        "country_region_key": "JPN",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-16T12:00:00Z",
-        "scheduled_local_date": "2026-06-16",
-        "timezone": "Asia/Tokyo",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_calendar",
-        "expectation_value": "meeting day 2",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "BoJ",
-        "freshness": "fresh"
-      }
-    ],
+    "sector_short_facts": [],
     "macro_geopolitical_drivers": [
       "Launch cadence",
       "defense demand",
@@ -262,98 +316,98 @@
       {
         "key": "nasdaq_composite",
         "label": "Nasdaq Composite",
-        "value": "26,978.24",
+        "value": "26,972.62",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-05-29T15:27:03Z",
-        "updated_at": "2026-05-29T15:27:03Z",
+        "freshness": "watch",
+        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-05-29T21:15:59Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T21:15:59Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 43200,
         "source_url": "https://finance.yahoo.com/quote/%5EIXIC",
         "points": [
           {
-            "date": "2026-05-29T13:58:00Z",
-            "value": 27081.16015625
+            "date": "2026-05-29T15:06:00Z",
+            "value": 26954.99609375
           },
           {
-            "date": "2026-05-29T14:12:00Z",
-            "value": 27055.6796875
+            "date": "2026-05-29T15:54:00Z",
+            "value": 26973.013671875
           },
           {
-            "date": "2026-05-29T14:26:00Z",
-            "value": 26914.375
+            "date": "2026-05-29T16:42:00Z",
+            "value": 27024.14453125
           },
           {
-            "date": "2026-05-29T14:40:00Z",
-            "value": 26917.126953125
+            "date": "2026-05-29T17:30:00Z",
+            "value": 26966.865234375
           },
           {
-            "date": "2026-05-29T14:54:00Z",
-            "value": 26926.265625
+            "date": "2026-05-29T18:18:00Z",
+            "value": 26946.14453125
           },
           {
-            "date": "2026-05-29T15:08:00Z",
-            "value": 26978.59375
+            "date": "2026-05-29T19:06:00Z",
+            "value": 26954.955078125
           },
           {
-            "date": "2026-05-29T15:22:00Z",
-            "value": 26977.2265625
+            "date": "2026-05-29T19:54:00Z",
+            "value": 26986.5234375
           },
           {
-            "date": "2026-05-29T15:27:03Z",
-            "value": 26978.236328125
+            "date": "2026-05-29T20:00:00Z",
+            "value": 26972.619140625
           }
         ],
-        "refresh_delta": 60.76599999999962,
-        "refresh_delta_percent": 0.22574929961842483
+        "refresh_delta": 55.14999999999782,
+        "refresh_delta_percent": 0.20488552601711013
       },
       {
-        "key": "nasdaq_100",
-        "label": "Nasdaq 100",
-        "value": "30,328.14",
-        "source": "Yahoo/Stooq delayed quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo/Stooq delayed quote observed at 2026-05-29T15:27:01Z",
-        "updated_at": "2026-05-29T15:27:01Z",
+        "key": "vix",
+        "label": "VIX",
+        "value": "15.32",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "watch",
+        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-05-29T20:15:01Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T20:15:01Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
-        "source_url": "https://finance.yahoo.com/quote/%5ENDX",
+        "refresh_seconds": 43200,
+        "source_url": "https://finance.yahoo.com/quote/%5EVIX",
         "points": [
           {
-            "date": "2026-05-29T13:58:00Z",
-            "value": 30447.72265625
+            "date": "2026-05-29T08:52:00Z",
+            "value": 15.800000190734863
           },
           {
-            "date": "2026-05-29T14:12:00Z",
-            "value": 30438.69921875
+            "date": "2026-05-29T10:29:00Z",
+            "value": 15.829999923706055
           },
           {
-            "date": "2026-05-29T14:26:00Z",
-            "value": 30279.810546875
+            "date": "2026-05-29T12:06:00Z",
+            "value": 15.819999694824219
           },
           {
-            "date": "2026-05-29T14:40:00Z",
-            "value": 30270.87109375
+            "date": "2026-05-29T13:48:00Z",
+            "value": 15.609999656677246
           },
           {
-            "date": "2026-05-29T14:54:00Z",
-            "value": 30279.587890625
+            "date": "2026-05-29T15:25:00Z",
+            "value": 15.5
           },
           {
-            "date": "2026-05-29T15:08:00Z",
-            "value": 30329.033203125
+            "date": "2026-05-29T17:02:00Z",
+            "value": 15.270000457763672
           },
           {
-            "date": "2026-05-29T15:22:00Z",
-            "value": 30328.48046875
+            "date": "2026-05-29T18:39:00Z",
+            "value": 15.25
           },
           {
-            "date": "2026-05-29T15:27:01Z",
-            "value": 30328.140625
+            "date": "2026-05-29T20:15:00Z",
+            "value": 15.319999694824219
           }
         ],
-        "refresh_delta": 104.2510000000002,
-        "refresh_delta_percent": 0.3449291386690846
+        "refresh_delta": -0.41999999999999993,
+        "refresh_delta_percent": -2.66836086404066
       }
     ],
     "scenario_baskets": [
@@ -378,7 +432,7 @@
       "Scenario baskets are research watchlists, not personalized allocation advice."
     ],
     "freshness": "fresh",
-    "source_strength": "reviewed_seed"
+    "source_strength": "tracked_registry_and_source_backed_facts"
   },
   "warnings": [
     {

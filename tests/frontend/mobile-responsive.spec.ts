@@ -15,6 +15,7 @@ const responsiveRoutes = [
   "/en/shorts",
   "/en/trump-filings",
   "/en/portfolio",
+  "/en/funds/situational-awareness",
   "/en/calendar",
   "/en/central-banks",
   "/en/sources",

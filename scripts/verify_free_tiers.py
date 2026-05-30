@@ -43,6 +43,8 @@ PROVIDERS = {
     "CEREBRAS_API_KEY": "Cerebras public-facts LLM tasks",
     "MISTRAL_API_KEY": "Mistral public-facts LLM tasks",
     "OPENROUTER_API_KEY": "OpenRouter public-facts LLM tasks",
+    "NVIDIA_API_KEY": "NVIDIA NIM public-facts LLM tasks",
+    "NVIDIA_NIM_API_KEY": "NVIDIA NIM public-facts LLM tasks",
     "HF_TOKEN": "Hugging Face public-facts LLM tasks",
 }
 

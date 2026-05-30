@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-29T15:26:56Z",
-  "stale_after": "2026-05-30T03:26:56Z",
-  "hard_expires_at": "2026-06-05T15:26:56Z",
+  "generated_at": "2026-05-30T12:30:53Z",
+  "stale_after": "2026-05-31T00:30:53Z",
+  "hard_expires_at": "2026-06-06T12:30:53Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_DJT",
-  "content_hash": "sha256:9a57717c6909c3faef9b08be666c2f63c1d9d94c98e38d70118325308aa2ab36",
+  "content_hash": "sha256:1d414f4481930d4f4afb2c3ace86b21644c0853e6a190dfb2994c46460db7b6d",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "DJT",
     "name": "Trump Media & Technology Group",
-    "generated_label": "2026-05-29T15:26:56Z",
+    "generated_label": "2026-05-30T12:30:53Z",
     "summary": "No approved news events are currently linked to DJT.",
     "events": []
   },

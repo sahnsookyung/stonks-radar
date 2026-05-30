@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-29T15:26:56Z",
-  "stale_after": "2026-05-30T03:26:56Z",
-  "hard_expires_at": "2026-06-05T15:26:56Z",
+  "generated_at": "2026-05-30T12:30:53Z",
+  "stale_after": "2026-05-31T00:30:53Z",
+  "hard_expires_at": "2026-06-06T12:30:53Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_DJT",
-  "content_hash": "sha256:a226b28dd463720f4f1b90e9f0de34542a49474bf5eb7094ffd1c2cd389a81bb",
+  "content_hash": "sha256:9b4d65139b1c782f81861d3d265a70c3a5362a3aa3d0f3fbb9e495f37330da2e",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "DJT",
     "name": "트럼프 미디어",
-    "generated_label": "2026-05-29T15:26:56Z",
+    "generated_label": "2026-05-30T12:30:53Z",
     "summary": "DJT에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
     "events": []
   },

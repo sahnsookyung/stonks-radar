@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-29T15:26:56Z",
-  "stale_after": "2026-05-30T03:26:56Z",
-  "hard_expires_at": "2026-06-05T15:26:56Z",
+  "generated_at": "2026-05-30T12:30:53Z",
+  "stale_after": "2026-05-31T00:30:53Z",
+  "hard_expires_at": "2026-06-06T12:30:53Z",
   "object_type": "sector_page",
   "object_key": "semiconductors",
-  "content_hash": "sha256:52384d7d7dee47134a12fa22aa49100d363333828c6b79ed86729b5661bc0698",
+  "content_hash": "sha256:e2a53a8894f3c35c87dd133a25b7107635dac738166c2455b8acde8aadd64569",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,23 +113,74 @@
   "data": {
     "key": "semiconductors",
     "name": "Semiconductors",
-    "overview": "Semiconductors module links monitored entities, country exposure, approved events, source strength, and delayed/reference indicators.",
+    "overview": "Semiconductors coverage is now generated from the canonical tracked-entity registry, with ticker-specific news, catalysts, and short facts separated from macro calendars.",
+    "tracked_entities": [
+      {
+        "entity_id": "005930_KS",
+        "symbol": "005930.KS",
+        "display_symbol": "005930.KS",
+        "name": "005930.KS",
+        "route_kind": "ticker",
+        "route_key": "005930_KS",
+        "sector_keys": [
+          "semiconductors",
+          "big-tech"
+        ],
+        "tags": [
+          "semiconductors",
+          "memory",
+          "korea"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      },
+      {
+        "entity_id": "AMD",
+        "symbol": "AMD",
+        "display_symbol": "AMD",
+        "name": "AMD",
+        "route_kind": "ticker",
+        "route_key": "AMD",
+        "sector_keys": [
+          "semiconductors"
+        ],
+        "tags": [
+          "semiconductors",
+          "ai-infra",
+          "datacenter"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      },
+      {
+        "entity_id": "NVDA",
+        "symbol": "NVDA",
+        "display_symbol": "NVDA",
+        "name": "NVDA",
+        "route_kind": "ticker",
+        "route_key": "NVDA",
+        "sector_keys": [
+          "semiconductors",
+          "big-tech"
+        ],
+        "tags": [
+          "semiconductors",
+          "ai-infra",
+          "short-interest"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      }
+    ],
     "monitored_entities": [
-      "NVIDIA",
+      "005930.KS",
       "AMD",
-      "Intel",
-      "TSMC",
-      "Samsung Electronics",
-      "SK Hynix",
-      "ASML",
-      "Micron",
-      "Broadcom"
+      "NVDA"
     ],
     "monitored_instruments": [
-      "NVIDIA reference/security metadata",
-      "AMD reference/security metadata",
-      "Intel reference/security metadata",
-      "TSMC reference/security metadata"
+      "005930.KS source-linked reference",
+      "AMD source-linked reference",
+      "NVDA source-linked reference"
     ],
     "country_region_exposure": [
       "USA",
@@ -144,8 +195,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-29T15:26:56Z",
-        "published_at": "2026-05-29T15:26:56Z",
+        "occurred_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -181,158 +232,305 @@
           }
         ],
         "correction_status": "none"
+      }
+    ],
+    "upcoming_calendar_items": [],
+    "ticker_calendar_items": [
+      {
+        "id": "semiconductors_005930_KS_semiconductor_export_controls_seed",
+        "entity_id": "005930_KS",
+        "symbol": "005930.KS",
+        "title": "005930.KS: China-origin export-control risk remains elevated for AI-chip supply chains",
+        "catalyst_type": "source_review",
+        "scheduled_at": "2026-05-30T12:30:53Z",
+        "scheduled_local_date": "2026-05-30",
+        "timezone": "UTC",
+        "source": "BIS",
+        "source_url": "https://www.bis.gov/",
+        "freshness": "fresh",
+        "confidence": 0.78
       },
       {
-        "id": "event_central_bank_seed",
-        "title": "Central-bank calendar coverage seeded across six policy committees",
-        "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
-        "why_it_matters": "Calendar visibility reduces silent coverage gaps and makes stale policy data visible.",
-        "occurred_at": "2026-05-29T15:26:56Z",
-        "published_at": "2026-05-29T15:26:56Z",
-        "country_region_keys": [
-          "USA",
-          "EUROZONE",
-          "GBR",
-          "JPN",
-          "KOR",
-          "BRA"
-        ],
-        "sector_keys": [
-          "big-tech",
-          "semiconductors",
-          "oil-energy"
-        ],
-        "event_type": "central_bank_calendar",
-        "severity": "low",
-        "confidence": 0.78,
-        "source_strength": "official_calendar_seed",
+        "id": "semiconductors_NVDA_semiconductor_export_controls_seed",
+        "entity_id": "NVDA",
+        "symbol": "NVDA",
+        "title": "NVDA: China-origin export-control risk remains elevated for AI-chip supply chains",
+        "catalyst_type": "source_review",
+        "scheduled_at": "2026-05-30T12:30:53Z",
+        "scheduled_local_date": "2026-05-30",
+        "timezone": "UTC",
+        "source": "BIS",
+        "source_url": "https://www.bis.gov/",
         "freshness": "fresh",
-        "evidence_count": 6,
-        "latitude": 51.5,
-        "longitude": 0.0,
-        "affected_objects": [
-          "FOMC",
-          "ECB",
-          "BoE",
-          "BoJ",
-          "BoK",
-          "COPOM"
+        "confidence": 0.78
+      }
+    ],
+    "sector_news": [
+      {
+        "id": "semiconductor_export_controls_seed",
+        "title": "China-origin export-control risk remains elevated for AI-chip supply chains",
+        "summary": "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.",
+        "event_type": "trade_policy",
+        "first_seen_at": "2026-05-28T12:30:53Z",
+        "last_seen_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
+        "freshness": "fresh",
+        "severity": "high",
+        "confidence": 0.78,
+        "breaking_score": 76,
+        "trust_score": 88,
+        "source_count": 3,
+        "tickers": [
+          {
+            "symbol": "NVDA",
+            "name": "NVIDIA Corporation",
+            "exchange": "NASDAQ",
+            "relationship": "affected_company",
+            "confidence": 0.88
+          },
+          {
+            "symbol": "005930.KS",
+            "name": "Samsung Electronics Co., Ltd.",
+            "exchange": "KRX",
+            "relationship": "affected_company",
+            "confidence": 0.84
+          }
         ],
+        "regions": [
+          {
+            "key": "CHN",
+            "name": "China",
+            "relation": "event_region",
+            "confidence": 0.92
+          },
+          {
+            "key": "USA",
+            "name": "United States",
+            "relation": "affected_region",
+            "confidence": 0.86
+          },
+          {
+            "key": "KOR",
+            "name": "South Korea",
+            "relation": "affected_region",
+            "confidence": 0.84
+          },
+          {
+            "key": "JPN",
+            "name": "Japan",
+            "relation": "affected_region",
+            "confidence": 0.78
+          },
+          {
+            "key": "EU",
+            "name": "European Union",
+            "relation": "affected_region",
+            "confidence": 0.72
+          },
+          {
+            "key": "USA",
+            "name": "United States",
+            "relation": "market_region",
+            "confidence": 0.76
+          },
+          {
+            "key": "KOR",
+            "name": "South Korea",
+            "relation": "market_region",
+            "confidence": 0.74
+          }
+        ],
+        "topics": [
+          {
+            "key": "semiconductors",
+            "label": "Semiconductors",
+            "confidence": 0.94
+          },
+          {
+            "key": "geopolitics",
+            "label": "Geopolitics",
+            "confidence": 0.79
+          },
+          {
+            "key": "trade_policy",
+            "label": "Trade policy",
+            "confidence": 0.86
+          },
+          {
+            "key": "supply_chain",
+            "label": "Supply chain",
+            "confidence": 0.77
+          }
+        ],
+        "market_direction": "mixed",
+        "source_links": [
+          {
+            "label": "BIS",
+            "url": "https://www.bis.gov/",
+            "source_key": "bis",
+            "policy_version": 1,
+            "title": "Bureau of Industry and Security export controls",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T0_OFFICIAL",
+            "is_primary": true
+          },
+          {
+            "label": "SEC EDGAR",
+            "url": "https://www.sec.gov/edgar/search/",
+            "source_key": "sec_edgar",
+            "policy_version": 1,
+            "title": "Issuer filings for affected companies",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T1_REGULATED_FILING",
+            "is_primary": false
+          },
+          {
+            "label": "Source policy",
+            "url": "https://www.bis.gov/ear",
+            "source_key": "source_policy",
+            "policy_version": 1,
+            "title": "Export Administration Regulations reference",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
+            "is_primary": false
+          }
+        ]
+      },
+      {
+        "id": "central_bank_policy_watch_seed",
+        "title": "Central-bank decision calendar clusters FOMC, BoJ, BoK, ECB, and Brazil COPOM risk",
+        "summary": "Official calendars are grouped into one policy-event watch so users can scan rate dates without leaving the app.",
+        "event_type": "central_bank_calendar",
+        "first_seen_at": "2026-05-28T12:30:53Z",
+        "last_seen_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
+        "freshness": "fresh",
+        "severity": "medium",
+        "confidence": 0.86,
+        "breaking_score": 58,
+        "trust_score": 96,
+        "source_count": 5,
+        "tickers": [
+          {
+            "symbol": "005930.KS",
+            "name": "Samsung Electronics Co., Ltd.",
+            "exchange": "KRX",
+            "relationship": "affected_company",
+            "confidence": 0.58
+          }
+        ],
+        "regions": [
+          {
+            "key": "USA",
+            "name": "United States",
+            "relation": "event_region",
+            "confidence": 0.88
+          },
+          {
+            "key": "JPN",
+            "name": "Japan",
+            "relation": "event_region",
+            "confidence": 0.88
+          },
+          {
+            "key": "KOR",
+            "name": "South Korea",
+            "relation": "event_region",
+            "confidence": 0.88
+          },
+          {
+            "key": "EU",
+            "name": "European Union",
+            "relation": "event_region",
+            "confidence": 0.85
+          },
+          {
+            "key": "BRA",
+            "name": "Brazil",
+            "relation": "event_region",
+            "confidence": 0.84
+          },
+          {
+            "key": "USA",
+            "name": "United States",
+            "relation": "market_region",
+            "confidence": 0.72
+          },
+          {
+            "key": "KOR",
+            "name": "South Korea",
+            "relation": "market_region",
+            "confidence": 0.68
+          }
+        ],
+        "topics": [
+          {
+            "key": "central_banks",
+            "label": "Central banks",
+            "confidence": 0.96
+          },
+          {
+            "key": "macro",
+            "label": "Macro",
+            "confidence": 0.82
+          }
+        ],
+        "market_direction": "unclear",
         "source_links": [
           {
             "label": "Federal Reserve",
             "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
             "source_key": "federal_reserve",
-            "policy_version": 1
-          },
-          {
-            "label": "ECB",
-            "url": "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html",
-            "source_key": "ecb",
-            "policy_version": 1
-          },
-          {
-            "label": "Bank of England",
-            "url": "https://www.bankofengland.co.uk/news/2025/september/monetary-policy-committee-dates-for-2026",
-            "source_key": "bank_of_england",
-            "policy_version": 1
-          },
-          {
-            "label": "Bank of Japan",
-            "url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm",
-            "source_key": "bank_of_japan",
-            "policy_version": 1
+            "policy_version": 1,
+            "title": "FOMC calendars",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T0_OFFICIAL",
+            "is_primary": true
           },
           {
             "label": "Bank of Korea",
             "url": "https://www.bok.or.kr/eng/main/contents.do?menuNo=400020",
             "source_key": "bank_of_korea",
-            "policy_version": 1
+            "policy_version": 1,
+            "title": "Monetary policy schedule",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T0_OFFICIAL",
+            "is_primary": true
           },
           {
-            "label": "Banco Central do Brasil",
+            "label": "Bank of Japan",
+            "url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm",
+            "source_key": "bank_of_japan",
+            "policy_version": 1,
+            "title": "Monetary policy meetings",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T0_OFFICIAL",
+            "is_primary": true
+          },
+          {
+            "label": "ECB",
+            "url": "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html",
+            "source_key": "ecb",
+            "policy_version": 1,
+            "title": "Governing Council calendars",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T0_OFFICIAL",
+            "is_primary": true
+          },
+          {
+            "label": "BCB",
             "url": "https://www.bcb.gov.br/detalhenoticia/20739/nota",
             "source_key": "bcb",
-            "policy_version": 1
+            "policy_version": 1,
+            "title": "COPOM calendar",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T0_OFFICIAL",
+            "is_primary": true
           }
-        ],
-        "correction_status": "none"
+        ]
       }
     ],
-    "upcoming_calendar_items": [
-      {
-        "id": "cal_fomc",
-        "title": "FOMC policy decision",
-        "country_region_key": "USA",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-17T12:00:00Z",
-        "scheduled_local_date": "2026-06-17",
-        "timezone": "America/New_York",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_projection",
-        "expectation_value": "Summary of Economic Projections meeting",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "Federal Reserve",
-        "freshness": "fresh"
-      },
-      {
-        "id": "cal_ecb",
-        "title": "ECB monetary-policy decision",
-        "country_region_key": "EUROZONE",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-11T12:00:00Z",
-        "scheduled_local_date": "2026-06-11",
-        "timezone": "Europe/Frankfurt",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_calendar",
-        "expectation_value": "day 2 with press conference",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "ECB",
-        "freshness": "fresh"
-      },
-      {
-        "id": "cal_boe",
-        "title": "BoE MPC decision",
-        "country_region_key": "GBR",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-18T12:00:00Z",
-        "scheduled_local_date": "2026-06-18",
-        "timezone": "Europe/London",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_calendar",
-        "expectation_value": "MPC announcement and minutes",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "BoE",
-        "freshness": "fresh"
-      },
-      {
-        "id": "cal_boj",
-        "title": "BoJ monetary-policy meeting",
-        "country_region_key": "JPN",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-16T12:00:00Z",
-        "scheduled_local_date": "2026-06-16",
-        "timezone": "Asia/Tokyo",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_calendar",
-        "expectation_value": "meeting day 2",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "BoJ",
-        "freshness": "fresh"
-      }
-    ],
+    "sector_short_facts": [],
     "macro_geopolitical_drivers": [
       "AI accelerator demand",
       "memory pricing",
@@ -344,98 +542,147 @@
       {
         "key": "nasdaq_composite",
         "label": "Nasdaq Composite",
-        "value": "26,978.24",
+        "value": "26,972.62",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-05-29T15:27:03Z",
-        "updated_at": "2026-05-29T15:27:03Z",
+        "freshness": "watch",
+        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-05-29T21:15:59Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T21:15:59Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 43200,
         "source_url": "https://finance.yahoo.com/quote/%5EIXIC",
         "points": [
           {
-            "date": "2026-05-29T13:58:00Z",
-            "value": 27081.16015625
+            "date": "2026-05-29T15:06:00Z",
+            "value": 26954.99609375
           },
           {
-            "date": "2026-05-29T14:12:00Z",
-            "value": 27055.6796875
+            "date": "2026-05-29T15:54:00Z",
+            "value": 26973.013671875
           },
           {
-            "date": "2026-05-29T14:26:00Z",
-            "value": 26914.375
+            "date": "2026-05-29T16:42:00Z",
+            "value": 27024.14453125
           },
           {
-            "date": "2026-05-29T14:40:00Z",
-            "value": 26917.126953125
+            "date": "2026-05-29T17:30:00Z",
+            "value": 26966.865234375
           },
           {
-            "date": "2026-05-29T14:54:00Z",
-            "value": 26926.265625
+            "date": "2026-05-29T18:18:00Z",
+            "value": 26946.14453125
           },
           {
-            "date": "2026-05-29T15:08:00Z",
-            "value": 26978.59375
+            "date": "2026-05-29T19:06:00Z",
+            "value": 26954.955078125
           },
           {
-            "date": "2026-05-29T15:22:00Z",
-            "value": 26977.2265625
+            "date": "2026-05-29T19:54:00Z",
+            "value": 26986.5234375
           },
           {
-            "date": "2026-05-29T15:27:03Z",
-            "value": 26978.236328125
+            "date": "2026-05-29T20:00:00Z",
+            "value": 26972.619140625
           }
         ],
-        "refresh_delta": 60.76599999999962,
-        "refresh_delta_percent": 0.22574929961842483
+        "refresh_delta": 55.14999999999782,
+        "refresh_delta_percent": 0.20488552601711013
       },
       {
         "key": "nasdaq_100",
         "label": "Nasdaq 100",
-        "value": "30,328.14",
-        "source": "Yahoo/Stooq delayed quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo/Stooq delayed quote observed at 2026-05-29T15:27:01Z",
-        "updated_at": "2026-05-29T15:27:01Z",
+        "value": "30,333.18",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "watch",
+        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-05-29T21:15:59Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T21:15:59Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 43200,
         "source_url": "https://finance.yahoo.com/quote/%5ENDX",
         "points": [
           {
-            "date": "2026-05-29T13:58:00Z",
-            "value": 30447.72265625
+            "date": "2026-05-29T15:06:00Z",
+            "value": 30304.609375
           },
           {
-            "date": "2026-05-29T14:12:00Z",
-            "value": 30438.69921875
+            "date": "2026-05-29T15:54:00Z",
+            "value": 30317.822265625
           },
           {
-            "date": "2026-05-29T14:26:00Z",
-            "value": 30279.810546875
+            "date": "2026-05-29T16:42:00Z",
+            "value": 30362.638671875
           },
           {
-            "date": "2026-05-29T14:40:00Z",
-            "value": 30270.87109375
+            "date": "2026-05-29T17:30:00Z",
+            "value": 30297.455078125
           },
           {
-            "date": "2026-05-29T14:54:00Z",
-            "value": 30279.587890625
+            "date": "2026-05-29T18:18:00Z",
+            "value": 30281.736328125
           },
           {
-            "date": "2026-05-29T15:08:00Z",
-            "value": 30329.033203125
+            "date": "2026-05-29T19:06:00Z",
+            "value": 30290.228515625
           },
           {
-            "date": "2026-05-29T15:22:00Z",
-            "value": 30328.48046875
+            "date": "2026-05-29T19:54:00Z",
+            "value": 30343.04296875
           },
           {
-            "date": "2026-05-29T15:27:01Z",
-            "value": 30328.140625
+            "date": "2026-05-29T20:00:00Z",
+            "value": 30333.1796875
           }
         ],
-        "refresh_delta": 104.2510000000002,
-        "refresh_delta_percent": 0.3449291386690846
+        "refresh_delta": 109.29100000000108,
+        "refresh_delta_percent": 0.3616046895884282
+      },
+      {
+        "key": "kodex_200",
+        "label": "KODEX 200 ETF",
+        "value": "134,815",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "watch",
+        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-05-29T06:30:07Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T06:30:07Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "KRW",
+        "source_url": "https://finance.yahoo.com/quote/069500.KS",
+        "points": [
+          {
+            "date": "2026-05-29T00:45:00Z",
+            "value": 133470.0
+          },
+          {
+            "date": "2026-05-29T01:30:00Z",
+            "value": 133425.0
+          },
+          {
+            "date": "2026-05-29T02:15:00Z",
+            "value": 133400.0
+          },
+          {
+            "date": "2026-05-29T03:00:00Z",
+            "value": 133310.0
+          },
+          {
+            "date": "2026-05-29T03:45:00Z",
+            "value": 133745.0
+          },
+          {
+            "date": "2026-05-29T04:30:00Z",
+            "value": 134340.0
+          },
+          {
+            "date": "2026-05-29T05:15:00Z",
+            "value": 134750.0
+          },
+          {
+            "date": "2026-05-29T06:00:00Z",
+            "value": 134815.0
+          }
+        ],
+        "refresh_delta": 4825.0,
+        "refresh_delta_percent": 3.7118239864604967
       }
     ],
     "scenario_baskets": [
@@ -467,7 +714,7 @@
       "Scenario baskets are research watchlists, not personalized allocation advice."
     ],
     "freshness": "fresh",
-    "source_strength": "reviewed_seed"
+    "source_strength": "tracked_registry_and_source_backed_facts"
   },
   "warnings": [
     {

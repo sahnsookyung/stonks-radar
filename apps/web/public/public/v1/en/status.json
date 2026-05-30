@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-29T15:26:56Z",
-  "stale_after": "2026-05-30T03:26:56Z",
-  "hard_expires_at": "2026-06-05T15:26:56Z",
+  "generated_at": "2026-05-30T12:30:53Z",
+  "stale_after": "2026-05-31T00:30:53Z",
+  "hard_expires_at": "2026-06-06T12:30:53Z",
   "object_type": "source_status",
   "object_key": "status",
-  "content_hash": "sha256:c34af25fd5e5a21b15e0a1046a39dff1cecddae664e661786e39f3fa01db64b3",
+  "content_hash": "sha256:700884672afc07884f2b95199472be7e087f6a2a9d069a87dbe8e690af27bffc",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -118,58 +118,58 @@
       {
         "provider_key": "fred",
         "provider_type": "official_api",
-        "status": "ready",
+        "status": "missing_credentials",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": "FRED is reference-only; do not use it for intraday or time-sensitive market pulse tiles"
+        "warning": "FRED_API_KEY only enables non-realtime reference series"
       },
       {
         "provider_key": "bls",
         "provider_type": "official_api",
-        "status": "ready",
+        "status": "missing_credentials",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": null
+        "warning": "BLS_API_KEY enables higher-limit BLS ingest"
       },
       {
         "provider_key": "eia",
         "provider_type": "official_api",
-        "status": "ready",
+        "status": "missing_credentials",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": null
+        "warning": "EIA_API_KEY required for live ingest"
       },
       {
         "provider_key": "sec_edgar",
         "provider_type": "filing",
-        "status": "ready",
+        "status": "degraded",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": null
+        "warning": "SEC_USER_AGENT must contain a real contact in production"
       },
       {
         "provider_key": "oge_disclosures",
         "provider_type": "filing",
-        "status": "ready",
+        "status": "degraded",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": null
+        "warning": "SEC_USER_AGENT must contain a real contact in production"
       },
       {
         "provider_key": "twelve_data",
         "provider_type": "market_data",
-        "status": "ready",
+        "status": "missing_credentials",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": null
+        "warning": "TWELVE_DATA_API_KEY enables sparse equity/FX fallback checks; free quota is too small for broad market-pulse polling, so snapshots throttle it to at most one request every 10 seconds when allowlisted"
       },
       {
         "provider_key": "alpha_vantage",
         "provider_type": "market_data",
-        "status": "ready",
+        "status": "missing_credentials",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": null
+        "warning": "ALPHA_VANTAGE_API_KEY enables portfolio history fallback"
       },
       {
         "provider_key": "fmp",
@@ -182,26 +182,26 @@
       {
         "provider_key": "finnhub",
         "provider_type": "market_data",
-        "status": "ready",
+        "status": "missing_credentials",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": null
+        "warning": "FINNHUB_API_KEY enables current US equity quote probes with conservative throttling; public display requires MARKET_PULSE_PUBLIC_PROVIDER_ALLOWLIST=finnhub after source-policy approval"
       },
       {
         "provider_key": "nasdaq_data_link",
         "provider_type": "market_data",
-        "status": "ready",
+        "status": "missing_credentials",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": null
+        "warning": "NASDAQ_DATA_LINK_API_KEY enables future Nasdaq Data Link datasets"
       },
       {
         "provider_key": "krx_open_api",
         "provider_type": "official_api",
-        "status": "degraded",
+        "status": "missing_credentials",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": "KRX returned 401 Unauthorized API Call; confirm the API key is approved for this Open API service"
+        "warning": "KRX_OPEN_API_AUTH_KEY, KRX_AUTH_KEY, or KRX_API_KEY required for KRX index daily-trading ingest"
       },
       {
         "provider_key": "data_go_kr",
@@ -217,7 +217,7 @@
         "status": "ready",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": "Fallback for time-sensitive quote tiles when official/FRED series are stale; not treated as licensed realtime tape"
+        "warning": "Public delayed quote fallback for time-sensitive tiles when official/FRED series are stale; throttled and treated as not guaranteed realtime tape"
       },
       {
         "provider_key": "stooq_delayed_quote",
@@ -225,7 +225,7 @@
         "status": "ready",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": "Fallback for delayed index/futures quote tiles; not treated as licensed realtime tape"
+        "warning": "Public delayed quote fallback for indexes/futures; selected only when fresher than Yahoo and throttled as an unofficial public feed"
       },
       {
         "provider_key": "treasury_xml_feed",
@@ -246,10 +246,10 @@
       {
         "provider_key": "finra",
         "provider_type": "official_api",
-        "status": "ready",
+        "status": "missing_credentials",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": null
+        "warning": "FINRA_API_CLIENT_ID and FINRA_API_CLIENT_SECRET required for short interest and Reg SHO short volume ingest"
       },
       {
         "provider_key": "gdelt",
@@ -302,10 +302,10 @@
       {
         "provider_key": "groq",
         "provider_type": "llm_provider",
-        "status": "ready",
+        "status": "missing_credentials",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": null
+        "warning": "GROQ_API_KEY optional; public facts only"
       },
       {
         "provider_key": "cerebras",
@@ -332,6 +332,14 @@
         "warning": "OPENROUTER_API_KEY optional; public facts only"
       },
       {
+        "provider_key": "nvidia_nim",
+        "provider_type": "llm_provider",
+        "status": "missing_credentials",
+        "mode": "FREE_ONLY",
+        "last_verified_at": null,
+        "warning": "NVIDIA_API_KEY optional; NVIDIA NIM public facts only, with zero paid overflow and normal LLM hard-limit accounting"
+      },
+      {
         "provider_key": "huggingface",
         "provider_type": "llm_provider",
         "status": "missing_credentials",
@@ -342,10 +350,10 @@
       {
         "provider_key": "local",
         "provider_type": "llm_provider",
-        "status": "ready",
+        "status": "missing_credentials",
         "mode": "LOCAL_ONLY",
         "last_verified_at": null,
-        "warning": null
+        "warning": "LOCAL_LLM_BASE_URL enables private local research"
       }
     ],
     "operations": {

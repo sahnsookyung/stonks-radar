@@ -1,6 +1,7 @@
 import type {
   CalendarSnapshotData,
   CountryRegionSnapshotData,
+  FundPortfolioSnapshotData,
   HomeSnapshotData,
   Locale,
   MapEventsData,
@@ -9,6 +10,7 @@ import type {
   NewsRegionSnapshotData,
   NewsTickerSnapshotData,
   NewsTopicSnapshotData,
+  ReferenceEntitySnapshotData,
   ScenarioBasketSnapshotData,
   SectorSnapshotData,
   SnapshotEnvelope,
@@ -65,10 +67,14 @@ export const snapshotQueries = {
     getSnapshot<NewsEventSnapshotData>(`news_event_${eventId}`, locale),
   newsTicker: (symbolKey: string, locale: Locale) =>
     getSnapshot<NewsTickerSnapshotData>(`news_ticker_${symbolKey}`, locale),
+  referenceEntity: (routeKey: string, locale: Locale) =>
+    getSnapshot<ReferenceEntitySnapshotData>(`entity_${routeKey}`, locale),
   newsRegion: (regionKey: string, locale: Locale) =>
     getSnapshot<NewsRegionSnapshotData>(`news_region_${regionKey}`, locale),
   newsTopic: (topicKey: string, locale: Locale) =>
-    getSnapshot<NewsTopicSnapshotData>(`news_topic_${topicKey}`, locale)
+    getSnapshot<NewsTopicSnapshotData>(`news_topic_${topicKey}`, locale),
+  fundPortfolio: (fundKey: string, locale: Locale) =>
+    getSnapshot<FundPortfolioSnapshotData>(`fund_portfolio_${fundKey}`, locale)
 };
 
 export function isStale(staleAfter: string): boolean {

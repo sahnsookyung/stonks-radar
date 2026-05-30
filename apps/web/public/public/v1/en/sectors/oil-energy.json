@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-29T15:26:56Z",
-  "stale_after": "2026-05-30T03:26:56Z",
-  "hard_expires_at": "2026-06-05T15:26:56Z",
+  "generated_at": "2026-05-30T12:30:53Z",
+  "stale_after": "2026-05-31T00:30:53Z",
+  "hard_expires_at": "2026-06-06T12:30:53Z",
   "object_type": "sector_page",
   "object_key": "oil-energy",
-  "content_hash": "sha256:59dd42e271f226cac0f54354923afa0e9f10240f2b820a4b9614bb8b74008b1b",
+  "content_hash": "sha256:49cbe6416d3c370950247516f1d9ca269f2735ec87f884dee40600329fc04274",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,21 +113,10 @@
   "data": {
     "key": "oil-energy",
     "name": "Oil/Energy",
-    "overview": "Oil/Energy module links monitored entities, country exposure, approved events, source strength, and delayed/reference indicators.",
-    "monitored_entities": [
-      "Brent reference series",
-      "WTI reference series",
-      "Chevron",
-      "ExxonMobil",
-      "OPEC+",
-      "EIA"
-    ],
-    "monitored_instruments": [
-      "Brent reference series reference/security metadata",
-      "WTI reference series reference/security metadata",
-      "Chevron reference/security metadata",
-      "ExxonMobil reference/security metadata"
-    ],
+    "overview": "Oil/Energy coverage is now generated from the canonical tracked-entity registry, with ticker-specific news, catalysts, and short facts separated from macro calendars.",
+    "tracked_entities": [],
+    "monitored_entities": [],
+    "monitored_instruments": [],
     "country_region_exposure": [
       "USA",
       "BRA",
@@ -140,8 +129,8 @@
         "title": "Energy inventory calendar is active for oil supply monitoring",
         "summary": "EIA-linked inventory releases are tracked as official structured data before publication.",
         "why_it_matters": "Inventory surprises can affect energy equities, inflation inputs, and geopolitical risk interpretation.",
-        "occurred_at": "2026-05-29T15:26:56Z",
-        "published_at": "2026-05-29T15:26:56Z",
+        "occurred_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -172,158 +161,326 @@
           }
         ],
         "correction_status": "none"
-      },
+      }
+    ],
+    "upcoming_calendar_items": [],
+    "ticker_calendar_items": [],
+    "sector_news": [
       {
-        "id": "event_central_bank_seed",
-        "title": "Central-bank calendar coverage seeded across six policy committees",
-        "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
-        "why_it_matters": "Calendar visibility reduces silent coverage gaps and makes stale policy data visible.",
-        "occurred_at": "2026-05-29T15:26:56Z",
-        "published_at": "2026-05-29T15:26:56Z",
-        "country_region_keys": [
-          "USA",
-          "EUROZONE",
-          "GBR",
-          "JPN",
-          "KOR",
-          "BRA"
-        ],
-        "sector_keys": [
-          "big-tech",
-          "semiconductors",
-          "oil-energy"
-        ],
-        "event_type": "central_bank_calendar",
-        "severity": "low",
-        "confidence": 0.78,
-        "source_strength": "official_calendar_seed",
+        "id": "energy_geopolitical_supply_risk_seed",
+        "title": "Energy supply-risk watch links shipping chokepoints, inventories, and inflation-sensitive markets",
+        "summary": "Official energy data and reviewed geopolitical context are grouped as a supply-risk event affecting the US, Europe, China, Korea, Japan, and Brazil.",
+        "event_type": "geopolitical_supply_risk",
+        "first_seen_at": "2026-05-28T12:30:53Z",
+        "last_seen_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
         "freshness": "fresh",
-        "evidence_count": 6,
-        "latitude": 51.5,
-        "longitude": 0.0,
-        "affected_objects": [
-          "FOMC",
-          "ECB",
-          "BoE",
-          "BoJ",
-          "BoK",
-          "COPOM"
-        ],
-        "source_links": [
+        "severity": "high",
+        "confidence": 0.72,
+        "breaking_score": 82,
+        "trust_score": 84,
+        "source_count": 3,
+        "tickers": [],
+        "regions": [
           {
-            "label": "Federal Reserve",
-            "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
-            "source_key": "federal_reserve",
-            "policy_version": 1
+            "key": "USA",
+            "name": "United States",
+            "relation": "affected_region",
+            "confidence": 0.76
           },
           {
-            "label": "ECB",
-            "url": "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html",
-            "source_key": "ecb",
-            "policy_version": 1
+            "key": "EU",
+            "name": "European Union",
+            "relation": "affected_region",
+            "confidence": 0.74
           },
           {
-            "label": "Bank of England",
-            "url": "https://www.bankofengland.co.uk/news/2025/september/monetary-policy-committee-dates-for-2026",
-            "source_key": "bank_of_england",
-            "policy_version": 1
+            "key": "CHN",
+            "name": "China",
+            "relation": "affected_region",
+            "confidence": 0.72
           },
           {
-            "label": "Bank of Japan",
-            "url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm",
-            "source_key": "bank_of_japan",
-            "policy_version": 1
+            "key": "KOR",
+            "name": "South Korea",
+            "relation": "affected_region",
+            "confidence": 0.7
           },
           {
-            "label": "Bank of Korea",
-            "url": "https://www.bok.or.kr/eng/main/contents.do?menuNo=400020",
-            "source_key": "bank_of_korea",
-            "policy_version": 1
+            "key": "JPN",
+            "name": "Japan",
+            "relation": "affected_region",
+            "confidence": 0.7
           },
           {
-            "label": "Banco Central do Brasil",
-            "url": "https://www.bcb.gov.br/detalhenoticia/20739/nota",
-            "source_key": "bcb",
-            "policy_version": 1
+            "key": "BRA",
+            "name": "Brazil",
+            "relation": "affected_region",
+            "confidence": 0.54
           }
         ],
-        "correction_status": "none"
+        "topics": [
+          {
+            "key": "energy",
+            "label": "Energy",
+            "confidence": 0.96
+          },
+          {
+            "key": "geopolitics",
+            "label": "Geopolitics",
+            "confidence": 0.86
+          },
+          {
+            "key": "supply_chain",
+            "label": "Supply chain",
+            "confidence": 0.72
+          }
+        ],
+        "market_direction": "mixed",
+        "source_links": [
+          {
+            "label": "EIA",
+            "url": "https://www.eia.gov/petroleum/supply/weekly/",
+            "source_key": "eia",
+            "policy_version": 1,
+            "title": "Weekly petroleum status report",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T0_OFFICIAL",
+            "is_primary": true
+          },
+          {
+            "label": "IEA",
+            "url": "https://www.iea.org/reports/oil-market-report",
+            "source_key": "iea",
+            "policy_version": 1,
+            "title": "Oil market report",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
+            "is_primary": false
+          },
+          {
+            "label": "Source policy",
+            "url": "https://www.eia.gov/",
+            "source_key": "source_policy",
+            "policy_version": 1,
+            "title": "Official energy-data context",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
+            "is_primary": false
+          }
+        ]
+      },
+      {
+        "id": "semiconductor_export_controls_seed",
+        "title": "China-origin export-control risk remains elevated for AI-chip supply chains",
+        "summary": "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.",
+        "event_type": "trade_policy",
+        "first_seen_at": "2026-05-28T12:30:53Z",
+        "last_seen_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
+        "freshness": "fresh",
+        "severity": "high",
+        "confidence": 0.78,
+        "breaking_score": 76,
+        "trust_score": 88,
+        "source_count": 3,
+        "tickers": [
+          {
+            "symbol": "NVDA",
+            "name": "NVIDIA Corporation",
+            "exchange": "NASDAQ",
+            "relationship": "affected_company",
+            "confidence": 0.88
+          },
+          {
+            "symbol": "005930.KS",
+            "name": "Samsung Electronics Co., Ltd.",
+            "exchange": "KRX",
+            "relationship": "affected_company",
+            "confidence": 0.84
+          }
+        ],
+        "regions": [
+          {
+            "key": "CHN",
+            "name": "China",
+            "relation": "event_region",
+            "confidence": 0.92
+          },
+          {
+            "key": "USA",
+            "name": "United States",
+            "relation": "affected_region",
+            "confidence": 0.86
+          },
+          {
+            "key": "KOR",
+            "name": "South Korea",
+            "relation": "affected_region",
+            "confidence": 0.84
+          },
+          {
+            "key": "JPN",
+            "name": "Japan",
+            "relation": "affected_region",
+            "confidence": 0.78
+          },
+          {
+            "key": "EU",
+            "name": "European Union",
+            "relation": "affected_region",
+            "confidence": 0.72
+          },
+          {
+            "key": "USA",
+            "name": "United States",
+            "relation": "market_region",
+            "confidence": 0.76
+          },
+          {
+            "key": "KOR",
+            "name": "South Korea",
+            "relation": "market_region",
+            "confidence": 0.74
+          }
+        ],
+        "topics": [
+          {
+            "key": "semiconductors",
+            "label": "Semiconductors",
+            "confidence": 0.94
+          },
+          {
+            "key": "geopolitics",
+            "label": "Geopolitics",
+            "confidence": 0.79
+          },
+          {
+            "key": "trade_policy",
+            "label": "Trade policy",
+            "confidence": 0.86
+          },
+          {
+            "key": "supply_chain",
+            "label": "Supply chain",
+            "confidence": 0.77
+          }
+        ],
+        "market_direction": "mixed",
+        "source_links": [
+          {
+            "label": "BIS",
+            "url": "https://www.bis.gov/",
+            "source_key": "bis",
+            "policy_version": 1,
+            "title": "Bureau of Industry and Security export controls",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T0_OFFICIAL",
+            "is_primary": true
+          },
+          {
+            "label": "SEC EDGAR",
+            "url": "https://www.sec.gov/edgar/search/",
+            "source_key": "sec_edgar",
+            "policy_version": 1,
+            "title": "Issuer filings for affected companies",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T1_REGULATED_FILING",
+            "is_primary": false
+          },
+          {
+            "label": "Source policy",
+            "url": "https://www.bis.gov/ear",
+            "source_key": "source_policy",
+            "policy_version": 1,
+            "title": "Export Administration Regulations reference",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
+            "is_primary": false
+          }
+        ]
+      },
+      {
+        "id": "rklb_launch_window_seed",
+        "title": "Rocket Lab launch-window monitoring is linked to source evidence for RKLB",
+        "summary": "Company and filing sources are grouped into a ticker-specific event for Rocket Lab launch-cadence monitoring.",
+        "event_type": "company_update",
+        "first_seen_at": "2026-05-29T18:30:53Z",
+        "last_seen_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
+        "freshness": "fresh",
+        "severity": "medium",
+        "confidence": 0.8,
+        "breaking_score": 68,
+        "trust_score": 90,
+        "source_count": 2,
+        "tickers": [
+          {
+            "symbol": "RKLB",
+            "name": "Rocket Lab USA, Inc.",
+            "exchange": "NASDAQ",
+            "relationship": "direct_subject",
+            "confidence": 0.92
+          }
+        ],
+        "regions": [
+          {
+            "key": "USA",
+            "name": "United States",
+            "relation": "company_region",
+            "confidence": 0.84
+          },
+          {
+            "key": "USA",
+            "name": "United States",
+            "relation": "market_region",
+            "confidence": 0.84
+          },
+          {
+            "key": "JPN",
+            "name": "Japan",
+            "relation": "affected_region",
+            "confidence": 0.48
+          }
+        ],
+        "topics": [
+          {
+            "key": "space",
+            "label": "Space",
+            "confidence": 0.94
+          },
+          {
+            "key": "supply_chain",
+            "label": "Supply chain",
+            "confidence": 0.44
+          }
+        ],
+        "market_direction": "mixed",
+        "source_links": [
+          {
+            "label": "Rocket Lab",
+            "url": "https://www.rocketlabusa.com/updates/",
+            "source_key": "rocket_lab_ir",
+            "policy_version": 1,
+            "title": "Rocket Lab updates",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T0_OFFICIAL",
+            "is_primary": true
+          },
+          {
+            "label": "SEC EDGAR",
+            "url": "https://www.sec.gov/edgar/browse/?CIK=1819994",
+            "source_key": "sec_edgar",
+            "policy_version": 1,
+            "title": "Rocket Lab SEC filings",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T1_REGULATED_FILING",
+            "is_primary": false
+          }
+        ]
       }
     ],
-    "upcoming_calendar_items": [
-      {
-        "id": "cal_fomc",
-        "title": "FOMC policy decision",
-        "country_region_key": "USA",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-17T12:00:00Z",
-        "scheduled_local_date": "2026-06-17",
-        "timezone": "America/New_York",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_projection",
-        "expectation_value": "Summary of Economic Projections meeting",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "Federal Reserve",
-        "freshness": "fresh"
-      },
-      {
-        "id": "cal_ecb",
-        "title": "ECB monetary-policy decision",
-        "country_region_key": "EUROZONE",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-11T12:00:00Z",
-        "scheduled_local_date": "2026-06-11",
-        "timezone": "Europe/Frankfurt",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_calendar",
-        "expectation_value": "day 2 with press conference",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "ECB",
-        "freshness": "fresh"
-      },
-      {
-        "id": "cal_boe",
-        "title": "BoE MPC decision",
-        "country_region_key": "GBR",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-18T12:00:00Z",
-        "scheduled_local_date": "2026-06-18",
-        "timezone": "Europe/London",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_calendar",
-        "expectation_value": "MPC announcement and minutes",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "BoE",
-        "freshness": "fresh"
-      },
-      {
-        "id": "cal_boj",
-        "title": "BoJ monetary-policy meeting",
-        "country_region_key": "JPN",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-16T12:00:00Z",
-        "scheduled_local_date": "2026-06-16",
-        "timezone": "Asia/Tokyo",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_calendar",
-        "expectation_value": "meeting day 2",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "BoJ",
-        "freshness": "fresh"
-      }
-    ],
+    "sector_short_facts": [],
     "macro_geopolitical_drivers": [
       "Inventories",
       "OPEC+ meetings",
@@ -333,100 +490,136 @@
     ],
     "reference_indicators": [
       {
-        "key": "nasdaq_composite",
-        "label": "Nasdaq Composite",
-        "value": "26,978.24",
-        "source": "Yahoo Finance delayed quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-05-29T15:27:03Z",
-        "updated_at": "2026-05-29T15:27:03Z",
+        "key": "wti_crude",
+        "label": "WTI crude oil futures",
+        "value": "87.36",
+        "source": "Stooq delayed quote",
+        "freshness": "watch",
+        "delay_label": "Latest available Stooq delayed quote observed at 2026-05-29T21:00:00Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T21:00:00Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
-        "source_url": "https://finance.yahoo.com/quote/%5EIXIC",
+        "refresh_seconds": 43200,
+        "unit": "$",
+        "source_url": "https://stooq.com/q/?s=cl.f",
         "points": [
           {
-            "date": "2026-05-29T13:58:00Z",
-            "value": 27081.16015625
+            "date": "2026-05-29T12:00:00Z",
+            "value": 88.55
           },
           {
-            "date": "2026-05-29T14:12:00Z",
-            "value": 27055.6796875
+            "date": "2026-05-29T13:00:00Z",
+            "value": 86.35
           },
           {
-            "date": "2026-05-29T14:26:00Z",
-            "value": 26914.375
+            "date": "2026-05-29T14:00:00Z",
+            "value": 89.02
           },
           {
-            "date": "2026-05-29T14:40:00Z",
-            "value": 26917.126953125
-          },
-          {
-            "date": "2026-05-29T14:54:00Z",
-            "value": 26926.265625
-          },
-          {
-            "date": "2026-05-29T15:08:00Z",
-            "value": 26978.59375
-          },
-          {
-            "date": "2026-05-29T15:22:00Z",
-            "value": 26977.2265625
-          },
-          {
-            "date": "2026-05-29T15:27:03Z",
-            "value": 26978.236328125
+            "date": "2026-05-29T15:00:00Z",
+            "value": 87.36
           }
         ],
-        "refresh_delta": 60.76599999999962,
-        "refresh_delta_percent": 0.22574929961842483
+        "refresh_delta": -1.1899999999999977,
+        "refresh_delta_percent": -1.3438735177865586
       },
       {
-        "key": "nasdaq_100",
-        "label": "Nasdaq 100",
-        "value": "30,328.14",
-        "source": "Yahoo/Stooq delayed quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo/Stooq delayed quote observed at 2026-05-29T15:27:01Z",
-        "updated_at": "2026-05-29T15:27:01Z",
+        "key": "gold_futures",
+        "label": "Gold futures",
+        "value": "4,593",
+        "source": "Stooq delayed quote",
+        "freshness": "watch",
+        "delay_label": "Latest available Stooq delayed quote observed at 2026-05-29T21:00:00Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T21:00:00Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
-        "source_url": "https://finance.yahoo.com/quote/%5ENDX",
+        "refresh_seconds": 43200,
+        "unit": "$",
+        "source_url": "https://stooq.com/q/?s=gc.f",
         "points": [
           {
-            "date": "2026-05-29T13:58:00Z",
-            "value": 30447.72265625
+            "date": "2026-05-29T12:00:00Z",
+            "value": 4527.6
           },
           {
-            "date": "2026-05-29T14:12:00Z",
-            "value": 30438.69921875
+            "date": "2026-05-29T13:00:00Z",
+            "value": 4519.5
           },
           {
-            "date": "2026-05-29T14:26:00Z",
-            "value": 30279.810546875
+            "date": "2026-05-29T14:00:00Z",
+            "value": 4627.1
           },
           {
-            "date": "2026-05-29T14:40:00Z",
-            "value": 30270.87109375
-          },
-          {
-            "date": "2026-05-29T14:54:00Z",
-            "value": 30279.587890625
-          },
-          {
-            "date": "2026-05-29T15:08:00Z",
-            "value": 30329.033203125
-          },
-          {
-            "date": "2026-05-29T15:22:00Z",
-            "value": 30328.48046875
-          },
-          {
-            "date": "2026-05-29T15:27:01Z",
-            "value": 30328.140625
+            "date": "2026-05-29T15:00:00Z",
+            "value": 4593.0
           }
         ],
-        "refresh_delta": 104.2510000000002,
-        "refresh_delta_percent": 0.3449291386690846
+        "refresh_delta": 65.39999999999964,
+        "refresh_delta_percent": 1.444473893453477
+      },
+      {
+        "key": "silver_futures",
+        "label": "Silver futures",
+        "value": "75.875",
+        "source": "Stooq delayed quote",
+        "freshness": "watch",
+        "delay_label": "Latest available Stooq delayed quote observed at 2026-05-29T21:00:00Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T21:00:00Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "$",
+        "source_url": "https://stooq.com/q/?s=si.f",
+        "points": [
+          {
+            "date": "2026-05-29T12:00:00Z",
+            "value": 76.025
+          },
+          {
+            "date": "2026-05-29T13:00:00Z",
+            "value": 74.815
+          },
+          {
+            "date": "2026-05-29T14:00:00Z",
+            "value": 76.96000000000001
+          },
+          {
+            "date": "2026-05-29T15:00:00Z",
+            "value": 75.875
+          }
+        ],
+        "refresh_delta": -0.15,
+        "refresh_delta_percent": -0.19730351857941467
+      },
+      {
+        "key": "copper_futures",
+        "label": "Copper futures",
+        "value": "6.4195",
+        "source": "Stooq delayed quote",
+        "freshness": "watch",
+        "delay_label": "Latest available Stooq delayed quote observed at 2026-05-29T21:39:49Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T21:39:49Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "$",
+        "source_url": "https://stooq.com/q/?s=hg.f",
+        "points": [
+          {
+            "date": "2026-05-29T12:00:00Z",
+            "value": 6.4195
+          },
+          {
+            "date": "2026-05-29T13:00:00Z",
+            "value": 6.3713
+          },
+          {
+            "date": "2026-05-29T14:00:00Z",
+            "value": 6.4407000000000005
+          },
+          {
+            "date": "2026-05-29T15:00:00Z",
+            "value": 6.4195
+          }
+        ],
+        "refresh_delta": 0.0,
+        "refresh_delta_percent": 0.0
       }
     ],
     "scenario_baskets": [
@@ -451,7 +644,7 @@
       "Scenario baskets are research watchlists, not personalized allocation advice."
     ],
     "freshness": "fresh",
-    "source_strength": "reviewed_seed"
+    "source_strength": "tracked_registry_and_source_backed_facts"
   },
   "warnings": [
     {

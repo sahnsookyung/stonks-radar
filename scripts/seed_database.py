@@ -47,6 +47,7 @@ PROVIDERS = [
     ("cerebras", "llm_provider", "free_quota", "FREE_ONLY", False),
     ("mistral", "llm_provider", "free_quota", "FREE_ONLY", False),
     ("openrouter", "llm_provider", "free_quota", "FREE_ONLY", False),
+    ("nvidia_nim", "llm_provider", "free_quota", "FREE_ONLY", False),
     ("huggingface_hub", "llm_provider", "free_quota", "FREE_ONLY", False),
     ("huggingface_inference", "llm_provider", "free_quota", "FREE_ONLY", False),
     ("fred", "official_api", "free_quota", "FREE_ONLY", False),
@@ -305,10 +306,14 @@ def main() -> None:
                             "cerebras": "llama3.1-8b",
                             "mistral": "mistral-small-latest",
                             "openrouter": "openrouter/free",
+                            "nvidia_nim": os.getenv("NVIDIA_NIM_MODEL_KEY", "meta/llama-3.1-8b-instruct"),
                         }.get(key, key),
                         "privacy_class": "LOCAL_ONLY" if key == "local" else "PUBLIC_FACTS_ONLY",
                         "billing_mode": billing,
-                        "enabled": key == "local",
+                        "enabled": key == "local" or (
+                            key == "nvidia_nim"
+                            and bool(os.getenv("NVIDIA_API_KEY") or os.getenv("NVIDIA_NIM_API_KEY"))
+                        ),
                     },
                 )
         for fact_type, en, ko, schema, predicates, public_default in FACT_TYPES:

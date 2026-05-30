@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-29T15:26:56Z",
-  "stale_after": "2026-05-30T03:26:56Z",
-  "hard_expires_at": "2026-06-05T15:26:56Z",
+  "generated_at": "2026-05-30T12:30:53Z",
+  "stale_after": "2026-05-31T00:30:53Z",
+  "hard_expires_at": "2026-06-06T12:30:53Z",
   "object_type": "home",
   "object_key": "home",
-  "content_hash": "sha256:924676a703dc75ff21f4689218028981631c78dfc2013841bf0c3942691dba73",
+  "content_hash": "sha256:04ee77d71037e882040ed7d66cb9da99b748f3e1f45ce624341c70c222bf5fd4",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,11 +113,11 @@
   "data": {
     "headline": "Global market intelligence dashboard",
     "summary": "Snapshot-first research dashboard for public, source-gated intelligence. It highlights monitored sectors, central-bank calendars, scenario baskets, and approved events without personalized advice.",
-    "generated_label": "2026-05-29T15:26:56Z",
+    "generated_label": "2026-05-30T12:30:53Z",
     "snapshot_health": {
       "status": "fresh",
       "age_minutes": 0,
-      "stale_after": "2026-05-30T03:26:56Z",
+      "stale_after": "2026-05-31T00:30:53Z",
       "backend_dependency": "none_for_public_pages"
     },
     "top_events": [
@@ -126,8 +126,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-29T15:26:56Z",
-        "published_at": "2026-05-29T15:26:56Z",
+        "occurred_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -169,8 +169,8 @@
         "title": "Energy inventory calendar is active for oil supply monitoring",
         "summary": "EIA-linked inventory releases are tracked as official structured data before publication.",
         "why_it_matters": "Inventory surprises can affect energy equities, inflation inputs, and geopolitical risk interpretation.",
-        "occurred_at": "2026-05-29T15:26:56Z",
-        "published_at": "2026-05-29T15:26:56Z",
+        "occurred_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -207,8 +207,8 @@
         "title": "Central-bank calendar coverage seeded across six policy committees",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
         "why_it_matters": "Calendar visibility reduces silent coverage gaps and makes stale policy data visible.",
-        "occurred_at": "2026-05-29T15:26:56Z",
-        "published_at": "2026-05-29T15:26:56Z",
+        "occurred_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -283,146 +283,130 @@
       {
         "key": "nasdaq_composite",
         "label": "Nasdaq Composite",
-        "value": "26,978.24",
+        "value": "26,972.62",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-05-29T15:27:03Z",
-        "updated_at": "2026-05-29T15:27:03Z",
+        "freshness": "watch",
+        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-05-29T21:15:59Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T21:15:59Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 43200,
         "source_url": "https://finance.yahoo.com/quote/%5EIXIC",
         "points": [
           {
-            "date": "2026-05-29T13:58:00Z",
-            "value": 27081.16015625
+            "date": "2026-05-29T15:06:00Z",
+            "value": 26954.99609375
           },
           {
-            "date": "2026-05-29T14:12:00Z",
-            "value": 27055.6796875
+            "date": "2026-05-29T15:54:00Z",
+            "value": 26973.013671875
           },
           {
-            "date": "2026-05-29T14:26:00Z",
-            "value": 26914.375
+            "date": "2026-05-29T16:42:00Z",
+            "value": 27024.14453125
           },
           {
-            "date": "2026-05-29T14:40:00Z",
-            "value": 26917.126953125
+            "date": "2026-05-29T17:30:00Z",
+            "value": 26966.865234375
           },
           {
-            "date": "2026-05-29T14:54:00Z",
-            "value": 26926.265625
+            "date": "2026-05-29T18:18:00Z",
+            "value": 26946.14453125
           },
           {
-            "date": "2026-05-29T15:08:00Z",
-            "value": 26978.59375
+            "date": "2026-05-29T19:06:00Z",
+            "value": 26954.955078125
           },
           {
-            "date": "2026-05-29T15:22:00Z",
-            "value": 26977.2265625
+            "date": "2026-05-29T19:54:00Z",
+            "value": 26986.5234375
           },
           {
-            "date": "2026-05-29T15:27:03Z",
-            "value": 26978.236328125
+            "date": "2026-05-29T20:00:00Z",
+            "value": 26972.619140625
           }
         ],
-        "refresh_delta": 60.76599999999962,
-        "refresh_delta_percent": 0.22574929961842483
+        "refresh_delta": 55.14999999999782,
+        "refresh_delta_percent": 0.20488552601711013
       },
       {
         "key": "nasdaq_100",
         "label": "Nasdaq 100",
-        "value": "30,328.14",
-        "source": "Yahoo/Stooq delayed quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo/Stooq delayed quote observed at 2026-05-29T15:27:01Z",
-        "updated_at": "2026-05-29T15:27:01Z",
+        "value": "30,333.18",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "watch",
+        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-05-29T21:15:59Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T21:15:59Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 43200,
         "source_url": "https://finance.yahoo.com/quote/%5ENDX",
         "points": [
           {
-            "date": "2026-05-29T13:58:00Z",
-            "value": 30447.72265625
+            "date": "2026-05-29T15:06:00Z",
+            "value": 30304.609375
           },
           {
-            "date": "2026-05-29T14:12:00Z",
-            "value": 30438.69921875
+            "date": "2026-05-29T15:54:00Z",
+            "value": 30317.822265625
           },
           {
-            "date": "2026-05-29T14:26:00Z",
-            "value": 30279.810546875
+            "date": "2026-05-29T16:42:00Z",
+            "value": 30362.638671875
           },
           {
-            "date": "2026-05-29T14:40:00Z",
-            "value": 30270.87109375
+            "date": "2026-05-29T17:30:00Z",
+            "value": 30297.455078125
           },
           {
-            "date": "2026-05-29T14:54:00Z",
-            "value": 30279.587890625
+            "date": "2026-05-29T18:18:00Z",
+            "value": 30281.736328125
           },
           {
-            "date": "2026-05-29T15:08:00Z",
-            "value": 30329.033203125
+            "date": "2026-05-29T19:06:00Z",
+            "value": 30290.228515625
           },
           {
-            "date": "2026-05-29T15:22:00Z",
-            "value": 30328.48046875
+            "date": "2026-05-29T19:54:00Z",
+            "value": 30343.04296875
           },
           {
-            "date": "2026-05-29T15:27:01Z",
-            "value": 30328.140625
+            "date": "2026-05-29T20:00:00Z",
+            "value": 30333.1796875
           }
         ],
-        "refresh_delta": 104.2510000000002,
-        "refresh_delta_percent": 0.3449291386690846
+        "refresh_delta": 109.29100000000108,
+        "refresh_delta_percent": 0.3616046895884282
       },
       {
         "key": "kospi",
         "label": "KOSPI",
         "value": "8,476.15",
-        "source": "Yahoo/Stooq delayed quote",
+        "source": "Stooq delayed quote",
         "freshness": "watch",
-        "delay_label": "Yahoo/Stooq delayed quote observed at 2026-05-29T09:05:40Z",
-        "updated_at": "2026-05-29T09:05:40Z",
+        "delay_label": "Latest available Stooq delayed quote observed at 2026-05-29T21:00:00Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T21:00:00Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
-        "source_url": "https://finance.yahoo.com/quote/%5EKS11",
+        "source_url": "https://stooq.com/q/?s=%5Ekospi",
         "points": [
           {
-            "date": "2026-05-29T00:45:00Z",
-            "value": 8358.9599609375
+            "date": "2026-05-29T12:00:00Z",
+            "value": 8384.31
           },
           {
-            "date": "2026-05-29T01:30:00Z",
-            "value": 8351.91015625
+            "date": "2026-05-29T13:00:00Z",
+            "value": 8273.74
           },
           {
-            "date": "2026-05-29T02:15:00Z",
-            "value": 8359.8203125
+            "date": "2026-05-29T14:00:00Z",
+            "value": 8476.15
           },
           {
-            "date": "2026-05-29T03:00:00Z",
-            "value": 8363.2998046875
-          },
-          {
-            "date": "2026-05-29T03:45:00Z",
-            "value": 8394.169921875
-          },
-          {
-            "date": "2026-05-29T04:30:00Z",
-            "value": 8433.1298828125
-          },
-          {
-            "date": "2026-05-29T05:15:00Z",
-            "value": 8453.6904296875
-          },
-          {
-            "date": "2026-05-29T06:00:00Z",
-            "value": 8476.150390625
+            "date": "2026-05-29T15:00:00Z",
+            "value": 8476.15
           }
         ],
-        "refresh_delta": 290.8599999999997,
-        "refresh_delta_percent": 3.5534477092442627
+        "refresh_delta": 91.84000000000015,
+        "refresh_delta_percent": 1.0953793454679055
       },
       {
         "key": "kodex_200",
@@ -430,7 +414,7 @@
         "value": "134,815",
         "source": "Yahoo Finance delayed quote",
         "freshness": "watch",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-05-29T06:30:07Z",
+        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-05-29T06:30:07Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
         "updated_at": "2026-05-29T06:30:07Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
@@ -476,215 +460,294 @@
       {
         "key": "wti_crude",
         "label": "WTI crude oil futures",
-        "value": "86.66",
-        "source": "Yahoo/Stooq delayed futures quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo/Stooq delayed futures quote observed at 2026-05-29T15:17:05Z",
-        "updated_at": "2026-05-29T15:17:05Z",
+        "value": "87.36",
+        "source": "Stooq delayed quote",
+        "freshness": "watch",
+        "delay_label": "Latest available Stooq delayed quote observed at 2026-05-29T21:00:00Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T21:00:00Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 43200,
         "unit": "$",
-        "source_url": "https://finance.yahoo.com/quote/CL%3DF",
+        "source_url": "https://stooq.com/q/?s=cl.f",
         "points": [
           {
-            "date": "2026-05-29T06:48:00Z",
-            "value": 87.54000091552734
+            "date": "2026-05-29T12:00:00Z",
+            "value": 88.55
           },
           {
-            "date": "2026-05-29T08:12:00Z",
-            "value": 88.91000366210938
+            "date": "2026-05-29T13:00:00Z",
+            "value": 86.35
           },
           {
-            "date": "2026-05-29T09:36:00Z",
-            "value": 87.31999969482422
+            "date": "2026-05-29T14:00:00Z",
+            "value": 89.02
           },
           {
-            "date": "2026-05-29T11:00:00Z",
-            "value": 87.43000030517578
-          },
-          {
-            "date": "2026-05-29T12:24:00Z",
-            "value": 87.66000366210938
-          },
-          {
-            "date": "2026-05-29T13:48:00Z",
-            "value": 87.30000305175781
-          },
-          {
-            "date": "2026-05-29T15:12:00Z",
-            "value": 86.68000030517578
-          },
-          {
-            "date": "2026-05-29T15:17:05Z",
-            "value": 86.66000366210938
+            "date": "2026-05-29T15:00:00Z",
+            "value": 87.36
           }
         ],
-        "refresh_delta": -2.240000000000009,
-        "refresh_delta_percent": -2.519685039370089
+        "refresh_delta": -1.1899999999999977,
+        "refresh_delta_percent": -1.3438735177865586
+      },
+      {
+        "key": "gold_futures",
+        "label": "Gold futures",
+        "value": "4,593",
+        "source": "Stooq delayed quote",
+        "freshness": "watch",
+        "delay_label": "Latest available Stooq delayed quote observed at 2026-05-29T21:00:00Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T21:00:00Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "$",
+        "source_url": "https://stooq.com/q/?s=gc.f",
+        "points": [
+          {
+            "date": "2026-05-29T12:00:00Z",
+            "value": 4527.6
+          },
+          {
+            "date": "2026-05-29T13:00:00Z",
+            "value": 4519.5
+          },
+          {
+            "date": "2026-05-29T14:00:00Z",
+            "value": 4627.1
+          },
+          {
+            "date": "2026-05-29T15:00:00Z",
+            "value": 4593.0
+          }
+        ],
+        "refresh_delta": 65.39999999999964,
+        "refresh_delta_percent": 1.444473893453477
+      },
+      {
+        "key": "silver_futures",
+        "label": "Silver futures",
+        "value": "75.875",
+        "source": "Stooq delayed quote",
+        "freshness": "watch",
+        "delay_label": "Latest available Stooq delayed quote observed at 2026-05-29T21:00:00Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T21:00:00Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "$",
+        "source_url": "https://stooq.com/q/?s=si.f",
+        "points": [
+          {
+            "date": "2026-05-29T12:00:00Z",
+            "value": 76.025
+          },
+          {
+            "date": "2026-05-29T13:00:00Z",
+            "value": 74.815
+          },
+          {
+            "date": "2026-05-29T14:00:00Z",
+            "value": 76.96000000000001
+          },
+          {
+            "date": "2026-05-29T15:00:00Z",
+            "value": 75.875
+          }
+        ],
+        "refresh_delta": -0.15,
+        "refresh_delta_percent": -0.19730351857941467
+      },
+      {
+        "key": "copper_futures",
+        "label": "Copper futures",
+        "value": "6.4195",
+        "source": "Stooq delayed quote",
+        "freshness": "watch",
+        "delay_label": "Latest available Stooq delayed quote observed at 2026-05-29T21:39:49Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T21:39:49Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "$",
+        "source_url": "https://stooq.com/q/?s=hg.f",
+        "points": [
+          {
+            "date": "2026-05-29T12:00:00Z",
+            "value": 6.4195
+          },
+          {
+            "date": "2026-05-29T13:00:00Z",
+            "value": 6.3713
+          },
+          {
+            "date": "2026-05-29T14:00:00Z",
+            "value": 6.4407000000000005
+          },
+          {
+            "date": "2026-05-29T15:00:00Z",
+            "value": 6.4195
+          }
+        ],
+        "refresh_delta": 0.0,
+        "refresh_delta_percent": 0.0
       },
       {
         "key": "vix",
         "label": "VIX",
-        "value": "15.55",
+        "value": "15.32",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-05-29T15:11:46Z",
-        "updated_at": "2026-05-29T15:11:46Z",
+        "freshness": "watch",
+        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-05-29T20:15:01Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T20:15:01Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 43200,
         "source_url": "https://finance.yahoo.com/quote/%5EVIX",
         "points": [
           {
-            "date": "2026-05-29T08:14:00Z",
+            "date": "2026-05-29T08:52:00Z",
+            "value": 15.800000190734863
+          },
+          {
+            "date": "2026-05-29T10:29:00Z",
+            "value": 15.829999923706055
+          },
+          {
+            "date": "2026-05-29T12:06:00Z",
             "value": 15.819999694824219
           },
           {
-            "date": "2026-05-29T09:13:00Z",
-            "value": 15.789999961853027
+            "date": "2026-05-29T13:48:00Z",
+            "value": 15.609999656677246
           },
           {
-            "date": "2026-05-29T10:12:00Z",
-            "value": 15.859999656677246
+            "date": "2026-05-29T15:25:00Z",
+            "value": 15.5
           },
           {
-            "date": "2026-05-29T11:11:00Z",
-            "value": 15.789999961853027
+            "date": "2026-05-29T17:02:00Z",
+            "value": 15.270000457763672
           },
           {
-            "date": "2026-05-29T12:10:00Z",
-            "value": 15.8100004196167
+            "date": "2026-05-29T18:39:00Z",
+            "value": 15.25
           },
           {
-            "date": "2026-05-29T13:09:00Z",
-            "value": 15.699999809265137
-          },
-          {
-            "date": "2026-05-29T14:13:00Z",
-            "value": 15.59000015258789
-          },
-          {
-            "date": "2026-05-29T15:11:46Z",
-            "value": 15.550000190734863
+            "date": "2026-05-29T20:15:00Z",
+            "value": 15.319999694824219
           }
         ],
-        "refresh_delta": -0.1899999999999995,
-        "refresh_delta_percent": -1.2071156289707718
+        "refresh_delta": -0.41999999999999993,
+        "refresh_delta_percent": -2.66836086404066
       },
       {
         "key": "usd_krw",
         "label": "USD/KRW",
-        "value": "1,502.79",
-        "source": "Yahoo Finance delayed FX quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed FX quote observed at 2026-05-29T15:27:04Z",
-        "updated_at": "2026-05-29T15:27:04Z",
+        "value": "1,507.13",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "watch",
+        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-05-29T21:32:29Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-29T21:32:29Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 43200,
         "unit": "KRW",
         "source_url": "https://finance.yahoo.com/quote/KRW%3DX",
         "points": [
           {
-            "date": "2026-05-29T01:56:00Z",
-            "value": 1501.1800537109375
+            "date": "2026-05-29T05:14:00Z",
+            "value": 1503.8800048828125
           },
           {
-            "date": "2026-05-29T03:52:00Z",
-            "value": 1503.780029296875
+            "date": "2026-05-29T07:51:00Z",
+            "value": 1507.949951171875
           },
           {
-            "date": "2026-05-29T05:48:00Z",
-            "value": 1503.97998046875
+            "date": "2026-05-29T10:28:00Z",
+            "value": 1507.8499755859375
           },
           {
-            "date": "2026-05-29T07:44:00Z",
-            "value": 1507.5799560546875
+            "date": "2026-05-29T13:05:00Z",
+            "value": 1505.6600341796875
           },
           {
-            "date": "2026-05-29T09:40:00Z",
-            "value": 1508.4200439453125
+            "date": "2026-05-29T15:42:00Z",
+            "value": 1503.47998046875
           },
           {
-            "date": "2026-05-29T11:36:00Z",
-            "value": 1506.8800048828125
+            "date": "2026-05-29T18:19:00Z",
+            "value": 1504.4000244140625
           },
           {
-            "date": "2026-05-29T13:32:00Z",
-            "value": 1505.760009765625
+            "date": "2026-05-29T20:56:00Z",
+            "value": 1507.1800537109375
           },
           {
-            "date": "2026-05-29T15:27:04Z",
-            "value": 1502.7900390625
+            "date": "2026-05-29T21:32:00Z",
+            "value": 1507.1300048828125
           }
         ],
-        "refresh_delta": 9.0,
-        "refresh_delta_percent": 0.6024943265117587
+        "refresh_delta": 13.340000000000146,
+        "refresh_delta_percent": 0.8930304795185499
       },
       {
         "key": "usd_jpy",
         "label": "USD/JPY",
-        "value": "159.16",
-        "source": "Yahoo Finance delayed FX quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed FX quote observed at 2026-05-29T15:27:05Z",
-        "updated_at": "2026-05-29T15:27:05Z",
+        "value": "159.25",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "watch",
+        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-05-30T04:21:11Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-05-30T04:21:11Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 43200,
         "unit": "JPY",
         "source_url": "https://finance.yahoo.com/quote/JPY%3DX",
         "points": [
           {
-            "date": "2026-05-29T03:06:00Z",
-            "value": 159.32000732421875
+            "date": "2026-05-29T01:45:00Z",
+            "value": 159.2949981689453
           },
           {
-            "date": "2026-05-29T05:09:00Z",
-            "value": 159.29800415039062
+            "date": "2026-05-29T04:30:00Z",
+            "value": 159.33900451660156
           },
           {
-            "date": "2026-05-29T07:12:00Z",
-            "value": 159.22900390625
+            "date": "2026-05-29T07:15:00Z",
+            "value": 159.23599243164062
           },
           {
-            "date": "2026-05-29T09:15:00Z",
-            "value": 159.26699829101562
+            "date": "2026-05-29T10:00:00Z",
+            "value": 159.2989959716797
           },
           {
-            "date": "2026-05-29T11:18:00Z",
-            "value": 159.28599548339844
+            "date": "2026-05-29T12:45:00Z",
+            "value": 159.27200317382812
           },
           {
-            "date": "2026-05-29T13:21:00Z",
-            "value": 159.26100158691406
+            "date": "2026-05-29T15:30:00Z",
+            "value": 159.16000366210938
           },
           {
-            "date": "2026-05-29T15:24:00Z",
-            "value": 159.15499877929688
+            "date": "2026-05-29T18:15:00Z",
+            "value": 159.2570037841797
           },
           {
-            "date": "2026-05-29T15:27:05Z",
-            "value": 159.16099548339844
+            "date": "2026-05-29T21:00:00Z",
+            "value": 159.2550048828125
           }
         ],
-        "refresh_delta": -0.056000000000011596,
-        "refresh_delta_percent": -0.03517212357977577
+        "refresh_delta": 0.03799999999998249,
+        "refresh_delta_percent": 0.023866798143403336
       },
       {
         "key": "us_2y",
         "label": "US Treasury 2Y",
-        "value": "3.99",
+        "value": "3.98",
         "source": "U.S. Treasury XML feed",
         "freshness": "fresh",
-        "delay_label": "Treasury 2Y actual through 2026-05-28",
-        "updated_at": "2026-05-28T21:00:00Z",
+        "delay_label": "Treasury 2Y actual through 2026-05-29",
+        "updated_at": "2026-05-29T21:00:00Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "%",
         "source_url": "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed",
         "points": [
-          {
-            "date": "2026-05-18",
-            "value": 4.07
-          },
           {
             "date": "2026-05-19",
             "value": 4.13
@@ -712,6 +775,10 @@
           {
             "date": "2026-05-28",
             "value": 3.99
+          },
+          {
+            "date": "2026-05-29",
+            "value": 3.98
           }
         ],
         "next_event": {
@@ -724,20 +791,16 @@
       {
         "key": "us_3y",
         "label": "US Treasury 3Y",
-        "value": "4.07",
+        "value": "4.06",
         "source": "U.S. Treasury XML feed",
         "freshness": "fresh",
-        "delay_label": "Treasury 3Y actual through 2026-05-28",
-        "updated_at": "2026-05-28T21:00:00Z",
+        "delay_label": "Treasury 3Y actual through 2026-05-29",
+        "updated_at": "2026-05-29T21:00:00Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "%",
         "source_url": "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed",
         "points": [
-          {
-            "date": "2026-05-18",
-            "value": 4.14
-          },
           {
             "date": "2026-05-19",
             "value": 4.2
@@ -765,6 +828,10 @@
           {
             "date": "2026-05-28",
             "value": 4.07
+          },
+          {
+            "date": "2026-05-29",
+            "value": 4.06
           }
         ],
         "next_event": {
@@ -777,20 +844,16 @@
       {
         "key": "us_5y",
         "label": "US Treasury 5Y",
-        "value": "4.15",
+        "value": "4.13",
         "source": "U.S. Treasury XML feed",
         "freshness": "fresh",
-        "delay_label": "Treasury 5Y actual through 2026-05-28",
-        "updated_at": "2026-05-28T21:00:00Z",
+        "delay_label": "Treasury 5Y actual through 2026-05-29",
+        "updated_at": "2026-05-29T21:00:00Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "%",
         "source_url": "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed",
         "points": [
-          {
-            "date": "2026-05-18",
-            "value": 4.27
-          },
           {
             "date": "2026-05-19",
             "value": 4.32
@@ -818,6 +881,10 @@
           {
             "date": "2026-05-28",
             "value": 4.15
+          },
+          {
+            "date": "2026-05-29",
+            "value": 4.13
           }
         ],
         "next_event": {
@@ -833,17 +900,13 @@
         "value": "4.45",
         "source": "U.S. Treasury XML feed",
         "freshness": "fresh",
-        "delay_label": "Treasury 10Y actual through 2026-05-28",
-        "updated_at": "2026-05-28T21:00:00Z",
+        "delay_label": "Treasury 10Y actual through 2026-05-29",
+        "updated_at": "2026-05-29T21:00:00Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "%",
         "source_url": "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed",
         "points": [
-          {
-            "date": "2026-05-18",
-            "value": 4.61
-          },
           {
             "date": "2026-05-19",
             "value": 4.67
@@ -871,6 +934,10 @@
           {
             "date": "2026-05-28",
             "value": 4.45
+          },
+          {
+            "date": "2026-05-29",
+            "value": 4.45
           }
         ],
         "next_event": {
@@ -882,16 +949,56 @@
       },
       {
         "key": "japan_policy_rate",
-        "label": "BoJ policy rate",
-        "value": "Source gap",
-        "source": "Bank of Japan official releases",
-        "freshness": "watch",
-        "delay_label": "Stale FRED/OECD monthly BoJ policy-rate data is blocked; wire an official current BoJ rate feed before displaying this tile.",
-        "updated_at": "2026-05-29T15:26:56Z",
-        "coverage_status": "coverage_gap",
+        "label": "BoJ overnight call rate",
+        "value": "0.727",
+        "source": "BoJ Time-Series Data Search",
+        "freshness": "fresh",
+        "delay_label": "BoJ FM01/STRDCLUCON daily average actual through 2026-05-27; API last updated 2026-05-29.",
+        "updated_at": "2026-05-29T21:00:00Z",
+        "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "%",
-        "source_url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm"
+        "source_url": "https://www.stat-search.boj.or.jp/api/v1/getDataCode?format=csv&lang=en&db=FM01&code=STRDCLUCON&startDate=202605&endDate=202605",
+        "points": [
+          {
+            "date": "2026-05-18",
+            "value": 0.728
+          },
+          {
+            "date": "2026-05-19",
+            "value": 0.728
+          },
+          {
+            "date": "2026-05-20",
+            "value": 0.728
+          },
+          {
+            "date": "2026-05-21",
+            "value": 0.727
+          },
+          {
+            "date": "2026-05-22",
+            "value": 0.726
+          },
+          {
+            "date": "2026-05-25",
+            "value": 0.727
+          },
+          {
+            "date": "2026-05-26",
+            "value": 0.727
+          },
+          {
+            "date": "2026-05-27",
+            "value": 0.727
+          }
+        ],
+        "next_event": {
+          "title": "BoJ monetary-policy meeting",
+          "date": "2026-06-16",
+          "timezone": "Asia/Tokyo",
+          "source": "Bank of Japan MPM calendar"
+        }
       },
       {
         "key": "japan_2y",
@@ -1007,31 +1114,31 @@
       {
         "key": "pentagon_pizza_index",
         "label": "Pentagon pizza index",
-        "value": "33.9",
+        "value": "12.4",
         "source": "Pentagon.Pizza",
         "freshness": "fresh",
-        "delay_label": "Pentagon.Pizza average busyness across 18 monitored sites; 0 anomalies through 2026-05-29",
-        "updated_at": "2026-05-29T15:27:02.277Z",
+        "delay_label": "Pentagon.Pizza average busyness across 18 monitored sites; 1 anomaly through 2026-05-30",
+        "updated_at": "2026-05-30T12:30:57.355Z",
         "coverage_status": "active",
         "refresh_seconds": 300,
         "unit": "/100",
         "source_url": "https://pentagon.pizza/",
         "points": [
           {
-            "date": "2026-05-29T14:41:56Z",
-            "value": 22.0
+            "date": "2026-05-30T11:45:53Z",
+            "value": 0.0
           },
           {
-            "date": "2026-05-29T14:56:56Z",
-            "value": 28.0
+            "date": "2026-05-30T12:00:53Z",
+            "value": 11.0
           },
           {
-            "date": "2026-05-29T15:11:56Z",
-            "value": 38.0
+            "date": "2026-05-30T12:15:53Z",
+            "value": 16.0
           },
           {
-            "date": "2026-05-29T15:26:56Z",
-            "value": 48.0
+            "date": "2026-05-30T12:30:53Z",
+            "value": 24.0
           }
         ]
       }
@@ -1041,46 +1148,23 @@
         "key": "highest_short_interest",
         "title": "Short interest watch",
         "summary": "Latest FINRA short-interest rows for tracked tickers. Float-adjusted ranking remains separate until float data is approved.",
-        "value": "NVDA 296.97M",
+        "value": "rows pending",
         "cadence": "FINRA short interest is published twice monthly after settlement-date reporting.",
         "source": "FINRA consolidated short interest",
         "source_url": "https://www.finra.org/filing-reporting/regulatory-filing-systems/short-interest",
-        "freshness": "fresh",
+        "freshness": "watch",
         "severity": "medium",
         "refresh_seconds": 43200,
         "items": [
           {
-            "key": "highest_short_interest_djt",
-            "label": "DJT short interest",
-            "value": "11.05M shares",
-            "detail": "As of 2026-05-15; open short positions, not daily short-sale volume.",
-            "source": "FINRA consolidated short interest",
-            "freshness": "fresh",
+            "key": "highest_short_interest_credentials",
+            "label": "FINRA short interest",
+            "value": "waiting for rows",
+            "detail": "Credentials are configured, but the latest symbol-filtered rows were not available during this snapshot build.",
+            "source": "FINRA",
+            "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z",
-            "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
-          },
-          {
-            "key": "highest_short_interest_tsla",
-            "label": "TSLA short interest",
-            "value": "75.19M shares",
-            "detail": "As of 2026-05-15; open short positions, not daily short-sale volume.",
-            "source": "FINRA consolidated short interest",
-            "freshness": "fresh",
-            "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z",
-            "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
-          },
-          {
-            "key": "highest_short_interest_nvda",
-            "label": "NVDA short interest",
-            "value": "296.97M shares",
-            "detail": "As of 2026-05-15; open short positions, not daily short-sale volume.",
-            "source": "FINRA consolidated short interest",
-            "freshness": "fresh",
-            "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z",
-            "source_url": "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
+            "updated_at": "2026-05-30T12:30:53Z"
           },
           {
             "key": "highest_short_interest_method",
@@ -1090,7 +1174,7 @@
             "source": "FINRA",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z",
+            "updated_at": "2026-05-30T12:30:53Z",
             "source_url": "https://www.finra.org/investors/insights/short-interest"
           }
         ]
@@ -1099,46 +1183,23 @@
         "key": "short_volume_monitor",
         "title": "Daily short volume",
         "summary": "Aggregated FINRA Reg SHO daily short-sale volume for the tracked ticker watchlist.",
-        "value": "NVDA 17.81M",
+        "value": "DJT / TSLA / NVDA",
         "cadence": "Daily after FINRA posts files, no later than 6:00 p.m. ET.",
         "source": "FINRA Reg SHO Daily Short Sale Volume",
         "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume",
-        "freshness": "fresh",
+        "freshness": "watch",
         "severity": "medium",
         "refresh_seconds": 900,
         "items": [
           {
-            "key": "short_volume_monitor_djt",
-            "label": "DJT short volume",
-            "value": "704.1K shares",
-            "detail": "Aggregated FINRA Reg SHO rows for trade date 2026-05-28. This is flow, not outstanding short interest.",
-            "source": "FINRA Reg SHO daily short sale volume",
-            "freshness": "fresh",
+            "key": "short_volume_monitor_monitored",
+            "label": "Monitored tickers",
+            "value": "DJT, TSLA, NVDA",
+            "detail": "FINRA Reg SHO rows were not available during this snapshot build.",
+            "source": "configuration",
+            "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z",
-            "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
-          },
-          {
-            "key": "short_volume_monitor_tsla",
-            "label": "TSLA short volume",
-            "value": "7.46M shares",
-            "detail": "Aggregated FINRA Reg SHO rows for trade date 2026-05-28. This is flow, not outstanding short interest.",
-            "source": "FINRA Reg SHO daily short sale volume",
-            "freshness": "fresh",
-            "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z",
-            "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
-          },
-          {
-            "key": "short_volume_monitor_nvda",
-            "label": "NVDA short volume",
-            "value": "17.81M shares",
-            "detail": "Aggregated FINRA Reg SHO rows for trade date 2026-05-28. This is flow, not outstanding short interest.",
-            "source": "FINRA Reg SHO daily short sale volume",
-            "freshness": "fresh",
-            "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z",
-            "source_url": "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
+            "updated_at": "2026-05-30T12:30:53Z"
           }
         ]
       },
@@ -1155,70 +1216,70 @@
         "refresh_seconds": 300,
         "items": [
           {
-            "key": "breaking_market_news_google_geopolitical_fd603959d642",
-            "label": "Oil drops 20% from 2026 peak on optimism over U.S.-Iran ceasefire talks - CNBC",
+            "key": "breaking_market_news_google_geopolitical_3e3bdcb4b43f",
+            "label": "The State of the Strait: What Might Come Next in Hormuz - International Crisis Group",
             "value": "headline",
-            "detail": "Geopolitical market risk; news.google.com; seen Fri, 29 May 2026 10:51:33 GMT",
+            "detail": "Geopolitical market risk; news.google.com; seen Sat, 30 May 2026 01:17:35 GMT",
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-29T10:51:33Z",
-            "source_url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxNV05jSjE0MGtuY1dIUUhSekpqZW5tR2dYN3ZqQXMzVkxfS1FvZ1pab3ZKNzVqTF9NT1ZRRVlpd1ZLcU5rZ214ZlNEa1g4Z08tN3BXNUJYUEVNaUhaZkpWVDN1a3BkSm5zQzBhQlByaU9oQ3BvNVptOVlGMjhybXkxQW8xU0hBZndGbWkzbmdTbG9IZUdhSDJzX3JtbngtTzDSAaQBQVVfeXFMUHBjTTlGS0x0amN2WFpyZ2V2MmJtWGN6TmlPenViX1JpMUtkU1B6UUxTQjYyQm1XbG9zNEhLZXA5ODFEeXhlNEVHZEVQYUFvSmtmSk9jN3VuOEJYbXhvT3pJYlBKVWdxR24wejBKQjQzLVdFeEpYbC1OZDExbW80OWN1eFAwcWpoZi1wWmtXRHI5d3NoWkxtTkllYTBjU2IwOFZjSnc?oc=5"
+            "updated_at": "2026-05-30T01:17:35Z",
+            "source_url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE9scGowNXJhVUc4bWI2ZEExaWRYUEw4bkZqcmV1QmVQMzNNWnNkdHJLUFRMQl8zNXc0bTBhUFhlZ3JidzBIUWVvTzJ0d2hHaFdQZ0xDb2pfQmtteUpXQlFhY2k5OA?oc=5"
           },
           {
-            "key": "breaking_market_news_google_geopolitical_dc9c635d6e97",
-            "label": "Oil price drops amid hopes of US-Iran peace deal - The Guardian",
+            "key": "breaking_market_news_google_geopolitical_b53a9878d197",
+            "label": "Tiny Guyana poised for big Iran oil gains and growth strains - Reuters",
             "value": "headline",
-            "detail": "Geopolitical market risk; news.google.com; seen Fri, 29 May 2026 09:09:00 GMT",
+            "detail": "Geopolitical market risk; news.google.com; seen Sat, 30 May 2026 10:05:43 GMT",
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-29T09:09:00Z",
-            "source_url": "https://news.google.com/rss/articles/CBMingFBVV95cUxQZy1QeUVuQjJEbi1yZUFGdVVSSHJFYlM4djBOVF9nek9mWXd6RVVtYzB1ekdyNnlBaURSTXRYcWwwR2RveGhjRFByMEVyNm1zOTZhN1BaeS10NWhYdWJMazBuR0FiVXN2MWpFWHR0dUhodVVQLUYxQ3cxakttTnJVN1BYTVh5N1EwcGk2THhveVhiREp4UnJUZ3plb1hwQQ?oc=5"
+            "updated_at": "2026-05-30T10:05:43Z",
+            "source_url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxQU3dHcWZTWTJ3cHcyV3VUdHAteUZiTElWMzJtQlM2RC1mZDhsWFh0Sm9uWk9KYzk5akFkeWhtUU55WEliSzc0TXJxN1p0SHNWTi1RY2sxZ3R4alRhWDhqeHlrdFJGcW85UFJFMDN3SF9uaV9sNDVDUl9kV2tpbHd0NldmcnMzX01CUXo0a2lhSzdvMDZRLTREVEpjQzQ1eFpBX2lzQlVDVQ?oc=5"
           },
           {
-            "key": "breaking_market_news_google_geopolitical_31a55eabd44b",
-            "label": "Quarter of Big Oil Tankers Trapped by Iran War Have Escaped - Bloomberg.com",
+            "key": "breaking_market_news_google_geopolitical_eaa28b250164",
+            "label": "An inflation surprise, AI rally and a possible Iran deal fuel markets - Detroit Free Press",
             "value": "headline",
-            "detail": "Geopolitical market risk; news.google.com; seen Fri, 29 May 2026 13:55:16 GMT",
+            "detail": "Geopolitical market risk; news.google.com; seen Sat, 30 May 2026 11:02:00 GMT",
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-29T13:55:16Z",
-            "source_url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxOSEdWQnlJeE5zTUFPUHR2X2dqZENXQURmN2ppZnhaZnVEY05mUFpLeHFkVENyWHJyY3lIMUE4aE9zVlpYX1Yzc3dpR3FaaUFVcUhFVlpZNkxKbEZySERHUXJ4SFhPYjhXdWJJUF9kSml0Y3NWMEdDN2JWTWxtR1F5Sm5NTHd4SmFhR3NaTzlIVU5YU1JmM1l2bUFxYXIwdkRHSndGZkhNM19fcWFDMmRsaHp4bTM?oc=5"
+            "updated_at": "2026-05-30T11:02:00Z",
+            "source_url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxPMzhfcVJmWkF0RWlHMlFpM2VSdGsySmJUYTA3ZGd1M05uQmY0TUlDS09tYnYwZFN3THpjdi04UXFBYTV2U3NaekxGUkY3cnNIM2hnUmg4UFNrOWFDa0pDa1hDblFJUHBjb093UkVZV1ZqX3Q3ZGswQXZ0cFdCRnBnZ0JKXzM0TTNiOHFXb29Gc1paM1JUVXZ6cEpMVERTMlotZURKNzVEbzI3QQ?oc=5"
           },
           {
-            "key": "breaking_market_news_google_geopolitical_feb745ae382c",
-            "label": "Breakingviews - A new US-Iran deal could be as useless as the last - Reuters",
+            "key": "breaking_market_news_google_geopolitical_6d404c0d6af0",
+            "label": "Trump demands 'unrestricted shipping' in Strait of Hormuz as Iran touts 'future administration' of the waterway - Yahoo Finance",
             "value": "headline",
-            "detail": "Geopolitical market risk; news.google.com; seen Fri, 29 May 2026 13:10:38 GMT",
+            "detail": "Geopolitical market risk; news.google.com; seen Sat, 30 May 2026 10:50:51 GMT",
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-29T13:10:38Z",
-            "source_url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxPdXdjSTAzQ0FDZTdBS1FhMklsekpjNERqZFJ1eW9LN3ZTWDQ5aW1ySjVKX2FUdE5HUXlYQ19pVWFRU2xiM3lkZUM4Y3gzMlIyZFY3ZEhzZFJTVU03YWQ3Vk4zZWcxcHU5WDNTXzBJV1FvN0VXM2JTNWc1aEd5OFFiUmp3Y2JYbE8tZU9PaElOM2V3QjZkNVVZTnBIV3B2a3lu?oc=5"
+            "updated_at": "2026-05-30T10:50:51Z",
+            "source_url": "https://news.google.com/rss/articles/CBMi9wFBVV95cUxQLTJwZjMzaWJCUmJkVDgtRHdwYVBIeGVpUnozQklxbDQ5MjVZcEQ1eElPWlp4czliQmk5UlpidjNQdjVtOExST0w3LU9VOE5ZUkpZN2tQd0NUVDBmVnVSVnJmWUZ1TXdISDllTmJJYlBuMkVzYjJ4WnV1eU01eVJOak1wUl9Yel9kUGg4b2dGZnRCeC01Y3dnRVhHRVdOc3RZR1YyM1d5LWpFQkdXd1RUazBrd2QzVmdSdzhNQzA3eWxwQ0FZVGxMNWxHdlVaS21qcGwzcnRzY2FWYWctRVZjQVd0ZlZqZWs0V2dXMEljTFdNNU85YnhN?oc=5"
           },
           {
-            "key": "breaking_market_news_google_geopolitical_edc8069a9c4f",
-            "label": "Oil Prices Fall to End Worst Month Since 2020 on Trump, Iran Hormuz Hope - Barron's",
+            "key": "breaking_market_news_google_geopolitical_86255918fd4f",
+            "label": "Analysis: An end to the Iran war may be just the beginning of a new era of U.S. inequality - CNBC",
             "value": "headline",
-            "detail": "Geopolitical market risk; news.google.com; seen Fri, 29 May 2026 12:14:00 GMT",
+            "detail": "Geopolitical market risk; news.google.com; seen Sat, 30 May 2026 12:00:01 GMT",
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-29T12:14:00Z",
-            "source_url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxPSGN3RW1aNW55NGJKTHVKM2RCSDhEQWd3TFpJS05Rb0p2Ql8xVTdZa1RIcmEwaTZZQS0wZkpEYzY1WU9RcFh6VGZGU1VabTdzSjBpWGdIdG5Ldm9KM2RacHplTXpZZGlBU0J4cnpvQldfQk96MkN4UXQ0SFJVV2hWWUdwTVJyV2dQ?oc=5"
+            "updated_at": "2026-05-30T12:00:01Z",
+            "source_url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxNRW1xY2thRFNhWXVsUUxKczV1MDd2QWFHSjFkVzZqcmJ0MjFVY2tBMFk5ZEsxSWd2bUN1dllkMm42cjZac2ZzcnA2MTNJU3ROcjZOVGNwblNvOU95QmxKVWhKRS14U0kyeDEtOHFKakdFZTM4QnFBMWtIaW96bjM5SzYtbm9IX195a3N5UEFDS3hjTDjSAZgBQVVfeXFMTmt4Z1JMcmNiV21hVnZYYVQ4WUxhRnRPdDlreHlablFyVXZDMndUeWIyeG9qS3d0cW1uQjZCNFJENFY2c3FhVFo3azU0Y29qbVhnb2JpLUtUN2F3VkFxRVBjSlJnOUZ3U29mVXl0d0hBdWdYdjR5LXh4aVhSdTEwVlpmZXZUVDRBRUFVSkJmZ0xVUUljWW9oc1o?oc=5"
           },
           {
-            "key": "breaking_market_news_google_geopolitical_5fa1331e4c71",
-            "label": "Oil Prices Dip on Hopes for Ceasefire in Iran War - Transport Topics",
+            "key": "breaking_market_news_google_geopolitical_ca57bf41030d",
+            "label": "Trump holds meeting to make 'final determination' on Iran deal - BBC",
             "value": "headline",
-            "detail": "Geopolitical market risk; news.google.com; seen Fri, 29 May 2026 12:23:20 GMT",
+            "detail": "Geopolitical market risk; news.google.com; seen Sat, 30 May 2026 04:19:32 GMT",
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-29T12:23:20Z",
-            "source_url": "https://news.google.com/rss/articles/CBMib0FVX3lxTE1RWGRLdXZlXzBKbjFRRHhDZURZZC1jTFU0WndieWkydXY2eHJ5TTV4YzNoQk1NanNSWXF3bnhSVUlPXzZkeEhXNDE0WjRydE9oTUNHZFFsTFpWYUFPVkVTQ0tRbXhrSVhnTVgzSVJURQ?oc=5"
+            "updated_at": "2026-05-30T04:19:32Z",
+            "source_url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFAwYmhHcHZwcVZpSDFUckx5d0FkYTVtRHhKZUtyQ1poWDVnQTZITjNtSnZOUHVoNzA2ZHNxWFlCaXRlNEFva0tJVXBkMml0SmNQZXIwUS16SURyQQ?oc=5"
           }
         ]
       },
@@ -1226,24 +1287,13 @@
         "key": "short_research_reports",
         "title": "Public short research",
         "summary": "Tracks public reports from activist short sellers and forensic research publishers.",
-        "value": "8 sources",
+        "value": "7 sources",
         "cadence": "15-minute source checks once live ingestion is enabled.",
         "source": "public research websites/RSS/news",
         "freshness": "watch",
         "severity": "high",
         "refresh_seconds": 900,
         "items": [
-          {
-            "key": "short_research_reports_hindenburg",
-            "label": "Hindenburg Research",
-            "value": "archived",
-            "detail": "Founder announced shutdown; keep archive/news monitoring for follow-through.",
-            "source": "Hindenburg/news",
-            "freshness": "watch",
-            "severity": "high",
-            "updated_at": "2026-05-29T15:26:56Z",
-            "source_url": "https://hindenburgresearch.com/"
-          },
           {
             "key": "short_research_reports_muddy_waters",
             "label": "Muddy Waters",
@@ -1252,7 +1302,7 @@
             "source": "Muddy Waters",
             "freshness": "watch",
             "severity": "high",
-            "updated_at": "2026-05-29T15:26:56Z",
+            "updated_at": "2026-05-30T12:30:53Z",
             "source_url": "https://www.muddywatersresearch.com/"
           },
           {
@@ -1263,7 +1313,7 @@
             "source": "Viceroy",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z",
+            "updated_at": "2026-05-30T12:30:53Z",
             "source_url": "https://viceroyresearch.org/"
           },
           {
@@ -1274,7 +1324,7 @@
             "source": "LLM router",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z"
+            "updated_at": "2026-05-30T12:30:53Z"
           },
           {
             "key": "short_research_reports_spruce_point",
@@ -1284,7 +1334,7 @@
             "source": "Spruce Point",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z",
+            "updated_at": "2026-05-30T12:30:53Z",
             "source_url": "https://www.sprucepointcap.com/"
           },
           {
@@ -1295,7 +1345,7 @@
             "source": "Kerrisdale",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z",
+            "updated_at": "2026-05-30T12:30:53Z",
             "source_url": "https://www.kerrisdalecap.com/"
           },
           {
@@ -1306,7 +1356,7 @@
             "source": "Culper",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z",
+            "updated_at": "2026-05-30T12:30:53Z",
             "source_url": "https://culperresearch.com/"
           },
           {
@@ -1317,7 +1367,7 @@
             "source": "Blue Orca",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z",
+            "updated_at": "2026-05-30T12:30:53Z",
             "source_url": "https://www.blueorcacapital.com/"
           },
           {
@@ -1328,7 +1378,7 @@
             "source": "Grizzly",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z",
+            "updated_at": "2026-05-30T12:30:53Z",
             "source_url": "https://grizzlyreports.com/"
           }
         ]
@@ -1353,7 +1403,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z",
+            "updated_at": "2026-05-30T12:30:53Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000201566326000004/xslF345X06/primary_doc.xml"
           },
           {
@@ -1364,7 +1414,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z",
+            "updated_at": "2026-05-30T12:30:53Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000201566726000004/xslF345X06/primary_doc.xml"
           },
           {
@@ -1375,7 +1425,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z",
+            "updated_at": "2026-05-30T12:30:53Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000180848826000004/xslF345X06/primary_doc.xml"
           },
           {
@@ -1386,7 +1436,7 @@
             "source": "SEC EDGAR",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z"
+            "updated_at": "2026-05-30T12:30:53Z"
           },
           {
             "key": "trump_filings_ai_summary",
@@ -1396,7 +1446,7 @@
             "source": "LLM router",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-29T15:26:56Z"
+            "updated_at": "2026-05-30T12:30:53Z"
           }
         ]
       }
@@ -1405,46 +1455,46 @@
       {
         "key": "space",
         "name": "Space",
-        "summary": "Monitoring 5 entities with approved event and calendar links.",
-        "source_strength": "seeded_review_policy",
+        "summary": "Monitoring 4 registry-backed entities with source-linked sector events.",
+        "source_strength": "tracked_entity_registry",
         "freshness": "fresh",
-        "monitored_count": 5,
+        "monitored_count": 4,
         "event_count": 0
       },
       {
         "key": "quantum",
         "name": "Quantum",
-        "summary": "Monitoring 6 entities with approved event and calendar links.",
-        "source_strength": "seeded_review_policy",
+        "summary": "Monitoring 4 registry-backed entities with source-linked sector events.",
+        "source_strength": "tracked_entity_registry",
         "freshness": "fresh",
-        "monitored_count": 6,
+        "monitored_count": 4,
         "event_count": 0
       },
       {
         "key": "semiconductors",
         "name": "Semiconductors",
-        "summary": "Monitoring 9 entities with approved event and calendar links.",
-        "source_strength": "seeded_review_policy",
+        "summary": "Monitoring 3 registry-backed entities with source-linked sector events.",
+        "source_strength": "tracked_entity_registry",
         "freshness": "fresh",
-        "monitored_count": 9,
+        "monitored_count": 3,
         "event_count": 2
       },
       {
         "key": "oil-energy",
         "name": "Oil/Energy",
-        "summary": "Monitoring 6 entities with approved event and calendar links.",
-        "source_strength": "seeded_review_policy",
+        "summary": "Monitoring 0 registry-backed entities with source-linked sector events.",
+        "source_strength": "tracked_entity_registry",
         "freshness": "fresh",
-        "monitored_count": 6,
+        "monitored_count": 0,
         "event_count": 2
       },
       {
         "key": "big-tech",
         "name": "Big Tech",
-        "summary": "Monitoring 7 entities with approved event and calendar links.",
-        "source_strength": "seeded_review_policy",
+        "summary": "Monitoring 6 registry-backed entities with source-linked sector events.",
+        "source_strength": "tracked_entity_registry",
         "freshness": "fresh",
-        "monitored_count": 7,
+        "monitored_count": 6,
         "event_count": 2
       }
     ],

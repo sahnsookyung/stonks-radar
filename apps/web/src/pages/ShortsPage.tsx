@@ -1,16 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { ExternalLink, Radar, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { AlternativeSignalItem, AlternativeSignalLane } from "@frw/shared-types";
+import { EntityLink } from "../components/EntityLink";
 import { SeverityBadge, SourceBadge } from "../components/Badge";
 import { ErrorState, LoadingState } from "../components/LoadingState";
 import { SnapshotBanner } from "../components/SnapshotBanner";
 import { useLocale } from "../lib/locale";
 import { snapshotQueries } from "../lib/snapshots";
+import { trackedTickers } from "../lib/trackedTickers";
 
 const shortLaneKeys = new Set(["highest_short_interest", "short_volume_monitor"]);
-const trackedShortSymbols = ["DJT", "TSLA", "NVDA"];
 
 export function ShortsPage() {
   const locale = useLocale();
@@ -26,10 +26,13 @@ export function ShortsPage() {
   const lanes = query.data.data.alternative_signals;
   const shortLanes = lanes.filter((lane) => shortLaneKeys.has(lane.key));
   const researchLane = lanes.find((lane) => lane.key === "short_research_reports");
-  const tickerRows = trackedShortSymbols.map((symbol) => ({
+  const shortSymbols = trackedTickers
+    .filter((ticker) => ticker.tags.some((tag) => ["short", "politics", "meme", "semiconductors", "space", "quantum"].includes(tag)))
+    .map((ticker) => ticker.symbol);
+  const tickerRows = shortSymbols.map((symbol) => ({
     symbol,
     items: shortLanes.flatMap((lane) =>
-      lane.items.filter((item) => item.label.toUpperCase().startsWith(`${symbol} `)).map((item) => ({ lane, item }))
+      lane.items.filter((item) => item.symbols?.map((itemSymbol) => itemSymbol.toUpperCase()).includes(symbol)).map((item) => ({ lane, item }))
     )
   }));
 
@@ -59,13 +62,7 @@ export function ShortsPage() {
                 <div className="text-xs font-semibold uppercase leading-5 text-muted">
                   {locale === "ko" ? "추적 티커" : "Tracked ticker"}
                 </div>
-                <Link
-                  to="/$locale/tickers/$symbol"
-                  params={{ locale, symbol: row.symbol }}
-                className="focus-ring mt-1 inline-flex min-h-11 items-center rounded-md text-2xl font-bold hover:text-accent"
-                >
-                  {row.symbol}
-                </Link>
+                <EntityLink value={row.symbol} locale={locale} className="focus-ring mt-1 inline-flex min-h-11 items-center rounded-md text-2xl font-bold hover:text-accent" />
               </div>
               <SeverityBadge value="medium" />
             </div>

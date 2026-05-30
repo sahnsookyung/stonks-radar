@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-29T15:26:56Z",
-  "stale_after": "2026-05-30T03:26:56Z",
-  "hard_expires_at": "2026-06-05T15:26:56Z",
+  "generated_at": "2026-05-30T12:30:53Z",
+  "stale_after": "2026-05-31T00:30:53Z",
+  "hard_expires_at": "2026-06-06T12:30:53Z",
   "object_type": "sector_page",
   "object_key": "big-tech",
-  "content_hash": "sha256:8e32082cc44ca138f558143898120adbde207c07c2046d8fb05ede69bc3f6dad",
+  "content_hash": "sha256:b77dbc33dbb16076200cdc683e4fc51aca0c88958bcbf1e5f7ddc800ff018b5d",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,21 +113,134 @@
   "data": {
     "key": "big-tech",
     "name": "빅테크",
-    "overview": "빅테크 모듈은 모니터링 객체, 국가 노출, 승인 이벤트, 출처 강도, 지연/참조 지표를 연결합니다.",
+    "overview": "빅테크 커버리지는 표준 추적 엔티티 레지스트리에서 생성되며 티커별 뉴스, 촉매, 공매도 사실을 거시 일정과 분리합니다.",
+    "tracked_entities": [
+      {
+        "entity_id": "005930_KS",
+        "symbol": "005930.KS",
+        "display_symbol": "005930.KS",
+        "name": "005930.KS",
+        "route_kind": "ticker",
+        "route_key": "005930_KS",
+        "sector_keys": [
+          "semiconductors",
+          "big-tech"
+        ],
+        "tags": [
+          "semiconductors",
+          "memory",
+          "korea"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      },
+      {
+        "entity_id": "AAPL",
+        "symbol": "AAPL",
+        "display_symbol": "AAPL",
+        "name": "AAPL",
+        "route_kind": "ticker",
+        "route_key": "AAPL",
+        "sector_keys": [
+          "big-tech"
+        ],
+        "tags": [
+          "big-tech",
+          "portfolio-lab",
+          "mega-cap"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      },
+      {
+        "entity_id": "MSFT",
+        "symbol": "MSFT",
+        "display_symbol": "MSFT",
+        "name": "MSFT",
+        "route_kind": "ticker",
+        "route_key": "MSFT",
+        "sector_keys": [
+          "big-tech"
+        ],
+        "tags": [
+          "big-tech",
+          "portfolio-lab",
+          "ai-infra"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      },
+      {
+        "entity_id": "NVDA",
+        "symbol": "NVDA",
+        "display_symbol": "NVDA",
+        "name": "NVDA",
+        "route_kind": "ticker",
+        "route_key": "NVDA",
+        "sector_keys": [
+          "semiconductors",
+          "big-tech"
+        ],
+        "tags": [
+          "semiconductors",
+          "ai-infra",
+          "short-interest"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      },
+      {
+        "entity_id": "TLT",
+        "symbol": "TLT",
+        "display_symbol": "TLT",
+        "name": "TLT",
+        "route_kind": "ticker",
+        "route_key": "TLT",
+        "sector_keys": [
+          "big-tech"
+        ],
+        "tags": [
+          "portfolio-lab",
+          "rates",
+          "macro-hedge"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      },
+      {
+        "entity_id": "TSLA",
+        "symbol": "TSLA",
+        "display_symbol": "TSLA",
+        "name": "TSLA",
+        "route_kind": "ticker",
+        "route_key": "TSLA",
+        "sector_keys": [
+          "big-tech"
+        ],
+        "tags": [
+          "short-volume",
+          "big-tech",
+          "retail-flow"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      }
+    ],
     "monitored_entities": [
-      "Alphabet",
-      "Microsoft",
-      "Apple",
-      "Amazon",
-      "Meta",
-      "NVIDIA",
-      "Tesla"
+      "005930.KS",
+      "AAPL",
+      "MSFT",
+      "NVDA",
+      "TLT",
+      "TSLA"
     ],
     "monitored_instruments": [
-      "Alphabet reference/security metadata",
-      "Microsoft reference/security metadata",
-      "Apple reference/security metadata",
-      "Amazon reference/security metadata"
+      "005930.KS 출처 연결 참고",
+      "AAPL 출처 연결 참고",
+      "MSFT 출처 연결 참고",
+      "NVDA 출처 연결 참고",
+      "TLT 출처 연결 참고",
+      "TSLA 출처 연결 참고"
     ],
     "country_region_exposure": [
       "USA",
@@ -142,8 +255,8 @@
         "title": "반도체 수출통제 모니터링 강도 유지",
         "summary": "승인된 시드 이벤트가 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
         "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다.",
-        "occurred_at": "2026-05-29T15:26:56Z",
-        "published_at": "2026-05-29T15:26:56Z",
+        "occurred_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -179,158 +292,305 @@
           }
         ],
         "correction_status": "none"
+      }
+    ],
+    "upcoming_calendar_items": [],
+    "ticker_calendar_items": [
+      {
+        "id": "big-tech_005930_KS_semiconductor_export_controls_seed",
+        "entity_id": "005930_KS",
+        "symbol": "005930.KS",
+        "title": "005930.KS: 중국발 수출통제 리스크가 AI 반도체 공급망에 높은 상태로 유지",
+        "catalyst_type": "source_review",
+        "scheduled_at": "2026-05-30T12:30:53Z",
+        "scheduled_local_date": "2026-05-30",
+        "timezone": "UTC",
+        "source": "BIS",
+        "source_url": "https://www.bis.gov/",
+        "freshness": "fresh",
+        "confidence": 0.78
       },
       {
-        "id": "event_central_bank_seed",
-        "title": "6개 중앙은행 정책회의 일정 시드 적용",
-        "summary": "FOMC, ECB, BoE, BoJ, BoK, 브라질 COPOM이 명시적 예상치 라벨과 함께 표시됩니다.",
-        "why_it_matters": "캘린더 가시성은 커버리지 공백을 숨기지 않고 오래된 정책 데이터를 드러냅니다.",
-        "occurred_at": "2026-05-29T15:26:56Z",
-        "published_at": "2026-05-29T15:26:56Z",
-        "country_region_keys": [
-          "USA",
-          "EUROZONE",
-          "GBR",
-          "JPN",
-          "KOR",
-          "BRA"
-        ],
-        "sector_keys": [
-          "big-tech",
-          "semiconductors",
-          "oil-energy"
-        ],
-        "event_type": "central_bank_calendar",
-        "severity": "low",
-        "confidence": 0.78,
-        "source_strength": "official_calendar_seed",
+        "id": "big-tech_NVDA_semiconductor_export_controls_seed",
+        "entity_id": "NVDA",
+        "symbol": "NVDA",
+        "title": "NVDA: 중국발 수출통제 리스크가 AI 반도체 공급망에 높은 상태로 유지",
+        "catalyst_type": "source_review",
+        "scheduled_at": "2026-05-30T12:30:53Z",
+        "scheduled_local_date": "2026-05-30",
+        "timezone": "UTC",
+        "source": "BIS",
+        "source_url": "https://www.bis.gov/",
         "freshness": "fresh",
-        "evidence_count": 6,
-        "latitude": 51.5,
-        "longitude": 0.0,
-        "affected_objects": [
-          "FOMC",
-          "ECB",
-          "BoE",
-          "BoJ",
-          "BoK",
-          "COPOM"
+        "confidence": 0.78
+      }
+    ],
+    "sector_news": [
+      {
+        "id": "semiconductor_export_controls_seed",
+        "title": "중국발 수출통제 리스크가 AI 반도체 공급망에 높은 상태로 유지",
+        "summary": "공식 정책 모니터링은 수출통제를 엔비디아, 삼성전자, 일본 장비 업체, 유럽 장비 노출과 연결합니다.",
+        "event_type": "trade_policy",
+        "first_seen_at": "2026-05-28T12:30:53Z",
+        "last_seen_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
+        "freshness": "fresh",
+        "severity": "high",
+        "confidence": 0.78,
+        "breaking_score": 76,
+        "trust_score": 88,
+        "source_count": 3,
+        "tickers": [
+          {
+            "symbol": "NVDA",
+            "name": "엔비디아",
+            "exchange": "NASDAQ",
+            "relationship": "affected_company",
+            "confidence": 0.88
+          },
+          {
+            "symbol": "005930.KS",
+            "name": "삼성전자",
+            "exchange": "KRX",
+            "relationship": "affected_company",
+            "confidence": 0.84
+          }
         ],
+        "regions": [
+          {
+            "key": "CHN",
+            "name": "중국",
+            "relation": "event_region",
+            "confidence": 0.92
+          },
+          {
+            "key": "USA",
+            "name": "미국",
+            "relation": "affected_region",
+            "confidence": 0.86
+          },
+          {
+            "key": "KOR",
+            "name": "대한민국",
+            "relation": "affected_region",
+            "confidence": 0.84
+          },
+          {
+            "key": "JPN",
+            "name": "일본",
+            "relation": "affected_region",
+            "confidence": 0.78
+          },
+          {
+            "key": "EU",
+            "name": "유럽연합",
+            "relation": "affected_region",
+            "confidence": 0.72
+          },
+          {
+            "key": "USA",
+            "name": "미국",
+            "relation": "market_region",
+            "confidence": 0.76
+          },
+          {
+            "key": "KOR",
+            "name": "대한민국",
+            "relation": "market_region",
+            "confidence": 0.74
+          }
+        ],
+        "topics": [
+          {
+            "key": "semiconductors",
+            "label": "반도체",
+            "confidence": 0.94
+          },
+          {
+            "key": "geopolitics",
+            "label": "지정학",
+            "confidence": 0.79
+          },
+          {
+            "key": "trade_policy",
+            "label": "무역 정책",
+            "confidence": 0.86
+          },
+          {
+            "key": "supply_chain",
+            "label": "공급망",
+            "confidence": 0.77
+          }
+        ],
+        "market_direction": "mixed",
+        "source_links": [
+          {
+            "label": "BIS",
+            "url": "https://www.bis.gov/",
+            "source_key": "bis",
+            "policy_version": 1,
+            "title": "미 산업안보국 수출통제",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T0_OFFICIAL",
+            "is_primary": true
+          },
+          {
+            "label": "SEC EDGAR",
+            "url": "https://www.sec.gov/edgar/search/",
+            "source_key": "sec_edgar",
+            "policy_version": 1,
+            "title": "영향 기업 공시",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T1_REGULATED_FILING",
+            "is_primary": false
+          },
+          {
+            "label": "Source policy",
+            "url": "https://www.bis.gov/ear",
+            "source_key": "source_policy",
+            "policy_version": 1,
+            "title": "수출관리규정 참고",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
+            "is_primary": false
+          }
+        ]
+      },
+      {
+        "id": "central_bank_policy_watch_seed",
+        "title": "FOMC, 일본은행, 한국은행, ECB, 브라질 COPOM 결정 일정 리스크",
+        "summary": "공식 일정을 하나의 정책 이벤트 워치로 묶어 앱을 벗어나지 않고 금리 결정일을 확인할 수 있습니다.",
+        "event_type": "central_bank_calendar",
+        "first_seen_at": "2026-05-28T12:30:53Z",
+        "last_seen_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
+        "freshness": "fresh",
+        "severity": "medium",
+        "confidence": 0.86,
+        "breaking_score": 58,
+        "trust_score": 96,
+        "source_count": 5,
+        "tickers": [
+          {
+            "symbol": "005930.KS",
+            "name": "삼성전자",
+            "exchange": "KRX",
+            "relationship": "affected_company",
+            "confidence": 0.58
+          }
+        ],
+        "regions": [
+          {
+            "key": "USA",
+            "name": "미국",
+            "relation": "event_region",
+            "confidence": 0.88
+          },
+          {
+            "key": "JPN",
+            "name": "일본",
+            "relation": "event_region",
+            "confidence": 0.88
+          },
+          {
+            "key": "KOR",
+            "name": "대한민국",
+            "relation": "event_region",
+            "confidence": 0.88
+          },
+          {
+            "key": "EU",
+            "name": "유럽연합",
+            "relation": "event_region",
+            "confidence": 0.85
+          },
+          {
+            "key": "BRA",
+            "name": "브라질",
+            "relation": "event_region",
+            "confidence": 0.84
+          },
+          {
+            "key": "USA",
+            "name": "미국",
+            "relation": "market_region",
+            "confidence": 0.72
+          },
+          {
+            "key": "KOR",
+            "name": "대한민국",
+            "relation": "market_region",
+            "confidence": 0.68
+          }
+        ],
+        "topics": [
+          {
+            "key": "central_banks",
+            "label": "중앙은행",
+            "confidence": 0.96
+          },
+          {
+            "key": "macro",
+            "label": "거시",
+            "confidence": 0.82
+          }
+        ],
+        "market_direction": "unclear",
         "source_links": [
           {
             "label": "Federal Reserve",
             "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
             "source_key": "federal_reserve",
-            "policy_version": 1
-          },
-          {
-            "label": "ECB",
-            "url": "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html",
-            "source_key": "ecb",
-            "policy_version": 1
-          },
-          {
-            "label": "Bank of England",
-            "url": "https://www.bankofengland.co.uk/news/2025/september/monetary-policy-committee-dates-for-2026",
-            "source_key": "bank_of_england",
-            "policy_version": 1
-          },
-          {
-            "label": "Bank of Japan",
-            "url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm",
-            "source_key": "bank_of_japan",
-            "policy_version": 1
+            "policy_version": 1,
+            "title": "FOMC 일정",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T0_OFFICIAL",
+            "is_primary": true
           },
           {
             "label": "Bank of Korea",
             "url": "https://www.bok.or.kr/eng/main/contents.do?menuNo=400020",
             "source_key": "bank_of_korea",
-            "policy_version": 1
+            "policy_version": 1,
+            "title": "통화정책 일정",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T0_OFFICIAL",
+            "is_primary": true
           },
           {
-            "label": "Banco Central do Brasil",
+            "label": "Bank of Japan",
+            "url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm",
+            "source_key": "bank_of_japan",
+            "policy_version": 1,
+            "title": "통화정책회의",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T0_OFFICIAL",
+            "is_primary": true
+          },
+          {
+            "label": "ECB",
+            "url": "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html",
+            "source_key": "ecb",
+            "policy_version": 1,
+            "title": "ECB 정책위원회 일정",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T0_OFFICIAL",
+            "is_primary": true
+          },
+          {
+            "label": "BCB",
             "url": "https://www.bcb.gov.br/detalhenoticia/20739/nota",
             "source_key": "bcb",
-            "policy_version": 1
+            "policy_version": 1,
+            "title": "COPOM 일정",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T0_OFFICIAL",
+            "is_primary": true
           }
-        ],
-        "correction_status": "none"
+        ]
       }
     ],
-    "upcoming_calendar_items": [
-      {
-        "id": "cal_fomc",
-        "title": "FOMC 정책 결정",
-        "country_region_key": "USA",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-17T12:00:00Z",
-        "scheduled_local_date": "2026-06-17",
-        "timezone": "America/New_York",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_projection",
-        "expectation_value": "Summary of Economic Projections meeting",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "Federal Reserve",
-        "freshness": "fresh"
-      },
-      {
-        "id": "cal_ecb",
-        "title": "ECB 통화정책 결정",
-        "country_region_key": "EUROZONE",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-11T12:00:00Z",
-        "scheduled_local_date": "2026-06-11",
-        "timezone": "Europe/Frankfurt",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_calendar",
-        "expectation_value": "day 2 with press conference",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "ECB",
-        "freshness": "fresh"
-      },
-      {
-        "id": "cal_boe",
-        "title": "영란은행 MPC 결정",
-        "country_region_key": "GBR",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-18T12:00:00Z",
-        "scheduled_local_date": "2026-06-18",
-        "timezone": "Europe/London",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_calendar",
-        "expectation_value": "MPC announcement and minutes",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "BoE",
-        "freshness": "fresh"
-      },
-      {
-        "id": "cal_boj",
-        "title": "일본은행 통화정책회의",
-        "country_region_key": "JPN",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-16T12:00:00Z",
-        "scheduled_local_date": "2026-06-16",
-        "timezone": "Asia/Tokyo",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_calendar",
-        "expectation_value": "meeting day 2",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "BoJ",
-        "freshness": "fresh"
-      }
-    ],
+    "sector_short_facts": [],
     "macro_geopolitical_drivers": [
       "클라우드 성장",
       "AI 투자",
@@ -342,98 +602,146 @@
       {
         "key": "nasdaq_composite",
         "label": "나스닥 종합",
-        "value": "26,978.24",
+        "value": "26,972.62",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote 관측 2026-05-29T15:27:03Z",
-        "updated_at": "2026-05-29T15:27:03Z",
+        "freshness": "watch",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-05-29T21:15:59Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-05-29T21:15:59Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 43200,
         "source_url": "https://finance.yahoo.com/quote/%5EIXIC",
         "points": [
           {
-            "date": "2026-05-29T13:58:00Z",
-            "value": 27081.16015625
+            "date": "2026-05-29T15:06:00Z",
+            "value": 26954.99609375
           },
           {
-            "date": "2026-05-29T14:12:00Z",
-            "value": 27055.6796875
+            "date": "2026-05-29T15:54:00Z",
+            "value": 26973.013671875
           },
           {
-            "date": "2026-05-29T14:26:00Z",
-            "value": 26914.375
+            "date": "2026-05-29T16:42:00Z",
+            "value": 27024.14453125
           },
           {
-            "date": "2026-05-29T14:40:00Z",
-            "value": 26917.126953125
+            "date": "2026-05-29T17:30:00Z",
+            "value": 26966.865234375
           },
           {
-            "date": "2026-05-29T14:54:00Z",
-            "value": 26926.265625
+            "date": "2026-05-29T18:18:00Z",
+            "value": 26946.14453125
           },
           {
-            "date": "2026-05-29T15:08:00Z",
-            "value": 26978.59375
+            "date": "2026-05-29T19:06:00Z",
+            "value": 26954.955078125
           },
           {
-            "date": "2026-05-29T15:22:00Z",
-            "value": 26977.2265625
+            "date": "2026-05-29T19:54:00Z",
+            "value": 26986.5234375
           },
           {
-            "date": "2026-05-29T15:27:03Z",
-            "value": 26978.236328125
+            "date": "2026-05-29T20:00:00Z",
+            "value": 26972.619140625
           }
         ],
-        "refresh_delta": 60.76599999999962,
-        "refresh_delta_percent": 0.22574929961842483
+        "refresh_delta": 55.14999999999782,
+        "refresh_delta_percent": 0.20488552601711013
       },
       {
         "key": "nasdaq_100",
         "label": "나스닥 100",
-        "value": "30,328.14",
-        "source": "Yahoo/Stooq delayed quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo/Stooq delayed quote 관측 2026-05-29T15:27:01Z",
-        "updated_at": "2026-05-29T15:27:01Z",
+        "value": "30,333.18",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "watch",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-05-29T21:15:59Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-05-29T21:15:59Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 43200,
         "source_url": "https://finance.yahoo.com/quote/%5ENDX",
         "points": [
           {
-            "date": "2026-05-29T13:58:00Z",
-            "value": 30447.72265625
+            "date": "2026-05-29T15:06:00Z",
+            "value": 30304.609375
           },
           {
-            "date": "2026-05-29T14:12:00Z",
-            "value": 30438.69921875
+            "date": "2026-05-29T15:54:00Z",
+            "value": 30317.822265625
           },
           {
-            "date": "2026-05-29T14:26:00Z",
-            "value": 30279.810546875
+            "date": "2026-05-29T16:42:00Z",
+            "value": 30362.638671875
           },
           {
-            "date": "2026-05-29T14:40:00Z",
-            "value": 30270.87109375
+            "date": "2026-05-29T17:30:00Z",
+            "value": 30297.455078125
           },
           {
-            "date": "2026-05-29T14:54:00Z",
-            "value": 30279.587890625
+            "date": "2026-05-29T18:18:00Z",
+            "value": 30281.736328125
           },
           {
-            "date": "2026-05-29T15:08:00Z",
-            "value": 30329.033203125
+            "date": "2026-05-29T19:06:00Z",
+            "value": 30290.228515625
           },
           {
-            "date": "2026-05-29T15:22:00Z",
-            "value": 30328.48046875
+            "date": "2026-05-29T19:54:00Z",
+            "value": 30343.04296875
           },
           {
-            "date": "2026-05-29T15:27:01Z",
-            "value": 30328.140625
+            "date": "2026-05-29T20:00:00Z",
+            "value": 30333.1796875
           }
         ],
-        "refresh_delta": 104.2510000000002,
-        "refresh_delta_percent": 0.3449291386690846
+        "refresh_delta": 109.29100000000108,
+        "refresh_delta_percent": 0.3616046895884282
+      },
+      {
+        "key": "vix",
+        "label": "VIX",
+        "value": "15.32",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "watch",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-05-29T20:15:01Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-05-29T20:15:01Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "source_url": "https://finance.yahoo.com/quote/%5EVIX",
+        "points": [
+          {
+            "date": "2026-05-29T08:52:00Z",
+            "value": 15.800000190734863
+          },
+          {
+            "date": "2026-05-29T10:29:00Z",
+            "value": 15.829999923706055
+          },
+          {
+            "date": "2026-05-29T12:06:00Z",
+            "value": 15.819999694824219
+          },
+          {
+            "date": "2026-05-29T13:48:00Z",
+            "value": 15.609999656677246
+          },
+          {
+            "date": "2026-05-29T15:25:00Z",
+            "value": 15.5
+          },
+          {
+            "date": "2026-05-29T17:02:00Z",
+            "value": 15.270000457763672
+          },
+          {
+            "date": "2026-05-29T18:39:00Z",
+            "value": 15.25
+          },
+          {
+            "date": "2026-05-29T20:15:00Z",
+            "value": 15.319999694824219
+          }
+        ],
+        "refresh_delta": -0.41999999999999993,
+        "refresh_delta_percent": -2.66836086404066
       }
     ],
     "scenario_baskets": [
@@ -458,7 +766,7 @@
       "시나리오 바스켓은 리서치 워치리스트이며 개인화 배분 조언이 아닙니다."
     ],
     "freshness": "fresh",
-    "source_strength": "reviewed_seed"
+    "source_strength": "tracked_registry_and_source_backed_facts"
   },
   "warnings": [
     {

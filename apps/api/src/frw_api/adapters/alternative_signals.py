@@ -17,7 +17,6 @@ from frw_api.services.market_data import SYMBOL_RE
 from frw_api.services.provider_limits import provider_request
 
 DEFAULT_SHORT_RESEARCH_SOURCES = {
-    "hindenburg": "https://hindenburgresearch.com/",
     "muddy_waters": "https://www.muddywatersresearch.com/",
     "viceroy": "https://viceroyresearch.org/",
     "spruce_point": "https://www.sprucepointcap.com/",

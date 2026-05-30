@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-29T15:26:56Z",
-  "stale_after": "2026-05-30T03:26:56Z",
-  "hard_expires_at": "2026-06-05T15:26:56Z",
+  "generated_at": "2026-05-30T12:30:53Z",
+  "stale_after": "2026-05-31T00:30:53Z",
+  "hard_expires_at": "2026-06-06T12:30:53Z",
   "object_type": "sector_page",
   "object_key": "space",
-  "content_hash": "sha256:28074e7175b2e66cd8b582c31153a657334076bdd65678f1a5d866b630143a98",
+  "content_hash": "sha256:beab6b4ec3dd8c233e8fee167b86a00ed8e768aa8126f5c9054dfeab45fbb33f",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,19 +113,92 @@
   "data": {
     "key": "space",
     "name": "우주",
-    "overview": "우주 모듈은 모니터링 객체, 국가 노출, 승인 이벤트, 출처 강도, 지연/참조 지표를 연결합니다.",
+    "overview": "우주 커버리지는 표준 추적 엔티티 레지스트리에서 생성되며 티커별 뉴스, 촉매, 공매도 사실을 거시 일정과 분리합니다.",
+    "tracked_entities": [
+      {
+        "entity_id": "ASTS",
+        "symbol": "ASTS",
+        "display_symbol": "ASTS",
+        "name": "ASTS",
+        "route_kind": "ticker",
+        "route_key": "ASTS",
+        "sector_keys": [
+          "space"
+        ],
+        "tags": [
+          "space",
+          "satcom",
+          "high-volatility"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      },
+      {
+        "entity_id": "LUNR",
+        "symbol": "LUNR",
+        "display_symbol": "LUNR",
+        "name": "LUNR",
+        "route_kind": "ticker",
+        "route_key": "LUNR",
+        "sector_keys": [
+          "space"
+        ],
+        "tags": [
+          "space",
+          "lunar",
+          "event-risk"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      },
+      {
+        "entity_id": "RDW",
+        "symbol": "RDW",
+        "display_symbol": "RDW",
+        "name": "RDW",
+        "route_kind": "ticker",
+        "route_key": "RDW",
+        "sector_keys": [
+          "space"
+        ],
+        "tags": [
+          "space",
+          "defense-demand",
+          "small-cap"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      },
+      {
+        "entity_id": "RKLB",
+        "symbol": "RKLB",
+        "display_symbol": "RKLB",
+        "name": "RKLB",
+        "route_kind": "ticker",
+        "route_key": "RKLB",
+        "sector_keys": [
+          "space"
+        ],
+        "tags": [
+          "space",
+          "launch-cadence",
+          "tracked-news"
+        ],
+        "source_strength": "registry",
+        "freshness": "watch"
+      }
+    ],
     "monitored_entities": [
-      "Rocket Lab",
-      "Intuitive Machines",
-      "AST SpaceMobile",
-      "Redwire",
-      "SpaceX (private/reference)"
+      "ASTS",
+      "LUNR",
+      "RDW",
+      "RKLB"
     ],
     "monitored_instruments": [
-      "Rocket Lab reference/security metadata",
-      "Intuitive Machines reference/security metadata",
-      "AST SpaceMobile reference/security metadata",
-      "Redwire reference/security metadata"
+      "ASTS 출처 연결 참고",
+      "LUNR 출처 연결 참고",
+      "RDW 출처 연결 참고",
+      "RKLB 출처 연결 참고"
     ],
     "country_region_exposure": [
       "USA",
@@ -133,125 +206,106 @@
       "JPN",
       "EU"
     ],
-    "recent_events": [
+    "recent_events": [],
+    "upcoming_calendar_items": [],
+    "ticker_calendar_items": [
       {
-        "id": "event_semis_export_controls_seed",
-        "title": "반도체 수출통제 모니터링 강도 유지",
-        "summary": "승인된 시드 이벤트가 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
-        "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다.",
-        "occurred_at": "2026-05-29T15:26:56Z",
-        "published_at": "2026-05-29T15:26:56Z",
-        "country_region_keys": [
-          "USA",
-          "TWN",
-          "KOR",
-          "CHN",
-          "JPN"
-        ],
-        "sector_keys": [
-          "semiconductors",
-          "big-tech"
-        ],
-        "event_type": "policy_risk",
-        "severity": "medium",
-        "confidence": 0.74,
-        "source_strength": "reviewed_structured_seed",
+        "id": "space_RKLB_rklb_launch_window_seed",
+        "entity_id": "RKLB",
+        "symbol": "RKLB",
+        "title": "RKLB: 로켓랩 발사 일정 모니터링이 RKLB 원문 근거와 연결",
+        "catalyst_type": "company_event",
+        "scheduled_at": "2026-05-30T12:30:53Z",
+        "scheduled_local_date": "2026-05-30",
+        "timezone": "UTC",
+        "source": "Rocket Lab",
+        "source_url": "https://www.rocketlabusa.com/updates/",
         "freshness": "fresh",
-        "evidence_count": 2,
-        "latitude": 23.7,
-        "longitude": 121.0,
-        "affected_objects": [
-          "NVIDIA",
-          "TSMC",
-          "Samsung Electronics",
-          "SK Hynix",
-          "ASML"
-        ],
-        "source_links": [
+        "confidence": 0.8
+      }
+    ],
+    "sector_news": [
+      {
+        "id": "rklb_launch_window_seed",
+        "title": "로켓랩 발사 일정 모니터링이 RKLB 원문 근거와 연결",
+        "summary": "회사 및 공시 출처를 로켓랩 발사 빈도 모니터링을 위한 티커별 이벤트로 묶습니다.",
+        "event_type": "company_update",
+        "first_seen_at": "2026-05-29T18:30:53Z",
+        "last_seen_at": "2026-05-30T12:30:53Z",
+        "published_at": "2026-05-30T12:30:53Z",
+        "freshness": "fresh",
+        "severity": "medium",
+        "confidence": 0.8,
+        "breaking_score": 68,
+        "trust_score": 90,
+        "source_count": 2,
+        "tickers": [
           {
-            "label": "Source policy seed",
-            "url": "/en/source-policy",
-            "source_key": "sec_edgar",
-            "policy_version": 1
+            "symbol": "RKLB",
+            "name": "로켓랩 USA",
+            "exchange": "NASDAQ",
+            "relationship": "direct_subject",
+            "confidence": 0.92
           }
         ],
-        "correction_status": "none"
+        "regions": [
+          {
+            "key": "USA",
+            "name": "미국",
+            "relation": "company_region",
+            "confidence": 0.84
+          },
+          {
+            "key": "USA",
+            "name": "미국",
+            "relation": "market_region",
+            "confidence": 0.84
+          },
+          {
+            "key": "JPN",
+            "name": "일본",
+            "relation": "affected_region",
+            "confidence": 0.48
+          }
+        ],
+        "topics": [
+          {
+            "key": "space",
+            "label": "우주",
+            "confidence": 0.94
+          },
+          {
+            "key": "supply_chain",
+            "label": "공급망",
+            "confidence": 0.44
+          }
+        ],
+        "market_direction": "mixed",
+        "source_links": [
+          {
+            "label": "Rocket Lab",
+            "url": "https://www.rocketlabusa.com/updates/",
+            "source_key": "rocket_lab_ir",
+            "policy_version": 1,
+            "title": "로켓랩 업데이트",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T0_OFFICIAL",
+            "is_primary": true
+          },
+          {
+            "label": "SEC EDGAR",
+            "url": "https://www.sec.gov/edgar/browse/?CIK=1819994",
+            "source_key": "sec_edgar",
+            "policy_version": 1,
+            "title": "로켓랩 SEC 공시",
+            "published_at": "2026-05-29T18:30:53Z",
+            "trust_tier": "T1_REGULATED_FILING",
+            "is_primary": false
+          }
+        ]
       }
     ],
-    "upcoming_calendar_items": [
-      {
-        "id": "cal_fomc",
-        "title": "FOMC 정책 결정",
-        "country_region_key": "USA",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-17T12:00:00Z",
-        "scheduled_local_date": "2026-06-17",
-        "timezone": "America/New_York",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_projection",
-        "expectation_value": "Summary of Economic Projections meeting",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "Federal Reserve",
-        "freshness": "fresh"
-      },
-      {
-        "id": "cal_ecb",
-        "title": "ECB 통화정책 결정",
-        "country_region_key": "EUROZONE",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-11T12:00:00Z",
-        "scheduled_local_date": "2026-06-11",
-        "timezone": "Europe/Frankfurt",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_calendar",
-        "expectation_value": "day 2 with press conference",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "ECB",
-        "freshness": "fresh"
-      },
-      {
-        "id": "cal_boe",
-        "title": "영란은행 MPC 결정",
-        "country_region_key": "GBR",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-18T12:00:00Z",
-        "scheduled_local_date": "2026-06-18",
-        "timezone": "Europe/London",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_calendar",
-        "expectation_value": "MPC announcement and minutes",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "BoE",
-        "freshness": "fresh"
-      },
-      {
-        "id": "cal_boj",
-        "title": "일본은행 통화정책회의",
-        "country_region_key": "JPN",
-        "release_type": "central_bank",
-        "scheduled_at": "2026-06-16T12:00:00Z",
-        "scheduled_local_date": "2026-06-16",
-        "timezone": "Asia/Tokyo",
-        "time_precision": "time_estimated",
-        "status": "scheduled",
-        "expectation_type": "official_calendar",
-        "expectation_value": "meeting day 2",
-        "actual_value": null,
-        "previous_value": null,
-        "surprise": null,
-        "source": "BoJ",
-        "freshness": "fresh"
-      }
-    ],
+    "sector_short_facts": [],
     "macro_geopolitical_drivers": [
       "발사 일정",
       "국방 수요",
@@ -262,98 +316,98 @@
       {
         "key": "nasdaq_composite",
         "label": "나스닥 종합",
-        "value": "26,978.24",
+        "value": "26,972.62",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote 관측 2026-05-29T15:27:03Z",
-        "updated_at": "2026-05-29T15:27:03Z",
+        "freshness": "watch",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-05-29T21:15:59Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-05-29T21:15:59Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 43200,
         "source_url": "https://finance.yahoo.com/quote/%5EIXIC",
         "points": [
           {
-            "date": "2026-05-29T13:58:00Z",
-            "value": 27081.16015625
+            "date": "2026-05-29T15:06:00Z",
+            "value": 26954.99609375
           },
           {
-            "date": "2026-05-29T14:12:00Z",
-            "value": 27055.6796875
+            "date": "2026-05-29T15:54:00Z",
+            "value": 26973.013671875
           },
           {
-            "date": "2026-05-29T14:26:00Z",
-            "value": 26914.375
+            "date": "2026-05-29T16:42:00Z",
+            "value": 27024.14453125
           },
           {
-            "date": "2026-05-29T14:40:00Z",
-            "value": 26917.126953125
+            "date": "2026-05-29T17:30:00Z",
+            "value": 26966.865234375
           },
           {
-            "date": "2026-05-29T14:54:00Z",
-            "value": 26926.265625
+            "date": "2026-05-29T18:18:00Z",
+            "value": 26946.14453125
           },
           {
-            "date": "2026-05-29T15:08:00Z",
-            "value": 26978.59375
+            "date": "2026-05-29T19:06:00Z",
+            "value": 26954.955078125
           },
           {
-            "date": "2026-05-29T15:22:00Z",
-            "value": 26977.2265625
+            "date": "2026-05-29T19:54:00Z",
+            "value": 26986.5234375
           },
           {
-            "date": "2026-05-29T15:27:03Z",
-            "value": 26978.236328125
+            "date": "2026-05-29T20:00:00Z",
+            "value": 26972.619140625
           }
         ],
-        "refresh_delta": 60.76599999999962,
-        "refresh_delta_percent": 0.22574929961842483
+        "refresh_delta": 55.14999999999782,
+        "refresh_delta_percent": 0.20488552601711013
       },
       {
-        "key": "nasdaq_100",
-        "label": "나스닥 100",
-        "value": "30,328.14",
-        "source": "Yahoo/Stooq delayed quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo/Stooq delayed quote 관측 2026-05-29T15:27:01Z",
-        "updated_at": "2026-05-29T15:27:01Z",
+        "key": "vix",
+        "label": "VIX",
+        "value": "15.32",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "watch",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-05-29T20:15:01Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-05-29T20:15:01Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
-        "source_url": "https://finance.yahoo.com/quote/%5ENDX",
+        "refresh_seconds": 43200,
+        "source_url": "https://finance.yahoo.com/quote/%5EVIX",
         "points": [
           {
-            "date": "2026-05-29T13:58:00Z",
-            "value": 30447.72265625
+            "date": "2026-05-29T08:52:00Z",
+            "value": 15.800000190734863
           },
           {
-            "date": "2026-05-29T14:12:00Z",
-            "value": 30438.69921875
+            "date": "2026-05-29T10:29:00Z",
+            "value": 15.829999923706055
           },
           {
-            "date": "2026-05-29T14:26:00Z",
-            "value": 30279.810546875
+            "date": "2026-05-29T12:06:00Z",
+            "value": 15.819999694824219
           },
           {
-            "date": "2026-05-29T14:40:00Z",
-            "value": 30270.87109375
+            "date": "2026-05-29T13:48:00Z",
+            "value": 15.609999656677246
           },
           {
-            "date": "2026-05-29T14:54:00Z",
-            "value": 30279.587890625
+            "date": "2026-05-29T15:25:00Z",
+            "value": 15.5
           },
           {
-            "date": "2026-05-29T15:08:00Z",
-            "value": 30329.033203125
+            "date": "2026-05-29T17:02:00Z",
+            "value": 15.270000457763672
           },
           {
-            "date": "2026-05-29T15:22:00Z",
-            "value": 30328.48046875
+            "date": "2026-05-29T18:39:00Z",
+            "value": 15.25
           },
           {
-            "date": "2026-05-29T15:27:01Z",
-            "value": 30328.140625
+            "date": "2026-05-29T20:15:00Z",
+            "value": 15.319999694824219
           }
         ],
-        "refresh_delta": 104.2510000000002,
-        "refresh_delta_percent": 0.3449291386690846
+        "refresh_delta": -0.41999999999999993,
+        "refresh_delta_percent": -2.66836086404066
       }
     ],
     "scenario_baskets": [
@@ -378,7 +432,7 @@
       "시나리오 바스켓은 리서치 워치리스트이며 개인화 배분 조언이 아닙니다."
     ],
     "freshness": "fresh",
-    "source_strength": "reviewed_seed"
+    "source_strength": "tracked_registry_and_source_backed_facts"
   },
   "warnings": [
     {

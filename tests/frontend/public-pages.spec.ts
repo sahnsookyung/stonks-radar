@@ -15,6 +15,9 @@ test("public routes render from snapshots", async ({ page }) => {
   await expect(page.getByText("Source-Linked Event News")).toBeVisible();
   await page.goto("/en/portfolio");
   await expect(page.getByText("Portfolio lab")).toBeVisible();
+  await page.goto("/en/funds/situational-awareness");
+  await expect(page.getByText("Leopold Aschenbrenner 13F Portfolio")).toBeVisible();
+  await expect(page.getByText("Public 13F portfolio")).toBeVisible();
   await page.goto("/en/sources");
   await expect(page.getByText("Source registry")).toBeVisible();
   await page.goto("/ko");
@@ -46,6 +49,22 @@ test("ticker detail news tab renders ticker snapshot", async ({ page }) => {
   await expect(page.getByText("Ticker-Relevant News")).toBeVisible();
   await expect(page.getByText("NVIDIA Corporation has")).toBeVisible();
   await expect(page.getByText("China-origin export-control risk remains elevated")).toBeVisible();
+
+  await page.goto("/en/tickers/005930_KS");
+  await expect(page.getByRole("heading", { name: /005930.KS/ })).toBeVisible();
+  await page.goto("/en/tickers/005930.KS");
+  await expect(page.getByRole("heading", { name: /005930.KS/ })).toBeVisible();
+});
+
+test("sector pages use ticker-specific modules and reference entities route", async ({ page }) => {
+  await page.goto("/en/sectors/semiconductors");
+  await expect(page.getByText("Ticker Catalyst Calendar")).toBeVisible();
+  await expect(page.getByText("Sector News")).toBeVisible();
+  await expect(page.getByText("FOMC policy decision")).toHaveCount(0);
+
+  await page.goto("/en/entities/QUANTINUUM");
+  await expect(page.getByText("Reference entity", { exact: true })).toBeVisible();
+  await expect(page.getByText("not a quote page")).toBeVisible();
 });
 
 test("map countries expose hover feedback", async ({ page }) => {
