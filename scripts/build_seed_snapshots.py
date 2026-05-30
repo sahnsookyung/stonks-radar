@@ -61,6 +61,9 @@ TIME_SENSITIVE_MARKET_TILE_KEYS = {
     "krx_300_it",
     "ewy_korea_proxy",
     "wti_crude",
+    "gold_futures",
+    "silver_futures",
+    "copper_futures",
     "vix",
     "usd_krw",
     "usd_jpy",
@@ -3117,12 +3120,13 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         refresh_seconds: int = 900,
         fresh_after_minutes: int = 90,
         stale_after_hours: int = 36,
+        stooq_multiplier: float = 1.0,
     ) -> dict[str, Any]:
         candidates: list[tuple[str, dict[str, Any] | None]] = []
         if yahoo_symbol:
             candidates.append(("Yahoo Finance delayed quote", _yahoo_chart_series(yahoo_symbol)))
         if stooq_symbol:
-            candidates.append(("Stooq delayed quote", _stooq_quote_series(stooq_symbol)))
+            candidates.append(("Stooq delayed quote", scale_quote_series(_stooq_quote_series(stooq_symbol), stooq_multiplier)))
         if finnhub_symbol and _market_pulse_public_provider_allowed("finnhub"):
             candidates.append(("Finnhub quote", _finnhub_quote_series(finnhub_symbol)))
         if twelve_data_symbol and _market_pulse_public_provider_allowed("twelve_data"):
@@ -3193,6 +3197,21 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         if series.get("percent_change") is not None:
             payload["refresh_delta_percent"] = series["percent_change"]
         return payload
+
+    def scale_quote_series(series: dict[str, Any] | None, multiplier: float) -> dict[str, Any] | None:
+        if not series or multiplier == 1.0:
+            return series
+        scaled = dict(series)
+        for key in ("value", "change"):
+            if scaled.get(key) is not None:
+                scaled[key] = float(scaled[key]) * multiplier
+        if scaled.get("points"):
+            scaled["points"] = [
+                {**point, "value": float(point["value"]) * multiplier}
+                for point in scaled["points"]
+                if point.get("value") is not None
+            ]
+        return scaled
 
     def boj_policy_rate_tile() -> dict[str, Any]:
         return coverage_gap_tile(
@@ -3397,6 +3416,44 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             decimals=2,
             fresh_after_minutes=45,
             stale_after_hours=24,
+        ),
+        market_quote_tile(
+            "gold_futures",
+            "Gold futures",
+            "금 선물",
+            yahoo_symbol="GC=F",
+            stooq_symbol="gc.f",
+            source_name="Yahoo/Stooq delayed futures quote",
+            unit="$",
+            decimals=2,
+            fresh_after_minutes=45,
+            stale_after_hours=24,
+        ),
+        market_quote_tile(
+            "silver_futures",
+            "Silver futures",
+            "은 선물",
+            yahoo_symbol="SI=F",
+            stooq_symbol="si.f",
+            source_name="Yahoo/Stooq delayed futures quote",
+            unit="$",
+            decimals=3,
+            fresh_after_minutes=45,
+            stale_after_hours=24,
+            stooq_multiplier=0.01,
+        ),
+        market_quote_tile(
+            "copper_futures",
+            "Copper futures",
+            "구리 선물",
+            yahoo_symbol="HG=F",
+            stooq_symbol="hg.f",
+            source_name="Yahoo/Stooq delayed futures quote",
+            unit="$",
+            decimals=4,
+            fresh_after_minutes=45,
+            stale_after_hours=24,
+            stooq_multiplier=0.01,
         ),
         market_quote_tile("vix", "VIX", "VIX", yahoo_symbol="^VIX", source_name="Yahoo Finance delayed quote", fresh_after_minutes=45, stale_after_hours=24),
         market_quote_tile(

@@ -15,6 +15,9 @@ export const marketOrder = [
   "krx_300_it",
   "ewy_korea_proxy",
   "wti_crude",
+  "gold_futures",
+  "silver_futures",
+  "copper_futures",
   "vix",
   "usd_krw",
   "usd_jpy",
@@ -290,7 +293,7 @@ function groupMarketTiles(tiles: MetricTile[], locale: "en" | "ko") {
   ];
   for (const tile of tiles) {
     if (tile.key.startsWith("us_") || tile.key.startsWith("japan_")) groups[2].tiles.push(tile);
-    else if (tile.key.startsWith("usd_") || tile.key.includes("crude")) groups[1].tiles.push(tile);
+    else if (tile.key.startsWith("usd_") || tile.key.includes("crude") || tile.key.endsWith("_futures")) groups[1].tiles.push(tile);
     else if (tile.key.includes("pizza")) groups[3].tiles.push(tile);
     else groups[0].tiles.push(tile);
   }

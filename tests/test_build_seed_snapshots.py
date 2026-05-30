@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from io import BytesIO
 from urllib import error
 
+import pytest
+
 from scripts import build_seed_snapshots
 
 
@@ -355,6 +357,24 @@ def test_macro_tiles_choose_freshest_allowed_public_quote_candidate(monkeypatch)
                 "change": -0.13,
                 "source_url": "https://stooq.com/q/?s=cl.f",
             }
+        if symbol == "si.f":
+            return {
+                "date": "2026-05-29",
+                "value": 7617.3,
+                "updated_at": "2026-05-29T17:05:40Z",
+                "points": [{"date": "2026-05-29T17:04:00Z", "value": 7598.5}, {"date": "2026-05-29T17:05:40Z", "value": 7617.3}],
+                "change": 18.8,
+                "source_url": "https://stooq.com/q/?s=si.f",
+            }
+        if symbol == "hg.f":
+            return {
+                "date": "2026-05-29",
+                "value": 641.95,
+                "updated_at": "2026-05-29T17:05:41Z",
+                "points": [{"date": "2026-05-29T17:04:00Z", "value": 642.5}, {"date": "2026-05-29T17:05:41Z", "value": 641.95}],
+                "change": -0.55,
+                "source_url": "https://stooq.com/q/?s=hg.f",
+            }
         return None
 
     monkeypatch.setattr(build_seed_snapshots, "_yahoo_chart_series", yahoo)
@@ -367,6 +387,10 @@ def test_macro_tiles_choose_freshest_allowed_public_quote_candidate(monkeypatch)
     assert by_key["wti_crude"]["source"] == "Stooq delayed quote"
     assert by_key["wti_crude"]["updated_at"] == "2026-05-29T17:05:36Z"
     assert "not guaranteed realtime exchange tape" in by_key["wti_crude"]["delay_label"]
+    assert by_key["silver_futures"]["value"] == "76.173"
+    assert by_key["silver_futures"]["refresh_delta"] == pytest.approx(0.188)
+    assert by_key["copper_futures"]["value"] == "6.4195"
+    assert by_key["copper_futures"]["refresh_delta"] == pytest.approx(-0.0055)
 
 
 def test_http_json_retries_retryable_status(monkeypatch):
