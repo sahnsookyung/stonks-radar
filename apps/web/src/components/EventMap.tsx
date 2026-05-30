@@ -9,6 +9,12 @@ interface EventMapProps {
   loadStrategy?: "visible" | "idle-visible" | "immediate";
 }
 
+type EventMapDebugWindow = Window & { __stonksRadarMap?: maplibregl.Map };
+
+function shouldExposeMapDebugHook() {
+  return import.meta.env.DEV || (typeof navigator !== "undefined" && navigator.webdriver);
+}
+
 export function EventMap({
   events,
   heightClass = "h-[540px] md:h-[680px]",
@@ -165,8 +171,8 @@ export function EventMap({
         attributionControl: false,
         interactive: true
       });
-      if (import.meta.env.DEV) {
-        (window as Window & { __stonksRadarMap?: maplibregl.Map }).__stonksRadarMap = mapRef.current;
+      if (shouldExposeMapDebugHook()) {
+        (window as EventMapDebugWindow).__stonksRadarMap = mapRef.current;
       }
       mapRef.current.on("load", () => {
         mapRef.current?.fitBounds(
@@ -184,8 +190,8 @@ export function EventMap({
     });
     return () => {
       disposed = true;
-      if (import.meta.env.DEV) {
-        delete (window as Window & { __stonksRadarMap?: maplibregl.Map }).__stonksRadarMap;
+      if (shouldExposeMapDebugHook()) {
+        delete (window as EventMapDebugWindow).__stonksRadarMap;
       }
       mapRef.current?.remove();
       mapRef.current = null;
