@@ -2915,6 +2915,7 @@ def _news_event_details(locale: str, generated_at: datetime) -> list[dict[str, A
     ]
     list_items = [_news_list_item(event) for event in events]
     for event in events:
+        event.setdefault("ticker_implications", _seed_ticker_implications(event, locale))
         related = [
             item
             for item in list_items
@@ -2926,6 +2927,32 @@ def _news_event_details(locale: str, generated_at: datetime) -> list[dict[str, A
         ]
         event["related_events"] = related[:3]
     return events
+
+
+def _seed_ticker_implications(event: dict[str, Any], locale: str) -> list[dict[str, str]]:
+    direction = str(event.get("market_direction") or "unclear")
+    if direction not in {"bullish", "bearish", "mixed", "unclear"}:
+        direction = "unclear"
+    confidence = "medium" if float(event.get("confidence") or 0) >= 0.7 else "low"
+    implications: list[dict[str, str]] = []
+    for ticker in event.get("tickers", []):
+        symbol = str(ticker.get("symbol") or "").strip()
+        if not symbol:
+            continue
+        relationship = str(ticker.get("relationship") or "").replace("_", " ")
+        implications.append(
+            {
+                "symbol": symbol,
+                "implication": _t(
+                    locale,
+                    f"{symbol} is linked as {relationship}; review the cited public sources before treating this as ticker-specific evidence.",
+                    f"{symbol}은(는) {relationship} 관계로 연결됩니다. 티커별 근거로 보기 전에 인용된 공개 출처를 확인하세요.",
+                ),
+                "direction": direction,
+                "confidence": confidence,
+            }
+        )
+    return implications
 
 
 def _news_list_item(event: dict[str, Any]) -> dict[str, Any]:
@@ -3924,16 +3951,16 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
     ai_summary_ready = any(
         _env_has(env, key)
         for key in (
-            "LOCAL_LLM_BASE_URL",
+            "NVIDIA_NIM_API_KEY",
+            "NVIDIA_API_KEY",
             "GEMINI_API_KEY",
             "GROQ_API_KEY",
             "CEREBRAS_API_KEY",
             "MISTRAL_API_KEY",
             "OPENROUTER_API_KEY",
-            "HF_TOKEN",
         )
     )
-    summary_status = _t(locale, "ready", "준비됨") if ai_summary_ready else _t(locale, "local LLM needed", "로컬 LLM 필요")
+    summary_status = _t(locale, "ready", "준비됨") if ai_summary_ready else _t(locale, "remote LLM key needed", "원격 LLM 키 필요")
     news_max_age_hours = 24
     news_queries = [
         (
@@ -4836,12 +4863,8 @@ def _source_status() -> dict[str, Any]:
     cerebras_status, cerebras_warning = status_for("CEREBRAS_API_KEY", "CEREBRAS_API_KEY optional; public facts only")
     mistral_status, mistral_warning = status_for("MISTRAL_API_KEY", "MISTRAL_API_KEY optional; public facts only")
     openrouter_status, openrouter_warning = status_for("OPENROUTER_API_KEY", "OPENROUTER_API_KEY optional; public facts only")
-    nvidia_status, nvidia_warning = status_for(("NVIDIA_API_KEY",), "NVIDIA_API_KEY optional; NVIDIA NIM public facts only, with zero paid overflow and normal LLM hard-limit accounting")
-    if _env_has(env, "NVIDIA_NIM_API_KEY"):
-        nvidia_status, nvidia_warning = "ready", None
+    nvidia_status, nvidia_warning = status_for(("NVIDIA_NIM_API_KEY", "NVIDIA_API_KEY"), "NVIDIA_NIM_API_KEY or NVIDIA_API_KEY optional; NVIDIA NIM public facts only, with zero paid overflow and normal LLM hard-limit accounting")
     hf_status, hf_warning = status_for("HF_TOKEN", "HF_TOKEN optional; public facts only")
-    local_status = "ready" if _env_has(env, "LOCAL_LLM_BASE_URL") else "missing_credentials"
-    local_warning = None if local_status == "ready" else "LOCAL_LLM_BASE_URL enables private local research"
 
     providers = [
         ("fred", "official_api", fred_status, "FREE_ONLY", fred_warning),
@@ -4873,7 +4896,6 @@ def _source_status() -> dict[str, Any]:
         ("openrouter", "llm_provider", openrouter_status, "FREE_ONLY", openrouter_warning),
         ("nvidia_nim", "llm_provider", nvidia_status, "FREE_ONLY", nvidia_warning),
         ("huggingface", "llm_provider", hf_status, "FREE_ONLY", hf_warning),
-        ("local", "llm_provider", local_status, "LOCAL_ONLY", local_warning),
     ]
     return {
         "snapshot_age_minutes": 0,

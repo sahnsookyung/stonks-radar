@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
-import { ArrowLeft, FileSearch, Newspaper } from "lucide-react";
+import { ArrowLeft, FileSearch, Newspaper, Sparkles, TrendingUp } from "lucide-react";
 import { NewsEventCard, NewsScoreBadge, SourcePill, formatNewsDate, marketDirectionLabel, regionRelationLabel } from "../components/NewsEventCard";
 import { ErrorState, LoadingState } from "../components/LoadingState";
 import { SnapshotBanner } from "../components/SnapshotBanner";
@@ -22,6 +22,7 @@ export function NewsEventPage() {
   if (query.isLoading) return <LoadingState />;
   if (query.isError || !query.data) return <ErrorState error={query.error} />;
   const event = query.data.data;
+  const tickerImplications = event.ticker_implications ?? [];
 
   return (
     <div className="grid min-w-0 gap-5">
@@ -47,10 +48,49 @@ export function NewsEventPage() {
         </div>
       </section>
 
+      <section className="panel min-w-0 border-accent/40 bg-accentSoft p-5">
+        <div className="flex items-center gap-2 text-sm font-semibold text-accent">
+          <Sparkles className="h-4 w-4" />
+          {isKo ? "AI 기사 분석" : "AI Article Analysis"}
+        </div>
+        <p className="safe-text mt-2 text-sm leading-6 text-ink">
+          {isKo
+            ? "승인된 공개 사실만 사용해 기사 핵심과 티커별 가능한 영향을 사전 생성했습니다."
+            : "Pre-generated from approved public facts only: article essence plus possible ticker implications."}
+        </p>
+        <p className="safe-text mt-2 text-xs leading-5 text-muted">{event.disclaimer}</p>
+      </section>
+
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="grid min-w-0 gap-5">
           <DetailBlock title={isKo ? "무슨 일이 있었나" : "What Happened"} items={event.what_happened} />
           <DetailBlock title={isKo ? "왜 중요한가" : "Why It Matters"} items={event.why_it_matters} />
+          {tickerImplications.length ? (
+            <section className="panel min-w-0 p-5">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-accent" />
+                <h2 className="text-lg font-bold">{isKo ? "티커별 영향" : "Ticker Implications"}</h2>
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {tickerImplications.map((item) => (
+                  <Link
+                    key={`${item.symbol}-${item.implication}`}
+                    to="/$locale/tickers/$symbol"
+                    params={{ locale, symbol: item.symbol }}
+                    className="focus-ring min-h-11 rounded-md border border-line bg-panelAlt p-3 transition hover:border-accent/60"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-bold text-ink">{item.symbol}</span>
+                      <span className="badge border-line bg-paper text-muted">
+                        {marketDirectionLabel(item.direction, locale)} · {item.confidence}
+                      </span>
+                    </div>
+                    <p className="safe-text mt-2 text-sm leading-6 text-muted">{item.implication}</p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          ) : null}
           <DetailBlock title={isKo ? "확인된 사실" : "Known Facts"} items={event.known_facts} />
           <DetailBlock title={isKo ? "불확실성" : "Uncertainties"} items={event.uncertainties} />
           {event.conflicting_reports.length ? <DetailBlock title={isKo ? "상충 보고" : "Conflicting Reports"} items={event.conflicting_reports} /> : null}

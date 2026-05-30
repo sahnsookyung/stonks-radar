@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-30T12:30:53Z",
-  "stale_after": "2026-05-31T00:30:53Z",
-  "hard_expires_at": "2026-06-06T12:30:53Z",
+  "generated_at": "2026-05-30T15:35:31Z",
+  "stale_after": "2026-05-31T03:35:31Z",
+  "hard_expires_at": "2026-06-06T15:35:31Z",
   "object_type": "country_region",
   "object_key": "MIDDLE_EAST_OPEC_GCC",
-  "content_hash": "sha256:67087ce5bdb7b6039b664fcc7807afcbba26ecb3239bb22b09213dda45da2f59",
+  "content_hash": "sha256:35f1899cafd31d09ae4de7c9244ba82a7ef86c245d36e02641d7ca1b0ba382c5",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -170,8 +170,8 @@
         "title": "석유 공급 모니터링을 위한 에너지 재고 일정 활성",
         "summary": "EIA 연계 재고 발표는 공개 전 공식 구조화 데이터로 추적됩니다.",
         "why_it_matters": "재고 서프라이즈는 에너지 주식, 인플레이션 입력값, 지정학 리스크 해석에 영향을 줄 수 있습니다.",
-        "occurred_at": "2026-05-30T12:30:53Z",
-        "published_at": "2026-05-30T12:30:53Z",
+        "occurred_at": "2026-05-30T15:35:31Z",
+        "published_at": "2026-05-30T15:35:31Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -1077,31 +1077,31 @@
       {
         "key": "pentagon_pizza_index",
         "label": "펜타곤 피자 지수",
-        "value": "12.4",
+        "value": "40.1",
         "source": "Pentagon.Pizza",
         "freshness": "fresh",
-        "delay_label": "Pentagon.Pizza 모니터링 지점 18곳 평균 혼잡도; 이상치 1건, 2026-05-30까지",
-        "updated_at": "2026-05-30T12:30:57.355Z",
+        "delay_label": "Pentagon.Pizza 모니터링 지점 18곳 평균 혼잡도; 이상치 0건, 2026-05-30까지",
+        "updated_at": "2026-05-30T15:35:36.046Z",
         "coverage_status": "active",
         "refresh_seconds": 300,
         "unit": "/100",
         "source_url": "https://pentagon.pizza/",
         "points": [
           {
-            "date": "2026-05-30T11:45:53Z",
-            "value": 0.0
+            "date": "2026-05-30T14:50:31Z",
+            "value": 30.0
           },
           {
-            "date": "2026-05-30T12:00:53Z",
-            "value": 11.0
+            "date": "2026-05-30T15:05:31Z",
+            "value": 38.0
           },
           {
-            "date": "2026-05-30T12:15:53Z",
-            "value": 16.0
+            "date": "2026-05-30T15:20:31Z",
+            "value": 42.0
           },
           {
-            "date": "2026-05-30T12:30:53Z",
-            "value": 24.0
+            "date": "2026-05-30T15:35:31Z",
+            "value": 53.0
           }
         ]
       }

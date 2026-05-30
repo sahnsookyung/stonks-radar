@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-30T12:30:53Z",
-  "stale_after": "2026-05-31T00:30:53Z",
-  "hard_expires_at": "2026-06-06T12:30:53Z",
+  "generated_at": "2026-05-30T15:35:31Z",
+  "stale_after": "2026-05-31T03:35:31Z",
+  "hard_expires_at": "2026-06-06T15:35:31Z",
   "object_type": "source_status",
   "object_key": "status",
-  "content_hash": "sha256:700884672afc07884f2b95199472be7e087f6a2a9d069a87dbe8e690af27bffc",
+  "content_hash": "sha256:a3183222c338f0e042885efe3fadb22696d1d5bacaac96b27cc09f31585672ac",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -337,7 +337,7 @@
         "status": "missing_credentials",
         "mode": "FREE_ONLY",
         "last_verified_at": null,
-        "warning": "NVIDIA_API_KEY optional; NVIDIA NIM public facts only, with zero paid overflow and normal LLM hard-limit accounting"
+        "warning": "NVIDIA_NIM_API_KEY or NVIDIA_API_KEY optional; NVIDIA NIM public facts only, with zero paid overflow and normal LLM hard-limit accounting"
       },
       {
         "provider_key": "huggingface",
@@ -346,14 +346,6 @@
         "mode": "FREE_ONLY",
         "last_verified_at": null,
         "warning": "HF_TOKEN optional; public facts only"
-      },
-      {
-        "provider_key": "local",
-        "provider_type": "llm_provider",
-        "status": "missing_credentials",
-        "mode": "LOCAL_ONLY",
-        "last_verified_at": null,
-        "warning": "LOCAL_LLM_BASE_URL enables private local research"
       }
     ],
     "operations": {

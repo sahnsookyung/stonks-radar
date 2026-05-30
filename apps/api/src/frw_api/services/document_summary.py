@@ -51,8 +51,9 @@ async def summarize_public_url(
         schema_key="document_summary",
         schema=DOCUMENT_SUMMARY_SCHEMA,
         locale=locale,
-        allowed_provider_keys=frozenset({"local"}),
-        external_allowed=False,
+        allowed_provider_keys=frozenset({"nvidia_nim", "gemini", "groq", "cerebras", "mistral", "openrouter"}),
+        preferred_provider_keys=("nvidia_nim", "gemini", "groq", "cerebras", "mistral", "openrouter"),
+        external_allowed=True,
         actor_user_id=actor_user_id,
     )
     return await router.run_json(

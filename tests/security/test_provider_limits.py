@@ -58,6 +58,15 @@ def test_quota_guard_denies_before_second_request():
     assert exc_info.value.retry_after_seconds is not None
 
 
+def test_nvidia_nim_default_limit_is_40_rpm():
+    limit = ProviderLimitRegistry().get("nvidia_nim", "chat_completions")
+
+    assert limit is not None
+    request_rules = [rule for rule in limit.rules if rule.unit == "request" and rule.window_seconds == 60]
+    assert request_rules
+    assert request_rules[0].limit == 40
+
+
 @pytest.mark.asyncio
 async def test_provider_request_preserves_retry_after_header():
     ProviderQuotaGuard._default = _guard(10)

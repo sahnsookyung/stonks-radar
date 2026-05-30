@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-30T12:30:53Z",
-  "stale_after": "2026-05-31T00:30:53Z",
-  "hard_expires_at": "2026-06-06T12:30:53Z",
+  "generated_at": "2026-05-30T15:35:31Z",
+  "stale_after": "2026-05-31T03:35:31Z",
+  "hard_expires_at": "2026-06-06T15:35:31Z",
   "object_type": "news_topic",
   "object_key": "news_topic_quantum",
-  "content_hash": "sha256:6b9d484ba82fe4f15d418df34ad26c36e32684cb926db3af5912cb6812adc690",
+  "content_hash": "sha256:afe2885ded5b6adc3783fa244e13fc5ae3c6b0b93500bd96ea0017174268740a",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "quantum",
     "label": "Quantum",
-    "generated_label": "2026-05-30T12:30:53Z",
+    "generated_label": "2026-05-30T15:35:31Z",
     "topic_brief": "Quantum includes 1 approved event cluster(s) built from source-linked public metadata.",
     "events": [
       {
@@ -121,9 +121,9 @@
         "title": "IonQ contract and funding news is classified as quantum-sector ticker context",
         "summary": "IONQ appears in the ticker news layer only when company, filing, or sector-context evidence is present.",
         "event_type": "company_update",
-        "first_seen_at": "2026-05-29T18:30:53Z",
-        "last_seen_at": "2026-05-30T08:30:53Z",
-        "published_at": "2026-05-30T08:30:53Z",
+        "first_seen_at": "2026-05-29T21:35:31Z",
+        "last_seen_at": "2026-05-30T11:35:31Z",
+        "published_at": "2026-05-30T11:35:31Z",
         "freshness": "watch",
         "severity": "medium",
         "confidence": 0.76,
@@ -185,7 +185,7 @@
             "source_key": "ionq_ir",
             "policy_version": 1,
             "title": "IonQ news",
-            "published_at": "2026-05-29T18:30:53Z",
+            "published_at": "2026-05-29T21:35:31Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -195,7 +195,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "IonQ SEC filings",
-            "published_at": "2026-05-29T18:30:53Z",
+            "published_at": "2026-05-29T21:35:31Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           }

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-30T12:30:53Z",
-  "stale_after": "2026-05-31T00:30:53Z",
-  "hard_expires_at": "2026-06-06T12:30:53Z",
+  "generated_at": "2026-05-30T15:35:31Z",
+  "stale_after": "2026-05-31T03:35:31Z",
+  "hard_expires_at": "2026-06-06T15:35:31Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_QUANTINUUM",
-  "content_hash": "sha256:d5c7bbaa404ffb8f26f53498638dd3b9644bf02119468d0b55fd7eee5c48a0a2",
+  "content_hash": "sha256:d4f1e5915d53957bc35ccf5b07526805064385be010d07c8401184ee9b7716e9",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "QUANTINUUM",
     "name": "Quantinuum",
-    "generated_label": "2026-05-30T12:30:53Z",
+    "generated_label": "2026-05-30T15:35:31Z",
     "summary": "No approved news events are currently linked to QUANTINUUM.",
     "events": []
   },

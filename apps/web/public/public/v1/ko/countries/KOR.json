@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-30T12:30:53Z",
-  "stale_after": "2026-05-31T00:30:53Z",
-  "hard_expires_at": "2026-06-06T12:30:53Z",
+  "generated_at": "2026-05-30T15:35:31Z",
+  "stale_after": "2026-05-31T03:35:31Z",
+  "hard_expires_at": "2026-06-06T15:35:31Z",
   "object_type": "country_region",
   "object_key": "KOR",
-  "content_hash": "sha256:4f15d794663e34fd1fcf124209b13a76f58442c3e5693d057b892238e36158ed",
+  "content_hash": "sha256:ac36025a84ee62fbd6b5b88ca2fd09ec1feb4e809ab6b9f37cbf9115d70f794f",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -170,8 +170,8 @@
         "title": "반도체 수출통제 모니터링 강도 유지",
         "summary": "승인된 시드 이벤트가 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
         "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다.",
-        "occurred_at": "2026-05-30T12:30:53Z",
-        "published_at": "2026-05-30T12:30:53Z",
+        "occurred_at": "2026-05-30T15:35:31Z",
+        "published_at": "2026-05-30T15:35:31Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -213,8 +213,8 @@
         "title": "6개 중앙은행 정책회의 일정 시드 적용",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, 브라질 COPOM이 명시적 예상치 라벨과 함께 표시됩니다.",
         "why_it_matters": "캘린더 가시성은 커버리지 공백을 숨기지 않고 오래된 정책 데이터를 드러냅니다.",
-        "occurred_at": "2026-05-30T12:30:53Z",
-        "published_at": "2026-05-30T12:30:53Z",
+        "occurred_at": "2026-05-30T15:35:31Z",
+        "published_at": "2026-05-30T15:35:31Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -1140,31 +1140,31 @@
       {
         "key": "pentagon_pizza_index",
         "label": "펜타곤 피자 지수",
-        "value": "12.4",
+        "value": "40.1",
         "source": "Pentagon.Pizza",
         "freshness": "fresh",
-        "delay_label": "Pentagon.Pizza 모니터링 지점 18곳 평균 혼잡도; 이상치 1건, 2026-05-30까지",
-        "updated_at": "2026-05-30T12:30:57.355Z",
+        "delay_label": "Pentagon.Pizza 모니터링 지점 18곳 평균 혼잡도; 이상치 0건, 2026-05-30까지",
+        "updated_at": "2026-05-30T15:35:36.046Z",
         "coverage_status": "active",
         "refresh_seconds": 300,
         "unit": "/100",
         "source_url": "https://pentagon.pizza/",
         "points": [
           {
-            "date": "2026-05-30T11:45:53Z",
-            "value": 0.0
+            "date": "2026-05-30T14:50:31Z",
+            "value": 30.0
           },
           {
-            "date": "2026-05-30T12:00:53Z",
-            "value": 11.0
+            "date": "2026-05-30T15:05:31Z",
+            "value": 38.0
           },
           {
-            "date": "2026-05-30T12:15:53Z",
-            "value": 16.0
+            "date": "2026-05-30T15:20:31Z",
+            "value": 42.0
           },
           {
-            "date": "2026-05-30T12:30:53Z",
-            "value": 24.0
+            "date": "2026-05-30T15:35:31Z",
+            "value": 53.0
           }
         ]
       }

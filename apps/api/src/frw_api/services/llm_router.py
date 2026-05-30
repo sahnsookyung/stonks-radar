@@ -41,6 +41,7 @@ class LLMTask:
     locale: str | None = None
     glossary_hash: str | None = None
     allowed_provider_keys: frozenset[str] | None = None
+    preferred_provider_keys: tuple[str, ...] = ()
     external_allowed: bool = True
     actor_user_id: str | None = None
     session_id: str | None = None
@@ -99,8 +100,8 @@ class LLMRouter:
                             "role": "system",
                             "content": (
                                 "Repair the previous answer into valid grounded JSON only. "
-                                "Do not add facts. If grounding is impossible, return a JSON object "
-                                "with status='manual_review_required'."
+                                "Do not add facts. The repaired object must satisfy the original schema exactly; "
+                                "do not return a manual-review placeholder."
                             ),
                         },
                     ],
@@ -128,9 +129,14 @@ class LLMRouter:
                     where p.enabled = true
                     order by
                       case
-                        when p.provider_key = 'local' then 0
-                        when p.provider_key = 'nvidia_nim' then 1
-                        else 2
+                        when p.provider_key = 'nvidia_nim' then 0
+                        when p.provider_key = 'gemini' then 1
+                        when p.provider_key = 'groq' then 2
+                        when p.provider_key = 'cerebras' then 3
+                        when p.provider_key = 'mistral' then 4
+                        when p.provider_key = 'openrouter' then 5
+                        when p.provider_key = 'local' then 99
+                        else 50
                       end,
                       coalesce((p.quality_scores ->> :task_type)::numeric, 0) desc,
                       coalesce(p.latency_score, 999) asc
@@ -141,14 +147,24 @@ class LLMRouter:
             .mappings()
             .all()
         )
-        for row in rows:
+        for row in self._order_profiles(rows, task):
             if self._profile_allowed(row, task) and provider_is_available(self.db, row["provider_key"]):
                 return dict(row)
         raise LLMRoutingError("No eligible LLM provider is available for task/data class")
 
+    def _order_profiles(self, rows: list[Any], task: LLMTask) -> list[Any]:
+        if not task.preferred_provider_keys:
+            return list(rows)
+        preferred = {provider_key: index for index, provider_key in enumerate(task.preferred_provider_keys)}
+        return sorted(rows, key=lambda row: preferred.get(row["provider_key"], len(preferred)))
+
     def _profile_allowed(self, profile: dict[str, Any], task: LLMTask) -> bool:
         provider_key = profile["provider_key"]
         if task.allowed_provider_keys is not None and provider_key not in task.allowed_provider_keys:
+            return False
+        if provider_key == "local":
+            return False
+        if provider_key == "nvidia_nim" and profile.get("model_key") != self.settings.nvidia_nim_model_key:
             return False
         if provider_key != "local":
             if not task.external_allowed:
@@ -184,13 +200,7 @@ class LLMRouter:
         provider = profile["provider_key"]
         model = profile["model_key"]
         if provider == "local":
-            return await self._call_openai_compatible(
-                provider,
-                self.settings.local_llm_base_url or "http://localhost:11434",
-                None,
-                model,
-                messages,
-            )
+            raise LLMRoutingError("Local LLM provider is disabled; configure an approved remote provider")
         keys = {
             "openrouter": self.settings.openrouter_api_key,
             "groq": self.settings.groq_api_key,
@@ -202,6 +212,10 @@ class LLMRouter:
             api_key = keys[provider]
             if not api_key:
                 raise LLMRoutingError(f"{provider} credential is not configured")
+            if provider == "nvidia_nim" and model != self.settings.nvidia_nim_model_key:
+                raise LLMRoutingError(
+                    f"NVIDIA NIM key is configured only for {self.settings.nvidia_nim_model_key}"
+                )
             if provider == "openrouter" and not self.settings.paid_usage_allowed:
                 if not (model.endswith(":free") or model == "openrouter/free"):
                     raise LLMRoutingError("OpenRouter requires a free model while paid usage is disabled")

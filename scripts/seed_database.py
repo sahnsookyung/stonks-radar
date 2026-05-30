@@ -7,6 +7,16 @@ from typing import Any
 from sqlalchemy import create_engine, text
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg://frw:frw@localhost:5432/frw")
+NVIDIA_NIM_MODEL_KEY = os.getenv("NVIDIA_NIM_MODEL_KEY", "minimaxai/minimax-m2.7")
+
+LLM_PROVIDER_ENV_KEYS = {
+    "gemini": ("GEMINI_API_KEY",),
+    "groq": ("GROQ_API_KEY",),
+    "cerebras": ("CEREBRAS_API_KEY",),
+    "mistral": ("MISTRAL_API_KEY",),
+    "openrouter": ("OPENROUTER_API_KEY",),
+    "nvidia_nim": ("NVIDIA_NIM_API_KEY", "NVIDIA_API_KEY"),
+}
 
 DATA_SOURCES = [
     ("bls", "U.S. Bureau of Labor Statistics", "official_api", "https://api.bls.gov/publicAPI/v2", "structured_fact_only", "low"),
@@ -306,16 +316,25 @@ def main() -> None:
                             "cerebras": "llama3.1-8b",
                             "mistral": "mistral-small-latest",
                             "openrouter": "openrouter/free",
-                            "nvidia_nim": os.getenv("NVIDIA_NIM_MODEL_KEY", "meta/llama-3.1-8b-instruct"),
+                            "nvidia_nim": NVIDIA_NIM_MODEL_KEY,
                         }.get(key, key),
-                        "privacy_class": "LOCAL_ONLY" if key == "local" else "PUBLIC_FACTS_ONLY",
+                        "privacy_class": "LOCAL_ONLY" if key == "local" else "PUBLIC_SOURCE_TEXT",
                         "billing_mode": billing,
-                        "enabled": key == "local" or (
-                            key == "nvidia_nim"
-                            and bool(os.getenv("NVIDIA_API_KEY") or os.getenv("NVIDIA_NIM_API_KEY"))
-                        ),
+                        "enabled": _llm_profile_enabled(key),
                     },
                 )
+                if key == "nvidia_nim":
+                    conn.execute(
+                        text(
+                            """
+                            update llm_model_profile
+                            set enabled = false
+                            where provider_key = 'nvidia_nim'
+                              and model_key <> :model_key
+                            """
+                        ),
+                        {"model_key": NVIDIA_NIM_MODEL_KEY},
+                    )
         for fact_type, en, ko, schema, predicates, public_default in FACT_TYPES:
             conn.execute(
                 text(
@@ -342,6 +361,23 @@ def main() -> None:
                 ),
                 {"key": key, "value": value, "severity": severity},
             )
+        conn.execute(
+            text(
+                """
+                alter table job_concurrency_limit
+                  drop constraint if exists job_concurrency_limit_scope_type_check
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                alter table job_concurrency_limit
+                  add constraint job_concurrency_limit_scope_type_check
+                  check (scope_type in ('job_type','job_group','source','provider','global'))
+                """
+            )
+        )
         for scope_type, scope_key, max_running in [
             ("job_type", "public_js_render", 1),
             ("job_type", "snapshot_refresh", 1),
@@ -366,6 +402,12 @@ def main() -> None:
                 {"scope_type": scope_type, "scope_key": scope_key, "max_running": max_running},
             )
     print("Seeded database reference data")
+
+
+def _llm_profile_enabled(provider_key: str) -> bool:
+    if provider_key == "local":
+        return False
+    return any(os.getenv(env_key) for env_key in LLM_PROVIDER_ENV_KEYS.get(provider_key, ()))
 
 
 if __name__ == "__main__":

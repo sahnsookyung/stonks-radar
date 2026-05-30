@@ -319,6 +319,7 @@ def _event_detail(item: dict[str, Any], all_items: list[dict[str, Any]], *, loca
                 "이 이벤트는 추적 중인 티커, 지역 또는 거시 주제와 연결되어 있으며 출처 정책 검토를 통과했습니다.",
             )
         ],
+        "ticker_implications": _ticker_implications(item),
         "known_facts": _summary_list(item, "known_facts") or [
             _localized(locale, f"{source_count} public source(s) are linked to this event.", f"공개 출처 {source_count}개가 이 이벤트에 연결되어 있습니다.")
         ],
@@ -330,15 +331,7 @@ def _event_detail(item: dict[str, Any], all_items: list[dict[str, Any]], *, loca
             )
         ],
         "conflicting_reports": [],
-        "market_relevance": {
-            "direction": item["market_direction"],
-            "confidence": "medium" if item["confidence"] >= 0.7 else "low",
-            "reasoning": _localized(
-                locale,
-                "Direction is kept conservative unless the source evidence explicitly supports a directional market claim.",
-                "출처 근거가 명시적으로 방향성 시장 주장을 뒷받침하지 않는 한 방향 판단은 보수적으로 유지됩니다.",
-            ),
-        },
+        "market_relevance": _market_relevance(item, locale),
         "related_events": related,
         "methodology": _localized(
             locale,
@@ -372,6 +365,56 @@ def _summary_list(item: dict[str, Any], key: str) -> list[str]:
     if not isinstance(values, list):
         return []
     return [str(value) for value in values if str(value).strip()]
+
+
+def _ticker_implications(item: dict[str, Any]) -> list[dict[str, str]]:
+    summary_json = item.get("summary_json") or {}
+    values = summary_json.get("ticker_implications") if isinstance(summary_json, dict) else None
+    if not isinstance(values, list):
+        return []
+    implications: list[dict[str, str]] = []
+    for value in values:
+        if not isinstance(value, dict):
+            continue
+        symbol = str(value.get("symbol") or "").upper().strip()
+        implication = str(value.get("implication") or "").strip()
+        direction = str(value.get("direction") or "unclear").strip()
+        confidence = str(value.get("confidence") or "low").strip()
+        if not symbol or not implication:
+            continue
+        implications.append(
+            {
+                "symbol": symbol[:24],
+                "implication": implication[:360],
+                "direction": direction if direction in {"bullish", "bearish", "mixed", "unclear"} else "unclear",
+                "confidence": confidence if confidence in {"low", "medium", "high"} else "low",
+            }
+        )
+    return implications[:8]
+
+
+def _market_relevance(item: dict[str, Any], locale: str) -> dict[str, str]:
+    summary_json = item.get("summary_json") or {}
+    value = summary_json.get("market_relevance") if isinstance(summary_json, dict) else None
+    if isinstance(value, dict):
+        direction = str(value.get("direction") or item["market_direction"])
+        confidence = str(value.get("confidence") or ("medium" if item["confidence"] >= 0.7 else "low"))
+        reasoning = str(value.get("reasoning") or "").strip()
+        if reasoning:
+            return {
+                "direction": direction if direction in {"bullish", "bearish", "mixed", "unclear"} else "unclear",
+                "confidence": confidence if confidence in {"low", "medium", "high"} else "low",
+                "reasoning": reasoning[:500],
+            }
+    return {
+        "direction": str(item["market_direction"]) if str(item["market_direction"]) in {"bullish", "bearish", "mixed", "unclear"} else "unclear",
+        "confidence": "medium" if item["confidence"] >= 0.7 else "low",
+        "reasoning": _localized(
+            locale,
+            "Direction is kept conservative unless the source evidence explicitly supports a directional market claim.",
+            "출처 근거가 명시적으로 방향성 시장 주장을 뒷받침하지 않는 한 방향 판단은 보수적으로 유지됩니다.",
+        ),
+    }
 
 
 def _grouped_snapshot(

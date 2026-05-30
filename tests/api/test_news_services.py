@@ -22,6 +22,7 @@ from frw_api.services.news.snapshot_builder import _reviewed_events
 from frw_api.services.news.source_registry import source_registry
 from frw_api.services.news.facts import public_summary_cited_facts_valid
 from frw_api.services.news.summary_builder import build_summary
+from frw_api.services.news.summaries import NEWS_EVENT_SUMMARY_SCHEMA, _ticker_context_from_facts
 from frw_api.services.news.taxonomy import can_publish_trust_tiers
 from frw_api.services.news.watchlist import watchlist_entity_dicts, watchlist_source_dicts
 from frw_api.services.news.topic_classifier import classify_topics
@@ -422,6 +423,35 @@ def test_fetch_profiles_use_browser_like_headers_when_needed():
 
 def test_page_reader_summary_input_limit_is_configured():
     assert Settings.model_fields["news_summary_input_max_chars"].default == 120_000
+
+
+def test_news_summary_schema_requires_ticker_implications():
+    assert "ticker_implications" in NEWS_EVENT_SUMMARY_SCHEMA["required"]
+    assert NEWS_EVENT_SUMMARY_SCHEMA["properties"]["ticker_implications"]["items"]["required"] == [
+        "symbol",
+        "implication",
+        "direction",
+        "confidence",
+    ]
+
+
+def test_news_summary_ticker_context_uses_structured_facts_only():
+    facts = [
+        {
+            "fact_type": "news_entity_mention",
+            "object_json": {
+                "entity_key": "TSLA",
+                "entity_type": "ticker",
+                "relationship": "direct_subject",
+                "confidence": 0.91,
+            },
+        },
+        {"fact_type": "news_document_metadata", "object_json": {"title": "TSLA mentioned in plain text"}},
+    ]
+
+    assert _ticker_context_from_facts(facts) == [
+        {"symbol": "TSLA", "relationship": "direct_subject", "confidence": 0.91}
+    ]
 
 
 def test_public_summary_citations_must_be_from_event_input_set():

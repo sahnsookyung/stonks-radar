@@ -167,6 +167,12 @@ export interface NewsEventSnapshotData extends NewsEventListItem {
   one_sentence_summary: string;
   what_happened: string[];
   why_it_matters: string[];
+  ticker_implications: {
+    symbol: string;
+    implication: string;
+    direction: NewsMarketDirection;
+    confidence: "low" | "medium" | "high";
+  }[];
   known_facts: string[];
   uncertainties: string[];
   conflicting_reports: string[];

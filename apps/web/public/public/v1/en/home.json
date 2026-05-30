@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-30T12:30:53Z",
-  "stale_after": "2026-05-31T00:30:53Z",
-  "hard_expires_at": "2026-06-06T12:30:53Z",
+  "generated_at": "2026-05-30T15:35:31Z",
+  "stale_after": "2026-05-31T03:35:31Z",
+  "hard_expires_at": "2026-06-06T15:35:31Z",
   "object_type": "home",
   "object_key": "home",
-  "content_hash": "sha256:04ee77d71037e882040ed7d66cb9da99b748f3e1f45ce624341c70c222bf5fd4",
+  "content_hash": "sha256:3797cc8043ce570ad712c6535da6e33dcc880412586ceaf8d63afa9b814136bd",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,11 +113,11 @@
   "data": {
     "headline": "Global market intelligence dashboard",
     "summary": "Snapshot-first research dashboard for public, source-gated intelligence. It highlights monitored sectors, central-bank calendars, scenario baskets, and approved events without personalized advice.",
-    "generated_label": "2026-05-30T12:30:53Z",
+    "generated_label": "2026-05-30T15:35:31Z",
     "snapshot_health": {
       "status": "fresh",
       "age_minutes": 0,
-      "stale_after": "2026-05-31T00:30:53Z",
+      "stale_after": "2026-05-31T03:35:31Z",
       "backend_dependency": "none_for_public_pages"
     },
     "top_events": [
@@ -126,8 +126,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-30T12:30:53Z",
-        "published_at": "2026-05-30T12:30:53Z",
+        "occurred_at": "2026-05-30T15:35:31Z",
+        "published_at": "2026-05-30T15:35:31Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -169,8 +169,8 @@
         "title": "Energy inventory calendar is active for oil supply monitoring",
         "summary": "EIA-linked inventory releases are tracked as official structured data before publication.",
         "why_it_matters": "Inventory surprises can affect energy equities, inflation inputs, and geopolitical risk interpretation.",
-        "occurred_at": "2026-05-30T12:30:53Z",
-        "published_at": "2026-05-30T12:30:53Z",
+        "occurred_at": "2026-05-30T15:35:31Z",
+        "published_at": "2026-05-30T15:35:31Z",
         "country_region_keys": [
           "USA",
           "MIDDLE_EAST_OPEC_GCC"
@@ -207,8 +207,8 @@
         "title": "Central-bank calendar coverage seeded across six policy committees",
         "summary": "FOMC, ECB, BoE, BoJ, BoK, and Brazil COPOM are represented with explicit expectation labels.",
         "why_it_matters": "Calendar visibility reduces silent coverage gaps and makes stale policy data visible.",
-        "occurred_at": "2026-05-30T12:30:53Z",
-        "published_at": "2026-05-30T12:30:53Z",
+        "occurred_at": "2026-05-30T15:35:31Z",
+        "published_at": "2026-05-30T15:35:31Z",
         "country_region_keys": [
           "USA",
           "EUROZONE",
@@ -1114,31 +1114,31 @@
       {
         "key": "pentagon_pizza_index",
         "label": "Pentagon pizza index",
-        "value": "12.4",
+        "value": "40.1",
         "source": "Pentagon.Pizza",
         "freshness": "fresh",
-        "delay_label": "Pentagon.Pizza average busyness across 18 monitored sites; 1 anomaly through 2026-05-30",
-        "updated_at": "2026-05-30T12:30:57.355Z",
+        "delay_label": "Pentagon.Pizza average busyness across 18 monitored sites; 0 anomalies through 2026-05-30",
+        "updated_at": "2026-05-30T15:35:36.046Z",
         "coverage_status": "active",
         "refresh_seconds": 300,
         "unit": "/100",
         "source_url": "https://pentagon.pizza/",
         "points": [
           {
-            "date": "2026-05-30T11:45:53Z",
-            "value": 0.0
+            "date": "2026-05-30T14:50:31Z",
+            "value": 30.0
           },
           {
-            "date": "2026-05-30T12:00:53Z",
-            "value": 11.0
+            "date": "2026-05-30T15:05:31Z",
+            "value": 38.0
           },
           {
-            "date": "2026-05-30T12:15:53Z",
-            "value": 16.0
+            "date": "2026-05-30T15:20:31Z",
+            "value": 42.0
           },
           {
-            "date": "2026-05-30T12:30:53Z",
-            "value": 24.0
+            "date": "2026-05-30T15:35:31Z",
+            "value": 53.0
           }
         ]
       }
@@ -1164,7 +1164,7 @@
             "source": "FINRA",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-30T12:30:53Z"
+            "updated_at": "2026-05-30T15:35:31Z"
           },
           {
             "key": "highest_short_interest_method",
@@ -1174,7 +1174,7 @@
             "source": "FINRA",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-30T12:30:53Z",
+            "updated_at": "2026-05-30T15:35:31Z",
             "source_url": "https://www.finra.org/investors/insights/short-interest"
           }
         ]
@@ -1199,7 +1199,7 @@
             "source": "configuration",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-30T12:30:53Z"
+            "updated_at": "2026-05-30T15:35:31Z"
           }
         ]
       },
@@ -1227,29 +1227,40 @@
             "source_url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE9scGowNXJhVUc4bWI2ZEExaWRYUEw4bkZqcmV1QmVQMzNNWnNkdHJLUFRMQl8zNXc0bTBhUFhlZ3JidzBIUWVvTzJ0d2hHaFdQZ0xDb2pfQmtteUpXQlFhY2k5OA?oc=5"
           },
           {
-            "key": "breaking_market_news_google_geopolitical_b53a9878d197",
-            "label": "Tiny Guyana poised for big Iran oil gains and growth strains - Reuters",
+            "key": "breaking_market_news_google_geopolitical_6058879160bf",
+            "label": "Oil exports through the Strait of Hormuz might not return to levels seen before the Iran war - CNBC",
             "value": "headline",
-            "detail": "Geopolitical market risk; news.google.com; seen Sat, 30 May 2026 10:05:43 GMT",
+            "detail": "Geopolitical market risk; news.google.com; seen Sat, 30 May 2026 13:00:00 GMT",
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-30T10:05:43Z",
+            "updated_at": "2026-05-30T13:00:00Z",
+            "source_url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxPekk4MkNlWndSRXhZTjlGZEpxcnk1Ni00b0FwVnBFa21YTzdOS3pPOWV4d1paR2gwTTFLeDV5ZGd6Y0Z6R20wd3VhM0JCTUJlUTdoUXpWNXRUZDRzOWdGMnN5STZNMGNvSEhDZEc1aTRnbWZVdlRUNjkzWVpRSTBuWHZNWFJ0OWgwOFhPRkhvdHlLOHBHNWJxS0JlWmNHNFBkbEFvTVBVY2J3UdIBrwFBVV95cUxOaFV1VFh0ZVpGR3RhQXoxUVZnX1lFdHRqM2dWZ0NCc3BFSXhXb0FqaWZZYXQ4QUlQNDQ4MmtIWmZxbG82UFotT25IX3JVTV93TVpFeGlHVENBS2dPN0t4aHJ3LTRvUVVRanpic1ZCa3JXLUxoMzFwQ3RBa0ZBb2FLa0lxS240R0dIWGRJYXBCdkt4cFR4eHFqZTJGQ2FGeXlmU1hvTzJuQ1V1SnFLcUVF?oc=5"
+          },
+          {
+            "key": "breaking_market_news_google_geopolitical_b051ce149686",
+            "label": "Tiny Guyana poised for big Iran oil gains and growth strains - Reuters",
+            "value": "headline",
+            "detail": "Geopolitical market risk; news.google.com; seen Sat, 30 May 2026 14:20:16 GMT",
+            "source": "Google News RSS",
+            "freshness": "fresh",
+            "severity": "high",
+            "updated_at": "2026-05-30T14:20:16Z",
             "source_url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxQU3dHcWZTWTJ3cHcyV3VUdHAteUZiTElWMzJtQlM2RC1mZDhsWFh0Sm9uWk9KYzk5akFkeWhtUU55WEliSzc0TXJxN1p0SHNWTi1RY2sxZ3R4alRhWDhqeHlrdFJGcW85UFJFMDN3SF9uaV9sNDVDUl9kV2tpbHd0NldmcnMzX01CUXo0a2lhSzdvMDZRLTREVEpjQzQ1eFpBX2lzQlVDVQ?oc=5"
           },
           {
-            "key": "breaking_market_news_google_geopolitical_eaa28b250164",
-            "label": "An inflation surprise, AI rally and a possible Iran deal fuel markets - Detroit Free Press",
+            "key": "breaking_market_news_google_geopolitical_f6c0b10d2360",
+            "label": "Trump holds meeting to make 'final determination' on Iran deal - BBC",
             "value": "headline",
-            "detail": "Geopolitical market risk; news.google.com; seen Sat, 30 May 2026 11:02:00 GMT",
+            "detail": "Geopolitical market risk; news.google.com; seen Sat, 30 May 2026 11:39:32 GMT",
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-30T11:02:00Z",
-            "source_url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxPMzhfcVJmWkF0RWlHMlFpM2VSdGsySmJUYTA3ZGd1M05uQmY0TUlDS09tYnYwZFN3THpjdi04UXFBYTV2U3NaekxGUkY3cnNIM2hnUmg4UFNrOWFDa0pDa1hDblFJUHBjb093UkVZV1ZqX3Q3ZGswQXZ0cFdCRnBnZ0JKXzM0TTNiOHFXb29Gc1paM1JUVXZ6cEpMVERTMlotZURKNzVEbzI3QQ?oc=5"
+            "updated_at": "2026-05-30T11:39:32Z",
+            "source_url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFAwYmhHcHZwcVZpSDFUckx5d0FkYTVtRHhKZUtyQ1poWDVnQTZITjNtSnZOUHVoNzA2ZHNxWFlCaXRlNEFva0tJVXBkMml0SmNQZXIwUS16SURyQQ?oc=5"
           },
           {
-            "key": "breaking_market_news_google_geopolitical_6d404c0d6af0",
+            "key": "breaking_market_news_google_geopolitical_44c5fc1f719b",
             "label": "Trump demands 'unrestricted shipping' in Strait of Hormuz as Iran touts 'future administration' of the waterway - Yahoo Finance",
             "value": "headline",
             "detail": "Geopolitical market risk; news.google.com; seen Sat, 30 May 2026 10:50:51 GMT",
@@ -1260,26 +1271,15 @@
             "source_url": "https://news.google.com/rss/articles/CBMi9wFBVV95cUxQLTJwZjMzaWJCUmJkVDgtRHdwYVBIeGVpUnozQklxbDQ5MjVZcEQ1eElPWlp4czliQmk5UlpidjNQdjVtOExST0w3LU9VOE5ZUkpZN2tQd0NUVDBmVnVSVnJmWUZ1TXdISDllTmJJYlBuMkVzYjJ4WnV1eU01eVJOak1wUl9Yel9kUGg4b2dGZnRCeC01Y3dnRVhHRVdOc3RZR1YyM1d5LWpFQkdXd1RUazBrd2QzVmdSdzhNQzA3eWxwQ0FZVGxMNWxHdlVaS21qcGwzcnRzY2FWYWctRVZjQVd0ZlZqZWs0V2dXMEljTFdNNU85YnhN?oc=5"
           },
           {
-            "key": "breaking_market_news_google_geopolitical_86255918fd4f",
-            "label": "Analysis: An end to the Iran war may be just the beginning of a new era of U.S. inequality - CNBC",
+            "key": "breaking_market_news_google_geopolitical_c13fb4f6595f",
+            "label": "An inflation surprise, AI rally and a possible Iran deal fuel markets - Detroit Free Press",
             "value": "headline",
-            "detail": "Geopolitical market risk; news.google.com; seen Sat, 30 May 2026 12:00:01 GMT",
+            "detail": "Geopolitical market risk; news.google.com; seen Sat, 30 May 2026 11:02:00 GMT",
             "source": "Google News RSS",
             "freshness": "fresh",
             "severity": "high",
-            "updated_at": "2026-05-30T12:00:01Z",
-            "source_url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxNRW1xY2thRFNhWXVsUUxKczV1MDd2QWFHSjFkVzZqcmJ0MjFVY2tBMFk5ZEsxSWd2bUN1dllkMm42cjZac2ZzcnA2MTNJU3ROcjZOVGNwblNvOU95QmxKVWhKRS14U0kyeDEtOHFKakdFZTM4QnFBMWtIaW96bjM5SzYtbm9IX195a3N5UEFDS3hjTDjSAZgBQVVfeXFMTmt4Z1JMcmNiV21hVnZYYVQ4WUxhRnRPdDlreHlablFyVXZDMndUeWIyeG9qS3d0cW1uQjZCNFJENFY2c3FhVFo3azU0Y29qbVhnb2JpLUtUN2F3VkFxRVBjSlJnOUZ3U29mVXl0d0hBdWdYdjR5LXh4aVhSdTEwVlpmZXZUVDRBRUFVSkJmZ0xVUUljWW9oc1o?oc=5"
-          },
-          {
-            "key": "breaking_market_news_google_geopolitical_ca57bf41030d",
-            "label": "Trump holds meeting to make 'final determination' on Iran deal - BBC",
-            "value": "headline",
-            "detail": "Geopolitical market risk; news.google.com; seen Sat, 30 May 2026 04:19:32 GMT",
-            "source": "Google News RSS",
-            "freshness": "fresh",
-            "severity": "high",
-            "updated_at": "2026-05-30T04:19:32Z",
-            "source_url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFAwYmhHcHZwcVZpSDFUckx5d0FkYTVtRHhKZUtyQ1poWDVnQTZITjNtSnZOUHVoNzA2ZHNxWFlCaXRlNEFva0tJVXBkMml0SmNQZXIwUS16SURyQQ?oc=5"
+            "updated_at": "2026-05-30T11:02:00Z",
+            "source_url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxPMzhfcVJmWkF0RWlHMlFpM2VSdGsySmJUYTA3ZGd1M05uQmY0TUlDS09tYnYwZFN3THpjdi04UXFBYTV2U3NaekxGUkY3cnNIM2hnUmg4UFNrOWFDa0pDa1hDblFJUHBjb093UkVZV1ZqX3Q3ZGswQXZ0cFdCRnBnZ0JKXzM0TTNiOHFXb29Gc1paM1JUVXZ6cEpMVERTMlotZURKNzVEbzI3QQ?oc=5"
           }
         ]
       },
@@ -1302,7 +1302,7 @@
             "source": "Muddy Waters",
             "freshness": "watch",
             "severity": "high",
-            "updated_at": "2026-05-30T12:30:53Z",
+            "updated_at": "2026-05-30T15:35:31Z",
             "source_url": "https://www.muddywatersresearch.com/"
           },
           {
@@ -1313,7 +1313,7 @@
             "source": "Viceroy",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-30T12:30:53Z",
+            "updated_at": "2026-05-30T15:35:31Z",
             "source_url": "https://viceroyresearch.org/"
           },
           {
@@ -1324,7 +1324,7 @@
             "source": "LLM router",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-30T12:30:53Z"
+            "updated_at": "2026-05-30T15:35:31Z"
           },
           {
             "key": "short_research_reports_spruce_point",
@@ -1334,7 +1334,7 @@
             "source": "Spruce Point",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-30T12:30:53Z",
+            "updated_at": "2026-05-30T15:35:31Z",
             "source_url": "https://www.sprucepointcap.com/"
           },
           {
@@ -1345,7 +1345,7 @@
             "source": "Kerrisdale",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-30T12:30:53Z",
+            "updated_at": "2026-05-30T15:35:31Z",
             "source_url": "https://www.kerrisdalecap.com/"
           },
           {
@@ -1356,7 +1356,7 @@
             "source": "Culper",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-30T12:30:53Z",
+            "updated_at": "2026-05-30T15:35:31Z",
             "source_url": "https://culperresearch.com/"
           },
           {
@@ -1367,7 +1367,7 @@
             "source": "Blue Orca",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-30T12:30:53Z",
+            "updated_at": "2026-05-30T15:35:31Z",
             "source_url": "https://www.blueorcacapital.com/"
           },
           {
@@ -1378,7 +1378,7 @@
             "source": "Grizzly",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-30T12:30:53Z",
+            "updated_at": "2026-05-30T15:35:31Z",
             "source_url": "https://grizzlyreports.com/"
           }
         ]
@@ -1403,7 +1403,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-30T12:30:53Z",
+            "updated_at": "2026-05-30T15:35:31Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000201566326000004/xslF345X06/primary_doc.xml"
           },
           {
@@ -1414,7 +1414,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-30T12:30:53Z",
+            "updated_at": "2026-05-30T15:35:31Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000201566726000004/xslF345X06/primary_doc.xml"
           },
           {
@@ -1425,7 +1425,7 @@
             "source": "SEC EDGAR submissions API",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-30T12:30:53Z",
+            "updated_at": "2026-05-30T15:35:31Z",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000180848826000004/xslF345X06/primary_doc.xml"
           },
           {
@@ -1436,7 +1436,7 @@
             "source": "SEC EDGAR",
             "freshness": "watch",
             "severity": "medium",
-            "updated_at": "2026-05-30T12:30:53Z"
+            "updated_at": "2026-05-30T15:35:31Z"
           },
           {
             "key": "trump_filings_ai_summary",
@@ -1446,7 +1446,7 @@
             "source": "LLM router",
             "freshness": "fresh",
             "severity": "medium",
-            "updated_at": "2026-05-30T12:30:53Z"
+            "updated_at": "2026-05-30T15:35:31Z"
           }
         ]
       }

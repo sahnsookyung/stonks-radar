@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-30T12:30:53Z",
-  "stale_after": "2026-05-31T00:30:53Z",
-  "hard_expires_at": "2026-06-06T12:30:53Z",
+  "generated_at": "2026-05-30T15:35:31Z",
+  "stale_after": "2026-05-31T03:35:31Z",
+  "hard_expires_at": "2026-06-06T15:35:31Z",
   "object_type": "country_region",
   "object_key": "TOP10_GDP_2026_WORLD_BANK",
-  "content_hash": "sha256:dee99383b73dfae3eb5040d862ec8cd55c966fc3506cf4c75b0d1a547a95a8d0",
+  "content_hash": "sha256:43cec33be22892bced6781be974f962a6fa5d6007604ced85763cf98429b646b",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -170,8 +170,8 @@
         "title": "Semiconductor export-control monitoring remains elevated",
         "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
-        "occurred_at": "2026-05-30T12:30:53Z",
-        "published_at": "2026-05-30T12:30:53Z",
+        "occurred_at": "2026-05-30T15:35:31Z",
+        "published_at": "2026-05-30T15:35:31Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -1082,31 +1082,31 @@
       {
         "key": "pentagon_pizza_index",
         "label": "Pentagon pizza index",
-        "value": "12.4",
+        "value": "40.1",
         "source": "Pentagon.Pizza",
         "freshness": "fresh",
-        "delay_label": "Pentagon.Pizza average busyness across 18 monitored sites; 1 anomaly through 2026-05-30",
-        "updated_at": "2026-05-30T12:30:57.355Z",
+        "delay_label": "Pentagon.Pizza average busyness across 18 monitored sites; 0 anomalies through 2026-05-30",
+        "updated_at": "2026-05-30T15:35:36.046Z",
         "coverage_status": "active",
         "refresh_seconds": 300,
         "unit": "/100",
         "source_url": "https://pentagon.pizza/",
         "points": [
           {
-            "date": "2026-05-30T11:45:53Z",
-            "value": 0.0
+            "date": "2026-05-30T14:50:31Z",
+            "value": 30.0
           },
           {
-            "date": "2026-05-30T12:00:53Z",
-            "value": 11.0
+            "date": "2026-05-30T15:05:31Z",
+            "value": 38.0
           },
           {
-            "date": "2026-05-30T12:15:53Z",
-            "value": 16.0
+            "date": "2026-05-30T15:20:31Z",
+            "value": 42.0
           },
           {
-            "date": "2026-05-30T12:30:53Z",
-            "value": 24.0
+            "date": "2026-05-30T15:35:31Z",
+            "value": 53.0
           }
         ]
       }

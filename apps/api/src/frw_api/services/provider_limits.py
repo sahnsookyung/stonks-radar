@@ -5,7 +5,7 @@ import json
 import re
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
@@ -107,6 +107,27 @@ class ProviderLimitRegistry:
             (limit.provider_key, limit.endpoint_key): limit
             for limit in limits or DEFAULT_PROVIDER_LIMITS
         }
+        if not limits:
+            self._apply_settings_overrides()
+
+    def _apply_settings_overrides(self) -> None:
+        key = ("nvidia_nim", "chat_completions")
+        limit = self._limits.get(key)
+        if limit is None:
+            return
+        rpm = get_settings().nvidia_nim_rate_limit_per_minute
+        self._limits[key] = replace(
+            limit,
+            rules=(
+                _rule(
+                    "request",
+                    60,
+                    rpm,
+                    limit.rules[0].source_limit if limit.rules else "account/model-specific",
+                    f"{rpm} requests/minute",
+                ),
+            ),
+        )
 
     def get(self, provider_key: str, endpoint_key: str) -> ProviderEndpointLimit | None:
         return (
@@ -743,6 +764,15 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
             _rule("request", 86_400, 25, "50 free-model requests/day before credits", "25 requests/day"),
         ),
         "https://openrouter.ai/docs/api-reference/limits/",
+    ),
+    _limit(
+        "nvidia_nim",
+        "chat_completions",
+        (
+            _rule("request", 60, 40, "account/model-specific; no public header returned by live NIM probe", "40 requests/minute"),
+        ),
+        "https://docs.api.nvidia.com/nim/reference/minimaxai-minimax-m2.7",
+        notes="NVIDIA NIM key is scoped to minimaxai/minimax-m2.7; enforce that model in the router.",
     ),
     _limit(
         "huggingface_hub",

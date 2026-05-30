@@ -35,9 +35,9 @@ class Settings(BaseSettings):
     nvidia_api_key: str | None = None
     nvidia_nim_api_key: str | None = None
     nvidia_nim_base_url: str = "https://integrate.api.nvidia.com/v1"
-    nvidia_nim_model_key: str = "meta/llama-3.1-8b-instruct"
+    nvidia_nim_model_key: str = "minimaxai/minimax-m2.7"
+    nvidia_nim_rate_limit_per_minute: int = Field(default=40, ge=1, le=120)
     hf_token: str | None = None
-    local_llm_base_url: str | None = "http://host.docker.internal:11434"
 
     fred_api_key: str | None = None
     bls_api_key: str | None = None
