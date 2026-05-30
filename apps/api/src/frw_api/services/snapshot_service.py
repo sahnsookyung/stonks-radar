@@ -715,6 +715,8 @@ def _validate_snapshot_file(file_path: Path) -> None:
         "news_ticker": "news_ticker_snapshot.schema.json",
         "news_region": "news_region_snapshot.schema.json",
         "news_topic": "news_topic_snapshot.schema.json",
+        "reference_entity": "reference_entity_snapshot.schema.json",
+        "fund_portfolio": "fund_portfolio_snapshot.schema.json",
     }.get(data.get("object_type"))
     if schema_name is None:
         raise ValueError(f"Unknown snapshot object_type: {data.get('object_type')}")

@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "trackedEntityRef": {
+      "type": "object",
+      "required": ["entity_id", "symbol", "display_symbol", "name", "route_kind", "route_key", "sector_keys", "tags", "source_strength", "freshness"],
+      "properties": {
+        "entity_id": { "type": "string" },
+        "symbol": { "type": "string" },
+        "display_symbol": { "type": "string" },
+        "name": { "type": "string" },
+        "route_kind": { "enum": ["ticker", "reference_entity", "unsupported"] },
+        "route_key": { "type": "string" },
+        "sector_keys": { "type": "array", "items": { "type": "string" } },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "source_strength": { "type": "string" },
+        "freshness": { "enum": ["fresh", "watch", "stale", "unsupported"] }
+      },
+      "additionalProperties": false
+    },
+    "sourceLink": {
+      "type": "object",
+      "required": ["label", "url", "source_key", "policy_version"],
+      "properties": {
+        "label": { "type": "string" },
+        "url": { "type": "string" },
+        "source_key": { "type": "string" },
+        "policy_version": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "tickerCalendarItem": {
+      "type": "object",
+      "required": ["id", "entity_id", "symbol", "title", "catalyst_type", "scheduled_at", "scheduled_local_date", "timezone", "source", "source_url", "freshness", "confidence"],
+      "properties": {
+        "id": { "type": "string" },
+        "entity_id": { "type": "string" },
+        "symbol": { "type": "string" },
+        "title": { "type": "string" },
+        "catalyst_type": { "enum": ["earnings", "filing", "investor_event", "launch_window", "mission_window", "contract_milestone", "company_event", "lockup_warrant", "source_review"] },
+        "scheduled_at": { "type": ["string", "null"] },
+        "scheduled_local_date": { "type": "string" },
+        "timezone": { "type": "string" },
+        "source": { "type": "string" },
+        "source_url": { "type": "string" },
+        "freshness": { "enum": ["fresh", "watch", "stale", "unsupported"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    { "$ref": "./_envelope.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "object_type": { "const": "reference_entity" },
+        "data": {
+          "type": "object",
+          "required": ["entity", "summary", "source_links", "latest_news", "ticker_calendar_items", "related_entities", "caveats", "freshness"],
+          "properties": {
+            "entity": { "$ref": "#/$defs/trackedEntityRef" },
+            "summary": { "type": "string" },
+            "source_links": { "type": "array", "items": { "$ref": "#/$defs/sourceLink" } },
+            "latest_news": { "type": "array", "items": { "$ref": "./_news.schema.json#/$defs/newsEventListItem" } },
+            "ticker_calendar_items": { "type": "array", "items": { "$ref": "#/$defs/tickerCalendarItem" } },
+            "related_entities": { "type": "array", "items": { "$ref": "#/$defs/trackedEntityRef" } },
+            "caveats": { "type": "array", "items": { "type": "string" } },
+            "freshness": { "enum": ["fresh", "watch", "stale", "unsupported"] }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

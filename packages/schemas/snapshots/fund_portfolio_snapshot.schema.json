@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "holding": {
+      "type": "object",
+      "required": ["id", "symbol", "issuer_name", "title_of_class", "cusip", "value_usd", "shares", "share_type", "put_call", "holding_kind", "portfolio_weight", "source_url", "source_lineage"],
+      "properties": {
+        "id": { "type": "string" },
+        "symbol": { "type": ["string", "null"] },
+        "issuer_name": { "type": "string" },
+        "title_of_class": { "type": "string" },
+        "cusip": { "type": "string" },
+        "value_usd": { "type": "number" },
+        "shares": { "type": ["number", "null"] },
+        "share_type": { "type": ["string", "null"] },
+        "put_call": { "type": ["string", "null"], "enum": ["Call", "Put", null] },
+        "holding_kind": { "enum": ["stock", "call", "put", "other"] },
+        "portfolio_weight": { "type": "number" },
+        "source_url": { "type": "string" },
+        "source_lineage": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "filing": {
+      "type": "object",
+      "required": ["source", "form_type", "accession_number", "report_date", "filed_at", "primary_document_url", "information_table_url"],
+      "properties": {
+        "source": { "const": "SEC_EDGAR_13F" },
+        "form_type": { "type": "string" },
+        "accession_number": { "type": "string" },
+        "report_date": { "type": "string" },
+        "filed_at": { "type": "string" },
+        "primary_document_url": { "type": "string" },
+        "information_table_url": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    { "$ref": "./_envelope.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "object_type": { "const": "fund_portfolio" },
+        "data": {
+          "type": "object",
+          "required": ["fund_key", "display_name", "manager_name", "fund_name", "cik", "generated_label", "source_url", "filing", "summary_metrics", "holdings", "top_equity_holdings", "option_holdings", "caveats", "freshness", "source_strength"],
+          "properties": {
+            "fund_key": { "type": "string" },
+            "display_name": { "type": "string" },
+            "manager_name": { "type": "string" },
+            "fund_name": { "type": "string" },
+            "cik": { "type": "string" },
+            "generated_label": { "type": "string" },
+            "source_url": { "type": "string" },
+            "filing": {
+              "anyOf": [
+                { "$ref": "#/$defs/filing" },
+                { "type": "null" }
+              ]
+            },
+            "summary_metrics": {
+              "type": "object",
+              "required": ["total_reported_value_usd", "long_equity_value_usd", "option_notional_value_usd", "holding_count", "equity_holding_count", "option_holding_count"],
+              "properties": {
+                "total_reported_value_usd": { "type": "number" },
+                "long_equity_value_usd": { "type": "number" },
+                "option_notional_value_usd": { "type": "number" },
+                "holding_count": { "type": "integer", "minimum": 0 },
+                "equity_holding_count": { "type": "integer", "minimum": 0 },
+                "option_holding_count": { "type": "integer", "minimum": 0 }
+              },
+              "additionalProperties": false
+            },
+            "holdings": { "type": "array", "items": { "$ref": "#/$defs/holding" } },
+            "top_equity_holdings": { "type": "array", "items": { "$ref": "#/$defs/holding" } },
+            "option_holdings": { "type": "array", "items": { "$ref": "#/$defs/holding" } },
+            "caveats": { "type": "array", "items": { "type": "string" } },
+            "freshness": { "enum": ["fresh", "watch", "stale", "unsupported"] },
+            "source_strength": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}
