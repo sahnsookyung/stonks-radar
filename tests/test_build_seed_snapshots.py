@@ -1,11 +1,15 @@
 import json
 from datetime import datetime, timezone
 from io import BytesIO
-from urllib import error
+from urllib import error, parse
 
 import pytest
 
 from scripts import build_seed_snapshots
+
+
+def _disable_boj_rate(monkeypatch):
+    monkeypatch.setattr(build_seed_snapshots, "_boj_daily_rate_series", lambda *_args, **_kwargs: None)
 
 
 def test_preserve_previous_active_macro_tile_when_refresh_source_is_unavailable(tmp_path, monkeypatch):
@@ -192,8 +196,75 @@ def test_krx_rows_can_fallback_to_sample_api_when_enabled(monkeypatch):
     ]
 
 
+def test_boj_daily_rate_series_uses_latest_non_null_business_day(monkeypatch):
+    build_seed_snapshots._reset_runtime_caches()
+
+    def fake_http_json(url, **_kwargs):
+        params = parse.parse_qs(parse.urlparse(url).query)
+        month = params["startDate"][0]
+        if month != "202605":
+            return {"STATUS": 200, "RESULTSET": []}
+        return {
+            "STATUS": 200,
+            "RESULTSET": [
+                {
+                    "SERIES_CODE": "STRDCLUCON",
+                    "LAST_UPDATE": 20260529,
+                    "VALUES": {
+                        "SURVEY_DATES": [20260526, 20260527, 20260528, 20260529, 20260530],
+                        "VALUES": [0.727, 0.728, None, None, None],
+                    },
+                }
+            ],
+        }
+
+    monkeypatch.setattr(build_seed_snapshots, "_http_json", fake_http_json)
+
+    series = build_seed_snapshots._boj_daily_rate_series("FM01", "STRDCLUCON", datetime(2026, 5, 30, tzinfo=timezone.utc))
+
+    assert series is not None
+    assert series["date"] == "2026-05-27"
+    assert series["last_update"] == "2026-05-29"
+    assert series["value"] == 0.728
+    assert "format=csv" in series["source_url"]
+    assert "code=STRDCLUCON" in series["source_url"]
+
+
+def test_macro_tiles_use_boj_daily_call_rate(monkeypatch):
+    build_seed_snapshots._reset_runtime_caches()
+    monkeypatch.setattr(build_seed_snapshots, "_web_metadata", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_payload", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_summary", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_yahoo_chart_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_stooq_quote_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_treasury_yield_curve_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(build_seed_snapshots, "_mof_jgb_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        build_seed_snapshots,
+        "_boj_daily_rate_series",
+        lambda *_args, **_kwargs: {
+            "date": "2026-05-27",
+            "last_update": "2026-05-29",
+            "value": 0.727,
+            "points": [{"date": "2026-05-26", "value": 0.727}, {"date": "2026-05-27", "value": 0.727}],
+            "source_url": "https://www.stat-search.boj.or.jp/api/v1/getDataCode?format=csv&lang=en&db=FM01&code=STRDCLUCON",
+        },
+    )
+
+    tiles = build_seed_snapshots._macro_tiles("en", datetime(2026, 5, 30, tzinfo=timezone.utc))
+    by_key = {tile["key"]: tile for tile in tiles}
+
+    assert by_key["japan_policy_rate"]["label"] == "BoJ overnight call rate"
+    assert by_key["japan_policy_rate"]["value"] == "0.727"
+    assert by_key["japan_policy_rate"]["source"] == "BoJ Time-Series Data Search"
+    assert by_key["japan_policy_rate"]["coverage_status"] == "active"
+    assert by_key["japan_policy_rate"]["updated_at"] == "2026-05-29T21:00:00Z"
+    assert "actual through 2026-05-27" in by_key["japan_policy_rate"]["delay_label"]
+
+
 def test_macro_tiles_derive_korea_indices_from_krx_index_service(monkeypatch):
     build_seed_snapshots._reset_runtime_caches()
+    _disable_boj_rate(monkeypatch)
     monkeypatch.setenv("KRX_OPEN_API_AUTH_KEY", "test-key")
     monkeypatch.setattr(build_seed_snapshots, "_web_metadata", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_payload", lambda *_args, **_kwargs: None)
@@ -252,6 +323,7 @@ def test_macro_tiles_derive_korea_indices_from_krx_index_service(monkeypatch):
 
 def test_macro_tiles_use_ewy_proxy_when_krx_is_unavailable(monkeypatch):
     build_seed_snapshots._reset_runtime_caches()
+    _disable_boj_rate(monkeypatch)
     monkeypatch.setenv("KRX_OPEN_API_AUTH_KEY", "test-key")
     monkeypatch.setattr(build_seed_snapshots, "_web_metadata", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_payload", lambda *_args, **_kwargs: None)
@@ -303,6 +375,7 @@ def test_macro_tiles_use_ewy_proxy_when_krx_is_unavailable(monkeypatch):
 
 def test_macro_tiles_prefer_current_kospi_and_kodex_quotes(monkeypatch):
     build_seed_snapshots._reset_runtime_caches()
+    _disable_boj_rate(monkeypatch)
     monkeypatch.setattr(build_seed_snapshots, "_web_metadata", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_payload", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_summary", lambda *_args, **_kwargs: None)
@@ -328,6 +401,7 @@ def test_macro_tiles_prefer_current_kospi_and_kodex_quotes(monkeypatch):
 
 def test_macro_tiles_choose_freshest_allowed_public_quote_candidate(monkeypatch):
     build_seed_snapshots._reset_runtime_caches()
+    _disable_boj_rate(monkeypatch)
     monkeypatch.setattr(build_seed_snapshots, "_web_metadata", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_payload", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_summary", lambda *_args, **_kwargs: None)
@@ -452,6 +526,7 @@ def test_twelve_data_quote_series_treats_date_only_payload_as_daily(monkeypatch)
 
 def test_macro_tiles_use_treasury_xml_for_us_rates(monkeypatch):
     build_seed_snapshots._reset_runtime_caches()
+    _disable_boj_rate(monkeypatch)
     monkeypatch.setattr(build_seed_snapshots, "_web_metadata", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_payload", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_pentagon_pizza_summary", lambda *_args, **_kwargs: None)

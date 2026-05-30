@@ -39,6 +39,7 @@ TREASURY_YIELD_FEED_DOC_URL = "https://home.treasury.gov/treasury-daily-interest
 MOF_JGB_CSV_URL = "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/historical/jgbcme_all.csv"
 MOF_JGB_PAGE_URL = "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm"
 ISHARES_EWY_URL = "https://www.ishares.com/us/products/239681/ishares-msci-south-korea-etf"
+BOJ_TIMESERIES_API_URL = "https://www.stat-search.boj.or.jp/api/v1/getDataCode"
 KRX_OPEN_API_BASE_URL = "https://data-dbg.krx.co.kr/svc/apis"
 KRX_SAMPLE_API_BASE_URL = "https://data-dbg.krx.co.kr/svc/sample/apis"
 KRX_INDEX_DAILY_PATH = "idx/krx_dd_trd"
@@ -93,6 +94,7 @@ _FINRA_ROWS_CACHE: dict[str, list[dict[str, Any]]] = {}
 _SEC_SUBMISSIONS_CACHE: dict[str, dict[str, Any] | None] = {}
 _WEB_METADATA_CACHE: dict[str, dict[str, str] | None] = {}
 _ISHARES_FUND_CACHE: dict[str, dict[str, Any] | None] = {}
+_BOJ_SERIES_CACHE: dict[tuple[str, str, str], dict[str, Any] | None] = {}
 _PENTAGON_PIZZA_CACHE: dict[str, dict[str, Any] | None] = {}
 _YAHOO_QUOTE_CACHE: dict[str, dict[str, Any] | None] = {}
 _STOOQ_QUOTE_CACHE: dict[str, dict[str, Any] | None] = {}
@@ -118,6 +120,7 @@ HTTP_PROVIDER_MIN_INTERVAL_SECONDS = {
     "finnhub_quote": 2.1,
     "twelve_data_quote": 10.2,
     "ishares_ewy": 1.0,
+    "boj_timeseries": 0.5,
     "gdelt_doc": 0.5,
 }
 
@@ -499,6 +502,7 @@ def _reset_runtime_caches() -> None:
     _SEC_SUBMISSIONS_CACHE.clear()
     _WEB_METADATA_CACHE.clear()
     _ISHARES_FUND_CACHE.clear()
+    _BOJ_SERIES_CACHE.clear()
     _PENTAGON_PIZZA_CACHE.clear()
     _YAHOO_QUOTE_CACHE.clear()
     _STOOQ_QUOTE_CACHE.clear()
@@ -637,6 +641,96 @@ def _mof_jgb_rows() -> list[dict[str, Any]]:
     reader = csv.DictReader(io.StringIO("\n".join(lines[header_index:])))
     _MOF_JGB_CACHE = [row for row in reader if row.get("Date")]
     return _MOF_JGB_CACHE
+
+
+def _boj_daily_rate_series(db: str, code: str, generated_at: datetime) -> dict[str, Any] | None:
+    months = _recent_boj_months(generated_at)
+    cache_key = (db, code, ",".join(months))
+    if cache_key in _BOJ_SERIES_CACHE:
+        return _BOJ_SERIES_CACHE[cache_key]
+    user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
+    generated_day_jst = (generated_at + timedelta(hours=9)).date()
+    points: list[dict[str, Any]] = []
+    last_update: str | None = None
+
+    for month in reversed(months):
+        params = {
+            "format": "json",
+            "lang": "en",
+            "db": db,
+            "code": code,
+            "startDate": month,
+            "endDate": month,
+        }
+        try:
+            payload = _http_json(
+                f"{BOJ_TIMESERIES_API_URL}?{parse.urlencode(params)}",
+                headers={"Accept": "application/json", "User-Agent": user_agent},
+                timeout=20,
+                throttle_key="boj_timeseries",
+                max_bytes=600_000,
+            )
+        except Exception:
+            continue
+        if not isinstance(payload, dict) or payload.get("STATUS") != 200:
+            continue
+        for series in payload.get("RESULTSET", []):
+            if not isinstance(series, dict) or series.get("SERIES_CODE") != code:
+                continue
+            last_update = _iso_date(str(series.get("LAST_UPDATE") or "")) or last_update
+            values = series.get("VALUES") if isinstance(series.get("VALUES"), dict) else {}
+            dates = values.get("SURVEY_DATES")
+            observed_values = values.get("VALUES")
+            if not isinstance(dates, list) or not isinstance(observed_values, list):
+                continue
+            for raw_date, raw_value in zip(dates, observed_values):
+                date = _iso_date(str(raw_date))
+                value = _numeric_value(raw_value)
+                if not date or value is None:
+                    continue
+                try:
+                    observed_day = datetime.strptime(date, "%Y-%m-%d").date()
+                except ValueError:
+                    continue
+                if observed_day <= generated_day_jst:
+                    points.append({"date": date, "value": value})
+
+    if not points:
+        _BOJ_SERIES_CACHE[cache_key] = None
+        return None
+    points = sorted(points, key=lambda point: point["date"])
+    deduped: dict[str, dict[str, Any]] = {str(point["date"]): point for point in points}
+    points = list(deduped.values())[-8:]
+    latest_point = points[-1]
+    source_month = str(latest_point["date"]).replace("-", "")[:6]
+    source_url = _boj_timeseries_source_url(db, code, source_month)
+    result = {
+        "date": latest_point["date"],
+        "value": latest_point["value"],
+        "points": points,
+        "last_update": last_update or latest_point["date"],
+        "source_url": source_url,
+    }
+    _BOJ_SERIES_CACHE[cache_key] = result
+    return result
+
+
+def _recent_boj_months(generated_at: datetime, lookback_months: int = 3) -> list[str]:
+    day = (generated_at + timedelta(hours=9)).date()
+    year = day.year
+    month = day.month
+    months = []
+    for _ in range(lookback_months):
+        months.append(f"{year:04d}{month:02d}")
+        month -= 1
+        if month == 0:
+            year -= 1
+            month = 12
+    return months
+
+
+def _boj_timeseries_source_url(db: str, code: str, month: str) -> str:
+    return f"{BOJ_TIMESERIES_API_URL}?{parse.urlencode({'format': 'csv', 'lang': 'en', 'db': db, 'code': code, 'startDate': month, 'endDate': month})}"
 
 
 def _krx_series(
@@ -3214,16 +3308,41 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         return scaled
 
     def boj_policy_rate_tile() -> dict[str, Any]:
-        return coverage_gap_tile(
+        series = _boj_daily_rate_series("FM01", "STRDCLUCON", generated_at)
+        source = "BoJ Time-Series Data Search"
+        if not series:
+            return coverage_gap_tile(
+                "japan_policy_rate",
+                "BoJ overnight call rate",
+                "일본은행 무담보 익일물 콜금리",
+                source,
+                "BoJ FM01/STRDCLUCON daily call-rate data unavailable during snapshot build; stale FRED/OECD monthly data remains blocked.",
+                "스냅샷 생성 중 일본은행 FM01/STRDCLUCON 일일 콜금리 데이터를 사용할 수 없어 오래된 FRED/OECD 월간 데이터는 계속 차단했습니다.",
+                "%",
+                OFFICIAL_POLICY_CALENDAR_URLS["bank_of_japan"],
+                43200,
+            )
+        last_update = str(series.get("last_update") or series["date"])
+        detail = _t(
+            locale,
+            f"BoJ FM01/STRDCLUCON daily average actual through {series['date']}; API last updated {last_update}.",
+            f"일본은행 FM01/STRDCLUCON 일일 평균 실제값, {series['date']}까지; API 최종 갱신 {last_update}.",
+        )
+        return tile(
             "japan_policy_rate",
-            "BoJ policy rate",
-            "일본은행 정책금리",
-            "Bank of Japan official releases",
-            "Stale FRED/OECD monthly BoJ policy-rate data is blocked; wire an official current BoJ rate feed before displaying this tile.",
-            "오래된 FRED/OECD 월간 일본은행 정책금리 데이터는 차단했습니다. 이 항목을 표시하려면 일본은행 공식 현재 금리 출처 연결이 필요합니다.",
+            "BoJ overnight call rate",
+            "일본은행 무담보 익일물 콜금리",
+            _format_metric_value(float(series["value"]), 3),
+            source,
+            detail,
+            _observation_freshness(last_update, generated_at, max_age_days=5),
             "%",
-            OFFICIAL_POLICY_CALENDAR_URLS["bank_of_japan"],
+            str(series.get("source_url") or OFFICIAL_POLICY_CALENDAR_URLS["bank_of_japan"]),
+            series.get("points"),
+            "active",
+            rate_event("japan"),
             43200,
+            _observation_updated_at(last_update),
         )
 
     def ewy_korea_proxy_tile() -> dict[str, Any]:
