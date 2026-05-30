@@ -8,16 +8,88 @@
         "object_type": { "const": "sector_page" },
         "data": {
           "type": "object",
-          "required": ["key", "name", "overview", "monitored_entities", "monitored_instruments", "country_region_exposure", "recent_events", "upcoming_calendar_items", "macro_geopolitical_drivers", "reference_indicators", "scenario_baskets", "risks_and_caveats", "freshness", "source_strength"],
+          "required": ["key", "name", "overview", "tracked_entities", "monitored_entities", "monitored_instruments", "country_region_exposure", "recent_events", "upcoming_calendar_items", "ticker_calendar_items", "sector_news", "sector_short_facts", "macro_geopolitical_drivers", "reference_indicators", "scenario_baskets", "risks_and_caveats", "freshness", "source_strength"],
           "properties": {
             "key": { "type": "string" },
             "name": { "type": "string" },
             "overview": { "type": "string" },
+            "tracked_entities": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["entity_id", "symbol", "display_symbol", "name", "route_kind", "route_key", "sector_keys", "tags", "source_strength", "freshness"],
+                "properties": {
+                  "entity_id": { "type": "string" },
+                  "symbol": { "type": "string" },
+                  "display_symbol": { "type": "string" },
+                  "name": { "type": "string" },
+                  "route_kind": { "enum": ["ticker", "reference_entity", "unsupported"] },
+                  "route_key": { "type": "string" },
+                  "sector_keys": { "type": "array", "items": { "type": "string" } },
+                  "tags": { "type": "array", "items": { "type": "string" } },
+                  "source_strength": { "type": "string" },
+                  "freshness": { "enum": ["fresh", "watch", "stale", "unsupported"] }
+                },
+                "additionalProperties": false
+              }
+            },
             "monitored_entities": { "type": "array", "items": { "type": "string" } },
             "monitored_instruments": { "type": "array", "items": { "type": "string" } },
             "country_region_exposure": { "type": "array", "items": { "type": "string" } },
             "recent_events": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/event" } },
             "upcoming_calendar_items": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/calendarItem" } },
+            "ticker_calendar_items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["id", "entity_id", "symbol", "title", "catalyst_type", "scheduled_at", "scheduled_local_date", "timezone", "source", "source_url", "freshness", "confidence"],
+                "properties": {
+                  "id": { "type": "string" },
+                  "entity_id": { "type": "string" },
+                  "symbol": { "type": "string" },
+                  "title": { "type": "string" },
+                  "catalyst_type": { "enum": ["earnings", "filing", "investor_event", "launch_window", "mission_window", "contract_milestone", "company_event", "lockup_warrant", "source_review"] },
+                  "scheduled_at": { "type": ["string", "null"] },
+                  "scheduled_local_date": { "type": "string" },
+                  "timezone": { "type": "string" },
+                  "source": { "type": "string" },
+                  "source_url": { "type": "string" },
+                  "freshness": { "enum": ["fresh", "watch", "stale", "unsupported"] },
+                  "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+                },
+                "additionalProperties": false
+              }
+            },
+            "sector_news": {
+              "type": "array",
+              "items": { "$ref": "./_news.schema.json#/$defs/newsEventListItem" }
+            },
+            "sector_short_facts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["id", "entity_id", "symbol", "fact_type", "dataset", "as_of_date", "retrieved_at", "last_attempted_at", "attempt_status", "value", "unit", "source", "source_url", "provider_observation_key", "freshness", "caveat"],
+                "properties": {
+                  "id": { "type": "string" },
+                  "entity_id": { "type": "string" },
+                  "symbol": { "type": "string" },
+                  "fact_type": { "enum": ["short_interest", "short_volume", "short_research"] },
+                  "dataset": { "type": "string" },
+                  "as_of_date": { "type": "string" },
+                  "retrieved_at": { "type": "string" },
+                  "last_attempted_at": { "type": "string" },
+                  "attempt_status": { "type": "string" },
+                  "value": { "type": ["number", "null"] },
+                  "unit": { "type": "string" },
+                  "source": { "type": "string" },
+                  "source_url": { "type": "string" },
+                  "provider_observation_key": { "type": "string" },
+                  "freshness": { "enum": ["fresh", "watch", "stale", "unsupported"] },
+                  "caveat": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
             "macro_geopolitical_drivers": { "type": "array", "items": { "type": "string" } },
             "reference_indicators": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/metricTile" } },
             "scenario_baskets": { "type": "array" },
