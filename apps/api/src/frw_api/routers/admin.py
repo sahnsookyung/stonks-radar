@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pydantic import BaseModel, HttpUrl
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -11,6 +11,7 @@ from frw_api.db.session import get_db
 from frw_api.services.audit import audit
 from frw_api.services.document_summary import summarize_public_url
 from frw_api.services.fact_validation import FactValidationError, validate_fact_shape
+from frw_api.services.instruments import instrument_detail, refresh_instrument_index, search_instruments
 from frw_api.services.job_queue import enqueue_job, replay_dead_letter
 from frw_api.services.llm_router import LLMRoutingError
 from frw_api.services.provider_budget import set_kill_switch
@@ -58,6 +59,17 @@ class CorrectionRequest(BaseModel):
     summary: str
     status: str
     affected_object_key: str | None = None
+
+
+class InstrumentReviewUpdateRequest(BaseModel):
+    status: str
+    admin_notes: str | None = None
+
+
+class InstrumentRefreshRequest(BaseModel):
+    source: str = "LOCAL_STATIC_INDEX"
+    mode: str = "INCREMENTAL"
+    priority: str = "HIGH"
 
 
 @router.get("/dashboard")
@@ -199,6 +211,111 @@ def sources(
     db: Session = Depends(get_db),
 ):
     return {"items": [dict(row) for row in db.execute(text("select * from data_source order by source_key")).mappings().all()]}
+
+
+@router.get("/instruments/search")
+def admin_instrument_search(
+    q: str = Query(default="", max_length=64),
+    include_advanced: bool = Query(default=True),
+    include_inactive: bool = Query(default=True),
+    _: CurrentUser = Depends(require_role("owner", "admin", "editor", "viewer")),
+):
+    query = q.strip() or "A"
+    return search_instruments(
+        query,
+        limit=25,
+        include_advanced=include_advanced,
+        include_inactive=include_inactive,
+        context="IMPORT_RECONCILIATION",
+    )
+
+
+@router.get("/instruments/review-requests")
+def admin_instrument_review_requests(
+    _: CurrentUser = Depends(require_role("owner", "admin", "editor", "viewer")),
+    db: Session = Depends(get_db),
+):
+    rows = db.execute(
+        text(
+            """
+            select id, user_id, query, context_screen, optional_notes, status, admin_notes,
+                   created_at, updated_at, resolved_at
+            from instrument_review_request
+            order by created_at desc
+            limit 200
+            """
+        )
+    ).mappings().all()
+    return {"items": [dict(row) for row in rows]}
+
+
+@router.post("/instruments/review-requests/{request_id}")
+def admin_update_instrument_review_request(
+    request_id: str,
+    payload: InstrumentReviewUpdateRequest,
+    user: CurrentUser = Depends(require_csrf),
+    db: Session = Depends(get_db),
+):
+    _assert_role(user, "owner", "admin", "editor")
+    if payload.status not in {"queued", "in_review", "resolved", "closed", "rejected"}:
+        raise HTTPException(status_code=400, detail="Invalid review request status")
+    row = db.execute(
+        text(
+            """
+            update instrument_review_request
+            set status = :status,
+                admin_notes = :admin_notes,
+                resolved_by = case when :status in ('resolved','closed','rejected') then :user_id::uuid else resolved_by end,
+                resolved_at = case when :status in ('resolved','closed','rejected') then now() else resolved_at end,
+                updated_at = now()
+            where id = :request_id
+            returning id
+            """
+        ),
+        {
+            "status": payload.status,
+            "admin_notes": payload.admin_notes,
+            "user_id": user.id,
+            "request_id": request_id,
+        },
+    ).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Instrument review request not found")
+    audit(db, user=user, action="instrument_review_request.update", target_table="instrument_review_request", target_pk=request_id, after=payload.model_dump())
+    db.commit()
+    return {"status": "ok"}
+
+
+@router.get("/instruments/{instrument_id}")
+def admin_instrument_detail(
+    instrument_id: str,
+    listing_id: str | None = Query(default=None, max_length=80),
+    _: CurrentUser = Depends(require_role("owner", "admin", "editor", "viewer")),
+):
+    payload = instrument_detail(instrument_id, listing_id=listing_id)
+    if payload is None:
+        raise HTTPException(status_code=404, detail="Instrument not found")
+    return payload
+
+
+@router.post("/instruments/refresh")
+def admin_refresh_instruments(
+    payload: InstrumentRefreshRequest,
+    user: CurrentUser = Depends(require_csrf),
+    db: Session = Depends(get_db),
+):
+    _assert_role(user, "owner", "admin")
+    refresh_result = refresh_instrument_index(source=payload.source, mode=payload.mode)
+    job_id = enqueue_job(
+        db,
+        job_type="instrument_search_index_update",
+        idempotency_key=f"{payload.source}:{payload.mode}",
+        payload={"source": payload.source, "mode": payload.mode, "requested_by": user.id},
+        priority=10 if payload.priority.upper() == "HIGH" else 50,
+    )
+    audit(db, user=user, action="instrument.refresh_queued", target_table="job_queue", target_pk=job_id, after=payload.model_dump())
+    db.commit()
+    return {"status": "refreshed", "job_id": job_id, "refresh": refresh_result}
 
 
 @router.post("/sources")

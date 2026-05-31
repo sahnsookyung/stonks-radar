@@ -36,6 +36,8 @@ def _limit_for_request(request: Request) -> RateLimit | None:
     path = request.url.path
     if path == "/api/auth/login":
         return RateLimit("auth-login", max(5, settings.admin_api_rate_limit_per_minute // 4))
+    if path.startswith("/api/instruments"):
+        return RateLimit("instrument-autocomplete", settings.instrument_autocomplete_ip_rate_limit_per_minute)
     if path.startswith("/api/admin") or path.startswith("/api/auth"):
         return RateLimit("admin", settings.admin_api_rate_limit_per_minute)
     if path.startswith("/api/public"):

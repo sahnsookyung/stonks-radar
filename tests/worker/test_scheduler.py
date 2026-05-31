@@ -249,6 +249,36 @@ def test_news_fetch_job_dispatches_ingestion(monkeypatch):
     assert commits == [True]
 
 
+def test_instrument_refresh_job_rebuilds_local_index(monkeypatch):
+    calls = []
+
+    def fake_refresh(*, source, mode):
+        calls.append({"source": source, "mode": mode})
+        return {"status": "refreshed", "instrument_count": 12, "listing_count": 13}
+
+    heartbeat_count = 0
+
+    async def heartbeat():
+        nonlocal heartbeat_count
+        heartbeat_count += 1
+
+    monkeypatch.setattr("frw_worker.tasks.refresh_instrument_index", fake_refresh)
+
+    result = asyncio.run(
+        handle_job(
+            {
+                "job_type": "instrument_search_index_update",
+                "payload": {"source": "LOCAL_STATIC_INDEX", "mode": "FULL"},
+            },
+            heartbeat,
+        )
+    )
+
+    assert result == {"status": "refreshed", "instrument_count": 12, "listing_count": 13}
+    assert calls == [{"source": "LOCAL_STATIC_INDEX", "mode": "FULL"}]
+    assert heartbeat_count == 1
+
+
 def test_snapshot_refresh_job_builds_and_publishes(monkeypatch):
     calls = []
     commits = []

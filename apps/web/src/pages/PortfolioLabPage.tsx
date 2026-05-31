@@ -1,459 +1,2378 @@
-import { useMemo, useState } from "react";
-import { Activity, AlertTriangle, ArrowRight, Calculator, DatabaseZap, Info, Plus, Trash2 } from "lucide-react";
-import { Link } from "@tanstack/react-router";
-import { FreshnessBadge, SourceBadge } from "../components/Badge";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  type HoldingWeight,
-  type PriceSeries,
-  computePortfolioStats,
-  normalizeWeights
-} from "../lib/portfolio";
+  Activity,
+  AlertTriangle,
+  ArrowRight,
+  BarChart3,
+  BriefcaseBusiness,
+  Calculator,
+  DatabaseZap,
+  FileSpreadsheet,
+  Globe2,
+  Layers3,
+  LineChart,
+  Lock,
+  PieChart,
+  Search,
+  Loader2,
+  Plus,
+  RefreshCcw,
+  ShieldCheck,
+  Target,
+  Trash2,
+  Upload,
+  WalletCards
+} from "lucide-react";
+import {
+  type Dispatch,
+  type KeyboardEvent,
+  type ReactNode,
+  type SetStateAction,
+  useEffect,
+  useId,
+  useMemo,
+  useState
+} from "react";
+import { TermTooltip } from "../components/TermTooltip";
+import {
+  type AssumptionSet,
+  type ExposureRow,
+  type Instrument,
+  type AssetClass,
+  type Portfolio,
+  type TaxLotImpact,
+  type InstrumentSearchResult,
+  analyzePortfolio,
+  calculateFundOverlap,
+  createDemoPortfolio,
+  defaultAssumptions,
+  demoInstruments,
+  INSTRUMENT_SEARCH_QUERY_MAX_LENGTH,
+  instrumentReferenceKeys,
+  resolveInstrumentReference,
+  resolveInstrumentSearchResult,
+  searchInstruments,
+  estimateTaxLotImpact,
+  generateContributionRebalancePlan,
+  runBacktest,
+  runMonteCarlo,
+  validateHoldingsCsv
+} from "../lib/portfolioAtlas";
 import { useLocale } from "../lib/locale";
+import { portfolioTerms } from "../lib/portfolioTerms";
 
-interface HoldingRow {
-  id: string;
-  symbol: string;
-  weight: number;
-}
+type PortfolioSection =
+  | "onboarding"
+  | "dashboard"
+  | "portfolios"
+  | "overview"
+  | "xray"
+  | "atlas"
+  | "builder"
+  | "backtest"
+  | "monte-carlo"
+  | "rebalance"
+  | "fees"
+  | "tax-lots"
+  | "holdings"
+  | "transactions"
+  | "settings-profile"
+  | "settings-assumptions"
+  | "settings-data-sources"
+  | "settings-security"
+  | "glossary";
 
-interface MarketHistoryResponse {
-  status: "ok";
-  provider: string;
-  source_note: string;
-  cache: "hit" | "miss";
-  series: PriceSeries[];
-  warnings: string[];
-}
+const sectionLabels: Record<PortfolioSection, string> = {
+  onboarding: "Onboarding",
+  dashboard: "Cockpit",
+  portfolios: "Portfolios",
+  overview: "Overview",
+  xray: "X-ray",
+  atlas: "Exposure map",
+  builder: "Portfolio builder",
+  backtest: "Backtest",
+  "monte-carlo": "Monte Carlo",
+  rebalance: "Rebalance",
+  fees: "Fees",
+  "tax-lots": "Tax lots",
+  holdings: "Holdings",
+  transactions: "Transactions",
+  "settings-profile": "Profile",
+  "settings-assumptions": "Assumptions",
+  "settings-data-sources": "Data sources",
+  "settings-security": "Security",
+  glossary: "Glossary"
+};
 
-const sampleSeries: PriceSeries[] = [
-  {
-    symbol: "AAPL",
-    points: [
-      { date: "2026-01-02", close: 100 },
-      { date: "2026-01-03", close: 101.5 },
-      { date: "2026-01-04", close: 100.4 },
-      { date: "2026-01-05", close: 103.1 },
-      { date: "2026-01-06", close: 102.7 },
-      { date: "2026-01-07", close: 105.2 },
-      { date: "2026-01-08", close: 104.8 }
-    ]
-  },
-  {
-    symbol: "MSFT",
-    points: [
-      { date: "2026-01-02", close: 100 },
-      { date: "2026-01-03", close: 100.6 },
-      { date: "2026-01-04", close: 101.4 },
-      { date: "2026-01-05", close: 102.6 },
-      { date: "2026-01-06", close: 101.8 },
-      { date: "2026-01-07", close: 103.4 },
-      { date: "2026-01-08", close: 104.1 }
-    ]
-  },
-  {
-    symbol: "TLT",
-    points: [
-      { date: "2026-01-02", close: 100 },
-      { date: "2026-01-03", close: 99.8 },
-      { date: "2026-01-04", close: 100.2 },
-      { date: "2026-01-05", close: 99.6 },
-      { date: "2026-01-06", close: 100.4 },
-      { date: "2026-01-07", close: 100.1 },
-      { date: "2026-01-08", close: 100.9 }
-    ]
-  }
+type ReviewRequestStatus = "queued" | "in-review" | "resolved" | "closed";
+type ManualEditorContext = "HOLDING_ENTRY" | "BUILDER";
+type ManualInstrumentType = "" | Instrument["instrumentType"];
+
+type ManualHoldingPayload = {
+  symbolOrCode: string;
+  name: string;
+  currency: string;
+  assetClass: AssetClass;
+  instrumentType?: ManualInstrumentType;
+  exchange?: string;
+  country?: string;
+  quantity: number;
+  price?: number;
+  marketValue?: number;
+};
+
+type AddHoldingPayload = {
+  instrumentId: string;
+  listingId?: string;
+  manual?: ManualHoldingPayload;
+};
+
+type ManualHoldingDraft = {
+  symbolOrCode: string;
+  name: string;
+  currency: string;
+  assetClass: AssetClass;
+  instrumentType: ManualInstrumentType;
+  exchange: string;
+  country: string;
+  quantityText: string;
+  priceText: string;
+  marketValueText: string;
+};
+
+type InstrumentReviewRequest = {
+  requestId: string;
+  userId: string;
+  query: string;
+  contextScreen: ManualEditorContext;
+  optionalNotes?: string;
+  createdAt: string;
+  status: ReviewRequestStatus;
+};
+
+type InstrumentSearchApiResponse = {
+  results: InstrumentSearchResult[];
+  warnings?: string[];
+  cache?: string;
+  dataFreshness?: {
+    instrumentIndexLastUpdatedAt?: string;
+    status?: string;
+    source?: string;
+  };
+};
+
+const PORTFOLIO_WORKSPACE_STORAGE_VERSION = 1;
+const PORTFOLIO_WORKSPACE_STORAGE_PREFIX = "stonks-radar:portfolio-workspace:";
+const MANUAL_TEXT_MAX_LENGTH = 96;
+const MANUAL_MONEY_MAX = 1_000_000_000_000;
+const MANUAL_QUANTITY_MAX = 1_000_000_000;
+
+const ASSET_CLASS_OPTIONS: AssetClass[] = [
+  "Cash & Cash Equivalents",
+  "Fixed Income",
+  "Equity",
+  "Real Assets",
+  "Alternatives",
+  "Crypto / Digital Assets",
+  "Derivatives / Leveraged Products",
+  "Other Assets",
+  "Liabilities"
 ];
 
-const formulaCards = [
-  {
-    title: "Sharpe ratio",
-    formula: "(annual return - risk-free rate) / annual volatility",
-    use: "Risk-adjusted return when upside and downside volatility are both treated as risk."
-  },
-  {
-    title: "Sortino ratio",
-    formula: "(annual return - target return) / downside deviation",
-    use: "Better when you care more about bad volatility than upside volatility."
-  },
-  {
-    title: "Max drawdown",
-    formula: "lowest portfolio equity / prior peak - 1",
-    use: "Shows the worst peak-to-trough loss over the selected history."
-  },
-  {
-    title: "Free cash flow yield",
-    formula: "free cash flow / market capitalization",
-    use: "A compact valuation sanity check for cash-generative businesses."
-  },
-  {
-    title: "ROIC spread",
-    formula: "return on invested capital - weighted average cost of capital",
-    use: "Useful for judging whether growth is creating or destroying value."
-  },
-  {
-    title: "Altman Z / Beneish M",
-    formula: "multi-factor bankruptcy / earnings-manipulation screens",
-    use: "High-leverage forensic screens before reading filings line by line."
-  }
-];
+const MANUAL_INSTRUMENT_TYPE_OPTIONS: ManualInstrumentType[] = ["", "stock", "etf", "bond", "cash", "crypto", "manual", "leveraged"];
+
+interface PortfolioBuildControls {
+  updateCashBalance: (value: number) => void;
+  updateHoldingQuantity: (holdingId: string, quantity: number) => void;
+  removeHolding: (holdingId: string) => void;
+  addHolding: (holding: AddHoldingPayload) => void;
+  resetPortfolio: () => void;
+}
 
 export function PortfolioLabPage() {
   const locale = useLocale();
-  const isKo = locale === "ko";
-  const [defaultDates] = useState(defaultDateRange);
-  const [holdings, setHoldings] = useState<HoldingRow[]>([
-    { id: "aapl", symbol: "AAPL", weight: 45 },
-    { id: "msft", symbol: "MSFT", weight: 35 },
-    { id: "tlt", symbol: "TLT", weight: 20 }
-  ]);
-  const [start, setStart] = useState(defaultDates.start);
-  const [end, setEnd] = useState(defaultDates.end);
-  const [riskFree, setRiskFree] = useState(4.5);
-  const [target, setTarget] = useState(0);
-  const [marketData, setMarketData] = useState<MarketHistoryResponse>({
-    status: "ok",
-    provider: "sample",
-    source_note: "Illustrative sample only. Fetch live data after provider credentials are configured.",
-    cache: "miss",
-    series: sampleSeries,
-    warnings: ["Sample data is not market data and must not be used for decisions."]
-  });
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const weights: HoldingWeight[] = holdings.map((item) => ({ symbol: item.symbol, weight: item.weight }));
-  const stats = useMemo(
-    () => computePortfolioStats(marketData.series, weights, riskFree / 100, target / 100),
-    [holdings, marketData, riskFree, target]
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const section = sectionFromPath(pathname);
+  const workspacePortfolioId = portfolioIdFromPath(pathname) ?? "demo-growth-income";
+  const initialWorkspace = loadPortfolioWorkspace(workspacePortfolioId);
+  const [loadedWorkspaceId, setLoadedWorkspaceId] = useState(workspacePortfolioId);
+  const [portfolio, setPortfolio] = useState<Portfolio>(() => initialWorkspace?.portfolio ?? createPortfolioForWorkspace(workspacePortfolioId));
+  const [manualInstruments, setManualInstruments] = useState<Instrument[]>(() => initialWorkspace?.manualInstruments ?? []);
+  const [reviewRequests, setReviewRequests] = useState<InstrumentReviewRequest[]>(() => initialWorkspace?.reviewRequests ?? []);
+  const [assumptions, setAssumptions] = useState<AssumptionSet>(() => initialWorkspace?.assumptions ?? defaultAssumptions);
+  const [csvText, setCsvText] = useState("symbol,quantity,price\nAAPL,10,195.40\nVXUS,30,62.10");
+  const [csvErrors, setCsvErrors] = useState<string[]>([]);
+  const instrumentsCatalog = useMemo(() => [...demoInstruments, ...manualInstruments], [manualInstruments]);
+  const analysis = useMemo(() => analyzePortfolio(portfolio, instrumentsCatalog, assumptions), [portfolio, assumptions, instrumentsCatalog]);
+  const needsFullBacktest = section === "backtest";
+  const needsFullMonteCarlo = section === "dashboard" || section === "overview" || section === "monte-carlo";
+  const backtest = useMemo(
+    () =>
+      runBacktest({
+        portfolio,
+        instruments: instrumentsCatalog,
+        assumptions,
+        years: needsFullBacktest ? 10 : 1,
+        monthlyContribution: portfolio.goal.monthlyContribution
+      }),
+    [assumptions, instrumentsCatalog, needsFullBacktest, portfolio]
   );
-  const normalizedWeights = normalizeWeights(weights);
+  const monteCarlo = useMemo(
+    () => runMonteCarlo({ portfolio, instruments: instrumentsCatalog, assumptions, pathCount: needsFullMonteCarlo ? 5000 : 100, seed: 20260531 }),
+    [assumptions, instrumentsCatalog, needsFullMonteCarlo, portfolio]
+  );
+  const rebalancePlan = useMemo(
+    () => generateContributionRebalancePlan(analysis, portfolio.targetAllocation, portfolio.goal.monthlyContribution, assumptions),
+    [analysis, assumptions, portfolio.goal.monthlyContribution, portfolio.targetAllocation]
+  );
+  const taxImpact = useMemo(
+    () => estimateTaxLotImpact(portfolio.taxLots, instrumentsCatalog, "AAPL", 10, "LOWEST_GAIN_FIRST"),
+    [portfolio.taxLots]
+  );
 
-  async function fetchLiveData() {
-    setLoading(true);
-    setError(null);
-    try {
-      const symbols = holdings.map((item) => item.symbol.trim().toUpperCase()).filter(Boolean).join(",");
-      const url = new URL("/api/public/market/history", window.location.origin);
-      url.searchParams.set("symbols", symbols);
-      url.searchParams.set("start", start);
-      url.searchParams.set("end", end);
-      const response = await fetch(url, { headers: { Accept: "application/json" } });
-      const payload = await response.json().catch(() => null);
-      if (!response.ok) {
-        const detail = payload?.detail;
-        throw new Error(typeof detail === "string" ? detail : detail?.message ?? `Request failed: ${response.status}`);
+  useEffect(() => {
+    const saved = loadPortfolioWorkspace(workspacePortfolioId);
+    setPortfolio(saved?.portfolio ?? createPortfolioForWorkspace(workspacePortfolioId));
+    setManualInstruments(saved?.manualInstruments ?? []);
+    setReviewRequests(saved?.reviewRequests ?? []);
+    setAssumptions(saved?.assumptions ?? defaultAssumptions);
+    setLoadedWorkspaceId(workspacePortfolioId);
+  }, [workspacePortfolioId]);
+
+  useEffect(() => {
+    if (loadedWorkspaceId !== workspacePortfolioId) return;
+    savePortfolioWorkspace(workspacePortfolioId, { portfolio, manualInstruments, reviewRequests, assumptions });
+  }, [assumptions, loadedWorkspaceId, manualInstruments, portfolio, reviewRequests, workspacePortfolioId]);
+
+  function updateGoal<K extends keyof Portfolio["goal"]>(key: K, value: Portfolio["goal"][K]) {
+    setPortfolio((current) => ({ ...current, goal: { ...current.goal, [key]: value } }));
+  }
+
+  function updateTarget(assetClass: string, value: number) {
+    setPortfolio((current) => ({
+      ...current,
+      targetAllocation: { ...current.targetAllocation, [assetClass]: Math.max(0, value) / 100 }
+    }));
+  }
+
+  function updateCashBalance(value: number) {
+    setPortfolio((current) => ({ ...current, cashBalance: Math.max(0, value) }));
+  }
+
+  function updateHoldingQuantity(holdingId: string, quantity: number) {
+    setPortfolio((current) => ({
+      ...clearSourceLinkedRecords(current),
+      holdings: current.holdings.map((holding) =>
+        holding.holdingId === holdingId ? { ...holding, quantity: Math.max(0, quantity), source: "manual" } : holding
+      )
+    }));
+  }
+
+  function removeHolding(holdingId: string) {
+    setPortfolio((current) => ({
+      ...clearSourceLinkedRecords(current),
+      holdings: current.holdings.filter((holding) => holding.holdingId !== holdingId)
+    }));
+  }
+
+  function addHolding({ instrumentId, listingId, manual }: AddHoldingPayload) {
+    const normalizedInput = instrumentId.trim().toUpperCase();
+    if (!normalizedInput) return;
+    const manualInstrumentId = manual ? `manual:${normalizedInstrumentId(normalizedInput)}` : normalizedInput;
+    const instrument = manual ? undefined : resolveInstrumentReference(normalizedInput, instrumentsCatalog);
+    const canonicalInstrumentId = manual ? manualInstrumentId : instrument?.instrumentId ?? normalizedInput;
+    if (currentHoldingAlreadyExists(portfolio, canonicalInstrumentId, listingId)) return;
+    if (manual) {
+      setManualInstruments((current) => [
+        ...current.filter((item) => item.instrumentId !== manualInstrumentId),
+        createManualInstrumentFromInput(manual, manualInstrumentId)
+      ]);
+    }
+    setPortfolio((current) => {
+      if (currentHoldingAlreadyExists(current, canonicalInstrumentId, listingId)) return current;
+      const quantity = manual
+        ? manual.quantity
+        : instrument?.instrumentType === "crypto"
+          ? 0.05
+          : instrument
+            ? instrument.currentPrice >= 500
+              ? 1
+              : 10
+            : 1;
+      const normalizedHoldingId = toSafeId(`${canonicalInstrumentId}`);
+      return {
+        ...clearSourceLinkedRecords(current),
+        holdings: [
+          ...current.holdings,
+          {
+            holdingId: `manual-${normalizedHoldingId}`,
+            portfolioId: current.portfolioId,
+            accountId: "taxable",
+            instrumentId: canonicalInstrumentId,
+            listingId: listingId ?? canonicalInstrumentId,
+            quantity,
+            currency: manual?.currency?.toUpperCase() ?? instrument?.currency ?? "USD",
+            manualPrice: manual?.price,
+            manualMarketValue: manual?.marketValue,
+            source: "manual"
+          }
+        ]
+      };
+    });
+  }
+
+  function createManualInstrumentFromInput(manual: ManualHoldingPayload, instrumentId: string): Instrument {
+    const symbol = cleanManualText(manual.symbolOrCode).toUpperCase() || "MANUAL";
+    const currency = cleanCurrency(manual.currency);
+    const country = cleanManualText(manual.country || "Unknown") || "Unknown";
+    const exchange = cleanManualText(manual.exchange || "Manual") || "Manual";
+    const hasManualPrice = manual.marketValue !== undefined || manual.price !== undefined;
+    const marketPrice = manual.marketValue !== undefined && manual.quantity > 0 ? manual.marketValue / manual.quantity : manual.price ?? 0;
+    const listingId = `${exchange}:${symbol}`;
+    return {
+      instrumentId,
+      symbol,
+      name: cleanManualText(manual.name) || symbol,
+      exchange,
+      instrumentType: manual.instrumentType || "manual",
+      assetClass: manual.assetClass,
+      subAssetClass: "User-provided",
+      country,
+      domicileCountry: country,
+      currency,
+      sector: "Unclassified",
+      industry: "Unclassified",
+      theme: ["User-provided"],
+      expenseRatio: 0,
+      dataQualityScore: hasManualPrice ? 0.4 : 0.2,
+      currentPrice: marketPrice,
+      previousClose: marketPrice,
+      priceAsOf: new Date().toISOString().slice(0, 10),
+      priceQuality: hasManualPrice ? "USER_PROVIDED" : "UNAVAILABLE",
+      identifiers: [{ type: "LOCAL_CODE", value: symbol }],
+      aliases: [cleanManualText(manual.name)].filter(Boolean),
+      listings: [{ listingId, symbol, exchange, country, currency, localCode: symbol, isPrimary: true, isActive: true }],
+      primaryListingId: listingId,
+      isActive: true
+    };
+  }
+
+  function currentHoldingAlreadyExists(currentPortfolio: Portfolio, instrumentIdentifier: string, listingId?: string) {
+    return currentPortfolio.holdings.some((holding) =>
+      listingId ? holding.listingId === listingId : holding.instrumentId === instrumentIdentifier
+    );
+  }
+
+  function requestInstrumentReview(query: string, contextScreen: ManualEditorContext) {
+    const normalizedQuery = query.trim();
+    if (!normalizedQuery) return;
+    const requestId = `review-${toSafeId(normalizedQuery)}-${Date.now()}`;
+    setReviewRequests((current) => {
+      if (
+        current.some(
+          (item) => item.query.toLowerCase() === normalizedQuery.toLowerCase() && item.contextScreen === contextScreen && item.status === "queued"
+        )
+      ) {
+        return current;
       }
-      setMarketData(payload as MarketHistoryResponse);
-    } catch (exc) {
-      setError(exc instanceof Error ? exc.message : "Failed to load market data");
-    } finally {
-      setLoading(false);
+      return [
+        ...current,
+        {
+          requestId,
+          userId: "demo-user",
+          query: normalizedQuery,
+          contextScreen,
+          createdAt: new Date().toISOString(),
+          status: "queued"
+        }
+      ];
+    });
+    void fetch("/api/instruments/review-requests", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: normalizedQuery, context_screen: contextScreen })
+    }).catch(() => {
+      // Local review state is retained when the API is unavailable in static/demo mode.
+    });
+  }
+
+  function resetPortfolio() {
+    setPortfolio(createPortfolioForWorkspace(workspacePortfolioId));
+    setManualInstruments([]);
+    setReviewRequests([]);
+    setCsvErrors([]);
+  }
+
+  function importCsv() {
+    const result = validateHoldingsCsv(csvText, {
+      portfolioId: portfolio.portfolioId,
+      knownSymbols: instrumentsCatalog.flatMap(instrumentReferenceKeys),
+      rejectUnknownSymbols: false,
+      maxBytes: 1_000_000,
+      maxRows: 500
+    });
+    setCsvErrors(result.errors);
+    if (!result.errors.length && result.holdings.length) {
+      setPortfolio((current) => ({
+        ...clearSourceLinkedRecords(current),
+        holdings: result.holdings.map((holding) => ({
+          ...holding,
+          portfolioId: current.portfolioId,
+          ...(() => {
+            const resolved = resolveInstrumentSearchResult(holding.instrumentId, instrumentsCatalog);
+            return resolved
+              ? {
+                  instrumentId: resolved.instrumentId,
+                  listingId: resolved.listingId,
+                  currency: resolved.currency
+                }
+              : { instrumentId: holding.instrumentId };
+          })()
+        }))
+      }));
     }
   }
 
   return (
-    <div className="grid min-w-0 gap-7">
-      <section className="flex min-w-0 flex-wrap items-end justify-between gap-5">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-accent">
-            <Calculator className="h-4 w-4" />
-            {isKo ? "포트폴리오 실험실" : "Portfolio lab"}
-          </div>
-          <h1 className="safe-text mt-3 max-w-4xl text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
-            {isKo ? "샤프와 소르티노를 즉시 계산" : "Sharpe and Sortino, without spreadsheet fog"}
-          </h1>
-          <p className="safe-text mt-3 max-w-4xl text-base leading-7 text-muted md:text-lg md:leading-8">
-            {isKo
-              ? "티커, 비중, 기간, 무위험 수익률을 입력하면 서버측 시장 데이터 프록시 또는 예시 데이터로 리스크 조정 성과를 계산합니다."
-              : "Enter tickers, weights, dates, and a risk-free rate. The tool uses the server-side market-data proxy when keys are configured, with an explicit sample mode until then."}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2.5">
-          <FreshnessBadge value={marketData.provider === "sample" ? "watch" : "fresh"} />
-          <SourceBadge label={`provider: ${marketData.provider}`} />
-          <SourceBadge label={`cache: ${marketData.cache}`} />
-        </div>
-      </section>
+    <div className="grid min-w-0 gap-6">
+      <PortfolioHeader portfolio={portfolio} section={section} />
+      <PortfolioNav active={section} portfolioId={portfolio.portfolioId} />
+      <ComplianceBanner />
 
-      <section className="grid gap-3 md:grid-cols-2">
-        <Link
-          to="/$locale/funds/$fundKey"
-          params={{ locale, fundKey: "situational-awareness" }}
-          className="focus-ring panel grid min-h-32 gap-2 p-5 hover:border-accent"
-        >
-          <div className="flex items-center gap-2 text-sm font-semibold uppercase text-accent">
-            <DatabaseZap className="h-4 w-4" />
-            {isKo ? "공개 13F 포트폴리오" : "Public 13F portfolio"}
-          </div>
-          <h2 className="safe-text text-xl font-bold">
-            {isKo ? "레오폴드 아셴브레너 / Situational Awareness" : "Leopold Aschenbrenner / Situational Awareness"}
-          </h2>
-          <p className="safe-text text-sm leading-6 text-muted">
-            {isKo
-              ? "SEC EDGAR XML 정보표에서 지연 분기 보유 종목을 재구성합니다."
-              : "Reconstructs delayed quarterly holdings from SEC EDGAR XML information tables."}
-          </p>
-          <span className="inline-flex items-center gap-2 text-sm font-semibold text-accent">
-            {isKo ? "열기" : "Open"}
-            <ArrowRight className="h-4 w-4" />
-          </span>
-        </Link>
-        <Link
-          to="/$locale/trump-filings"
-          params={{ locale }}
-          className="focus-ring panel grid min-h-32 gap-2 p-5 hover:border-accent"
-        >
-          <div className="flex items-center gap-2 text-sm font-semibold uppercase text-accent">
-            <Info className="h-4 w-4" />
-            {isKo ? "공개 공시 데이터베이스" : "Public disclosure database"}
-          </div>
-          <h2 className="safe-text text-xl font-bold">{isKo ? "트럼프 공개 주식 공시" : "Trump public stock disclosures"}</h2>
-          <p className="safe-text text-sm leading-6 text-muted">
-            {isKo
-              ? "SEC/OGE 원문 연결 거래 행과 재구성 한계를 같이 표시합니다."
-              : "Shows source-linked SEC/OGE transaction rows with reconstruction limits kept visible."}
-          </p>
-          <span className="inline-flex items-center gap-2 text-sm font-semibold text-accent">
-            {isKo ? "열기" : "Open"}
-            <ArrowRight className="h-4 w-4" />
-          </span>
-        </Link>
-      </section>
+      {section === "onboarding" ? (
+        <OnboardingSection csvText={csvText} setCsvText={setCsvText} csvErrors={csvErrors} importCsv={importCsv} />
+      ) : null}
+      {section === "dashboard" || section === "overview" ? (
+        <DashboardSection portfolio={portfolio} analysis={analysis} monteCarlo={monteCarlo} rebalancePlan={rebalancePlan} />
+      ) : null}
+      {section === "portfolios" ? <PortfoliosSection portfolio={portfolio} analysis={analysis} /> : null}
+      {section === "xray" || section === "atlas" ? (
+        <AtlasSection
+          portfolio={portfolio}
+          instrumentCatalog={instrumentsCatalog}
+          analysis={analysis}
+          updateCashBalance={updateCashBalance}
+          updateHoldingQuantity={updateHoldingQuantity}
+          removeHolding={removeHolding}
+          addHolding={addHolding}
+          resetPortfolio={resetPortfolio}
+          reviewRequests={reviewRequests}
+          onRequestInstrumentReview={(query) => requestInstrumentReview(query, "HOLDING_ENTRY")}
+        />
+      ) : null}
+      {section === "builder" ? (
+        <BuilderSection
+          portfolio={portfolio}
+          instrumentCatalog={instrumentsCatalog}
+          analysis={analysis}
+          updateGoal={updateGoal}
+          updateTarget={updateTarget}
+          updateCashBalance={updateCashBalance}
+          updateHoldingQuantity={updateHoldingQuantity}
+          removeHolding={removeHolding}
+          addHolding={addHolding}
+          resetPortfolio={resetPortfolio}
+          reviewRequests={reviewRequests}
+          onRequestInstrumentReview={(query) => requestInstrumentReview(query, "BUILDER")}
+        />
+      ) : null}
+      {section === "backtest" ? <BacktestSection result={backtest} /> : null}
+      {section === "monte-carlo" ? <MonteCarloSection result={monteCarlo} portfolio={portfolio} updateGoal={updateGoal} /> : null}
+      {section === "rebalance" ? <RebalanceSection plan={rebalancePlan} analysis={analysis} /> : null}
+      {section === "fees" ? <FeesSection analysis={analysis} assumptions={assumptions} setAssumptions={setAssumptions} /> : null}
+      {section === "tax-lots" ? <TaxLotsSection portfolio={portfolio} taxImpact={taxImpact} /> : null}
+      {section === "holdings" ? <HoldingsSection portfolio={portfolio} analysis={analysis} instrumentCatalog={instrumentsCatalog} /> : null}
+      {section === "transactions" ? (
+        <TransactionsSection portfolio={portfolio} csvText={csvText} setCsvText={setCsvText} csvErrors={csvErrors} importCsv={importCsv} />
+      ) : null}
+      {section.startsWith("settings") ? <SettingsSection section={section} assumptions={assumptions} setAssumptions={setAssumptions} /> : null}
+      {section === "glossary" ? <GlossarySection /> : null}
 
-      <section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(360px,0.85fr)_minmax(0,1.15fr)]">
-        <div className="grid min-w-0 gap-4">
-          <div className="panel p-5">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <h2 className="font-semibold">{isKo ? "보유 종목" : "Holdings"}</h2>
-                <p className="mt-1 text-xs leading-5 text-muted">
-                  {isKo ? "비중은 자동으로 100%로 정규화됩니다." : "Weights are normalized to 100% automatically."}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="secondary-action min-h-11 px-3 py-2"
-                onClick={() =>
-                  setHoldings((items) => [
-                    ...items,
-                    { id: crypto.randomUUID(), symbol: "", weight: 0 }
-                  ])
-                }
-              >
-                <Plus className="h-4 w-4" />
-                {isKo ? "추가" : "Add"}
-              </button>
-            </div>
-            <div className="grid gap-3">
-              {holdings.map((holding) => (
-                <div key={holding.id} className="grid grid-cols-[minmax(0,1fr)_88px_44px] gap-2 sm:grid-cols-[minmax(0,1fr)_96px_44px]">
-                  <input
-                    className="input-control"
-                    value={holding.symbol}
-                    aria-label="Ticker symbol"
-                    onChange={(event) =>
-                      setHoldings((items) =>
-                        items.map((item) =>
-                          item.id === holding.id ? { ...item, symbol: event.target.value.toUpperCase() } : item
-                        )
-                      )
-                    }
-                  />
-                  <input
-                    className="input-control"
-                    type="number"
-                    min="0"
-                    value={holding.weight}
-                    aria-label="Portfolio weight"
-                    onChange={(event) =>
-                      setHoldings((items) =>
-                        items.map((item) =>
-                          item.id === holding.id ? { ...item, weight: Number(event.target.value) } : item
-                        )
-                      )
-                    }
-                  />
-                  <button
-                    type="button"
-                    className="secondary-action h-11 min-w-11 px-0 py-0"
-                    aria-label="Remove holding"
-                    onClick={() => setHoldings((items) => items.filter((item) => item.id !== holding.id))}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="panel p-5">
-            <h2 className="font-semibold">{isKo ? "데이터와 가정" : "Data and assumptions"}</h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="grid gap-1 text-xs font-semibold uppercase text-muted">
-                Start
-                <input className="input-control" type="date" value={start} onChange={(event) => setStart(event.target.value)} />
-              </label>
-              <label className="grid gap-1 text-xs font-semibold uppercase text-muted">
-                End
-                <input className="input-control" type="date" value={end} onChange={(event) => setEnd(event.target.value)} />
-              </label>
-              <label className="grid gap-1 text-xs font-semibold uppercase text-muted">
-                Risk-free %
-                <input className="input-control" type="number" step="0.1" value={riskFree} onChange={(event) => setRiskFree(Number(event.target.value))} />
-              </label>
-              <label className="grid gap-1 text-xs font-semibold uppercase text-muted">
-                Sortino target %
-                <input className="input-control" type="number" step="0.1" value={target} onChange={(event) => setTarget(Number(event.target.value))} />
-              </label>
-            </div>
-            <button type="button" className="primary-action mt-4 w-full" disabled={loading} onClick={fetchLiveData}>
-              <DatabaseZap className="h-4 w-4" />
-              {loading ? (isKo ? "불러오는 중" : "Fetching") : isKo ? "시장 데이터 가져오기" : "Fetch market data"}
-            </button>
-            {error ? (
-              <div className="signal-warning mt-4 flex min-w-0 gap-2 px-4 py-3 text-sm leading-6">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                <span className="safe-text min-w-0">{error}. Configure `TWELVE_DATA_API_KEY`, `ALPHA_VANTAGE_API_KEY`, or `FMP_API_KEY` to enable live history.</span>
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="grid min-w-0 gap-4">
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Metric label="Sharpe" value={formatRatio(stats?.sharpeRatio)} />
-            <Metric label="Sortino" value={formatRatio(stats?.sortinoRatio)} />
-            <Metric label="Annual return" value={formatPercent(stats?.annualizedReturn)} />
-            <Metric label="Max drawdown" value={formatPercent(stats?.maxDrawdown)} tone="risk" />
-          </section>
-
-          <section className="panel p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h2 className="text-lg font-semibold">{isKo ? "계산 결과" : "Calculation detail"}</h2>
-                <p className="safe-text mt-1 text-sm leading-6 text-muted">{marketData.source_note}</p>
-              </div>
-              {stats ? <SourceBadge label={`${stats.observationCount} aligned returns`} /> : <FreshnessBadge value="unsupported" />}
-            </div>
-            {marketData.warnings.length ? (
-              <div className="mt-4 flex min-w-0 gap-2 rounded-md border border-line bg-panelAlt px-4 py-3 text-sm leading-6 text-muted">
-                <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                <span className="safe-text min-w-0">{marketData.warnings.join(" ")}</span>
-              </div>
-            ) : null}
-            <div className="mt-5 grid gap-2 md:hidden">
-              {holdings.map((holding) => {
-                const symbol = holding.symbol.trim().toUpperCase();
-                const asset = stats?.assetReturns.find((item) => item.symbol === symbol);
-                return (
-                  <article key={holding.id} className="rounded-md border border-line bg-panelAlt p-3">
-                    <div className="safe-text text-sm font-semibold">{symbol || "n/a"}</div>
-                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs leading-5 text-muted">
-                      <div>
-                        <div className="font-semibold uppercase">Weight</div>
-                        <div className="text-ink">{formatPercent(normalizedWeights.get(symbol))}</div>
-                      </div>
-                      <div>
-                        <div className="font-semibold uppercase">Return</div>
-                        <div className="text-ink">{formatPercent(asset?.cumulativeReturn)}</div>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-            <div className="mt-5 hidden overflow-x-auto md:block" data-allow-horizontal-scroll aria-label="Portfolio calculation detail table">
-              <table className="min-w-full text-left text-sm">
-                <thead className="text-xs uppercase text-muted">
-                  <tr>
-                    <th className="py-2 pr-3">Ticker</th>
-                    <th className="py-2 pr-3">Weight</th>
-                    <th className="py-2 pr-3">Period return</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {holdings.map((holding) => {
-                    const symbol = holding.symbol.trim().toUpperCase();
-                    const asset = stats?.assetReturns.find((item) => item.symbol === symbol);
-                    return (
-                      <tr key={holding.id}>
-                        <td className="py-3 pr-3 font-semibold">{symbol || "n/a"}</td>
-                        <td className="py-3 pr-3">{formatPercent(normalizedWeights.get(symbol))}</td>
-                        <td className="py-3 pr-3">{formatPercent(asset?.cumulativeReturn)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </div>
-      </section>
-
-      <section>
-        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2 text-sm font-semibold text-accent">
-              <Activity className="h-4 w-4" />
-              {isKo ? "평가 공식" : "Useful evaluation formulas"}
-            </div>
-              <p className="safe-text mt-1 text-sm leading-6 text-muted">
-              {isKo
-                ? "이 공식은 순위와 대시보드 설명에 활용할 수 있는 리서치 도구입니다."
-                : "These are research tools for ranking, triage, and explaining why a stock deserves deeper work."}
-            </p>
-          </div>
-          <Link to="/$locale/sources" params={{ locale }} className="secondary-action py-2">
-            {isKo ? "출처 보기" : "View sources"}
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {formulaCards.map((card) => (
-            <article key={card.title} className="panel p-5">
-              <h3 className="font-semibold">{card.title}</h3>
-              <p className="safe-text mt-2 rounded-md border border-line bg-panelAlt px-3 py-2 font-mono text-xs text-ink">
-                {card.formula}
-              </p>
-              <p className="safe-text mt-3 text-sm leading-6 text-muted">{card.use}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+      <DataQualityPanel issues={analysis.dataQualityIssues} />
     </div>
   );
 }
 
-function Metric({ label, value, tone = "normal" }: { label: string; value: string; tone?: "normal" | "risk" }) {
+function PortfolioHeader({ portfolio, section }: { portfolio: Portfolio; section: PortfolioSection }) {
+  const locale = useLocale();
   return (
-    <article className="panel min-w-0 p-5">
-      <div className="text-xs font-semibold uppercase text-muted">{label}</div>
-      <div className={`safe-text mt-2 text-2xl font-bold sm:text-3xl ${tone === "risk" ? "text-warning" : "text-ink"}`}>{value}</div>
-    </article>
+    <section className="panel grid gap-5 p-4 md:grid-cols-[1.5fr_1fr] md:p-5">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-accent">
+          <Calculator className="h-4 w-4" />
+          {locale === "ko" ? "포트폴리오 빌더" : "Portfolio Builder"}
+        </div>
+        <h1 className="safe-text mt-3 text-3xl font-bold leading-tight md:text-5xl">
+          {sectionLabels[section]}
+        </h1>
+        <p className="safe-text mt-3 max-w-5xl text-sm leading-6 text-muted md:text-base md:leading-7">
+          {portfolio.name}: an editable, free-data, daily-resolution planning workspace. It tracks assumptions,
+          quality limits, contribution-first rebalancing, tax-lot estimates, and queued heavy work without brokerage execution.
+        </p>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <StatusPill label="Mode" value={portfolio.isDemo ? "editable sample" : "private workspace"} />
+        <StatusPill label="Data" value="daily/delayed" />
+        <StatusPill label="Execution" value="no trading" />
+        <StatusPill label="Storage" value={portfolio.isDemo ? "demo browser storage" : "in-memory only"} />
+      </div>
+    </section>
   );
 }
 
-function formatPercent(value: number | undefined) {
-  if (value == null || !Number.isFinite(value)) return "n/a";
-  return `${(value * 100).toFixed(1)}%`;
+function PortfolioNav({ active, portfolioId }: { active: PortfolioSection; portfolioId: string }) {
+  const locale = useLocale();
+  const navigate = useNavigate();
+  const primary = [
+    ["dashboard", "Cockpit", `/${locale}/dashboard`],
+    ["portfolios", "Portfolios", `/${locale}/portfolios`],
+    ["xray", "X-ray", `/${locale}/portfolios/${portfolioId}/xray`],
+    ["atlas", "Exposure", `/${locale}/portfolios/${portfolioId}/atlas`],
+    ["builder", "Build", `/${locale}/portfolios/${portfolioId}/builder`],
+    ["backtest", "Backtest", `/${locale}/portfolios/${portfolioId}/backtest`],
+    ["monte-carlo", "Monte Carlo", `/${locale}/portfolios/${portfolioId}/monte-carlo`],
+    ["rebalance", "Rebalance", `/${locale}/portfolios/${portfolioId}/rebalance`],
+    ["fees", "Fees", `/${locale}/portfolios/${portfolioId}/fees`],
+    ["tax-lots", "Tax lots", `/${locale}/portfolios/${portfolioId}/tax-lots`],
+    ["holdings", "Holdings", `/${locale}/portfolios/${portfolioId}/holdings`],
+    ["transactions", "Transactions", `/${locale}/portfolios/${portfolioId}/transactions`],
+    ["settings-profile", "Settings", `/${locale}/settings/profile`],
+    ["glossary", "Glossary", `/${locale}/portfolio/glossary`]
+  ] as const;
+  return (
+    <nav
+      className="scroll-fade-x flex min-w-0 gap-2 overflow-x-auto pb-2"
+      data-allow-horizontal-scroll
+      aria-label="Portfolio workspace sections"
+    >
+      {primary.map(([key, label, href]) => (
+        <a
+          key={key}
+          href={href}
+          onClick={(event) => {
+            event.preventDefault();
+            void navigate({ to: href as never });
+          }}
+          className={`focus-ring inline-flex min-h-11 shrink-0 items-center justify-center rounded-md border px-3 text-sm font-semibold ${
+            active === key
+              ? "border-accent bg-accentSoft text-accent"
+              : "border-line bg-panel text-muted hover:border-accent hover:text-ink"
+          }`}
+        >
+          {label}
+        </a>
+      ))}
+    </nav>
+  );
 }
 
-function formatRatio(value: number | null | undefined) {
-  if (value == null || !Number.isFinite(value)) return "n/a";
-  return value.toFixed(2);
+function ComplianceBanner() {
+  return (
+    <div className="signal-warning min-w-0 p-4">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+        <p className="safe-text text-sm font-semibold leading-6">
+          Analysis and planning only. No broker execution, copy trading, leaderboards, hot-stock alerts, or buy-now language.
+          Rebalancing suggestions prioritize future contributions and show assumptions, data quality, fees, and tax-estimate limits.
+        </p>
+      </div>
+    </div>
+  );
 }
 
-function defaultDateRange() {
-  const end = new Date();
-  const start = new Date(end);
-  start.setMonth(start.getMonth() - 6);
+function DashboardSection({
+  portfolio,
+  analysis,
+  monteCarlo,
+  rebalancePlan
+}: {
+  portfolio: Portfolio;
+  analysis: ReturnType<typeof analyzePortfolio>;
+  monteCarlo: ReturnType<typeof runMonteCarlo>;
+  rebalancePlan: ReturnType<typeof generateContributionRebalancePlan>;
+}) {
+  const nextContribution = rebalancePlan.cashContributionPlan[0];
+  return (
+    <section className="grid gap-4">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <CockpitCard icon={<WalletCards />} title="Portfolio value" termKey="portfolio_value" value={formatMoney(analysis.portfolioValue)} detail="Current value plus user-entered cash" />
+        <CockpitCard icon={<Target />} title="Goal status" termKey="success_probability" value={formatPercent(monteCarlo.successProbability)} detail={`${formatMoney(monteCarlo.medianOutcome)} median projection`} tone={monteCarlo.successProbability < 0.5 ? "risk" : "normal"} />
+        <CockpitCard icon={<Activity />} title="Risk status" termKey="annualized_volatility" value={analysis.diversificationScore < 55 ? "High" : "Moderate"} detail={`Top 5 concentration ${formatPercent(analysis.top5Concentration)}`} tone={analysis.diversificationScore < 55 ? "risk" : "watch"} />
+        <CockpitCard icon={<PieChart />} title="Diversification score" termKey="concentration" value={`${analysis.diversificationScore}/100`} detail={`HHI ${analysis.hhi.toFixed(3)}`} />
+        <CockpitCard icon={<BarChart3 />} title="Fee drag" termKey="fee_drag" value={formatMoney(analysis.estimatedAnnualFees)} detail={`${formatPercent(analysis.weightedExpenseRatio)} weighted fund expenses`} />
+        <CockpitCard icon={<RefreshCcw />} title="Allocation drift" termKey="allocation_drift" value={formatPercent(analysis.allocationDrift)} detail="Current vs target allocation" tone={analysis.allocationDrift > 0.12 ? "watch" : "normal"} />
+        <CockpitCard icon={<ArrowRight />} title="Next action" termKey="rebalancing" value={nextContribution?.assetClass ?? "Hold course"} detail={nextContribution ? `${formatMoney(nextContribution.amount)} of next contribution` : "No material contribution drift"} />
+        <CockpitCard
+          icon={<DatabaseZap />}
+          title="Data freshness"
+          termKey="data_freshness"
+          value={`${Math.round(analysis.dataFreshnessScore * 100)}/100`}
+          detail="Daily/delayed source freshness score"
+          tone={analysis.dataFreshnessScore < 0.5 ? "watch" : "normal"}
+        />
+      </div>
+      <section className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
+        <div className="panel p-4">
+          <SectionTitle icon={<LineChart />} title="Goal runway" termKey="monte_carlo" />
+          <FanChart rows={monteCarlo.fanChart.slice(0, 10)} targetAmount={portfolio.goal.targetAmount} />
+        </div>
+        <div className="panel p-4">
+          <SectionTitle icon={<ShieldCheck />} title="Plain-language summary" termKey="data_quality" />
+          <p className="safe-text mt-3 text-lg font-semibold leading-8">{analysis.healthSummary}</p>
+          <div className="mt-4 grid gap-2">
+            {rebalancePlan.warnings.map((warning) => (
+              <div key={warning} className="rounded-md border border-line bg-panelAlt p-3 text-sm leading-6 text-muted">
+                {warning}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </section>
+  );
+}
+
+function OnboardingSection({
+  csvText,
+  setCsvText,
+  csvErrors,
+  importCsv
+}: {
+  csvText: string;
+  setCsvText: (value: string) => void;
+  csvErrors: string[];
+  importCsv: () => void;
+}) {
+  return (
+    <section className="grid gap-4 lg:grid-cols-3">
+      <StepCard number="1" title="Create or import" body="Start with manual holdings or paste a CSV. CSV import validates required columns, numeric fields, and spreadsheet-formula injection." />
+      <StepCard number="2" title="Set a target" body="Use a template or enter your own target allocation. Target allocation drives drift and contribution guidance." />
+      <StepCard number="3" title="Review assumptions" body="Daily prices, FX, risk-free rates, fees, tax drag, and proxy data are visible instead of hidden." />
+      <div className="panel min-w-0 p-4 lg:col-span-3">
+        <SectionTitle icon={<Upload />} title="CSV import" termKey="data_quality" />
+        <textarea className="input-control mt-3 min-h-36 w-full py-3 font-mono text-sm" value={csvText} onChange={(event) => setCsvText(event.target.value)} />
+        <button type="button" className="primary-action mt-3" onClick={importCsv}>
+          <FileSpreadsheet className="h-4 w-4" />
+          Validate and import
+        </button>
+        {csvErrors.length ? (
+          <div className="signal-danger mt-3 p-3 text-sm">
+            {csvErrors.map((error) => <div key={error}>{error}</div>)}
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function PortfoliosSection({ portfolio, analysis }: { portfolio: Portfolio; analysis: ReturnType<typeof analyzePortfolio> }) {
+  const locale = useLocale();
+  return (
+    <section className="grid gap-4 lg:grid-cols-[1fr_0.8fr]">
+      <Link
+        to="/$locale/portfolios/$portfolioId"
+        params={{ locale, portfolioId: portfolio.portfolioId }}
+        className="panel focus-ring p-5 hover:border-accent"
+      >
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold">{portfolio.name}</h2>
+            <p className="mt-2 text-sm text-muted">{portfolio.description}</p>
+          </div>
+          <ArrowRight className="h-5 w-5 text-accent" />
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-4">
+          <StatusPill label="Value" value={formatMoney(analysis.portfolioValue)} />
+          <StatusPill label="Holdings" value={String(portfolio.holdings.length)} />
+          <StatusPill label="Target drift" value={formatPercent(analysis.allocationDrift)} />
+          <StatusPill label="Fee drag" value={formatMoney(analysis.estimatedAnnualFees)} />
+        </div>
+      </Link>
+      <div className="panel p-5">
+        <SectionTitle icon={<Lock />} title="Persistence stance" termKey="data_quality" />
+        <p className="safe-text mt-3 text-sm leading-6 text-muted">
+          This MVP keeps the demo workspace in browser state and is API-ready for persisted users. It avoids broker sync and
+          execution. Future server persistence should use the spec entities: Portfolio, Holding, Transaction, TaxLot,
+          Instrument, Job, UsageQuota, and AuditEvent.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function AtlasSection({
+  portfolio,
+  instrumentCatalog,
+  analysis,
+  updateCashBalance,
+  updateHoldingQuantity,
+  removeHolding,
+  addHolding,
+  resetPortfolio,
+  reviewRequests,
+  onRequestInstrumentReview
+}: {
+  portfolio: Portfolio;
+  instrumentCatalog: Instrument[];
+  analysis: ReturnType<typeof analyzePortfolio>;
+  reviewRequests: InstrumentReviewRequest[];
+  onRequestInstrumentReview: (query: string) => void;
+} & PortfolioBuildControls) {
+  const fundOverlapRows = calculateFundOverlap(portfolio.holdings, instrumentCatalog);
+  return (
+    <section className="grid gap-4">
+      <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="panel p-4">
+            <SectionTitle icon={<Globe2 />} title="Geographic exposure" termKey="geographic_exposure" />
+            <ExposureMap rows={analysis.geographicExposure} />
+          </div>
+          <div className="panel p-4">
+            <SectionTitle icon={<Layers3 />} title="Asset-class allocation" termKey="asset_allocation" />
+            <SunburstLike rows={analysis.assetAllocation} />
+          </div>
+        </div>
+        <PortfolioEditorPanel
+          portfolio={portfolio}
+          analysis={analysis}
+          instrumentCatalog={instrumentCatalog}
+          updateCashBalance={updateCashBalance}
+          updateHoldingQuantity={updateHoldingQuantity}
+          removeHolding={removeHolding}
+          addHolding={addHolding}
+          contextScreen="HOLDING_ENTRY"
+          reviewRequests={reviewRequests}
+          requestInstrumentReview={onRequestInstrumentReview}
+          resetPortfolio={resetPortfolio}
+        />
+      </div>
+      <div className="grid gap-4 xl:grid-cols-2">
+        <ExposureTable title="Sector exposure" termKey="sector_exposure" rows={analysis.sectorExposure} />
+        <ExposureTable title="Currency exposure" termKey="currency_exposure" rows={analysis.currencyExposure} />
+        <ExposureTable title="Theme exposure" termKey="theme_exposure" rows={analysis.themeExposure} />
+        <RiskConstellation rows={analysis.topHoldings} />
+        <FundOverlapPanel rows={fundOverlapRows} />
+      </div>
+    </section>
+  );
+}
+
+function BuilderSection({
+  portfolio,
+  instrumentCatalog,
+  analysis,
+  updateGoal,
+  updateTarget,
+  updateCashBalance,
+  updateHoldingQuantity,
+  removeHolding,
+  addHolding,
+  resetPortfolio,
+  reviewRequests,
+  onRequestInstrumentReview
+}: {
+  portfolio: Portfolio;
+  instrumentCatalog: Instrument[];
+  analysis: ReturnType<typeof analyzePortfolio>;
+  updateGoal: <K extends keyof Portfolio["goal"]>(key: K, value: Portfolio["goal"][K]) => void;
+  updateTarget: (assetClass: string, value: number) => void;
+  reviewRequests: InstrumentReviewRequest[];
+  onRequestInstrumentReview: (query: string) => void;
+} & PortfolioBuildControls) {
+  return (
+    <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="grid gap-4">
+        <div className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+          <div className="panel p-4">
+            <SectionTitle icon={<Target />} title="Goal setup" termKey="success_probability" />
+            <NumberField label="Target amount" termKey="portfolio_value" value={portfolio.goal.targetAmount} onChange={(value) => updateGoal("targetAmount", value)} />
+            <NumberField label="Monthly contribution" termKey="rebalancing" value={portfolio.goal.monthlyContribution} onChange={(value) => updateGoal("monthlyContribution", value)} />
+            <label className="mt-4 block text-sm font-semibold">
+              Target date
+              <input className="input-control mt-2 w-full" type="date" value={portfolio.goal.targetDate} onChange={(event) => updateGoal("targetDate", event.target.value)} />
+            </label>
+          </div>
+          <TargetAllocationPanel portfolio={portfolio} analysis={analysis} updateTarget={updateTarget} />
+        </div>
+        <div className="grid gap-4 xl:grid-cols-2">
+          <div className="panel p-4">
+            <SectionTitle icon={<Globe2 />} title="Geographic exposure" termKey="geographic_exposure" />
+            <ExposureMap rows={analysis.geographicExposure} />
+          </div>
+          <div className="panel p-4">
+            <SectionTitle icon={<Layers3 />} title="Asset-class allocation" termKey="asset_allocation" />
+            <SunburstLike rows={analysis.assetAllocation} />
+          </div>
+        </div>
+      </div>
+      <PortfolioEditorPanel
+        portfolio={portfolio}
+        analysis={analysis}
+        instrumentCatalog={instrumentCatalog}
+        updateCashBalance={updateCashBalance}
+        updateHoldingQuantity={updateHoldingQuantity}
+        removeHolding={removeHolding}
+        addHolding={addHolding}
+        contextScreen="BUILDER"
+        reviewRequests={reviewRequests}
+        requestInstrumentReview={onRequestInstrumentReview}
+        resetPortfolio={resetPortfolio}
+      />
+    </section>
+  );
+}
+
+function TargetAllocationPanel({
+  portfolio,
+  analysis,
+  updateTarget
+}: {
+  portfolio: Portfolio;
+  analysis: ReturnType<typeof analyzePortfolio>;
+  updateTarget: (assetClass: string, value: number) => void;
+}) {
+  return (
+    <div className="panel p-4">
+      <SectionTitle icon={<PieChart />} title="Target allocation" termKey="target_allocation" />
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        {Object.entries(portfolio.targetAllocation).map(([assetClass, value]) => (
+          <label key={assetClass} className="grid gap-2">
+            <span className="text-sm font-semibold text-muted">{assetClass}</span>
+            <input
+              className="input-control w-full"
+              type="number"
+              min={0}
+              max={100}
+              value={Math.round(value * 100)}
+              onChange={(event) => updateTarget(assetClass, Number(event.target.value))}
+            />
+          </label>
+        ))}
+      </div>
+      <div className="mt-5">
+        <div className="text-sm font-bold">
+          <MetricLabel label="Current vs target" termKey="allocation_drift" />
+        </div>
+        <div className="mt-3 grid gap-3">
+          {analysis.currentTargetRows.slice(0, 8).map((row) => (
+            <div key={row.key} className="grid gap-2 rounded-md border border-line bg-panelAlt p-3">
+              <div className="flex justify-between gap-3 text-sm font-semibold">
+                <span className="safe-text">{row.key}</span>
+                <span className={row.drift > 0 ? "text-warning" : "text-accent"}>
+                  {row.drift > 0 ? "over" : "under"} {formatPercent(Math.abs(row.drift))}
+                </span>
+              </div>
+              <div className="relative h-3 rounded bg-paper">
+                <div className="absolute left-1/2 top-0 h-3 w-px bg-muted" />
+                <div
+                  className={`absolute top-0 h-3 rounded ${row.drift > 0 ? "bg-warning" : "bg-accent"}`}
+                  style={{
+                    left: row.drift > 0 ? "50%" : `${50 - Math.min(50, Math.abs(row.drift) * 220)}%`,
+                    width: `${Math.max(2, Math.min(50, Math.abs(row.drift) * 220))}%`
+                  }}
+                />
+              </div>
+              <div className="safe-text text-xs text-muted">
+                Current {formatPercent(row.currentWeight)} · target {formatPercent(row.targetWeight)} · shift {formatMoney(row.dollarsToTarget)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PortfolioEditorPanel({
+  portfolio,
+  analysis,
+  instrumentCatalog,
+  contextScreen,
+  reviewRequests,
+  requestInstrumentReview,
+  updateCashBalance,
+  updateHoldingQuantity,
+  removeHolding,
+  addHolding,
+  resetPortfolio
+}: {
+  portfolio: Portfolio;
+  analysis: ReturnType<typeof analyzePortfolio>;
+  instrumentCatalog: Instrument[];
+  contextScreen: ManualEditorContext;
+  reviewRequests: InstrumentReviewRequest[];
+  requestInstrumentReview: (query: string) => void;
+} & PortfolioBuildControls) {
+  const searchInputId = useId();
+  const resultListId = useId();
+  const manualHelpId = useId();
+  const heldInstrumentIds = useMemo(() => new Set(portfolio.holdings.map((holding) => holding.instrumentId)), [portfolio.holdings]);
+  const heldListingIds = useMemo(() => new Set(portfolio.holdings.map((holding) => holding.listingId).filter(Boolean)), [portfolio.holdings]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [includeAdvancedInstruments, setIncludeAdvancedInstruments] = useState(false);
+  const [includeInactiveInstruments, setIncludeInactiveInstruments] = useState(false);
+  const [activeResultIndex, setActiveResultIndex] = useState(0);
+  const [isSearching, setIsSearching] = useState(false);
+  const [apiSearch, setApiSearch] = useState<{
+    query: string;
+    loading: boolean;
+    results: InstrumentSearchResult[];
+    error: string | null;
+    freshness?: InstrumentSearchApiResponse["dataFreshness"];
+  }>({ query: "", loading: false, results: [], error: null });
+  const [manualDraft, setManualDraft] = useState<ManualHoldingDraft | null>(null);
+  const trimmedQuery = searchTerm.trim();
+  const isSymbolLikeQuery = /^[-.A-Za-z0-9]+$/.test(trimmedQuery);
+  const minLengthForQuery = isSymbolLikeQuery ? 1 : 2;
+  const isSearchReady = trimmedQuery.length >= minLengthForQuery;
+  const hasManualDraft = manualDraft !== null;
+  const normalizedManualCandidateId = `manual:${normalizedInstrumentId(trimmedQuery || "MANUAL")}`;
+  const isManualCandidateAlreadyHeld = heldInstrumentIds.has(normalizedManualCandidateId);
+  const draftManualHoldingId = manualDraft ? `manual:${normalizedInstrumentId(manualDraft.symbolOrCode)}` : null;
+  const isDraftManualAlreadyHeld = draftManualHoldingId ? heldInstrumentIds.has(draftManualHoldingId) : isManualCandidateAlreadyHeld;
+
+  useEffect(() => {
+    if (!trimmedQuery) {
+      setDebouncedSearchTerm("");
+      setIsSearching(false);
+      setActiveResultIndex(0);
+      setManualDraft(null);
+      return;
+    }
+    setIsSearching(true);
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearchTerm(trimmedQuery);
+      setIsSearching(false);
+    }, 175);
+    return () => window.clearTimeout(timeout);
+  }, [trimmedQuery]);
+
+  useEffect(() => {
+    if (!isSearchReady || !debouncedSearchTerm) {
+      setApiSearch({ query: "", loading: false, results: [], error: null });
+      return;
+    }
+    const controller = new AbortController();
+    const params = new URLSearchParams({
+      q: debouncedSearchTerm,
+      limit: "10",
+      include_advanced: String(includeAdvancedInstruments),
+      include_inactive: String(includeInactiveInstruments),
+      context: contextScreen
+    });
+    setApiSearch((current) => ({
+      query: debouncedSearchTerm,
+      loading: true,
+      results: current.query === debouncedSearchTerm ? current.results : [],
+      error: null,
+      freshness: current.query === debouncedSearchTerm ? current.freshness : undefined
+    }));
+    fetch(`/api/instruments/search?${params.toString()}`, {
+      credentials: "include",
+      headers: { Accept: "application/json" },
+      signal: controller.signal
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Instrument search failed: ${response.status}`);
+        return (await response.json()) as InstrumentSearchApiResponse;
+      })
+      .then((payload) => {
+        setApiSearch({
+          query: debouncedSearchTerm,
+          loading: false,
+          results: payload.results ?? [],
+          error: null,
+          freshness: payload.dataFreshness
+        });
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        setApiSearch({
+          query: debouncedSearchTerm,
+          loading: false,
+          results: [],
+          error: error instanceof Error ? error.message : "Instrument search API unavailable",
+          freshness: undefined
+        });
+      });
+    return () => controller.abort();
+  }, [contextScreen, debouncedSearchTerm, includeAdvancedInstruments, includeInactiveInstruments, isSearchReady]);
+
+  const localSearchLookup = useMemo(() => {
+    if (!isSearchReady || !debouncedSearchTerm) {
+      return { allResults: [] as InstrumentSearchResult[], error: null as string | null };
+    }
+    try {
+      const allResults = searchInstruments(debouncedSearchTerm, instrumentCatalog, {
+        includeAdvanced: includeAdvancedInstruments,
+        includeInactive: includeInactiveInstruments,
+        context: contextScreen,
+        limit: 10
+      });
+      return { allResults, error: null };
+    } catch {
+      return {
+        allResults: [] as InstrumentSearchResult[],
+        error: "Search index is temporarily unavailable. Retry after a short refresh."
+      };
+    }
+  }, [
+    contextScreen,
+    debouncedSearchTerm,
+    heldInstrumentIds,
+    heldListingIds,
+    includeAdvancedInstruments,
+    includeInactiveInstruments,
+    instrumentCatalog,
+    isSearchReady
+  ]);
+
+  const apiSettledForQuery = apiSearch.query === debouncedSearchTerm && !apiSearch.loading && !apiSearch.error;
+  const apiUnavailableForQuery = apiSearch.query === debouncedSearchTerm && Boolean(apiSearch.error);
+  const allSearchResults = apiSettledForQuery ? apiSearch.results : localSearchLookup.allResults;
+  const searchResults = allSearchResults.filter((result) => !heldInstrumentIds.has(result.instrumentId) && !heldListingIds.has(result.listingId));
+  const heldSearchResults = allSearchResults.filter((result) => heldInstrumentIds.has(result.instrumentId) || heldListingIds.has(result.listingId));
+  const searchError = localSearchLookup.error ?? (apiUnavailableForQuery && !localSearchLookup.allResults.length ? apiSearch.error : null);
+  const isApiSearching = apiSearch.query === debouncedSearchTerm && apiSearch.loading;
+
+  useEffect(() => {
+    setActiveResultIndex(0);
+  }, [searchResults]);
+
+  const hasSearchResults = searchResults.length > 0;
+  const hasHeldSearchResults = heldSearchResults.length > 0;
+  const canAddManual = isSearchReady && !isSearching && !isApiSearching && !hasSearchResults && !hasHeldSearchResults && trimmedQuery.length > 0;
+  const openManualForm = () => {
+    if (!canAddManual) return;
+    setManualDraft({
+      symbolOrCode: trimmedQuery,
+      name: trimmedQuery,
+      currency: "",
+      assetClass: "Equity",
+      instrumentType: "",
+      exchange: "",
+      country: "",
+      quantityText: "1",
+      priceText: "",
+      marketValueText: ""
+    });
+  };
+
+  const resetManualDraft = () => {
+    setManualDraft(null);
+  };
+
+  const currentReviewRequest = reviewRequests
+    .filter((request) => request.query.toLowerCase() === trimmedQuery.toLowerCase() && request.contextScreen === contextScreen)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+  const selectResult = (result: InstrumentSearchResult) => {
+    addHolding({ instrumentId: result.instrumentId, listingId: result.listingId });
+    resetManualDraft();
+    setSearchTerm("");
+  };
+
+  const selectManual = () => {
+    if (!hasManualDraft) return;
+    const quantity = Number(manualDraft.quantityText);
+    const price = manualDraft.priceText.trim() ? Number(manualDraft.priceText) : undefined;
+    const marketValue = manualDraft.marketValueText.trim() ? Number(manualDraft.marketValueText) : undefined;
+    if (validateManualDraft(manualDraft).length) return;
+    if (isDraftManualAlreadyHeld) return;
+    const payload: ManualHoldingPayload = {
+      symbolOrCode: cleanManualText(manualDraft.symbolOrCode),
+      name: cleanManualText(manualDraft.name),
+      currency: cleanCurrency(manualDraft.currency),
+      assetClass: manualDraft.assetClass,
+      instrumentType: manualDraft.instrumentType || undefined,
+      exchange: cleanManualText(manualDraft.exchange) || undefined,
+      country: cleanManualText(manualDraft.country) || undefined,
+      quantity,
+      price,
+      marketValue
+    };
+    addHolding({ instrumentId: manualDraft.symbolOrCode, manual: payload });
+    resetManualDraft();
+    setSearchTerm("");
+  };
+
+  const activeResult = searchResults[activeResultIndex] ?? null;
+  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (!isSearching) {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setActiveResultIndex((current) => (searchResults.length ? (current + 1) % searchResults.length : 0));
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setActiveResultIndex((current) => (searchResults.length ? (current - 1 + searchResults.length) % searchResults.length : 0));
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        if (activeResult) selectResult(activeResult);
+        else if (canAddManual && !hasManualDraft) openManualForm();
+        else if (canAddManual && hasManualDraft) selectManual();
+      } else if (event.key === "Escape") {
+        resetManualDraft();
+        setSearchTerm("");
+      }
+    }
+  };
+
+  const noResultGuidance =
+    searchTerm && !isSearchReady ? `${minLengthForQuery}-character minimum (1 for symbols, 2 for company names).` : null;
+  const canRequestReview = isSearchReady && !searchError && !isSearching && !isApiSearching && !hasSearchResults && !hasHeldSearchResults && trimmedQuery.length > 0;
+  const shouldShowNoResults = canRequestReview;
+  const manualDraftErrors = manualDraft ? validateManualDraft(manualDraft) : [];
+  const activeResultId = activeResult ? `${resultListId}-option-${activeResultIndex}` : undefined;
+  const requestCurrentSelectionForReview = () => {
+    if (!canRequestReview) return;
+    requestInstrumentReview(trimmedQuery);
+  };
+
+  useEffect(() => {
+    if (!searchTerm) resetManualDraft();
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (!canAddManual) {
+      resetManualDraft();
+    }
+  }, [canAddManual]);
+
+  return (
+    <aside className="panel min-w-0 p-4 2xl:sticky 2xl:top-4 2xl:self-start">
+      <SectionTitle icon={<BriefcaseBusiness />} title="Edit holdings" termKey="asset_allocation" />
+      <p className="safe-text mt-2 text-sm leading-6 text-muted">
+        Change quantities, cash, or add sample instruments and the exposure views update immediately in this workspace.
+      </p>
+      <label className="mt-4 block text-sm font-semibold">
+        <MetricLabel label="Cash balance" termKey="portfolio_value" />
+        <input
+          className="input-control mt-2 w-full"
+          type="number"
+          min={0}
+          value={portfolio.cashBalance}
+          onChange={(event) => updateCashBalance(Number(event.target.value))}
+        />
+      </label>
+        <div className="mt-4 grid gap-2">
+          {portfolio.holdings.map((holding) => {
+          const instrument = instrumentCatalog.find((item) => item.instrumentId === holding.instrumentId);
+          const row = analysis.topHoldings.find((item) => item.key === holding.instrumentId);
+          const symbol = instrument?.symbol ?? holding.instrumentId;
+          return (
+            <div key={holding.holdingId} className="rounded-md border border-line bg-panelAlt p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="safe-text text-sm font-bold">{symbol}</div>
+                  <div className="safe-text text-xs text-muted">{instrument?.name ?? "Manual holding"}</div>
+                </div>
+                <button
+                  type="button"
+                  className="focus-ring grid min-h-11 min-w-11 place-items-center rounded-md border border-line text-muted hover:border-danger hover:text-danger"
+                  aria-label={`Remove ${symbol}`}
+                  onClick={() => removeHolding(holding.holdingId)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_120px] sm:items-end">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-muted">
+                  Quantity
+                  <input
+                    className="input-control mt-2 w-full"
+                    aria-label={`${symbol} quantity`}
+                    type="number"
+                    min={0}
+                    step={instrument?.instrumentType === "crypto" ? 0.01 : 1}
+                    value={holding.quantity}
+                    onChange={(event) => updateHoldingQuantity(holding.holdingId, Number(event.target.value))}
+                  />
+                </label>
+                <div className="rounded-md border border-line bg-panel p-3 text-right">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted">Weight</div>
+                  <div className="mt-1 font-bold text-accent">{row ? formatPercent(row.weight) : "n/a"}</div>
+                </div>
+              </div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <div className="rounded-md border border-line bg-panel p-3">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted">Value</div>
+                  <div className="safe-text mt-1 font-bold">{row ? formatMoney(row.value) : "n/a"}</div>
+                </div>
+                <div className="rounded-md border border-line bg-panel p-3">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted">Quality</div>
+                  <div className="safe-text mt-1 font-bold">{instrument?.priceQuality ?? holding.source}</div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-4 grid gap-2">
+        <div className="block text-sm font-semibold">
+          <label htmlFor={searchInputId}>Add holding</label>
+          <div className="mt-1 flex items-center justify-between gap-2 text-xs">
+            <span className="text-muted">Search ticker, company, ETF, ISIN, FIGI, or local code</span>
+            <div className="inline-flex items-center gap-3">
+              <label className="inline-flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={includeAdvancedInstruments}
+                  onChange={(event) => setIncludeAdvancedInstruments(event.target.checked)}
+                />
+                <span className="inline-flex items-center gap-1">
+                  Include advanced
+                  <TermTooltip termKey="advanced_instrument" />
+                </span>
+              </label>
+              <label className="inline-flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={includeInactiveInstruments}
+                  onChange={(event) => setIncludeInactiveInstruments(event.target.checked)}
+                />
+                <span className="inline-flex items-center gap-1">
+                  Include inactive
+                  <TermTooltip termKey="inactive_security" />
+                </span>
+              </label>
+            </div>
+          </div>
+          <div className="relative mt-2">
+            <input
+              id={searchInputId}
+              className="input-control w-full pl-10"
+              type="text"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={hasSearchResults}
+              aria-controls={hasSearchResults ? resultListId : undefined}
+              aria-activedescendant={activeResultId}
+              placeholder="AAPL / Apple / US0378331005"
+              maxLength={INSTRUMENT_SEARCH_QUERY_MAX_LENGTH}
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              onKeyDown={handleSearchKeyDown}
+            />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          </div>
+          {isSearching || isApiSearching ? (
+            <div className="mt-2 flex items-center gap-2 text-xs text-muted">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Searching local instrument index...
+            </div>
+          ) : null}
+          {apiSearch.freshness?.instrumentIndexLastUpdatedAt && apiSearch.query === debouncedSearchTerm ? (
+            <div className="mt-2 text-xs text-muted">
+              <MetricLabel label={`Index ${apiSearch.freshness.status?.toLowerCase() ?? "checked"} ${new Date(apiSearch.freshness.instrumentIndexLastUpdatedAt).toLocaleDateString()}`} termKey="data_freshness" />
+            </div>
+          ) : null}
+          {noResultGuidance ? <div className="mt-2 text-xs text-muted">{noResultGuidance}</div> : null}
+          {searchError ? <div className="mt-2 text-xs text-danger">{searchError}</div> : null}
+          {hasSearchResults ? (
+            <div id={resultListId} className="mt-2 max-h-80 overflow-auto rounded-md border border-line bg-panelAlt" role="listbox" aria-label="Instrument search results" aria-live="polite">
+              {searchResults.map((result, index) => (
+                <button
+                  id={`${resultListId}-option-${index}`}
+                  key={`${result.instrumentId}-${result.listingId}`}
+                  type="button"
+                  role="option"
+                  aria-selected={index === activeResultIndex}
+                  className={`block w-full border-b border-line px-3 py-3 text-left text-sm last:border-b-0 ${
+                    index === activeResultIndex ? "bg-accentSoft text-ink" : "hover:bg-panel"
+                  }`}
+                  onMouseEnter={() => setActiveResultIndex(index)}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => selectResult(result)}
+                >
+                  <div className="safe-text text-sm font-bold">
+                    {result.displaySymbol}
+                    {result.isStale ? <InlineBadge label="Stale price" termKey="stale_data" tone="warning" /> : null}
+                    {!result.isActive ? <InlineBadge label="Inactive" termKey="inactive_security" tone="danger" /> : null}
+                    {result.isAdvancedInstrument ? <InlineBadge label="Advanced" termKey="advanced_instrument" tone="muted" /> : null}
+                  </div>
+                  <div className="safe-text text-xs text-muted">{result.name}</div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <InstrumentMetaChip label={result.exchange} termKey="exchange" />
+                    <InstrumentMetaChip label={result.country} termKey="country" />
+                    <InstrumentMetaChip label={result.currency} termKey="currency" />
+                    <InstrumentMetaChip label={result.instrumentType.toUpperCase()} termKey="instrument_type" />
+                    <InstrumentMetaChip label={result.assetClass} termKey="asset_class" />
+                    <InstrumentMetaChip label={result.sector} termKey="sector" />
+                  </div>
+                  <div className="mt-2 text-xs text-muted">
+                    <MetricLabel label={result.qualityMessage} termKey="data_quality" />
+                  </div>
+                  {result.qualityLevel === "STALE" ? (
+                    <p className="mt-1 text-xs text-warning">
+                      <TermTooltip termKey="stale_data" />
+                      <span className="ml-1">Instrument record may be stale.</span>
+                    </p>
+                  ) : null}
+                  {result.qualityLevel === "PARTIAL" || result.qualityLevel === "ESTIMATED" ? (
+                    <p className="mt-1 text-xs text-warning">
+                      <TermTooltip termKey={result.qualityLevel === "PARTIAL" ? "partial_data" : "estimated_data"} />
+                      <span className="ml-1">Some metadata is incomplete.</span>
+                    </p>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {hasHeldSearchResults && !hasSearchResults ? (
+            <div className="mt-2 rounded-md border border-line bg-panel p-3 text-xs leading-5 text-muted">
+              <div className="font-semibold text-ink">Already in this workspace</div>
+              <div className="safe-text mt-1">
+                {heldSearchResults.slice(0, 2).map((result) => result.displaySymbol).join(", ")} already exists as a holding. Edit its quantity above instead of adding a duplicate.
+              </div>
+            </div>
+          ) : null}
+          {shouldShowNoResults ? (
+            <div className="mt-2">
+              <div className="text-xs text-muted">No matching instrument found.</div>
+              <div className="mt-2 rounded-md border border-line bg-panel p-3 text-xs leading-5 text-muted">
+                <div className="font-semibold text-ink">Try:</div>
+                <ul className="mt-2 list-disc pl-5">
+                  <li>Searching by company or fund name</li>
+                  <li>Adding the exchange code</li>
+                  <li>Searching by ISIN or FIGI</li>
+                  <li>Enabling advanced instruments</li>
+                </ul>
+                <button
+                  type="button"
+                  className="secondary-action mt-3 justify-center"
+                  onClick={requestCurrentSelectionForReview}
+                  disabled={!canRequestReview}
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  Request instrument review
+                </button>
+                {currentReviewRequest ? (
+                  <p className="mt-2">
+                    Local review status for "{trimmedQuery}": <span className="font-semibold">{currentReviewRequest.status}</span> (
+                    {new Date(currentReviewRequest.createdAt).toLocaleDateString()}
+                    )
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+          {canAddManual ? (
+            <div className="mt-2 rounded-md border border-dashed border-line bg-panel p-3">
+              <p id={manualHelpId} className="safe-text text-xs text-muted">
+                No sample match. Add a manual holding only when you know the listing, currency, quantity, and either price or market value.
+              </p>
+              {!hasManualDraft ? (
+                <button
+                  type="button"
+                  className="secondary-action mt-2 justify-center"
+                  onClick={openManualForm}
+                  disabled={isManualCandidateAlreadyHeld}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add manual holding
+                </button>
+              ) : (
+                <div className="mt-3 grid gap-2" aria-describedby={manualHelpId}>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <ManualTextField label="Symbol / code" required value={manualDraft.symbolOrCode} onChange={(value) => setManualDraft((current) => (current ? { ...current, symbolOrCode: value } : current))} />
+                    <ManualTextField label="Instrument name" required value={manualDraft.name} onChange={(value) => setManualDraft((current) => (current ? { ...current, name: value } : current))} />
+                    <ManualTextField label="Currency" required value={manualDraft.currency} maxLength={3} pattern="[A-Za-z]{3}" onChange={(value) => setManualDraft((current) => (current ? { ...current, currency: value.toUpperCase() } : current))} />
+                    <label className="block text-xs font-semibold">
+                      Asset class*
+                      <select
+                        className="input-control mt-1 w-full"
+                        required
+                        value={manualDraft.assetClass}
+                        onChange={(event) =>
+                          setManualDraft((current) => (current ? { ...current, assetClass: event.target.value as AssetClass } : current))
+                        }
+                      >
+                        {ASSET_CLASS_OPTIONS.map((item) => (
+                          <option key={item} value={item}>
+                            {item}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="block text-xs font-semibold">
+                      Instrument type
+                      <select
+                        className="input-control mt-1 w-full"
+                        value={manualDraft.instrumentType}
+                        onChange={(event) =>
+                          setManualDraft((current) => (current ? { ...current, instrumentType: event.target.value as ManualInstrumentType } : current))
+                        }
+                      >
+                        {MANUAL_INSTRUMENT_TYPE_OPTIONS.map((item) => (
+                          <option key={item} value={item}>
+                            {item || "Choose (optional)"}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <ManualTextField label="Exchange" value={manualDraft.exchange} onChange={(value) => setManualDraft((current) => (current ? { ...current, exchange: value } : current))} />
+                    <ManualTextField label="Country" value={manualDraft.country} onChange={(value) => setManualDraft((current) => (current ? { ...current, country: value } : current))} />
+                    <ManualNumberField label="Quantity" required min={0.0001} max={MANUAL_QUANTITY_MAX} value={manualDraft.quantityText} onChange={(value) => setManualDraft((current) => (current ? { ...current, quantityText: value } : current))} />
+                    <ManualNumberField label="Price" min={0} max={MANUAL_MONEY_MAX} value={manualDraft.priceText} onChange={(value) => setManualDraft((current) => (current ? { ...current, priceText: value } : current))} />
+                    <ManualNumberField label="Market value" min={0} max={MANUAL_MONEY_MAX} value={manualDraft.marketValueText} onChange={(value) => setManualDraft((current) => (current ? { ...current, marketValueText: value } : current))} />
+                  </div>
+                  {manualDraftErrors.length ? (
+                    <div className="signal-danger p-3 text-xs leading-5" role="alert">
+                      {manualDraftErrors.map((error) => <div key={error}>{error}</div>)}
+                    </div>
+                  ) : null}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="primary-action mt-2 justify-center"
+                      onClick={selectManual}
+                      disabled={!hasManualDraft || isDraftManualAlreadyHeld || manualDraftErrors.length > 0}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Save manual holding
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-action mt-2 justify-center"
+                      onClick={resetManualDraft}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            className="primary-action justify-center"
+            onClick={() => hasSearchResults && activeResult ? selectResult(activeResult) : null}
+            disabled={!hasSearchResults}
+          >
+            <Plus className="h-4 w-4" />
+            Add selected holding
+          </button>
+          <button type="button" className="secondary-action justify-center" onClick={resetPortfolio}>
+            <RefreshCcw className="h-4 w-4" />
+            Reset sample
+          </button>
+        </div>
+      </div>
+      <div className="signal-warning mt-4 p-3 text-xs leading-5">
+        Holding edits are planning inputs for this browser session. Source-linked demo tax lots and transactions are cleared
+        after holding changes so tax/backtest views do not reuse stale records.
+      </div>
+    </aside>
+  );
+}
+
+function InstrumentMetaChip({ label, termKey }: { label: string; termKey: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded border border-line bg-paper px-2 py-1 text-xs text-muted">
+      {label}
+      <TermTooltip termKey={termKey} />
+    </span>
+  );
+}
+
+function InlineBadge({ label, termKey, tone }: { label: string; termKey: string; tone: "warning" | "danger" | "muted" }) {
+  const toneClass = tone === "warning" ? "text-warning" : tone === "danger" ? "text-danger" : "text-muted";
+  return (
+    <span className={`ml-2 inline-flex items-center gap-1 text-xs ${toneClass}`}>
+      {label}
+      <TermTooltip termKey={termKey} />
+    </span>
+  );
+}
+
+function BacktestSection({ result }: { result: ReturnType<typeof runBacktest> }) {
+  return (
+    <section className="grid gap-4">
+      <div className="grid gap-3 md:grid-cols-4">
+        <MetricCard title="Ending value" termKey="portfolio_value" value={formatMoney(result.endingValue)} />
+        <MetricCard title="CAGR" termKey="cagr" value={formatPercent(result.cagr)} />
+        <MetricCard title="Volatility" termKey="annualized_volatility" value={formatPercent(result.annualizedVolatility)} />
+        <MetricCard title="Max drawdown" termKey="max_drawdown" value={formatPercent(result.maxDrawdown)} />
+      </div>
+      <div className="panel p-4">
+        <SectionTitle icon={<LineChart />} title="Backtest equity curve" termKey="backtest" />
+        <LineBars rows={result.equityCurve.map((row) => ({ label: row.date.slice(0, 7), value: row.value }))} />
+        <p className="mt-3 text-sm text-muted">Backtesting shows what would have happened in the past. It does not prove what will happen in the future.</p>
+      </div>
+      <ExposureTable title="Backtest diagnostics" termKey="data_quality" rows={[
+        { key: "best", label: "Best year", value: result.bestYear, weight: Math.abs(result.bestYear), topHoldings: [formatPercent(result.bestYear)], quality: "PROXY" },
+        { key: "worst", label: "Worst year", value: result.worstYear, weight: Math.abs(result.worstYear), topHoldings: [formatPercent(result.worstYear)], quality: "PROXY" },
+        { key: "tracking", label: "Tracking error", value: result.trackingError, weight: result.trackingError, topHoldings: [formatPercent(result.trackingError)], quality: "PROXY" },
+        { key: "relative", label: "Benchmark relative return", value: result.benchmarkRelativeReturn, weight: Math.abs(result.benchmarkRelativeReturn), topHoldings: [formatPercent(result.benchmarkRelativeReturn)], quality: "PROXY" }
+      ]} />
+    </section>
+  );
+}
+
+function MonteCarloSection({
+  result,
+  portfolio,
+  updateGoal
+}: {
+  result: ReturnType<typeof runMonteCarlo>;
+  portfolio: Portfolio;
+  updateGoal: <K extends keyof Portfolio["goal"]>(key: K, value: Portfolio["goal"][K]) => void;
+}) {
+  return (
+    <section className="grid gap-4 xl:grid-cols-[0.75fr_1.25fr]">
+      <div className="panel p-4">
+        <SectionTitle icon={<Calculator />} title="Simulation inputs" termKey="monte_carlo" />
+        <NumberField label="Target amount" termKey="success_probability" value={portfolio.goal.targetAmount} onChange={(value) => updateGoal("targetAmount", value)} />
+        <NumberField label="Monthly contribution" termKey="rebalancing" value={portfolio.goal.monthlyContribution} onChange={(value) => updateGoal("monthlyContribution", value)} />
+        <StatusPill label="Paths" value={String(result.pathCount)} />
+        <StatusPill label="Method" value={result.method} />
+      </div>
+      <div className="panel p-4">
+        <SectionTitle icon={<LineChart />} title="Monte Carlo fan chart" termKey="monte_carlo" />
+        <FanChart rows={result.fanChart} targetAmount={portfolio.goal.targetAmount} />
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
+          <MetricCard title="Success probability" termKey="success_probability" value={formatPercent(result.successProbability)} />
+          <MetricCard title="Median outcome" termKey="percentile" value={formatMoney(result.medianOutcome)} />
+          <MetricCard title="P10 / P90" termKey="percentile" value={`${formatMoney(result.p10Outcome)} / ${formatMoney(result.p90Outcome)}`} />
+          <MetricCard title="Required monthly" termKey="money_weighted_return" value={formatMoney(result.requiredMonthlyContribution)} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function RebalanceSection({ plan, analysis }: { plan: ReturnType<typeof generateContributionRebalancePlan>; analysis: ReturnType<typeof analyzePortfolio> }) {
+  return (
+    <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+      <div className="panel p-4">
+        <SectionTitle icon={<RefreshCcw />} title="Rebalancing compass" termKey="rebalancing" />
+        <Compass rows={analysis.currentTargetRows.slice(0, 6)} />
+      </div>
+      <div className="panel p-4">
+        <SectionTitle icon={<ArrowRight />} title="Contribution-first plan" termKey="rebalancing_band" />
+        <div className="mt-4 grid gap-3">
+          {plan.cashContributionPlan.map((item) => (
+            <div key={item.assetClass} className="rounded-md border border-line bg-panelAlt p-3">
+              <div className="flex justify-between gap-3 text-sm font-semibold">
+                <span>{item.assetClass}</span>
+                <span className="text-accent">{formatMoney(item.amount)}</span>
+              </div>
+              <p className="mt-2 text-sm text-muted">{item.reason}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 text-sm text-warning">{plan.warnings[0]}</p>
+      </div>
+    </section>
+  );
+}
+
+function FeesSection({
+  analysis,
+  assumptions,
+  setAssumptions
+}: {
+  analysis: ReturnType<typeof analyzePortfolio>;
+  assumptions: AssumptionSet;
+  setAssumptions: Dispatch<SetStateAction<AssumptionSet>>;
+}) {
+  const parts = [
+    ["Fund expense ratios", analysis.weightedExpenseRatio],
+    ["Platform fees", assumptions.platformFeeRate],
+    ["FX fees", assumptions.fxFeeRate],
+    ["Estimated tax drag", assumptions.taxDragRate]
+  ];
+  return (
+    <section className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
+      <div className="panel p-4">
+        <SectionTitle icon={<BarChart3 />} title="Fee assumptions" termKey="fee_drag" />
+        <PercentField label="Platform fee" termKey="platform_fee" value={assumptions.platformFeeRate} onChange={(value) => setAssumptions((current) => ({ ...current, platformFeeRate: value }))} />
+        <PercentField label="FX fee" termKey="fx_fee" value={assumptions.fxFeeRate} onChange={(value) => setAssumptions((current) => ({ ...current, fxFeeRate: value }))} />
+        <PercentField label="Tax drag" termKey="tax_drag" value={assumptions.taxDragRate} onChange={(value) => setAssumptions((current) => ({ ...current, taxDragRate: value }))} />
+      </div>
+      <div className="panel p-4">
+        <SectionTitle icon={<DatabaseZap />} title="Fee leak chart" termKey="expense_ratio" />
+        <div className="mt-4 grid gap-3">
+          {parts.map(([label, value]) => (
+            <div key={label} className="grid gap-2">
+              <div className="flex justify-between gap-3 text-sm font-semibold">
+                <span>{label}</span>
+                <span>{formatPercent(value as number)}</span>
+              </div>
+              <div className="h-3 rounded bg-panelAlt">
+                <div className="h-3 rounded bg-warning" style={{ width: `${Math.min(100, (value as number) * 4000)}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 text-xl font-bold">Estimated annual fee drag: {formatMoney(analysis.estimatedAnnualFees)}</p>
+      </div>
+    </section>
+  );
+}
+
+function TaxLotsSection({ portfolio, taxImpact }: { portfolio: Portfolio; taxImpact: TaxLotImpact }) {
+  return (
+    <section className="grid gap-4">
+      <div className="signal-warning p-4 text-sm font-semibold leading-6">
+        Tax estimates are approximate and depend on your country, account type, and personal circumstances. This is not tax advice.
+      </div>
+      <div className="grid gap-4 xl:grid-cols-[1fr_0.7fr]">
+        <TablePanel title="Tax lots" termKey="tax_lot">
+          {portfolio.taxLots.map((lot) => (
+            <TableRow key={lot.lotId} cells={[lot.instrumentId, lot.purchaseDate, formatNumber(lot.quantityRemaining), formatMoney(lot.costBasisPerUnit), lot.source]} />
+          ))}
+        </TablePanel>
+        <div className="panel p-4">
+          <SectionTitle icon={<Calculator />} title="Estimated sale impact" termKey="unrealized_gain" />
+          <MetricCard title="Method" termKey="specific_lot" value={taxImpact.method.replaceAll("_", " ")} />
+          <MetricCard title="Realized gain" termKey="realized_gain" value={formatMoney(taxImpact.realizedGain)} />
+          <MetricCard title="Estimated fees" termKey="transaction_fee" value={formatMoney(taxImpact.estimatedFees)} />
+          <p className="mt-3 text-sm text-warning">{taxImpact.warning}</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HoldingsSection({
+  portfolio,
+  analysis,
+  instrumentCatalog
+}: { portfolio: Portfolio; analysis: ReturnType<typeof analyzePortfolio>; instrumentCatalog: Instrument[] }) {
+  return (
+    <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+      <TablePanel title="Holdings table" termKey="asset_allocation">
+        {portfolio.holdings.map((holding) => {
+          const instrument = instrumentCatalog.find((item) => item.instrumentId === holding.instrumentId);
+          const row = analysis.topHoldings.find((item) => item.key === holding.instrumentId);
+          return (
+            <TableRow
+              key={holding.holdingId}
+              cells={[
+                instrument?.symbol ?? holding.instrumentId,
+                instrument?.name ?? "Unknown",
+                formatNumber(holding.quantity),
+                row ? formatMoney(row.value) : "n/a",
+                row ? formatPercent(row.weight) : "n/a",
+                instrument?.priceQuality ?? "UNAVAILABLE"
+              ]}
+            />
+          );
+        })}
+      </TablePanel>
+      <ExposureTable title="Top holdings concentration" termKey="concentration" rows={analysis.topHoldings} />
+    </section>
+  );
+}
+
+function TransactionsSection({
+  portfolio,
+  csvText,
+  setCsvText,
+  csvErrors,
+  importCsv
+}: {
+  portfolio: Portfolio;
+  csvText: string;
+  setCsvText: (value: string) => void;
+  csvErrors: string[];
+  importCsv: () => void;
+}) {
+  return (
+    <section className="grid gap-4 xl:grid-cols-[1fr_0.8fr]">
+      <TablePanel title="Transactions table" termKey="money_weighted_return">
+        {portfolio.transactions.map((txn) => (
+          <TableRow key={txn.transactionId} cells={[txn.date, txn.type, txn.instrumentId, formatNumber(txn.quantity), formatMoney(txn.price), formatMoney(txn.amount)]} />
+        ))}
+      </TablePanel>
+      <div className="panel p-4">
+        <SectionTitle icon={<FileSpreadsheet />} title="Holdings CSV import" termKey="data_quality" />
+        <textarea className="input-control mt-3 min-h-40 w-full py-3 font-mono text-sm" value={csvText} onChange={(event) => setCsvText(event.target.value)} />
+        <button type="button" className="primary-action mt-3" onClick={importCsv}>Validate CSV</button>
+        {csvErrors.length ? <div className="signal-danger mt-3 p-3 text-sm">{csvErrors.join(" ")}</div> : null}
+      </div>
+    </section>
+  );
+}
+
+function SettingsSection({
+  section,
+  assumptions,
+  setAssumptions
+}: {
+  section: PortfolioSection;
+  assumptions: AssumptionSet;
+  setAssumptions: Dispatch<SetStateAction<AssumptionSet>>;
+}) {
+  const locale = useLocale();
+  const links = [
+    ["settings-profile", "Profile", `/${locale}/settings/profile`],
+    ["settings-assumptions", "Assumptions", `/${locale}/settings/assumptions`],
+    ["settings-data-sources", "Data sources", `/${locale}/settings/data-sources`],
+    ["settings-security", "Security", `/${locale}/settings/security`]
+  ] as const;
+  return (
+    <section className="grid gap-4 xl:grid-cols-[240px_1fr]">
+      <SideLinks active={section} links={links} />
+      <div className="panel p-4">
+        {section === "settings-profile" ? (
+          <>
+            <SectionTitle icon={<BriefcaseBusiness />} title="Profile" termKey="base_currency" />
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <StatusPill label="Base currency" value="USD" />
+              <StatusPill label="Tax region" value="User provided" />
+              <StatusPill label="Mode" value="Analysis only" />
+            </div>
+          </>
+        ) : null}
+        {section === "settings-assumptions" ? (
+          <>
+            <SectionTitle icon={<Calculator />} title="Assumption set" termKey="data_quality" />
+            <PercentField label="Risk-free rate" termKey="risk_free_rate" value={assumptions.riskFreeRate} onChange={(value) => setAssumptions((current) => ({ ...current, riskFreeRate: value }))} />
+            <PercentField label="Rebalancing band" termKey="rebalancing_band" value={assumptions.rebalanceBand} onChange={(value) => setAssumptions((current) => ({ ...current, rebalanceBand: value }))} />
+          </>
+        ) : null}
+        {section === "settings-data-sources" ? (
+          <>
+            <SectionTitle icon={<DatabaseZap />} title="Data-source policy" termKey="proxy" />
+            <DataSourceCards />
+          </>
+        ) : null}
+        {section === "settings-security" ? (
+          <>
+            <SectionTitle icon={<ShieldCheck />} title="Security boundary" termKey="data_quality" />
+            <ul className="mt-4 grid gap-3 text-sm text-muted">
+              <li>Protected server routes require server-side authorization; client hiding is not trusted.</li>
+              <li>CSV import rejects suspicious spreadsheet formula values.</li>
+              <li>Heavy work is designed for queueing or browser-side execution, not request-path CPU spikes.</li>
+              <li>No public route triggers LLM analysis or broker execution.</li>
+            </ul>
+          </>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function GlossarySection() {
+  return (
+    <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {Object.entries(portfolioTerms).map(([key, term]) => (
+        <div key={key} id={`term-${key}`} className="panel p-4">
+          <div className="text-xs font-semibold uppercase tracking-wide text-accent">{term.category.replace("_", " ")}</div>
+          <h2 className="mt-2 text-lg font-bold">{term.label}</h2>
+          <p className="mt-2 text-sm leading-6 text-muted">{term.short}</p>
+          {term.long ? <p className="mt-2 text-sm leading-6 text-muted">{term.long}</p> : null}
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function DataSourceCards() {
+  const rows = [
+    ["Manual input", "complete for user-entered holdings", "free"],
+    ["Daily market data", "delayed, cache-first, provider-policy constrained", "free quota"],
+    ["ETF look-through", "public filings where available; otherwise proxy", "partial"],
+    ["Tax rules", "user-provided lots only; no country-specific tax automation", "manual"]
+  ];
+  return (
+    <div className="mt-4 grid gap-3 md:grid-cols-2">
+      {rows.map(([title, body, badge]) => (
+        <div key={title} className="rounded-md border border-line bg-panelAlt p-4">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="font-semibold">{title}</h3>
+            <span className="badge border-line bg-panel text-muted">{badge}</span>
+          </div>
+          <p className="mt-2 text-sm leading-6 text-muted">{body}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DataQualityPanel({ issues }: { issues: ReturnType<typeof analyzePortfolio>["dataQualityIssues"] }) {
+  return (
+    <section className="panel p-4">
+      <SectionTitle icon={<DatabaseZap />} title="Data-quality ledger" termKey="data_quality" />
+      <div className="mt-3 grid gap-2 md:grid-cols-3">
+        {issues.map((issue) => (
+          <div key={issue.issueId} className="rounded-md border border-line bg-panelAlt p-3 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className="font-semibold">{issue.metricKey.replaceAll("_", " ")}</span>
+              <span className="badge border-line bg-panel text-muted">{issue.qualityLevel}</span>
+            </div>
+            <p className="safe-text mt-2 leading-6 text-muted">{issue.reason}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ExposureTable({ title, termKey, rows }: { title: string; termKey: string; rows: ExposureRow[] }) {
+  return (
+    <div className="panel p-4">
+      <SectionTitle icon={<BarChart3 />} title={title} termKey={termKey} />
+      <div className="mt-4 grid gap-3">
+        {rows.slice(0, 8).map((row) => (
+          <div key={row.key} className="grid gap-2 rounded-md border border-line bg-panelAlt p-3">
+            <div className="flex justify-between gap-3 text-sm font-semibold">
+              <span className="safe-text">{row.label}</span>
+              <span>{formatPercent(row.weight)}</span>
+            </div>
+            <div className="h-2 rounded bg-paper">
+              <div className="h-2 rounded bg-accent" style={{ width: `${Math.min(100, row.weight * 100)}%` }} />
+            </div>
+            <div className="safe-text text-xs text-muted">{row.topHoldings.join(" / ")} · {row.quality}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FundOverlapPanel({ rows }: { rows: ReturnType<typeof calculateFundOverlap> }) {
+  return (
+    <div className="panel p-4">
+      <SectionTitle icon={<Layers3 />} title="Fund overlap" termKey="fund_overlap" />
+      <div className="mt-4 grid gap-3">
+        {rows.length ? (
+          rows.slice(0, 6).map((row) => (
+            <div key={row.pairKey} className="rounded-md border border-line bg-panelAlt p-3">
+              <div className="flex justify-between gap-3 text-sm font-semibold">
+                <span>{row.leftSymbol} / {row.rightSymbol}</span>
+                <span className="text-accent">{formatPercent(row.overlapWeight)}</span>
+              </div>
+              <p className="safe-text mt-2 text-xs text-muted">
+                Shared: {row.sharedHoldings.slice(0, 4).map((item) => `${item.symbol} ${formatPercent(item.weight)}`).join(", ")}
+              </p>
+              <p className="mt-2 text-xs text-warning">Look-through data is partial/proxy where public holdings are delayed or incomplete.</p>
+            </div>
+          ))
+        ) : (
+          <div className="rounded-md border border-dashed border-line bg-panelAlt p-4 text-sm text-muted">
+            No source-backed fund overlap rows are available for the current holdings.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ExposureMap({ rows }: { rows: ExposureRow[] }) {
+  return (
+    <div className="mt-4 grid min-h-[300px] content-end rounded-md border border-line bg-[radial-gradient(circle_at_20%_20%,rgba(103,216,239,0.18),transparent_28%),linear-gradient(135deg,#0b1420,#111c28)] p-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        {rows.slice(0, 6).map((row) => (
+          <div key={row.key} className="rounded-md border border-accent/30 bg-accentSoft p-3">
+            <div className="text-sm font-bold text-accent">{row.label}</div>
+            <div className="mt-2 text-2xl font-bold">{formatPercent(row.weight)}</div>
+            <div className="safe-text mt-1 text-xs text-muted">{row.topHoldings.join(", ")}</div>
+          </div>
+      ))}
+      </div>
+      <p className="mt-4 text-xs text-muted">
+        Exposure uses listing country, domicile, currency, and available fund look-through. Missing look-through stays labeled instead of inferred.
+      </p>
+    </div>
+  );
+}
+
+function SunburstLike({ rows }: { rows: ExposureRow[] }) {
+  return (
+    <div className="mt-4 grid min-h-[300px] grid-cols-2 gap-2 md:grid-cols-3">
+      {rows.map((row, index) => (
+        <div
+          key={row.key}
+          className="grid place-items-center rounded-md border border-line bg-panelAlt p-3 text-center"
+          style={{ minHeight: `${Math.max(80, 220 * row.weight)}px`, opacity: 1 - index * 0.04 }}
+        >
+          <div>
+            <div className="safe-text text-sm font-bold">{row.label}</div>
+            <div className="mt-1 text-2xl font-bold text-accent">{formatPercent(row.weight)}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RiskConstellation({ rows }: { rows: ExposureRow[] }) {
+  const topRows = rows.slice(0, 8);
+  const maxWeight = Math.max(...topRows.map((row) => row.weight), 0.01);
+  return (
+    <div className="panel p-4">
+      <SectionTitle icon={<Activity />} title="Holding concentration risk" termKey="risk_contribution" />
+      <p className="safe-text mt-2 text-sm leading-6 text-muted">
+        Until per-holding volatility and correlation data are connected, this ranks risk by portfolio weight and flags concentration.
+      </p>
+      <div className="mt-4 grid gap-3">
+        {topRows.map((row) => {
+          const riskLabel = row.weight >= 0.2 ? "High concentration" : row.weight >= 0.1 ? "Medium concentration" : "Lower concentration";
+          const tone = row.weight >= 0.2 ? "text-danger" : row.weight >= 0.1 ? "text-warning" : "text-accent";
+          return (
+            <div key={row.key} className="rounded-md border border-line bg-panelAlt p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="safe-text text-sm font-bold">{row.label}</div>
+                  <div className={`mt-1 text-xs font-semibold ${tone}`}>{riskLabel}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold">{formatPercent(row.weight)}</div>
+                  <div className="text-xs text-muted">{formatMoney(row.value)}</div>
+                </div>
+              </div>
+              <div className="mt-3 h-2 rounded bg-paper">
+                <div className={`h-2 rounded ${row.weight >= 0.2 ? "bg-danger" : row.weight >= 0.1 ? "bg-warning" : "bg-accent"}`} style={{ width: `${Math.max(4, (row.weight / maxWeight) * 100)}%` }} />
+              </div>
+              <div className="safe-text mt-2 text-xs text-muted">{row.topHoldings.join(" / ")} · {row.quality}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function FanChart({ rows, targetAmount }: { rows: { month: number; p10: number; median: number; p90: number }[]; targetAmount: number }) {
+  const max = Math.max(targetAmount, ...rows.map((row) => row.p90), 1);
+  return (
+    <div className="mt-4 grid gap-2">
+      {rows.map((row) => (
+        <div key={row.month} className="grid grid-cols-[72px_1fr] items-center gap-3">
+          <span className="text-xs font-semibold text-muted">M{row.month}</span>
+          <div className="relative h-8 rounded bg-panelAlt">
+            <div className="absolute top-1/2 h-3 -translate-y-1/2 rounded bg-accent/20" style={{ left: `${(row.p10 / max) * 100}%`, width: `${Math.max(2, ((row.p90 - row.p10) / max) * 100)}%` }} />
+            <div className="absolute top-1/2 h-5 w-1 -translate-y-1/2 rounded bg-accent" style={{ left: `${Math.min(100, (row.median / max) * 100)}%` }} />
+            <div className="absolute top-0 h-8 w-px bg-warning" style={{ left: `${Math.min(100, (targetAmount / max) * 100)}%` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LineBars({ rows }: { rows: { label: string; value: number }[] }) {
+  const max = Math.max(...rows.map((row) => row.value), 1);
+  return (
+    <div className="mt-4 flex h-72 items-end gap-1 overflow-hidden rounded-md border border-line bg-panelAlt p-3" aria-label="Backtest equity curve">
+      {rows.map((row, index) => (
+        <div key={`${row.label}-${index}`} className="min-w-2 flex-1 rounded-t bg-accent" style={{ height: `${Math.max(2, (row.value / max) * 100)}%` }} title={`${row.label}: ${formatMoney(row.value)}`} />
+      ))}
+    </div>
+  );
+}
+
+function Compass({ rows }: { rows: ReturnType<typeof analyzePortfolio>["currentTargetRows"] }) {
+  return (
+    <div className="mt-4 grid gap-3">
+      {rows.map((row) => (
+        <div key={row.key} className="grid gap-2">
+          <div className="flex justify-between gap-3 text-sm font-semibold">
+            <span>{row.key}</span>
+            <span className={row.drift > 0 ? "text-warning" : "text-accent"}>{row.drift > 0 ? "overweight" : "underweight"} {formatPercent(Math.abs(row.drift))}</span>
+          </div>
+          <div className="relative h-4 rounded bg-panelAlt">
+            <div className="absolute left-1/2 top-0 h-4 w-px bg-muted" />
+            <div className={`absolute top-1 h-2 rounded ${row.drift > 0 ? "bg-warning" : "bg-accent"}`} style={{ left: row.drift > 0 ? "50%" : `${50 - Math.min(48, Math.abs(row.drift) * 180)}%`, width: `${Math.max(2, Math.min(48, Math.abs(row.drift) * 180))}%` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CockpitCard({
+  icon,
+  title,
+  termKey,
+  value,
+  detail,
+  tone = "normal"
+}: {
+  icon: ReactNode;
+  title: string;
+  termKey: string;
+  value: string;
+  detail: string;
+  tone?: "normal" | "watch" | "risk";
+}) {
+  const toneClass = tone === "risk" ? "text-danger" : tone === "watch" ? "text-warning" : "text-accent";
+  return (
+    <div className="panel min-w-0 p-4">
+      <div className={`flex items-center gap-2 text-sm font-semibold ${toneClass}`}>
+        <IconWrap>{icon}</IconWrap>
+        <MetricLabel label={title} termKey={termKey} />
+      </div>
+      <div className="safe-text mt-3 text-2xl font-bold">{value}</div>
+      <p className="safe-text mt-2 text-sm leading-6 text-muted">{detail}</p>
+    </div>
+  );
+}
+
+function MetricCard({ title, termKey, value }: { title: string; termKey: string; value: string }) {
+  return (
+    <div className="rounded-md border border-line bg-panelAlt p-3">
+      <div className="text-xs font-semibold uppercase tracking-wide text-muted"><MetricLabel label={title} termKey={termKey} /></div>
+      <div className="safe-text mt-2 text-lg font-bold">{value}</div>
+    </div>
+  );
+}
+
+function SectionTitle({ icon, title, termKey }: { icon: ReactNode; title: string; termKey: string }) {
+  return (
+    <div className="flex items-center gap-2 text-lg font-bold">
+      <IconWrap>{icon}</IconWrap>
+      <MetricLabel label={title} termKey={termKey} />
+    </div>
+  );
+}
+
+function MetricLabel({ label, termKey }: { label: string; termKey: string }) {
+  return (
+    <span className="inline-flex min-w-0 items-center gap-1.5">
+      <span className="safe-text">{label}</span>
+      <TermTooltip termKey={termKey} />
+    </span>
+  );
+}
+
+function IconWrap({ children }: { children: ReactNode }) {
+  return <span className="[&>svg]:h-4 [&>svg]:w-4">{children}</span>;
+}
+
+function StatusPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-line bg-panelAlt p-3">
+      <div className="text-xs font-semibold uppercase tracking-wide text-muted">
+        <MetricLabel label={label} termKey={statusPillTermKey(label)} />
+      </div>
+      <div className="safe-text mt-1 font-bold">{value}</div>
+    </div>
+  );
+}
+
+function statusPillTermKey(label: string) {
+  const normalized = label.toLowerCase();
+  if (normalized.includes("currency")) return "base_currency";
+  if (normalized.includes("fee")) return "fee_drag";
+  if (normalized.includes("drift")) return "allocation_drift";
+  if (normalized.includes("holdings")) return "asset_allocation";
+  if (normalized.includes("storage") || normalized.includes("data") || normalized.includes("mode")) return "data_quality";
+  if (normalized.includes("paths") || normalized.includes("method")) return "monte_carlo";
+  if (normalized.includes("execution")) return "rebalancing";
+  return "data_quality";
+}
+
+function StepCard({ number, title, body }: { number: string; title: string; body: string }) {
+  return (
+    <div className="panel p-4">
+      <div className="grid h-9 w-9 place-items-center rounded-md bg-accent text-sm font-bold text-paper">{number}</div>
+      <h2 className="mt-4 text-xl font-bold">{title}</h2>
+      <p className="mt-2 text-sm leading-6 text-muted">{body}</p>
+    </div>
+  );
+}
+
+function NumberField({ label, termKey, value, onChange }: { label: string; termKey: string; value: number; onChange: (value: number) => void }) {
+  return (
+    <label className="mt-4 block text-sm font-semibold">
+      <MetricLabel label={label} termKey={termKey} />
+      <input className="input-control mt-2 w-full" type="number" min={0} value={value} onChange={(event) => onChange(Number(event.target.value))} />
+    </label>
+  );
+}
+
+function PercentField({ label, termKey, value, onChange }: { label: string; termKey: string; value: number; onChange: (value: number) => void }) {
+  return (
+    <label className="mt-4 block text-sm font-semibold">
+      <MetricLabel label={label} termKey={termKey} />
+      <input className="input-control mt-2 w-full" type="number" min={0} step={0.01} value={(value * 100).toFixed(2)} onChange={(event) => onChange(Number(event.target.value) / 100)} />
+    </label>
+  );
+}
+
+function ManualTextField({
+  label,
+  value,
+  onChange,
+  required = false,
+  maxLength = MANUAL_TEXT_MAX_LENGTH,
+  pattern
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  required?: boolean;
+  maxLength?: number;
+  pattern?: string;
+}) {
+  const id = useId();
+  const invalid = required && !value.trim();
+  return (
+    <label className="block text-xs font-semibold" htmlFor={id}>
+      {label}{required ? "*" : ""}
+      <input
+        id={id}
+        className="input-control mt-1 w-full"
+        required={required}
+        maxLength={maxLength}
+        pattern={pattern}
+        aria-invalid={invalid || undefined}
+        value={value}
+        onChange={(event) => onChange(event.target.value.slice(0, maxLength))}
+      />
+    </label>
+  );
+}
+
+function ManualNumberField({
+  label,
+  value,
+  onChange,
+  required = false,
+  min,
+  max
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  required?: boolean;
+  min: number;
+  max: number;
+}) {
+  const id = useId();
+  const numeric = value.trim() ? Number(value) : NaN;
+  const invalid = required ? !Number.isFinite(numeric) || numeric < min || numeric > max : value.trim() ? !Number.isFinite(numeric) || numeric < min || numeric > max : false;
+  return (
+    <label className="block text-xs font-semibold" htmlFor={id}>
+      {label}{required ? "*" : ""}
+      <input
+        id={id}
+        className="input-control mt-1 w-full"
+        type="number"
+        min={min}
+        max={max}
+        required={required}
+        aria-invalid={invalid || undefined}
+        value={value}
+        onChange={(event) => onChange(event.target.value.slice(0, 24))}
+      />
+    </label>
+  );
+}
+
+function TablePanel({ title, termKey, children }: { title: string; termKey: string; children: ReactNode }) {
+  return (
+    <div className="panel min-w-0 p-4">
+      <SectionTitle icon={<FileSpreadsheet />} title={title} termKey={termKey} />
+      <div className="table-surface mt-4">
+        <div className="min-w-[720px] divide-y divide-line">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function TableRow({ cells }: { cells: ReactNode[] }) {
+  return (
+    <div className="grid gap-3 px-3 py-3 text-sm even:bg-panelAlt/50" style={{ gridTemplateColumns: `repeat(${cells.length}, minmax(120px, 1fr))` }}>
+      {cells.map((cell, index) => (
+        <div key={index} className="safe-text min-w-0">
+          {cell}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SideLinks({ active, links }: { active: PortfolioSection; links: readonly (readonly [PortfolioSection, string, string])[] }) {
+  const navigate = useNavigate();
+  return (
+    <nav className="panel grid content-start gap-2 p-3" aria-label="Subsection navigation">
+      {links.map(([key, label, href]) => (
+        <a
+          key={key}
+          href={href}
+          onClick={(event) => {
+            event.preventDefault();
+            void navigate({ to: href as never });
+          }}
+          className={`focus-ring rounded-md px-3 py-3 text-sm font-semibold ${active === key ? "bg-accentSoft text-accent" : "text-muted hover:bg-panelAlt hover:text-ink"}`}
+        >
+          {label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function normalizedInstrumentId(value: string) {
+  return value.trim().toUpperCase().replace(/[^A-Z0-9.\-]/g, "-").replace(/-+/g, "-");
+}
+
+function toSafeId(value: string) {
+  const safe = value.trim().toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-");
+  return safe.replace(/^-|-$/g, "") || "holding";
+}
+
+type StoredPortfolioWorkspace = {
+  version: number;
+  portfolio: Portfolio;
+  manualInstruments: Instrument[];
+  reviewRequests: InstrumentReviewRequest[];
+  assumptions: AssumptionSet;
+};
+
+function createPortfolioForWorkspace(portfolioId: string): Portfolio {
+  const demo = createDemoPortfolio();
+  if (portfolioId === demo.portfolioId) return demo;
   return {
-    start: formatLocalDate(start),
-    end: formatLocalDate(end)
+    ...demo,
+    portfolioId,
+    name: `${portfolioId} workspace`,
+    description: "User-local planning workspace based on the demo template.",
+    isDemo: false,
+    holdings: demo.holdings.map((holding) => ({ ...holding, portfolioId })),
+    transactions: [],
+    taxLots: [],
+    goal: { ...demo.goal, portfolioId }
   };
 }
 
-function formatLocalDate(date: Date) {
-  const offsetMs = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 10);
+function workspaceStorageKey(portfolioId: string) {
+  return `${PORTFOLIO_WORKSPACE_STORAGE_PREFIX}${toSafeId(portfolioId)}`;
+}
+
+function canPersistWorkspace(portfolioId: string) {
+  return portfolioId === "demo-growth-income";
+}
+
+function loadPortfolioWorkspace(portfolioId: string): StoredPortfolioWorkspace | null {
+  if (!canPersistWorkspace(portfolioId)) return null;
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(workspaceStorageKey(portfolioId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<StoredPortfolioWorkspace>;
+    if (parsed.version !== PORTFOLIO_WORKSPACE_STORAGE_VERSION || !parsed.portfolio) return null;
+    return {
+      version: PORTFOLIO_WORKSPACE_STORAGE_VERSION,
+      portfolio: parsed.portfolio,
+      manualInstruments: parsed.manualInstruments ?? [],
+      reviewRequests: parsed.reviewRequests ?? [],
+      assumptions: parsed.assumptions ?? defaultAssumptions
+    };
+  } catch {
+    return null;
+  }
+}
+
+function savePortfolioWorkspace(portfolioId: string, workspace: Omit<StoredPortfolioWorkspace, "version">) {
+  if (!canPersistWorkspace(portfolioId)) return;
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      workspaceStorageKey(portfolioId),
+      JSON.stringify({ version: PORTFOLIO_WORKSPACE_STORAGE_VERSION, ...workspace })
+    );
+  } catch {
+    // Browser storage may be disabled or full; the workspace still functions as an in-memory session.
+  }
+}
+
+function clearSourceLinkedRecords(portfolio: Portfolio): Portfolio {
+  if (!portfolio.transactions.length && !portfolio.taxLots.length) return portfolio;
+  return { ...portfolio, transactions: [], taxLots: [] };
+}
+
+function cleanManualText(value: string) {
+  return value.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, MANUAL_TEXT_MAX_LENGTH);
+}
+
+function cleanCurrency(value: string) {
+  const normalized = value.trim().toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3);
+  return /^[A-Z]{3}$/.test(normalized) ? normalized : "USD";
+}
+
+function validateManualDraft(draft: ManualHoldingDraft): string[] {
+  const errors: string[] = [];
+  const symbol = cleanManualText(draft.symbolOrCode);
+  const name = cleanManualText(draft.name);
+  const currency = draft.currency.trim().toUpperCase();
+  const quantity = Number(draft.quantityText);
+  const price = draft.priceText.trim() ? Number(draft.priceText) : undefined;
+  const marketValue = draft.marketValueText.trim() ? Number(draft.marketValueText) : undefined;
+  if (!symbol) errors.push("Symbol or local code is required.");
+  if (!name) errors.push("Instrument name is required.");
+  if (!/^[A-Z]{3}$/.test(currency)) errors.push("Currency must be a 3-letter ISO-style code such as USD, KRW, or JPY.");
+  if (!draft.assetClass) errors.push("Asset class is required.");
+  if (!Number.isFinite(quantity) || quantity <= 0 || quantity > MANUAL_QUANTITY_MAX) {
+    errors.push("Quantity must be a positive finite number.");
+  }
+  if (price !== undefined && (!Number.isFinite(price) || price < 0 || price > MANUAL_MONEY_MAX)) {
+    errors.push("Price must be a non-negative finite number.");
+  }
+  if (marketValue !== undefined && (!Number.isFinite(marketValue) || marketValue < 0 || marketValue > MANUAL_MONEY_MAX)) {
+    errors.push("Market value must be a non-negative finite number.");
+  }
+  if (price === undefined && marketValue === undefined) {
+    errors.push("Enter either price or market value so the holding is visible in portfolio value.");
+  }
+  return errors;
+}
+
+function portfolioIdFromPath(pathname: string): string | null {
+  const path = pathname.replace(/^\/(en|ko)(?=\/|$)/, "") || "/";
+  const match = path.match(/^\/portfolios\/([^/]+)/);
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
+function sectionFromPath(pathname: string): PortfolioSection {
+  const path = pathname.replace(/^\/(en|ko)(?=\/|$)/, "") || "/";
+  if (path === "/portfolio" || path === "/dashboard") return "dashboard";
+  if (path === "/onboarding") return "onboarding";
+  if (path === "/portfolios") return "portfolios";
+  if (path.includes("/portfolio/glossary")) return "glossary";
+  if (path === "/settings") return "settings-profile";
+  if (/^\/portfolios\/[^/]+$/.test(path)) return "overview";
+  const endings: [string, PortfolioSection][] = [
+    ["/xray", "xray"],
+    ["/atlas", "atlas"],
+    ["/builder", "builder"],
+    ["/backtest", "backtest"],
+    ["/monte-carlo", "monte-carlo"],
+    ["/rebalance", "rebalance"],
+    ["/fees", "fees"],
+    ["/tax-lots", "tax-lots"],
+    ["/holdings", "holdings"],
+    ["/transactions", "transactions"],
+    ["/settings/profile", "settings-profile"],
+    ["/settings/assumptions", "settings-assumptions"],
+    ["/settings/data-sources", "settings-data-sources"],
+    ["/settings/security", "settings-security"]
+  ];
+  return endings.find(([ending]) => path.endsWith(ending))?.[1] ?? "dashboard";
+}
+
+function formatMoney(value: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
+}
+
+function formatPercent(value: number) {
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value);
 }

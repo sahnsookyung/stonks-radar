@@ -14,7 +14,49 @@ test("public routes render from snapshots", async ({ page }) => {
   await page.goto("/en/news");
   await expect(page.getByText("Source-Linked Event News")).toBeVisible();
   await page.goto("/en/portfolio");
-  await expect(page.getByText("Portfolio lab")).toBeVisible();
+  await expect(page.getByText("Portfolio Builder")).toBeVisible();
+  await expect(page.getByText("Goal runway")).toBeVisible();
+  await page.goto("/en/dashboard");
+  await expect(page.getByText("Cockpit").first()).toBeVisible();
+  await page.goto("/en/onboarding");
+  await expect(page.getByText("CSV import", { exact: true })).toBeVisible();
+  await page.goto("/en/portfolios");
+  await expect(page.getByRole("heading", { name: "Growth + shock absorber portfolio" })).toBeVisible();
+  await page.goto("/en/portfolios/demo-growth-income/xray");
+  await expect(page.getByText("Geographic exposure").first()).toBeVisible();
+  await page.goto("/en/portfolios/demo-growth-income/atlas");
+  await expect(page.getByText("Asset-class allocation")).toBeVisible();
+  await expect(page.getByText("Edit holdings")).toBeVisible();
+  await page.goto("/en/portfolios/demo-growth-income/builder");
+  await expect(page.getByText("Target allocation").first()).toBeVisible();
+  await expect(page.getByText("Edit holdings")).toBeVisible();
+  await page.goto("/en/portfolios/demo-growth-income/backtest");
+  await expect(page.getByText("Backtest equity curve")).toBeVisible();
+  await page.goto("/en/portfolios/demo-growth-income/monte-carlo");
+  await expect(page.getByText("Monte Carlo fan chart")).toBeVisible();
+  await page.goto("/en/portfolios/demo-growth-income/rebalance");
+  await expect(page.getByText("Contribution-first plan")).toBeVisible();
+  await page.goto("/en/portfolios/demo-growth-income/fees");
+  await expect(page.getByText("Fee leak chart")).toBeVisible();
+  await page.goto("/en/portfolios/demo-growth-income/tax-lots");
+  await expect(page.getByRole("heading", { name: "Tax lots" })).toBeVisible();
+  await page.goto("/en/portfolios/demo-growth-income/holdings");
+  await expect(page.getByText("Holdings table")).toBeVisible();
+  await page.goto("/en/portfolios/demo-growth-income/transactions");
+  await expect(page.getByText("Transactions table")).toBeVisible();
+  await page.goto("/en/settings/profile");
+  await expect(page.getByText("Security boundary")).toHaveCount(0);
+  await expect(page.getByText("USD").first()).toBeVisible();
+  await page.goto("/en/settings/security");
+  await expect(page.getByText("Security boundary")).toBeVisible();
+  await page.goto("/admin/feature-gates");
+  await expect(page.getByRole("heading", { name: "Admin session required" })).toBeVisible();
+  await page.goto("/en/portfolio/glossary");
+  await expect(page.getByRole("heading", { name: "Maximum drawdown" })).toBeVisible();
+  await page.goto("/en/funds");
+  await expect(page.getByRole("heading", { name: "Funds Tracker" })).toBeVisible();
+  await expect(page.getByText("Disclosure confidence interval", { exact: true })).toBeVisible();
+  await expect(page.getByText("not a real-time portfolio")).toBeVisible();
   await page.goto("/en/funds/situational-awareness");
   await expect(page.getByText("Leopold Aschenbrenner 13F Portfolio")).toBeVisible();
   await expect(page.getByText("Public 13F portfolio")).toBeVisible();
@@ -54,6 +96,26 @@ test("ticker detail news tab renders ticker snapshot", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /005930.KS/ })).toBeVisible();
   await page.goto("/en/tickers/005930.KS");
   await expect(page.getByRole("heading", { name: /005930.KS/ })).toBeVisible();
+});
+
+test("portfolio ticker autocomplete resolves identifiers locally and exposes held-state", async ({ page }) => {
+  await page.addInitScript(() => window.localStorage.clear());
+  await page.goto("/en/portfolios/demo-growth-income/builder");
+  const apiRequests: string[] = [];
+  page.on("request", (request) => {
+    const url = request.url();
+    if (url.includes("/api/")) apiRequests.push(url);
+  });
+
+  const search = page.getByRole("combobox", { name: "Add holding" });
+  await search.fill("US67066G1040");
+  await expect(page.getByRole("option", { name: /NVDA/ })).toBeVisible();
+  await page.getByRole("option", { name: /NVDA/ }).click();
+  await expect(page.getByText("NVDA").first()).toBeVisible();
+
+  await search.fill("AAPL");
+  await expect(page.getByText("Already in this workspace")).toBeVisible();
+  expect(apiRequests.every((url) => url.includes("/api/instruments/search"))).toBeTruthy();
 });
 
 test("sector pages use ticker-specific modules and reference entities route", async ({ page }) => {

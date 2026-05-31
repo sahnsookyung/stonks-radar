@@ -86,7 +86,11 @@ export function normalizeWeights(holdings: HoldingWeight[]): Map<string, number>
     .map((item) => ({ symbol: item.symbol.trim().toUpperCase(), weight: Number(item.weight) }))
     .filter((item) => item.symbol && Number.isFinite(item.weight) && item.weight > 0);
   const total = cleaned.reduce((sum, item) => sum + item.weight, 0);
-  return new Map(cleaned.map((item) => [item.symbol, total > 0 ? item.weight / total : 0]));
+  const aggregated = new Map<string, number>();
+  for (const item of cleaned) {
+    aggregated.set(item.symbol, (aggregated.get(item.symbol) ?? 0) + item.weight);
+  }
+  return new Map([...aggregated.entries()].map(([symbol, weight]) => [symbol, total > 0 ? weight / total : 0]));
 }
 
 export function returnsByDate(points: PricePoint[]): Record<string, number> {

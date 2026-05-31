@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { AlertTriangle, Database, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { apiGet, apiPost } from "../lib/api";
+import { featureGates, usageQuotas } from "../lib/portfolioAtlas";
 
 interface AdminDashboardPayload {
   user: { email: string; role: string };
@@ -57,12 +58,53 @@ interface AdminDashboardPayload {
   }[];
 }
 
+interface AdminInstrumentSearchPayload {
+  results: {
+    instrumentId: string;
+    listingId: string;
+    displaySymbol: string;
+    name: string;
+    exchange: string;
+    country: string;
+    currency: string;
+    assetClass: string;
+    instrumentType: string;
+    qualityLevel: string;
+  }[];
+  dataFreshness?: { instrumentIndexLastUpdatedAt?: string; status?: string };
+}
+
+interface AdminInstrumentReviewPayload {
+  items: {
+    id: string;
+    query: string;
+    context_screen: string;
+    optional_notes: string | null;
+    status: string;
+    admin_notes: string | null;
+    created_at: string;
+  }[];
+}
+
 export function AdminDashboard() {
   const csrf = sessionStorage.getItem("frw_csrf") ?? undefined;
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const section = adminSectionFromPath(pathname);
   const [message, setMessage] = useState<string | null>(null);
+  const [instrumentQuery, setInstrumentQuery] = useState("AAPL");
   const query = useQuery({
     queryKey: ["admin-dashboard"],
     queryFn: () => apiGet<AdminDashboardPayload>("/api/admin/dashboard")
+  });
+  const instrumentSearch = useQuery({
+    queryKey: ["admin-instruments-search", instrumentQuery],
+    queryFn: () => apiGet<AdminInstrumentSearchPayload>(`/api/admin/instruments/search?q=${encodeURIComponent(instrumentQuery || "A")}`),
+    enabled: section === "instruments" && Boolean(query.data)
+  });
+  const instrumentReviews = useQuery({
+    queryKey: ["admin-instrument-review-requests"],
+    queryFn: () => apiGet<AdminInstrumentReviewPayload>("/api/admin/instruments/review-requests"),
+    enabled: section === "instruments" && Boolean(query.data)
   });
 
   if (query.isLoading) {
@@ -128,7 +170,7 @@ export function AdminDashboard() {
   async function toggleKillSwitch(budgetId: string, enabled: boolean) {
     setMessage(null);
     try {
-      await apiPost(`/api/admin/provider-budgets/${budgetId}/kill-switch`, { enabled }, csrf);
+      await apiPost(`/api/admin/provider-budgets/${encodeURIComponent(budgetId)}/kill-switch`, { enabled }, csrf);
       setMessage(enabled ? "Provider kill switch enabled." : "Provider kill switch disabled.");
       await query.refetch();
     } catch (error) {
@@ -139,7 +181,7 @@ export function AdminDashboard() {
   async function replayJob(jobId: string) {
     setMessage(null);
     try {
-      await apiPost(`/api/admin/jobs/${jobId}/replay`, {}, csrf);
+      await apiPost(`/api/admin/jobs/${encodeURIComponent(jobId)}/replay`, {}, csrf);
       setMessage("Dead-letter job queued for replay.");
       await query.refetch();
     } catch (error) {
@@ -150,7 +192,7 @@ export function AdminDashboard() {
   async function reviewFact(factId: string, decision: string, publicAllowed: boolean) {
     setMessage(null);
     try {
-      await apiPost(`/api/admin/source-facts/${factId}/review`, { decision, public_allowed: publicAllowed }, csrf);
+      await apiPost(`/api/admin/source-facts/${encodeURIComponent(factId)}/review`, { decision, public_allowed: publicAllowed }, csrf);
       setMessage("Fact review saved.");
       await query.refetch();
     } catch (error) {
@@ -161,11 +203,37 @@ export function AdminDashboard() {
   async function reviewEvent(eventId: string, decision: string, publicAllowed: boolean) {
     setMessage(null);
     try {
-      await apiPost(`/api/admin/events/${eventId}/review`, { decision, public_allowed: publicAllowed }, csrf);
+      await apiPost(`/api/admin/events/${encodeURIComponent(eventId)}/review`, { decision, public_allowed: publicAllowed }, csrf);
       setMessage("Event review saved.");
       await query.refetch();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to review event");
+    }
+  }
+
+  async function updateInstrumentReview(requestId: string, status: string) {
+    setMessage(null);
+    try {
+      await apiPost(`/api/admin/instruments/review-requests/${encodeURIComponent(requestId)}`, { status }, csrf);
+      setMessage("Instrument review request updated.");
+      await instrumentReviews.refetch();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to update instrument review request");
+    }
+  }
+
+  async function refreshInstrumentIndex() {
+    setMessage(null);
+    try {
+      const result = await apiPost<{ job_id: string; refresh?: { instrument_count?: number; listing_count?: number } }>(
+        "/api/admin/instruments/refresh",
+        { source: "LOCAL_STATIC_INDEX", mode: "INCREMENTAL", priority: "HIGH" },
+        csrf
+      );
+      setMessage(`Instrument index cache refreshed (${result.refresh?.instrument_count ?? "?"} instruments); worker sync queued: ${result.job_id}`);
+      await instrumentSearch.refetch();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to queue instrument refresh");
     }
   }
 
@@ -176,7 +244,7 @@ export function AdminDashboard() {
           <div>
             <h1 className="text-3xl font-bold">Admin Console</h1>
             <p className="mt-1 text-sm text-muted">
-              {query.data.user.email} · {query.data.user.role}
+              {query.data.user.email} · {query.data.user.role} · {adminSectionTitle(section)}
             </p>
           </div>
           <button
@@ -195,15 +263,44 @@ export function AdminDashboard() {
           </button>
         </header>
         {message ? <div className="signal-warning p-3 text-sm">{message}</div> : null}
-        <section className="grid gap-4 md:grid-cols-4">
-          {Object.entries(query.data.metrics).map(([key, value]) => (
-            <div key={key} className="panel p-4">
-              <div className="text-xs uppercase text-muted">{key.replaceAll("_", " ")}</div>
-              <div className="mt-2 text-2xl font-bold">{String(value ?? "n/a")}</div>
-            </div>
+        <nav className="scroll-fade-x flex gap-2 overflow-x-auto pb-2" data-allow-horizontal-scroll aria-label="Admin sections">
+          {adminSections.map(([key, label, href]) => (
+            <Link
+              key={key}
+              to={href}
+              className={`focus-ring inline-flex min-h-11 shrink-0 items-center rounded-md border px-3 text-sm font-semibold ${
+                section === key ? "border-accent bg-accentSoft text-accent" : "border-line bg-panel text-muted hover:border-accent hover:text-ink"
+              }`}
+            >
+              {label}
+            </Link>
           ))}
-        </section>
-        <section className="grid gap-4 lg:grid-cols-2">
+        </nav>
+        {section === "overview" || section === "usage" || section === "system-config" ? (
+          <section className="grid gap-4 md:grid-cols-4">
+            {Object.entries(query.data.metrics).map(([key, value]) => (
+              <div key={key} className="panel p-4">
+                <div className="text-xs uppercase text-muted">{key.replaceAll("_", " ")}</div>
+                <div className="mt-2 text-2xl font-bold">{String(value ?? "n/a")}</div>
+              </div>
+            ))}
+          </section>
+        ) : null}
+        {section === "feature-gates" ? <FeatureGateAdminPanel /> : null}
+        {section === "instruments" ? (
+          <InstrumentAdminPanel
+            query={instrumentQuery}
+            setQuery={setInstrumentQuery}
+            search={instrumentSearch.data}
+            reviews={instrumentReviews.data}
+            loading={instrumentSearch.isLoading || instrumentReviews.isLoading}
+            updateReview={updateInstrumentReview}
+            refreshIndex={refreshInstrumentIndex}
+          />
+        ) : null}
+        {section === "users" || section === "usage" ? <UsageAdminPanel currentUser={query.data.user} /> : null}
+        {section === "jobs" || section === "queues" || section === "overview" ? (
+          <section className="grid gap-4 lg:grid-cols-2">
           <div className="panel p-4">
             <div className="mb-3 flex items-center gap-2 font-semibold">
               <Database className="h-4 w-4" />
@@ -256,7 +353,9 @@ export function AdminDashboard() {
             </div>
           </div>
         </section>
-        <section className="panel p-4">
+        ) : null}
+        {section === "data-sources" || section === "overview" || section === "system-config" ? (
+          <section className="panel p-4">
           <div className="mb-3 flex items-center gap-2 font-semibold">
             <Database className="h-4 w-4" />
             Source health
@@ -282,7 +381,9 @@ export function AdminDashboard() {
             </table>
           </div>
         </section>
-        <section className="grid gap-4 lg:grid-cols-2">
+        ) : null}
+        {section === "overview" ? (
+          <section className="grid gap-4 lg:grid-cols-2">
           <div className="panel p-4">
             <div className="mb-3 font-semibold">Fact review</div>
             <div className="grid gap-2 text-sm">
@@ -318,7 +419,9 @@ export function AdminDashboard() {
             </div>
           </div>
         </section>
-        <section className="panel p-4">
+        ) : null}
+        {section === "overview" || section === "jobs" || section === "queues" ? (
+          <section className="panel p-4">
           <div className="mb-3 flex items-center gap-2 font-semibold">
             <RefreshCw className="h-4 w-4" />
             Snapshot candidates
@@ -357,7 +460,178 @@ export function AdminDashboard() {
             </table>
           </div>
         </section>
+        ) : null}
       </div>
     </main>
+  );
+}
+
+type AdminSection = "overview" | "feature-gates" | "users" | "usage" | "jobs" | "queues" | "data-sources" | "instruments" | "system-config";
+
+const adminSections: readonly (readonly [AdminSection, string, string])[] = [
+  ["overview", "Overview", "/admin"],
+  ["feature-gates", "Feature gates", "/admin/feature-gates"],
+  ["users", "Users", "/admin/users"],
+  ["usage", "Usage", "/admin/usage"],
+  ["jobs", "Jobs", "/admin/jobs"],
+  ["queues", "Queues", "/admin/queues"],
+  ["data-sources", "Data sources", "/admin/data-sources"],
+  ["instruments", "Instruments", "/admin/instruments"],
+  ["system-config", "System config", "/admin/system-config"]
+];
+
+function adminSectionFromPath(pathname: string): AdminSection {
+  if (pathname.endsWith("/feature-gates")) return "feature-gates";
+  if (pathname.endsWith("/users")) return "users";
+  if (pathname.endsWith("/usage")) return "usage";
+  if (pathname.endsWith("/jobs")) return "jobs";
+  if (pathname.endsWith("/queues")) return "queues";
+  if (pathname.endsWith("/data-sources")) return "data-sources";
+  if (pathname.endsWith("/instruments")) return "instruments";
+  if (pathname.endsWith("/system-config")) return "system-config";
+  return "overview";
+}
+
+function adminSectionTitle(section: AdminSection) {
+  return adminSections.find(([key]) => key === section)?.[1] ?? "Overview";
+}
+
+function InstrumentAdminPanel({
+  query,
+  setQuery,
+  search,
+  reviews,
+  loading,
+  updateReview,
+  refreshIndex
+}: {
+  query: string;
+  setQuery: (value: string) => void;
+  search?: AdminInstrumentSearchPayload;
+  reviews?: AdminInstrumentReviewPayload;
+  loading: boolean;
+  updateReview: (requestId: string, status: string) => void;
+  refreshIndex: () => void;
+}) {
+  return (
+    <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="panel p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="font-semibold">Instrument search</div>
+            <p className="mt-1 text-sm text-muted">Local autocomplete index; no external provider calls are made from keystrokes.</p>
+          </div>
+          <button type="button" className="secondary-action h-10 px-3 py-0" onClick={refreshIndex}>
+            <RefreshCw className="h-4 w-4" />
+            Refresh cache
+          </button>
+        </div>
+        <input
+          className="input-control mt-4 w-full"
+          maxLength={64}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search ticker, company, ISIN, FIGI, or local code"
+        />
+        <div className="mt-3 text-xs text-muted">
+          Index {search?.dataFreshness?.status?.toLowerCase() ?? "status unknown"} · updated{" "}
+          {search?.dataFreshness?.instrumentIndexLastUpdatedAt ?? "n/a"}
+        </div>
+        <div className="mt-4 grid gap-2">
+          {loading ? <div className="rounded-md border border-line bg-panelAlt p-3 text-sm text-muted">Loading instruments...</div> : null}
+          {(search?.results ?? []).map((item) => (
+            <div key={`${item.instrumentId}:${item.listingId}`} className="rounded-md border border-line bg-panelAlt p-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="font-semibold">{item.displaySymbol}</div>
+                  <div className="text-sm text-muted">{item.name}</div>
+                </div>
+                <div className="text-right text-xs text-muted">
+                  <div>{item.exchange} · {item.country} · {item.currency}</div>
+                  <div>{item.assetClass} · {item.instrumentType} · {item.qualityLevel}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+          {!loading && !(search?.results ?? []).length ? (
+            <div className="rounded-md border border-line bg-panelAlt p-3 text-sm text-muted">No instruments found.</div>
+          ) : null}
+        </div>
+      </div>
+      <div className="panel p-4">
+        <div className="font-semibold">Missing instrument review queue</div>
+        <p className="mt-1 text-sm text-muted">Requests created by no-result searches. Resolve after adding or confirming metadata.</p>
+        <div className="mt-4 grid gap-2">
+          {(reviews?.items ?? []).map((item) => (
+            <div key={item.id} className="rounded-md border border-line bg-panelAlt p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="safe-text font-semibold">{item.query}</div>
+                  <div className="safe-text text-xs text-muted">{item.context_screen} · {item.status} · {new Date(item.created_at).toLocaleString()}</div>
+                  {item.optional_notes ? <p className="safe-text mt-2 text-xs text-muted">{item.optional_notes}</p> : null}
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <button className="secondary-action px-2 py-1 text-xs" onClick={() => updateReview(item.id, "in_review")}>Review</button>
+                  <button className="secondary-action px-2 py-1 text-xs" onClick={() => updateReview(item.id, "resolved")}>Resolve</button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {!loading && !(reviews?.items ?? []).length ? (
+            <div className="rounded-md border border-line bg-panelAlt p-3 text-sm text-muted">No pending review requests.</div>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FeatureGateAdminPanel() {
+  return (
+    <section className="panel p-4">
+      <div className="mb-3 font-semibold">Feature gates</div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-left text-sm">
+          <tbody className="divide-y divide-line">
+            {featureGates.map((gate) => (
+              <tr key={gate.key}>
+                <td className="py-3 font-semibold">{gate.displayName}</td>
+                <td className="py-3">{gate.enabledGlobally ? "global on" : "global off"}</td>
+                <td className="py-3">{gate.enabledForFreeUsers ? "free allowed" : "free blocked"}</td>
+                <td className="py-3">{gate.rolloutPercentage}% rollout</td>
+                <td className="py-3 text-muted">{gate.enabledForAdmins ? "admin eligible" : "admin blocked"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function UsageAdminPanel({ currentUser }: { currentUser: { email: string; role: string } }) {
+  return (
+    <section className="grid gap-4 lg:grid-cols-2">
+      <div className="panel p-4">
+        <div className="mb-3 font-semibold">Users</div>
+        <div className="rounded-md border border-line bg-panelAlt p-3 text-sm">
+          <div className="font-semibold">{currentUser.email}</div>
+          <div className="text-muted">{currentUser.role} · authenticated server session</div>
+        </div>
+      </div>
+      <div className="panel p-4">
+        <div className="mb-3 font-semibold">Usage quotas</div>
+        <div className="grid gap-2 text-sm">
+          {usageQuotas.map((quota) => (
+            <div key={quota.resource} className="grid grid-cols-[1fr_auto] gap-3 rounded-md border border-line bg-panelAlt p-3">
+              <span className="font-semibold">{quota.resource}</span>
+              <span>{quota.used} / {quota.freeUserDefault}</span>
+              <span className="text-muted">Admin limit</span>
+              <span className="text-muted">{quota.adminDefault}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }

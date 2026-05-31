@@ -115,6 +115,10 @@ class Settings(BaseSettings):
 
     public_api_rate_limit_per_minute: int = 60
     admin_api_rate_limit_per_minute: int = 120
+    instrument_autocomplete_ip_rate_limit_per_minute: int = Field(default=30, ge=1, le=2000)
+    instrument_autocomplete_max_query_length: int = Field(default=64, ge=1, le=128)
+    instrument_autocomplete_max_results: int = Field(default=25, ge=1, le=25)
+    instrument_autocomplete_index_ttl_seconds: int = Field(default=1800, ge=60, le=86400)
     trusted_proxy_cidrs: str = "127.0.0.1/32,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
     source_fetch_max_bytes: int = Field(default=5_000_000, ge=1000)
     source_fetch_timeout_seconds: int = Field(default=20, ge=1)

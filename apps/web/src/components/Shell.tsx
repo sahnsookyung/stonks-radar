@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Activity, Calculator, Database, FileText, Globe2, LayoutDashboard, Lock, Map, Newspaper, Scale, SearchCheck, ShieldAlert, TrendingUp } from "lucide-react";
+import { Activity, BriefcaseBusiness, Calculator, Database, Globe2, LayoutDashboard, Map, Newspaper, Scale, SearchCheck, ShieldAlert, TrendingUp } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { alternateLocale, asLocale, useLocale } from "../lib/locale";
@@ -71,11 +71,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <NavLink active={activePrimaryNavKey === "map"} navKey="map" registerRef={registerPrimaryNavRef} to="/$locale/map" params={{ locale }} icon={<Map />} label={t("map")} />
             <NavLink active={activePrimaryNavKey === "calendar"} navKey="calendar" registerRef={registerPrimaryNavRef} to="/$locale/calendar" params={{ locale }} icon={<Activity />} label={t("calendar")} />
             <NavLink active={activePrimaryNavKey === "market-pulse"} navKey="market-pulse" registerRef={registerPrimaryNavRef} to="/$locale/market-pulse" params={{ locale }} icon={<TrendingUp />} label={t("marketPulse")} />
-            <NavLink active={activePrimaryNavKey === "portfolio"} navKey="portfolio" registerRef={registerPrimaryNavRef} to="/$locale/portfolio" params={{ locale }} icon={<Calculator />} label={t("portfolio")} />
+            <NavLink active={activePrimaryNavKey === "portfolio"} navKey="portfolio" registerRef={registerPrimaryNavRef} to="/$locale/dashboard" params={{ locale }} icon={<Calculator />} label={t("portfolioAtlas")} />
             <NavLink active={activePrimaryNavKey === "tickers"} navKey="tickers" registerRef={registerPrimaryNavRef} to="/$locale/tickers/$symbol" params={{ locale, symbol: "NVDA" }} icon={<TrendingUp />} label={t("tickers")} />
             <NavLink active={activePrimaryNavKey === "news"} navKey="news" registerRef={registerPrimaryNavRef} to="/$locale/news" params={{ locale }} icon={<Newspaper />} label={t("news")} />
             <NavLink active={activePrimaryNavKey === "shorts"} navKey="shorts" registerRef={registerPrimaryNavRef} to="/$locale/shorts" params={{ locale }} icon={<ShieldAlert />} label={t("shorts")} />
-            <NavLink active={activePrimaryNavKey === "trump-filings"} navKey="trump-filings" registerRef={registerPrimaryNavRef} to="/$locale/trump-filings" params={{ locale }} icon={<FileText />} label={t("trumpFilings")} />
+            <NavLink active={activePrimaryNavKey === "funds"} navKey="funds" registerRef={registerPrimaryNavRef} to="/$locale/funds" params={{ locale }} icon={<BriefcaseBusiness />} label={t("fundsTracker")} />
             <NavLink active={activePrimaryNavKey === "sources"} navKey="sources" registerRef={registerPrimaryNavRef} to="/$locale/sources" params={{ locale }} icon={<Database />} label={t("sources")} />
             <NavLink active={activePrimaryNavKey === "status"} navKey="status" registerRef={registerPrimaryNavRef} to="/$locale/status" params={{ locale }} icon={<Globe2 />} label={t("status")} />
             <NavLink
@@ -87,13 +87,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
               icon={<Scale />}
               label={locale === "ko" ? "고지" : "Disclaimer"}
             />
-            <Link
-              to="/admin/login"
-              className="focus-ring inline-flex h-11 shrink-0 items-center gap-2 rounded-md px-3 text-muted hover:bg-panelAlt hover:text-ink"
-            >
-              <Lock className="h-4 w-4" />
-              {t("admin")}
-            </Link>
             <a
               href={alternatePath}
               className="focus-ring inline-flex h-11 shrink-0 items-center rounded-md border border-line bg-panelAlt px-3 font-semibold text-ink hover:border-accent hover:bg-accentSoft"
@@ -201,11 +194,17 @@ function getActivePrimaryNavKey(pathname: string) {
   if (path.startsWith("/map")) return "map";
   if (path.startsWith("/calendar") || path.startsWith("/central-banks")) return "calendar";
   if (path.startsWith("/market-pulse")) return "market-pulse";
-  if (path.startsWith("/portfolio") || path.startsWith("/funds")) return "portfolio";
+  if (
+    path.startsWith("/portfolio") ||
+    path.startsWith("/dashboard") ||
+    path.startsWith("/onboarding") ||
+    path.startsWith("/portfolios") ||
+    path.startsWith("/settings")
+  ) return "portfolio";
+  if (path.startsWith("/funds") || path.startsWith("/trump-filings")) return "funds";
   if (path.startsWith("/tickers")) return "tickers";
   if (path.startsWith("/news")) return "news";
   if (path.startsWith("/shorts")) return "shorts";
-  if (path.startsWith("/trump-filings")) return "trump-filings";
   if (path.startsWith("/sources")) return "sources";
   if (path.startsWith("/status")) return "status";
   if (

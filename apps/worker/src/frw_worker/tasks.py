@@ -8,6 +8,7 @@ from frw_api.adapters.registry import adapter_registry
 from frw_api.core.settings import get_settings
 from frw_api.db.session import SessionLocal
 from frw_api.services.ingestion_pipeline import persist_adapter_result
+from frw_api.services.instruments import refresh_instrument_index
 from frw_api.services.news.email_alerts import purge_expired_raw_email
 from frw_api.services.news.ingestion import fetch_news_source
 from frw_api.services.news.page_reader import read_news_pages
@@ -98,6 +99,12 @@ async def handle_job(job: dict[str, Any], heartbeat: Callable[[], Awaitable[None
             )
             db.commit()
             return result
+    if job_type == "instrument_search_index_update":
+        await heartbeat()
+        return refresh_instrument_index(
+            source=str(payload.get("source") or "LOCAL_STATIC_INDEX"),
+            mode=str(payload.get("mode") or "INCREMENTAL"),
+        )
     if job_type == "news.fetch_source":
         await heartbeat()
         source_key = payload.get("source_key")

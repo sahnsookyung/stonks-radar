@@ -17,6 +17,7 @@ const CentralBanksPage = lazyRoute(async () => {
   return { default: () => <module.CalendarPage centralBanksOnly /> };
 });
 const PortfolioLabPage = lazyRoute(() => import("./pages/PortfolioLabPage"), "PortfolioLabPage");
+const FundsTrackerPage = lazyRoute(() => import("./pages/FundsTrackerPage"), "FundsTrackerPage");
 const FundPortfolioPage = lazyRoute(() => import("./pages/FundPortfolioPage"), "FundPortfolioPage");
 const TickerDetailPage = lazyRoute(() => import("./pages/TickerDetailPage"), "TickerDetailPage");
 const EntityPage = lazyRoute(() => import("./pages/EntityPage"), "EntityPage");
@@ -94,6 +95,132 @@ const portfolioRoute = createRoute({
   getParentRoute: () => localeRoute,
   path: "portfolio",
   component: PortfolioLabPage
+});
+
+const portfolioGlossaryRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "portfolio/glossary",
+  component: PortfolioLabPage
+});
+
+const portfolioOnboardingRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "onboarding",
+  component: PortfolioLabPage
+});
+
+const portfolioDashboardRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "dashboard",
+  component: PortfolioLabPage
+});
+
+const portfoliosRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "portfolios",
+  component: PortfolioLabPage
+});
+
+const portfolioOverviewRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "portfolios/$portfolioId",
+  component: PortfolioLabPage
+});
+
+const portfolioXrayRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "portfolios/$portfolioId/xray",
+  component: PortfolioLabPage
+});
+
+const portfolioAtlasRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "portfolios/$portfolioId/atlas",
+  component: PortfolioLabPage
+});
+
+const portfolioBuilderRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "portfolios/$portfolioId/builder",
+  component: PortfolioLabPage
+});
+
+const portfolioBacktestRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "portfolios/$portfolioId/backtest",
+  component: PortfolioLabPage
+});
+
+const portfolioMonteCarloRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "portfolios/$portfolioId/monte-carlo",
+  component: PortfolioLabPage
+});
+
+const portfolioRebalanceRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "portfolios/$portfolioId/rebalance",
+  component: PortfolioLabPage
+});
+
+const portfolioFeesRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "portfolios/$portfolioId/fees",
+  component: PortfolioLabPage
+});
+
+const portfolioTaxLotsRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "portfolios/$portfolioId/tax-lots",
+  component: PortfolioLabPage
+});
+
+const portfolioHoldingsRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "portfolios/$portfolioId/holdings",
+  component: PortfolioLabPage
+});
+
+const portfolioTransactionsRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "portfolios/$portfolioId/transactions",
+  component: PortfolioLabPage
+});
+
+const settingsRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "settings",
+  component: PortfolioLabPage
+});
+
+const settingsProfileRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "settings/profile",
+  component: PortfolioLabPage
+});
+
+const settingsAssumptionsRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "settings/assumptions",
+  component: PortfolioLabPage
+});
+
+const settingsDataSourcesRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "settings/data-sources",
+  component: PortfolioLabPage
+});
+
+const settingsSecurityRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "settings/security",
+  component: PortfolioLabPage
+});
+
+const fundsTrackerRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "funds",
+  component: FundsTrackerPage
 });
 
 const fundPortfolioRoute = createRoute({
@@ -198,6 +325,54 @@ const adminRoute = createRoute({
   component: AdminDashboard
 });
 
+const adminFeatureGatesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "admin/feature-gates",
+  component: AdminDashboard
+});
+
+const adminUsersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "admin/users",
+  component: AdminDashboard
+});
+
+const adminUsageRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "admin/usage",
+  component: AdminDashboard
+});
+
+const adminJobsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "admin/jobs",
+  component: AdminDashboard
+});
+
+const adminQueuesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "admin/queues",
+  component: AdminDashboard
+});
+
+const adminDataSourcesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "admin/data-sources",
+  component: AdminDashboard
+});
+
+const adminInstrumentsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "admin/instruments",
+  component: AdminDashboard
+});
+
+const adminSystemConfigRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "admin/system-config",
+  component: AdminDashboard
+});
+
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
@@ -215,6 +390,27 @@ const routeTree = rootRoute.addChildren([
     marketPulseRoute,
     centralBanksRoute,
     portfolioRoute,
+    portfolioGlossaryRoute,
+    portfolioOnboardingRoute,
+    portfolioDashboardRoute,
+    portfoliosRoute,
+    portfolioOverviewRoute,
+    portfolioXrayRoute,
+    portfolioAtlasRoute,
+    portfolioBuilderRoute,
+    portfolioBacktestRoute,
+    portfolioMonteCarloRoute,
+    portfolioRebalanceRoute,
+    portfolioFeesRoute,
+    portfolioTaxLotsRoute,
+    portfolioHoldingsRoute,
+    portfolioTransactionsRoute,
+    settingsRoute,
+    settingsProfileRoute,
+    settingsAssumptionsRoute,
+    settingsDataSourcesRoute,
+    settingsSecurityRoute,
+    fundsTrackerRoute,
     fundPortfolioRoute,
     tickerDetailRoute,
     entityRoute,
@@ -232,7 +428,15 @@ const routeTree = rootRoute.addChildren([
     legalRoute
   ]),
   adminLoginRoute,
-  adminRoute
+  adminRoute,
+  adminFeatureGatesRoute,
+  adminUsersRoute,
+  adminUsageRoute,
+  adminJobsRoute,
+  adminQueuesRoute,
+  adminDataSourcesRoute,
+  adminInstrumentsRoute,
+  adminSystemConfigRoute
 ]);
 
 export const router = createRouter({ routeTree });

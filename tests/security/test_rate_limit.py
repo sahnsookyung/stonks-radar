@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import pytest
 
 from frw_api.core.settings import get_settings
-from frw_api.services.rate_limit import _allow_memory, _client_identity
+from frw_api.services.rate_limit import _allow_memory, _client_identity, _limit_for_request
 
 
 @pytest.fixture(autouse=True)
@@ -18,6 +18,18 @@ def test_memory_rate_limit_blocks_after_limit():
     assert _allow_memory(key, 2)
     assert _allow_memory(key, 2)
     assert not _allow_memory(key, 2)
+
+
+def test_instrument_autocomplete_has_dedicated_rate_limit(monkeypatch):
+    settings = get_settings()
+    monkeypatch.setattr(settings, "instrument_autocomplete_ip_rate_limit_per_minute", 17)
+    request = SimpleNamespace(url=SimpleNamespace(path="/api/instruments/search"))
+
+    limit = _limit_for_request(request)
+
+    assert limit is not None
+    assert limit.key == "instrument-autocomplete"
+    assert limit.limit == 17
 
 
 def test_client_identity_uses_rightmost_untrusted_forwarded_for():
