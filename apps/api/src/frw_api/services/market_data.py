@@ -18,6 +18,11 @@ from frw_api.services.provider_limits import (
     ProviderLimitRegistry,
     provider_request,
 )
+from frw_api.services.market_history_store import (
+    load_stored_market_history,
+    market_history_calculation_readiness,
+    store_market_history_series,
+)
 
 SYMBOL_RE = re.compile(r"^[A-Z0-9][A-Z0-9.\-:]{0,19}$")
 TRADING_DAYS_PER_YEAR = 252
@@ -42,6 +47,15 @@ class HistoryPoint:
     date: str
     close: float
     volume: float | None = None
+    adjusted_close: float | None = None
+    open: float | None = None
+    high: float | None = None
+    low: float | None = None
+    currency: str = "USD"
+    exchange: str | None = None
+    timezone: str = "America/New_York"
+    provider_timestamp: str | None = None
+    source_revision: str | None = None
 
 
 _cache: OrderedDict[str, tuple[float, dict[str, Any]]] = OrderedDict()
@@ -54,6 +68,7 @@ async def fetch_market_history(
     end: date,
     transport: httpx.AsyncBaseTransport | None = None,
     db: Session | None = None,
+    public_only: bool = False,
 ) -> dict[str, Any]:
     settings = get_settings()
     normalized = _normalize_symbols(symbols, settings.market_data_max_symbols)
@@ -64,7 +79,7 @@ async def fetch_market_history(
             f"date range exceeds {settings.market_data_max_history_days} days"
         )
 
-    display_mode = settings.resolved_market_data_display_mode
+    display_mode = "public" if public_only else settings.resolved_market_data_display_mode
     display_allowlist = ",".join(sorted(settings.market_data_public_display_allowlist_values))
     cache_key = (
         f"{','.join(normalized)}:{start.isoformat()}:{end.isoformat()}:"
@@ -78,22 +93,39 @@ async def fetch_market_history(
         return payload
 
     provider_status = _provider_status()
-    provider_order = [item for item in _provider_order() if item in {"twelve_data", "alpha_vantage", "fmp"}]
-    display_allowed_providers = [
-        provider
-        for provider in provider_order
-        if _provider_public_display_allowed(provider) or provider in settings.market_data_public_display_allowlist_values
+    provider_order = [
+        item for item in _provider_order() if item in {"twelve_data", "alpha_vantage", "fmp"}
     ]
-    if display_mode == "public" and not display_allowed_providers:
+    stored_payload = _stored_payload(
+        db=db,
+        symbols=normalized,
+        start=start,
+        end=end,
+        provider_order=provider_order,
+        display_mode=display_mode,
+        public_display_allowlist=settings.market_data_public_display_allowlist_values,
+    )
+    if stored_payload:
+        stored_payload["cache"] = "persistent_hit"
+        _cache_set(
+            cache_key,
+            stored_payload,
+            expires_at=now + settings.market_data_cache_ttl_seconds,
+            max_entries=settings.market_data_cache_max_entries,
+            now=now,
+        )
+        return deepcopy(stored_payload)
+
+    if display_mode == "public":
         payload = _license_limited_payload(
             symbols=normalized,
             start=start,
             end=end,
             provider_order=provider_order,
             reason=(
-                "Configured free market-data providers are not approved for public quote/candle "
-                "redistribution. Use TradingView for public visual market display or explicitly "
-                "allow a provider after legal/source-policy review."
+                "No source-policy-approved stored daily bars are available for public display. "
+                "Public routes do not spend provider quota or fetch live licensed market data on demand; "
+                "use the TradingView widget for public visual market display until scheduled stored data is approved."
             ),
         )
         _cache_set(
@@ -104,8 +136,6 @@ async def fetch_market_history(
             now=now,
         )
         return payload
-    if display_mode == "public":
-        provider_order = [provider for provider in provider_order if provider in display_allowed_providers]
     failures: list[str] = []
 
     for provider in provider_order:
@@ -144,6 +174,13 @@ async def fetch_market_history(
                 "start": start.isoformat(),
                 "end": end.isoformat(),
                 "series": series,
+                "storage": store_market_history_series(
+                    db,
+                    provider_key=provider,
+                    series=series,
+                    requested_start=start,
+                    requested_end=end,
+                ),
                 "warnings": failures,
             }
             _cache_set(
@@ -159,6 +196,77 @@ async def fetch_market_history(
     raise MarketDataUnavailable(
         "No configured market-data provider returned usable historical closes",
         provider_status=provider_status
+        + [{"provider": "fallback", "status": "failed", "detail": "; ".join(failures)}],
+    )
+
+
+async def refresh_market_history(
+    *,
+    symbols: list[str],
+    start: date,
+    end: date,
+    transport: httpx.AsyncBaseTransport | None = None,
+    db: Session | None = None,
+) -> dict[str, Any]:
+    settings = get_settings()
+    normalized = _normalize_symbols(symbols, settings.market_data_max_symbols)
+    if start > end:
+        raise MarketDataInputError("start date must be before end date")
+    if (end - start).days > settings.market_data_max_history_days:
+        raise MarketDataInputError(
+            f"date range exceeds {settings.market_data_max_history_days} days"
+        )
+    provider_order = [
+        item for item in _provider_order() if item in {"twelve_data", "alpha_vantage", "fmp"}
+    ]
+    failures: list[str] = []
+    quota_failure: ProviderLimitError | None = None
+    non_quota_failure_seen = False
+    for provider in provider_order:
+        key = _api_key(provider)
+        if not key:
+            failures.append(f"{provider}: missing API key")
+            continue
+        try:
+            series = await _fetch_provider(provider, key, normalized, start, end, transport, db)
+        except ProviderLimitError as exc:
+            quota_failure = quota_failure or exc
+            detail = exc.error_class
+            if exc.retry_after_seconds is not None:
+                detail = f"{detail}; retry after {exc.retry_after_seconds}s"
+            failures.append(f"{provider}: {detail}")
+            continue
+        except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+            failures.append(f"{provider}: {exc}")
+            non_quota_failure_seen = True
+            continue
+        if all(item["points"] for item in series):
+            storage = store_market_history_series(
+                db,
+                provider_key=provider,
+                series=series,
+                requested_start=start,
+                requested_end=end,
+            )
+            clear_market_data_cache()
+            return {
+                "status": "stored"
+                if storage.get("stored", 0)
+                else str(storage.get("quality_state") or "fetched_not_stored"),
+                "provider": provider,
+                "symbols": normalized,
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+                "storage": storage,
+                "warnings": failures,
+            }
+        failures.append(f"{provider}: one or more symbols returned no usable daily closes")
+        non_quota_failure_seen = True
+    if quota_failure is not None and not non_quota_failure_seen:
+        raise quota_failure
+    raise MarketDataUnavailable(
+        "No configured market-data provider returned usable historical closes",
+        provider_status=_provider_status()
         + [{"provider": "fallback", "status": "failed", "detail": "; ".join(failures)}],
     )
 
@@ -196,7 +304,9 @@ def _api_key(provider: str) -> str | None:
         )
     if provider == "alpha_vantage":
         return settings.alpha_vantage_api_key or (
-            settings.market_data_api_key if settings.market_data_provider == "alpha_vantage" else None
+            settings.market_data_api_key
+            if settings.market_data_provider == "alpha_vantage"
+            else None
         )
     if provider == "fmp":
         return settings.fmp_api_key or (
@@ -218,6 +328,71 @@ def _provider_status() -> list[dict[str, str]]:
 
 def _provider_public_display_allowed(provider: str) -> bool:
     return ProviderLimitRegistry().public_display_allowed(provider, "daily_prices")
+
+
+def _stored_payload(
+    *,
+    db: Session | None,
+    symbols: list[str],
+    start: date,
+    end: date,
+    provider_order: list[str],
+    display_mode: str,
+    public_display_allowlist: set[str],
+) -> dict[str, Any] | None:
+    stored = load_stored_market_history(
+        db,
+        symbols=symbols,
+        start=start,
+        end=end,
+        provider_order=provider_order,
+        display_mode=display_mode,
+        public_display_allowlist=public_display_allowlist,
+    )
+    if stored is None:
+        return None
+    fetched_at = datetime.now(timezone.utc)
+    public_display_allowed = display_mode == "public"
+    calculation_readiness = market_history_calculation_readiness(
+        stored,
+        symbols=symbols,
+        start=start,
+        end=end,
+    )
+    return {
+        "status": "ok",
+        "provider": stored.provider,
+        "source_note": (
+            "Stored normalized daily bars. Public requests read cached database rows only; "
+            "they do not fetch provider data or spend provider quota."
+        ),
+        "cache": "miss",
+        "display_mode": display_mode,
+        "display_status": "stored_public_allowed" if public_display_allowed else "internal_stored",
+        "data_freshness": _data_freshness(
+            provider=stored.provider,
+            series=stored.series,
+            fetched_at=fetched_at,
+            display_mode=display_mode,
+            public_display_allowed=public_display_allowed,
+        ),
+        "provider_budget_status": [
+            budget for provider in provider_order for budget in _provider_budget_status(provider)
+        ],
+        "symbols": symbols,
+        "start": start.isoformat(),
+        "end": end.isoformat(),
+        "series": stored.series,
+        "coverage": stored.coverage,
+        "source_policy_digest": stored.source_policy_digest,
+        "market_data_version": stored.data_version,
+        "market_data_snapshot_id": stored.snapshot_id,
+        "market_data_snapshot_ids": stored.snapshot_ids,
+        "coherence_status": stored.coherence_status,
+        "quality_state": stored.quality_state,
+        "calculation_readiness": calculation_readiness.as_dict(),
+        "warnings": stored.warnings,
+    }
 
 
 def _provider_budget_status(provider: str) -> list[dict[str, Any]]:
@@ -325,7 +500,9 @@ def _data_freshness(
             if market_session_date
             else "Provider returned no market session date."
         ),
-        "license_mode": "private_or_internal" if display_mode == "private" else "public_display_allowed",
+        "license_mode": "private_or_internal"
+        if display_mode == "private"
+        else "public_display_allowed",
         "source_url": _provider_source_url(provider),
     }
 
@@ -343,7 +520,9 @@ def _latest_market_session_date(series: list[dict[str, Any]]) -> str | None:
 def _delay_label(provider: str, display_mode: str, market_session_date: str | None) -> str:
     if display_mode == "private":
         return f"daily historical/private-mode; latest session {market_session_date or 'pending'}"
-    return f"public-display allowed daily snapshot; latest session {market_session_date or 'pending'}"
+    return (
+        f"public-display allowed daily snapshot; latest session {market_session_date or 'pending'}"
+    )
 
 
 def _provider_source_url(provider: str) -> str:
@@ -403,6 +582,7 @@ async def _fetch_twelve_data(
     end: date,
     db: Session | None,
 ) -> list[HistoryPoint]:
+    idempotency_key = _provider_call_idempotency_key("twelve_data", symbol, start, end)
     response = await provider_request(
         client,
         "GET",
@@ -410,6 +590,7 @@ async def _fetch_twelve_data(
         provider_key="twelve_data",
         endpoint_key="daily_prices",
         db=db,
+        idempotency_key=idempotency_key,
         params={
             "symbol": symbol,
             "interval": "1day",
@@ -435,7 +616,15 @@ async def _fetch_twelve_data(
     values = payload.get("values")
     if not isinstance(values, list):
         raise ValueError("Twelve Data returned no values")
-    return _points_from_rows(values, date_field="datetime", close_fields=("close",))
+    return _points_from_rows(
+        values,
+        date_field="datetime",
+        close_fields=("close",),
+        open_field="open",
+        high_field="high",
+        low_field="low",
+        source_revision=_response_source_revision(response),
+    )
 
 
 async def _fetch_alpha_vantage(
@@ -446,6 +635,7 @@ async def _fetch_alpha_vantage(
     end: date,
     db: Session | None,
 ) -> list[HistoryPoint]:
+    idempotency_key = _provider_call_idempotency_key("alpha_vantage", symbol, start, end)
     response = await provider_request(
         client,
         "GET",
@@ -453,6 +643,7 @@ async def _fetch_alpha_vantage(
         provider_key="alpha_vantage",
         endpoint_key="daily_prices",
         db=db,
+        idempotency_key=idempotency_key,
         params={
             "function": "TIME_SERIES_DAILY",
             "symbol": symbol,
@@ -462,7 +653,9 @@ async def _fetch_alpha_vantage(
     )
     payload = response.json()
     if "Note" in payload or "Information" in payload or "Error Message" in payload:
-        message = str(payload.get("Note") or payload.get("Information") or payload.get("Error Message"))
+        message = str(
+            payload.get("Note") or payload.get("Information") or payload.get("Error Message")
+        )
         if "rate limit" in message.lower() or "frequency" in message.lower():
             raise ProviderLimitError(
                 message,
@@ -476,11 +669,27 @@ async def _fetch_alpha_vantage(
     if not isinstance(rows, dict):
         raise ValueError("Alpha Vantage returned no daily time series")
     values = [
-        {"date": row_date, "close": row.get("4. close"), "volume": row.get("5. volume")}
+        {
+            "date": row_date,
+            "open": row.get("1. open"),
+            "high": row.get("2. high"),
+            "low": row.get("3. low"),
+            "close": row.get("4. close"),
+            "volume": row.get("5. volume"),
+        }
         for row_date, row in rows.items()
         if start.isoformat() <= row_date <= end.isoformat()
     ]
-    return _points_from_rows(values, date_field="date", close_fields=("close",), descending=False)
+    return _points_from_rows(
+        values,
+        date_field="date",
+        close_fields=("close",),
+        open_field="open",
+        high_field="high",
+        low_field="low",
+        descending=False,
+        source_revision=_response_source_revision(response),
+    )
 
 
 async def _fetch_fmp(
@@ -491,6 +700,7 @@ async def _fetch_fmp(
     end: date,
     db: Session | None,
 ) -> list[HistoryPoint]:
+    idempotency_key = _provider_call_idempotency_key("fmp", symbol, start, end)
     response = await provider_request(
         client,
         "GET",
@@ -498,6 +708,7 @@ async def _fetch_fmp(
         provider_key="fmp",
         endpoint_key="daily_prices",
         db=db,
+        idempotency_key=idempotency_key,
         units={"request": 1, "byte": 500_000},
         params={"symbol": symbol, "from": start.isoformat(), "to": end.isoformat(), "apikey": key},
     )
@@ -505,7 +716,27 @@ async def _fetch_fmp(
     rows = payload.get("historical") if isinstance(payload, dict) else payload
     if not isinstance(rows, list):
         raise ValueError("FMP returned no historical rows")
-    return _points_from_rows(rows, date_field="date", close_fields=("adjClose", "close"))
+    return _points_from_rows(
+        rows,
+        date_field="date",
+        close_fields=("adjClose", "close"),
+        adjusted_close_field="adjClose",
+        open_field="open",
+        high_field="high",
+        low_field="low",
+        source_revision=_response_source_revision(response),
+    )
+
+
+def _provider_call_idempotency_key(provider: str, symbol: str, start: date, end: date) -> str:
+    return f"market-history:{provider}:{symbol}:{start.isoformat()}:{end.isoformat()}"
+
+
+def _response_source_revision(response: httpx.Response) -> str | None:
+    reservation_id = response.extensions.get("provider_reservation_id")
+    if reservation_id:
+        return str(reservation_id)
+    return response.headers.get("etag") or response.headers.get("last-modified")
 
 
 def _points_from_rows(
@@ -513,21 +744,59 @@ def _points_from_rows(
     *,
     date_field: str,
     close_fields: tuple[str, ...],
+    adjusted_close_field: str | None = None,
+    open_field: str | None = None,
+    high_field: str | None = None,
+    low_field: str | None = None,
     descending: bool = False,
+    source_revision: str | None = None,
 ) -> list[HistoryPoint]:
     points: list[HistoryPoint] = []
     for row in rows:
         row_date = str(row.get(date_field, ""))[:10]
-        close_value = next((row.get(field) for field in close_fields if row.get(field) is not None), None)
+        close_value = next(
+            (row.get(field) for field in close_fields if row.get(field) is not None), None
+        )
         if not row_date or close_value is None:
             continue
         try:
             close = float(close_value)
             volume = float(row["volume"]) if row.get("volume") not in (None, "") else None
+            adjusted_close = (
+                float(row[adjusted_close_field])
+                if adjusted_close_field and row.get(adjusted_close_field) not in (None, "")
+                else None
+            )
+            open_value = (
+                float(row[open_field])
+                if open_field and row.get(open_field) not in (None, "")
+                else None
+            )
+            high = (
+                float(row[high_field])
+                if high_field and row.get(high_field) not in (None, "")
+                else None
+            )
+            low = (
+                float(row[low_field])
+                if low_field and row.get(low_field) not in (None, "")
+                else None
+            )
         except (TypeError, ValueError):
             continue
         if close > 0:
-            points.append(HistoryPoint(date=row_date, close=close, volume=volume))
+            points.append(
+                HistoryPoint(
+                    date=row_date,
+                    close=close,
+                    volume=volume,
+                    adjusted_close=adjusted_close,
+                    open=open_value,
+                    high=high,
+                    low=low,
+                    source_revision=source_revision,
+                )
+            )
     points.sort(key=lambda item: item.date, reverse=descending)
     return points
 

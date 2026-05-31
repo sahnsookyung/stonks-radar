@@ -1,5 +1,18 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Activity, BriefcaseBusiness, Calculator, Database, Globe2, LayoutDashboard, Map, Newspaper, Scale, SearchCheck, ShieldAlert, TrendingUp } from "lucide-react";
+import {
+  Activity,
+  BriefcaseBusiness,
+  Calculator,
+  Database,
+  Globe2,
+  LayoutDashboard,
+  Map,
+  Newspaper,
+  Scale,
+  SearchCheck,
+  ShieldAlert,
+  TrendingUp,
+} from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { alternateLocale, asLocale, useLocale } from "../lib/locale";
@@ -9,7 +22,7 @@ const sectorLinks = [
   ["quantum", "Quantum", "양자"],
   ["semiconductors", "Semiconductors", "반도체"],
   ["oil-energy", "Oil/Energy", "석유/에너지"],
-  ["big-tech", "Big Tech", "빅테크"]
+  ["big-tech", "Big Tech", "빅테크"],
 ];
 
 const countryLinks = [
@@ -17,30 +30,46 @@ const countryLinks = [
   ["KOR", "Korea", "한국"],
   ["JPN", "Japan", "일본"],
   ["CHN", "China", "중국"],
-  ["EUROZONE", "Eurozone", "유로존"]
+  ["EUROZONE", "Eurozone", "유로존"],
 ];
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const locale = useLocale();
   const { t } = useTranslation();
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
   const other = alternateLocale(locale);
   const alternatePath = pathname.replace(/^\/(en|ko)(?=\/|$)/, `/${other}`);
   const activePrimaryNavKey = getActivePrimaryNavKey(pathname);
   const primaryNavRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const compactNavLabels = {
+    marketPulse: locale === "ko" ? "펄스" : "Pulse",
+    portfolio: locale === "ko" ? "포트폴리오" : "Portfolio",
+    funds: locale === "ko" ? "펀드" : "Funds",
+    disclaimer: locale === "ko" ? "고지" : "Legal",
+  };
 
   useEffect(() => {
-    const node = activePrimaryNavKey ? primaryNavRefs.current[activePrimaryNavKey] : null;
+    const node = activePrimaryNavKey
+      ? primaryNavRefs.current[activePrimaryNavKey]
+      : null;
     if (!node) return;
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (window.matchMedia("(min-width: 1024px)").matches) return;
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     node.scrollIntoView({
       block: "nearest",
       inline: "center",
-      behavior: prefersReducedMotion ? "auto" : "smooth"
+      behavior: prefersReducedMotion ? "auto" : "smooth",
     });
   }, [activePrimaryNavKey]);
 
-  const registerPrimaryNavRef = (key: string, element: HTMLAnchorElement | null) => {
+  const registerPrimaryNavRef = (
+    key: string,
+    element: HTMLAnchorElement | null,
+  ) => {
     primaryNavRefs.current[key] = element;
   };
 
@@ -58,8 +87,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <SearchCheck className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <div className="truncate text-sm font-bold leading-5 sm:text-base">{t("appName")}</div>
-              <div className="sr-only text-xs text-muted md:not-sr-only md:block">{t("noAdvice")}</div>
+              <div className="truncate text-sm font-bold leading-5 sm:text-base">
+                {t("appName")}
+              </div>
+              <div className="sr-only text-xs text-muted md:not-sr-only md:block">
+                {t("noAdvice")}
+              </div>
             </div>
           </Link>
           <nav
@@ -67,17 +100,105 @@ export function Shell({ children }: { children: React.ReactNode }) {
             data-allow-horizontal-scroll
             aria-label={locale === "ko" ? "기본 탐색" : "Primary navigation"}
           >
-            <NavLink active={activePrimaryNavKey === "dashboard"} navKey="dashboard" registerRef={registerPrimaryNavRef} to="/$locale" params={{ locale }} icon={<LayoutDashboard />} label={t("dashboard")} />
-            <NavLink active={activePrimaryNavKey === "map"} navKey="map" registerRef={registerPrimaryNavRef} to="/$locale/map" params={{ locale }} icon={<Map />} label={t("map")} />
-            <NavLink active={activePrimaryNavKey === "calendar"} navKey="calendar" registerRef={registerPrimaryNavRef} to="/$locale/calendar" params={{ locale }} icon={<Activity />} label={t("calendar")} />
-            <NavLink active={activePrimaryNavKey === "market-pulse"} navKey="market-pulse" registerRef={registerPrimaryNavRef} to="/$locale/market-pulse" params={{ locale }} icon={<TrendingUp />} label={t("marketPulse")} />
-            <NavLink active={activePrimaryNavKey === "portfolio"} navKey="portfolio" registerRef={registerPrimaryNavRef} to="/$locale/dashboard" params={{ locale }} icon={<Calculator />} label={t("portfolioAtlas")} />
-            <NavLink active={activePrimaryNavKey === "tickers"} navKey="tickers" registerRef={registerPrimaryNavRef} to="/$locale/tickers/$symbol" params={{ locale, symbol: "NVDA" }} icon={<TrendingUp />} label={t("tickers")} />
-            <NavLink active={activePrimaryNavKey === "news"} navKey="news" registerRef={registerPrimaryNavRef} to="/$locale/news" params={{ locale }} icon={<Newspaper />} label={t("news")} />
-            <NavLink active={activePrimaryNavKey === "shorts"} navKey="shorts" registerRef={registerPrimaryNavRef} to="/$locale/shorts" params={{ locale }} icon={<ShieldAlert />} label={t("shorts")} />
-            <NavLink active={activePrimaryNavKey === "funds"} navKey="funds" registerRef={registerPrimaryNavRef} to="/$locale/funds" params={{ locale }} icon={<BriefcaseBusiness />} label={t("fundsTracker")} />
-            <NavLink active={activePrimaryNavKey === "sources"} navKey="sources" registerRef={registerPrimaryNavRef} to="/$locale/sources" params={{ locale }} icon={<Database />} label={t("sources")} />
-            <NavLink active={activePrimaryNavKey === "status"} navKey="status" registerRef={registerPrimaryNavRef} to="/$locale/status" params={{ locale }} icon={<Globe2 />} label={t("status")} />
+            <NavLink
+              active={activePrimaryNavKey === "dashboard"}
+              navKey="dashboard"
+              registerRef={registerPrimaryNavRef}
+              to="/$locale"
+              params={{ locale }}
+              icon={<LayoutDashboard />}
+              label={t("dashboard")}
+            />
+            <NavLink
+              active={activePrimaryNavKey === "map"}
+              navKey="map"
+              registerRef={registerPrimaryNavRef}
+              to="/$locale/map"
+              params={{ locale }}
+              icon={<Map />}
+              label={t("map")}
+            />
+            <NavLink
+              active={activePrimaryNavKey === "calendar"}
+              navKey="calendar"
+              registerRef={registerPrimaryNavRef}
+              to="/$locale/calendar"
+              params={{ locale }}
+              icon={<Activity />}
+              label={t("calendar")}
+            />
+            <NavLink
+              active={activePrimaryNavKey === "market-pulse"}
+              navKey="market-pulse"
+              registerRef={registerPrimaryNavRef}
+              to="/$locale/market-pulse"
+              params={{ locale }}
+              icon={<TrendingUp />}
+              label={compactNavLabels.marketPulse}
+            />
+            <NavLink
+              active={activePrimaryNavKey === "portfolio"}
+              navKey="portfolio"
+              registerRef={registerPrimaryNavRef}
+              to="/$locale/portfolio"
+              params={{ locale }}
+              icon={<Calculator />}
+              label={compactNavLabels.portfolio}
+            />
+            <NavLink
+              active={activePrimaryNavKey === "tickers"}
+              navKey="tickers"
+              registerRef={registerPrimaryNavRef}
+              to="/$locale/tickers/$symbol"
+              params={{ locale, symbol: "NVDA" }}
+              icon={<TrendingUp />}
+              label={t("tickers")}
+            />
+            <NavLink
+              active={activePrimaryNavKey === "news"}
+              navKey="news"
+              registerRef={registerPrimaryNavRef}
+              to="/$locale/news"
+              params={{ locale }}
+              icon={<Newspaper />}
+              label={t("news")}
+            />
+            <NavLink
+              active={activePrimaryNavKey === "shorts"}
+              navKey="shorts"
+              registerRef={registerPrimaryNavRef}
+              to="/$locale/shorts"
+              params={{ locale }}
+              icon={<ShieldAlert />}
+              label={t("shorts")}
+            />
+            <NavLink
+              active={activePrimaryNavKey === "funds"}
+              navKey="funds"
+              registerRef={registerPrimaryNavRef}
+              to="/$locale/funds"
+              params={{ locale }}
+              icon={<BriefcaseBusiness />}
+              label={compactNavLabels.funds}
+            />
+            <NavLink
+              active={activePrimaryNavKey === "sources"}
+              navKey="sources"
+              registerRef={registerPrimaryNavRef}
+              to="/$locale/sources"
+              params={{ locale }}
+              icon={<Database />}
+              label={t("sources")}
+            />
+            <NavLink
+              active={activePrimaryNavKey === "status"}
+              navKey="status"
+              registerRef={registerPrimaryNavRef}
+              to="/$locale/status"
+              params={{ locale }}
+              icon={<Globe2 />}
+              label={t("status")}
+            />
             <NavLink
               active={activePrimaryNavKey === "legal"}
               navKey="legal"
@@ -85,7 +206,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               to="/$locale/$legalSlug"
               params={{ locale, legalSlug: "financial-disclaimer" }}
               icon={<Scale />}
-              label={locale === "ko" ? "고지" : "Disclaimer"}
+              label={compactNavLabels.disclaimer}
             />
             <a
               href={alternatePath}
@@ -98,7 +219,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <div
           className="scroll-fade-x flex w-full min-w-0 gap-2 overflow-x-auto px-3 pb-2 text-xs [contain:paint] sm:px-4 md:pb-3 lg:px-6 2xl:px-8"
           data-allow-horizontal-scroll
-          aria-label={locale === "ko" ? "시장 범위 탐색" : "Market coverage navigation"}
+          aria-label={
+            locale === "ko" ? "시장 범위 탐색" : "Market coverage navigation"
+          }
         >
           <span className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-md px-1 font-semibold text-muted">
             {locale === "ko" ? "테마" : "Themes"}
@@ -117,7 +240,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
             {locale === "ko" ? "지역" : "Regions"}
           </span>
           {countryLinks.map(([key, labelEn, labelKo]) => {
-            const route = key === "EUROZONE" ? "/$locale/regions/$objectKey" : "/$locale/countries/$objectKey";
+            const route =
+              key === "EUROZONE"
+                ? "/$locale/regions/$objectKey"
+                : "/$locale/countries/$objectKey";
             return (
               <Link
                 key={key}
@@ -131,19 +257,37 @@ export function Shell({ children }: { children: React.ReactNode }) {
           })}
         </div>
       </header>
-      <main className="min-w-0 px-3 py-4 sm:px-4 sm:py-6 lg:px-6 2xl:px-8">{children}</main>
+      <main className="min-w-0 px-3 py-4 sm:px-4 sm:py-6 lg:px-6 2xl:px-8">
+        {children}
+      </main>
       <footer className="border-t border-line bg-panel">
         <div className="grid gap-4 px-4 py-6 text-sm text-muted md:grid-cols-4 lg:px-6 2xl:px-8">
-          <Link to="/$locale/$legalSlug" params={{ locale, legalSlug: "terms" }} className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent">
+          <Link
+            to="/$locale/$legalSlug"
+            params={{ locale, legalSlug: "terms" }}
+            className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent"
+          >
             {t("legal.terms")}
           </Link>
-          <Link to="/$locale/$legalSlug" params={{ locale, legalSlug: "privacy" }} className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent">
+          <Link
+            to="/$locale/$legalSlug"
+            params={{ locale, legalSlug: "privacy" }}
+            className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent"
+          >
             {t("legal.privacy")}
           </Link>
-          <Link to="/$locale/$legalSlug" params={{ locale, legalSlug: "source-policy" }} className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent">
+          <Link
+            to="/$locale/$legalSlug"
+            params={{ locale, legalSlug: "source-policy" }}
+            className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent"
+          >
             {t("legal.source-policy")}
           </Link>
-          <Link to="/$locale/$legalSlug" params={{ locale, legalSlug: "contact" }} className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent">
+          <Link
+            to="/$locale/$legalSlug"
+            params={{ locale, legalSlug: "contact" }}
+            className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent"
+          >
             {t("legal.contact")}
           </Link>
         </div>
@@ -159,7 +303,7 @@ function NavLink({
   label,
   navKey,
   registerRef,
-  active = false
+  active = false,
 }: {
   to: string;
   params: Record<string, string>;
@@ -178,7 +322,7 @@ function NavLink({
       params={params as never}
       activeOptions={{ exact: true }}
       aria-current={active ? "page" : undefined}
-      className={`focus-ring inline-flex h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-md px-3 transition-colors hover:bg-panelAlt hover:text-ink ${
+      className={`focus-ring inline-flex h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-md px-2.5 text-[13px] transition-colors hover:bg-panelAlt hover:text-ink xl:gap-2 xl:px-3 xl:text-sm ${
         active ? "bg-accentSoft font-semibold text-accent" : "text-muted"
       }`}
     >
@@ -192,7 +336,8 @@ function getActivePrimaryNavKey(pathname: string) {
   const path = pathname.replace(/^\/(en|ko)(?=\/|$)/, "") || "/";
   if (path === "/" || path === "") return "dashboard";
   if (path.startsWith("/map")) return "map";
-  if (path.startsWith("/calendar") || path.startsWith("/central-banks")) return "calendar";
+  if (path.startsWith("/calendar") || path.startsWith("/central-banks"))
+    return "calendar";
   if (path.startsWith("/market-pulse")) return "market-pulse";
   if (
     path.startsWith("/portfolio") ||
@@ -200,8 +345,10 @@ function getActivePrimaryNavKey(pathname: string) {
     path.startsWith("/onboarding") ||
     path.startsWith("/portfolios") ||
     path.startsWith("/settings")
-  ) return "portfolio";
-  if (path.startsWith("/funds") || path.startsWith("/trump-filings")) return "funds";
+  )
+    return "portfolio";
+  if (path.startsWith("/funds") || path.startsWith("/trump-filings"))
+    return "funds";
   if (path.startsWith("/tickers")) return "tickers";
   if (path.startsWith("/news")) return "news";
   if (path.startsWith("/shorts")) return "shorts";

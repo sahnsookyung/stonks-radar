@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from types import SimpleNamespace
 
 from frw_worker.scheduler import (
+    _market_history_gap_specs_from_versions,
+    market_history_job_specs,
     news_fetch_job_specs,
     news_pipeline_job_specs,
     schedule_due_jobs,
@@ -31,6 +33,11 @@ def _settings(**overrides):
         "news_gdelt_enabled": False,
         "news_public_health_enabled": True,
         "news_auto_review_trusted_events": True,
+        "market_data_scheduled_refresh_enabled": True,
+        "market_data_refresh_symbol_list": [],
+        "market_data_daily_repair_days": 21,
+        "market_data_full_backfill_days": 1095,
+        "market_data_refresh_stagger_seconds": 3600,
     }
     values.update(overrides)
     return SimpleNamespace(**values)
@@ -67,7 +74,9 @@ def test_trump_disclosure_scheduler_can_be_disabled():
 
 
 def test_snapshot_refresh_scheduler_creates_15_minute_spec():
-    specs = snapshot_refresh_job_specs(now=datetime(2026, 5, 26, 1, 17, tzinfo=timezone.utc), settings=_settings())
+    specs = snapshot_refresh_job_specs(
+        now=datetime(2026, 5, 26, 1, 17, tzinfo=timezone.utc), settings=_settings()
+    )
 
     assert specs == [
         {
@@ -91,7 +100,9 @@ def test_snapshot_refresh_scheduler_can_be_disabled():
 
 
 def test_news_fetch_scheduler_creates_enabled_source_specs():
-    specs = news_fetch_job_specs(now=datetime(2026, 5, 26, 1, 17, tzinfo=timezone.utc), settings=_settings())
+    specs = news_fetch_job_specs(
+        now=datetime(2026, 5, 26, 1, 17, tzinfo=timezone.utc), settings=_settings()
+    )
     keys = {spec["payload"]["source_key"] for spec in specs}
 
     assert {"federal_reserve", "who", "google_news_rss"}.issubset(keys)
@@ -115,7 +126,11 @@ def test_news_fetch_scheduler_applies_source_cadence_and_caps():
 def test_news_fetch_scheduler_respects_source_toggles():
     specs = news_fetch_job_specs(
         now=datetime(2026, 5, 26, 1, 17, tzinfo=timezone.utc),
-        settings=_settings(news_rss_enabled=False, news_public_health_enabled=False, news_gdelt_enabled=True),
+        settings=_settings(
+            news_rss_enabled=False,
+            news_public_health_enabled=False,
+            news_gdelt_enabled=True,
+        ),
     )
     keys = {spec["payload"]["source_key"] for spec in specs}
 
@@ -127,7 +142,9 @@ def test_news_fetch_scheduler_respects_source_toggles():
 
 
 def test_news_pipeline_scheduler_creates_local_processing_specs():
-    specs = news_pipeline_job_specs(now=datetime(2026, 5, 26, 1, 17, tzinfo=timezone.utc), settings=_settings())
+    specs = news_pipeline_job_specs(
+        now=datetime(2026, 5, 26, 1, 17, tzinfo=timezone.utc), settings=_settings()
+    )
 
     assert [spec["job_type"] for spec in specs] == [
         "news.read_pages",
@@ -137,7 +154,14 @@ def test_news_pipeline_scheduler_creates_local_processing_specs():
         "news.score_events",
         "news.purge_email_raw",
     ]
-    assert [spec["provider_key"] for spec in specs] == ["company_ir", "local", "local", "local", "local", "local"]
+    assert [spec["provider_key"] for spec in specs] == [
+        "company_ir",
+        "local",
+        "local",
+        "local",
+        "local",
+        "local",
+    ]
 
 
 def test_news_pipeline_scheduler_chains_local_processing_jobs(monkeypatch):
@@ -162,7 +186,67 @@ def test_news_pipeline_scheduler_chains_local_processing_jobs(monkeypatch):
 
     assert job_ids == ["job-1", "job-2", "job-3", "job-4", "job-5", "job-6"]
     assert calls[0].get("depends_on_job_id") is None
-    assert [call.get("depends_on_job_id") for call in calls[1:]] == ["job-1", "job-2", "job-3", "job-4", "job-5"]
+    assert [call.get("depends_on_job_id") for call in calls[1:]] == [
+        "job-1",
+        "job-2",
+        "job-3",
+        "job-4",
+        "job-5",
+    ]
+
+
+def test_market_history_scheduler_staggers_daily_refresh_specs():
+    specs = market_history_job_specs(
+        now=datetime(2026, 5, 26, 1, 17, tzinfo=timezone.utc),
+        settings=_settings(
+            market_data_refresh_symbol_list=["AAPL", "MSFT"],
+            market_data_full_backfill_days=21,
+        ),
+    )
+
+    assert [spec["job_type"] for spec in specs] == [
+        "market_data.refresh_history",
+        "market_data.refresh_history",
+    ]
+    assert {spec["payload"]["symbol"] for spec in specs} == {"AAPL", "MSFT"}
+    assert all(spec["payload"]["mode"] == "daily_repair" for spec in specs)
+    assert all(spec["job_group"] == "market_data" for spec in specs)
+    assert all("run_after" in spec for spec in specs)
+
+
+def test_market_history_scheduler_adds_rolling_backfill_one_symbol_per_day():
+    specs = market_history_job_specs(
+        now=datetime(2026, 5, 26, 1, 17, tzinfo=timezone.utc),
+        settings=_settings(
+            market_data_refresh_symbol_list=["AAPL", "MSFT"],
+            market_data_daily_repair_days=21,
+            market_data_full_backfill_days=1095,
+        ),
+    )
+
+    backfills = [
+        spec for spec in specs if spec["payload"]["mode"] == "rolling_backfill"
+    ]
+    assert len(backfills) == 1
+    assert backfills[0]["payload"]["days"] == 1095
+
+
+def test_market_history_gap_scheduler_enqueues_newest_first_catchup():
+    specs = _market_history_gap_specs_from_versions(
+        symbols=["AAPL", "BTC-USD"],
+        latest_versions={
+            "AAPL": datetime(2026, 1, 2, tzinfo=timezone.utc).date(),
+            "BTC-USD": datetime(2026, 1, 3, tzinfo=timezone.utc).date(),
+        },
+        now=datetime(2026, 1, 5, 12, tzinfo=timezone.utc),
+        settings=_settings(),
+    )
+
+    assert [spec["payload"]["mode"] for spec in specs] == ["gap_catchup", "gap_catchup"]
+    assert specs[0]["payload"]["end"] == "2026-01-05"
+    assert specs[0]["priority"] == 55
+    btc = next(spec for spec in specs if spec["payload"]["symbol"] == "BTC-USD")
+    assert btc["payload"]["missing_dates"] == ["2026-01-05", "2026-01-04"]
 
 
 def test_trump_disclosure_job_dispatches_ingestion(monkeypatch):
@@ -194,7 +278,10 @@ def test_trump_disclosure_job_dispatches_ingestion(monkeypatch):
 
     result = asyncio.run(
         handle_job(
-            {"job_type": "trump_disclosures_ingest", "payload": {"include_oge": False, "include_sec": True}},
+            {
+                "job_type": "trump_disclosures_ingest",
+                "payload": {"include_oge": False, "include_sec": True},
+            },
             heartbeat,
         )
     )
@@ -221,7 +308,14 @@ def test_news_fetch_job_dispatches_ingestion(monkeypatch):
             commits.append(True)
 
     async def fake_fetch(db, *, source_key, query=None, max_documents=None):
-        calls.append({"db": db, "source_key": source_key, "query": query, "max_documents": max_documents})
+        calls.append(
+            {
+                "db": db,
+                "source_key": source_key,
+                "query": query,
+                "max_documents": max_documents,
+            }
+        )
         return {"source_key": source_key, "documents": 2, "persisted": {"documents": 2}}
 
     heartbeat_count = 0
@@ -237,14 +331,25 @@ def test_news_fetch_job_dispatches_ingestion(monkeypatch):
         handle_job(
             {
                 "job_type": "news.fetch_source",
-                "payload": {"source_key": "google_news_rss", "query": "semiconductors", "max_documents": 5},
+                "payload": {
+                    "source_key": "google_news_rss",
+                    "query": "semiconductors",
+                    "max_documents": 5,
+                },
             },
             heartbeat,
         )
     )
 
     assert result["documents"] == 2
-    assert calls == [{"db": calls[0]["db"], "source_key": "google_news_rss", "query": "semiconductors", "max_documents": 5}]
+    assert calls == [
+        {
+            "db": calls[0]["db"],
+            "source_key": "google_news_rss",
+            "query": "semiconductors",
+            "max_documents": 5,
+        }
+    ]
     assert heartbeat_count == 1
     assert commits == [True]
 
@@ -274,7 +379,11 @@ def test_instrument_refresh_job_rebuilds_local_index(monkeypatch):
         )
     )
 
-    assert result == {"status": "refreshed", "instrument_count": 12, "listing_count": 13}
+    assert result == {
+        "status": "refreshed",
+        "instrument_count": 12,
+        "listing_count": 13,
+    }
     assert calls == [{"source": "LOCAL_STATIC_INDEX", "mode": "FULL"}]
     assert heartbeat_count == 1
 

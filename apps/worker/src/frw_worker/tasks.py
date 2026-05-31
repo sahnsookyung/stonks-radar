@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
@@ -9,6 +10,7 @@ from frw_api.core.settings import get_settings
 from frw_api.db.session import SessionLocal
 from frw_api.services.ingestion_pipeline import persist_adapter_result
 from frw_api.services.instruments import refresh_instrument_index
+from frw_api.services.market_data import refresh_market_history
 from frw_api.services.news.email_alerts import purge_expired_raw_email
 from frw_api.services.news.ingestion import fetch_news_source
 from frw_api.services.news.page_reader import read_news_pages
@@ -105,6 +107,25 @@ async def handle_job(job: dict[str, Any], heartbeat: Callable[[], Awaitable[None
             source=str(payload.get("source") or "LOCAL_STATIC_INDEX"),
             mode=str(payload.get("mode") or "INCREMENTAL"),
         )
+    if job_type == "market_data.refresh_history":
+        await heartbeat()
+        symbol = payload.get("symbol")
+        if not isinstance(symbol, str) or not symbol:
+            raise ValueError("market_data.refresh_history requires symbol")
+        today = datetime.now(timezone.utc).date()
+        start_value = payload.get("start")
+        end_value = payload.get("end")
+        if isinstance(start_value, str) and isinstance(end_value, str):
+            start = date.fromisoformat(start_value[:10])
+            end = date.fromisoformat(end_value[:10])
+        else:
+            days = max(1, int(payload.get("days") or get_settings().market_data_daily_repair_days))
+            end = today
+            start = end - timedelta(days=days)
+        with SessionLocal() as db:
+            result = await refresh_market_history(symbols=[symbol], start=start, end=end, db=db)
+            db.commit()
+            return result
     if job_type == "news.fetch_source":
         await heartbeat()
         source_key = payload.get("source_key")

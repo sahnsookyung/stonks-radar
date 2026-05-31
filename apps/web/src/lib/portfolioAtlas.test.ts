@@ -46,6 +46,9 @@ describe("portfolio atlas calculation engine", () => {
     expect(analysis.allocationDrift).toBeGreaterThanOrEqual(0);
     expect(analysis.dataFreshnessScore).toBeGreaterThanOrEqual(0);
     expect(analysis.dataFreshnessScore).toBeLessThanOrEqual(1);
+    expect(analysis.coverageSummary.coveredWeight + analysis.coverageSummary.staleWeight + analysis.coverageSummary.proxyWeight + analysis.coverageSummary.missingWeight).toBeGreaterThan(0.9);
+    expect(analysis.calculationProvenance.cachePolicy).toContain("daily bars");
+    expect(analysis.returnBasis).toBe("daily-close-total-return-proxy");
   });
 
   it("implements core return and risk formulas", () => {

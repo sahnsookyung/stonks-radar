@@ -60,7 +60,12 @@ class Settings(BaseSettings):
     market_data_cache_max_entries: int = Field(default=512, ge=1, le=10000)
     market_data_timeout_seconds: int = Field(default=12, ge=1)
     market_data_max_symbols: int = Field(default=8, ge=1, le=30)
-    market_data_max_history_days: int = Field(default=756, ge=30, le=3650)
+    market_data_max_history_days: int = Field(default=1095, ge=30, le=3650)
+    market_data_scheduled_refresh_enabled: bool = True
+    market_data_refresh_symbols: str = "AAPL,MSFT,NVDA,TSLA,DJT,RKLB,LUNR,ASTS,RDW,QBTS,IONQ,RGTI,TLT,GLD,SLV,CPER,BTC-USD,005930.KS,EWY"
+    market_data_daily_repair_days: int = Field(default=21, ge=1, le=180)
+    market_data_full_backfill_days: int = Field(default=1095, ge=30, le=3650)
+    market_data_refresh_stagger_seconds: int = Field(default=3600, ge=60, le=86400)
     twelve_data_api_key: str | None = None
     alpha_vantage_api_key: str | None = None
     fmp_api_key: str | None = None
@@ -152,6 +157,14 @@ class Settings(BaseSettings):
             for value in self.market_data_public_display_allowlist.split(",")
             if value.strip()
         }
+
+    @property
+    def market_data_refresh_symbol_list(self) -> list[str]:
+        return [
+            value.strip().upper()
+            for value in self.market_data_refresh_symbols.split(",")
+            if value.strip()
+        ]
 
     @property
     def news_email_allowed_recipient_list(self) -> list[str]:

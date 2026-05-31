@@ -8,7 +8,7 @@ import time
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import httpx
 from sqlalchemy import text
@@ -38,6 +38,11 @@ QUOTA_ERROR_CLASSES = {ERROR_RATE_LIMITED, ERROR_QUOTA_EXHAUSTED}
 
 _PRODUCTION_ENV_NAMES = {"production", "prod"}
 _DURATION_RE = re.compile(r"(?:(?P<minutes>\d+(?:\.\d+)?)m)?(?:(?P<seconds>\d+(?:\.\d+)?)s)?$")
+MARKET_DATA_ENDPOINT_KEY = "daily_prices"
+MARKET_DATA_PROVIDER_KEYS = {"twelve_data", "alpha_vantage", "fmp", "nasdaq_data_link", "finnhub"}
+# market_data_provider_capability rows store the effective conservative free-tier cap.
+# Keep this at 1.0 so the 70% safety policy is not applied twice.
+MARKET_DATA_QUOTA_FACTOR = 1.0
 
 
 @dataclass(frozen=True)
@@ -130,9 +135,8 @@ class ProviderLimitRegistry:
         )
 
     def get(self, provider_key: str, endpoint_key: str) -> ProviderEndpointLimit | None:
-        return (
-            self._limits.get((provider_key, endpoint_key))
-            or self._limits.get((provider_key, "*"))
+        return self._limits.get((provider_key, endpoint_key)) or self._limits.get(
+            (provider_key, "*")
         )
 
     def public_display_allowed(self, provider_key: str, endpoint_key: str = "*") -> bool:
@@ -191,6 +195,24 @@ class ProviderQuotaGuard:
             partition_key=partition_key,
             db=db,
         )
+        if _market_data_quota_applies(provider_key, endpoint_key):
+            reservation_id = _reserve_market_data_quota(
+                db,
+                provider_key=provider_key,
+                endpoint_key=endpoint_key,
+                partition_key=partition_key,
+                units=clean_units,
+                idempotency_key=idempotency_key,
+            )
+            return ProviderReservation(
+                reservation_id=reservation_id or f"prv_{uuid4().hex}",
+                provider_key=provider_key,
+                endpoint_key=endpoint_key,
+                partition_key=partition_key,
+                units=clean_units,
+                idempotency_key=idempotency_key,
+                acquired_at=datetime.now(timezone.utc),
+            )
         limit = self.registry.get(provider_key, endpoint_key)
         rules = _rules_for_units(limit, clean_units) if limit else []
         if rules:
@@ -225,8 +247,7 @@ class ProviderQuotaGuard:
                     provider_key=provider_key,
                     endpoint_key=endpoint_key,
                     retry_after_seconds=retry_after,
-                    next_allowed_at=datetime.now(timezone.utc)
-                    + _seconds_delta(retry_after),
+                    next_allowed_at=datetime.now(timezone.utc) + _seconds_delta(retry_after),
                 )
         return ProviderReservation(
             reservation_id=f"prv_{uuid4().hex}",
@@ -257,6 +278,16 @@ class ProviderQuotaGuard:
         event_details = details or {}
         if retry_after_seconds is not None:
             event_details["retry_after_seconds"] = retry_after_seconds
+        if _market_data_quota_applies(reservation.provider_key, reservation.endpoint_key):
+            _finalize_market_data_quota(
+                db,
+                reservation_id=reservation.reservation_id,
+                status=status,
+                error_class=error_class,
+                retry_after_seconds=retry_after_seconds,
+                actual_units=units,
+                details=event_details,
+            )
         db.execute(
             text(
                 """
@@ -311,7 +342,9 @@ class ProviderQuotaGuard:
         settings = get_settings()
         if settings.app_env.lower() in _PRODUCTION_ENV_NAMES:
             try:
-                return _redis_reserve(settings.redis_url, provider_key, endpoint_key, partition_key, units, rules)
+                return _redis_reserve(
+                    settings.redis_url, provider_key, endpoint_key, partition_key, units, rules
+                )
             except Exception as exc:  # noqa: BLE001 - quota store failure must not leak provider calls
                 raise ProviderLimitError(
                     f"quota store unavailable for {provider_key}/{endpoint_key}: {exc.__class__.__name__}",
@@ -359,7 +392,9 @@ class ProviderQuotaGuard:
             return
         retry_after = None
         if next_allowed_at is not None:
-            retry_after = max(1, int((next_allowed_at - datetime.now(timezone.utc)).total_seconds()))
+            retry_after = max(
+                1, int((next_allowed_at - datetime.now(timezone.utc)).total_seconds())
+            )
         error_class = row["last_error_class"] or ERROR_RATE_LIMITED
         raise ProviderLimitError(
             f"{provider_key}/{endpoint_key} circuit is open",
@@ -446,6 +481,7 @@ async def provider_request(
         status_code=response.status_code,
         actual_units=_actual_units(response, reservation.units),
     )
+    response.extensions["provider_reservation_id"] = reservation.reservation_id
     return response
 
 
@@ -666,14 +702,30 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
     _limit(
         "google_news_rss",
         "search",
-        (_rule("request", 60, 6, "undocumented RSS endpoint; use conservatively", "6 requests/minute"),),
+        (
+            _rule(
+                "request",
+                60,
+                6,
+                "undocumented RSS endpoint; use conservatively",
+                "6 requests/minute",
+            ),
+        ),
         "https://news.google.com/rss",
         public_display_allowed=False,
     ),
     _limit(
         "yahoo_finance_rss",
         "rss",
-        (_rule("request", 60, 6, "undocumented ticker RSS endpoint; use conservatively", "6 requests/minute"),),
+        (
+            _rule(
+                "request",
+                60,
+                6,
+                "undocumented ticker RSS endpoint; use conservatively",
+                "6 requests/minute",
+            ),
+        ),
         "https://feeds.finance.yahoo.com/rss/2.0/headline",
         notes="Ticker headline RSS is discovery metadata only; publisher pages remain source-of-record.",
         public_display_allowed=False,
@@ -713,7 +765,15 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
     _limit(
         "company_email",
         "webhook",
-        (_rule("request", 60, 60, "local signed webhook; free inbound routing quota applies upstream", "60 emails/minute"),),
+        (
+            _rule(
+                "request",
+                60,
+                60,
+                "local signed webhook; free inbound routing quota applies upstream",
+                "60 emails/minute",
+            ),
+        ),
         "https://developers.cloudflare.com/email-routing/",
         notes="Inbound alert email is accepted only through signed webhooks and compressed local raw retention.",
     ),
@@ -721,7 +781,9 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
         "gemini",
         "chat_completions",
         (
-            _rule("request", 60, 10, "model/project-specific; view in AI Studio", "10 requests/minute"),
+            _rule(
+                "request", 60, 10, "model/project-specific; view in AI Studio", "10 requests/minute"
+            ),
             _rule("request", 86_400, 800, "model/project-specific RPD", "800 requests/day"),
             _rule("token", 60, 200_000, "model/project-specific TPM", "200,000 tokens/minute"),
         ),
@@ -761,7 +823,13 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
         "chat_completions",
         (
             _rule("request", 60, 10, "20 free-model requests/minute", "10 requests/minute"),
-            _rule("request", 86_400, 25, "50 free-model requests/day before credits", "25 requests/day"),
+            _rule(
+                "request",
+                86_400,
+                25,
+                "50 free-model requests/day before credits",
+                "25 requests/day",
+            ),
         ),
         "https://openrouter.ai/docs/api-reference/limits/",
     ),
@@ -769,7 +837,13 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
         "nvidia_nim",
         "chat_completions",
         (
-            _rule("request", 60, 40, "account/model-specific; no public header returned by live NIM probe", "40 requests/minute"),
+            _rule(
+                "request",
+                60,
+                40,
+                "account/model-specific; no public header returned by live NIM probe",
+                "40 requests/minute",
+            ),
         ),
         "https://docs.api.nvidia.com/nim/reference/minimaxai-minimax-m2.7",
         notes="NVIDIA NIM key is scoped to minimaxai/minimax-m2.7; enforce that model in the router.",
@@ -800,6 +874,423 @@ def _clean_units(units: dict[str, float]) -> dict[str, float]:
 
 def _rules_for_units(limit: ProviderEndpointLimit, units: dict[str, float]) -> list[LimitRule]:
     return [rule for rule in limit.rules if rule.unit in units]
+
+
+def _market_data_quota_applies(provider_key: str, endpoint_key: str) -> bool:
+    return endpoint_key == MARKET_DATA_ENDPOINT_KEY and provider_key in MARKET_DATA_PROVIDER_KEYS
+
+
+def _reserve_market_data_quota(
+    db: Session | None,
+    *,
+    provider_key: str,
+    endpoint_key: str,
+    partition_key: str,
+    units: dict[str, float],
+    idempotency_key: str | None,
+) -> str | None:
+    if db is None or not _table_available(db, "market_data_quota_reservation"):
+        if get_settings().app_env.lower() in _PRODUCTION_ENV_NAMES:
+            raise ProviderLimitError(
+                f"{provider_key}/{endpoint_key} quota reservation table unavailable",
+                error_class=ERROR_QUOTA_EXHAUSTED,
+                provider_key=provider_key,
+                endpoint_key=endpoint_key,
+                retry_after_seconds=60,
+            )
+        return None
+    if not _table_available(db, "market_data_provider_capability"):
+        if get_settings().app_env.lower() in _PRODUCTION_ENV_NAMES:
+            raise ProviderLimitError(
+                f"{provider_key}/{endpoint_key} quota capability table unavailable",
+                error_class=ERROR_QUOTA_EXHAUSTED,
+                provider_key=provider_key,
+                endpoint_key=endpoint_key,
+                retry_after_seconds=60,
+            )
+        return None
+    rules = _market_data_db_rules(
+        db, provider_key=provider_key, endpoint_key=endpoint_key, units=units
+    )
+    if not rules:
+        if get_settings().app_env.lower() in _PRODUCTION_ENV_NAMES:
+            raise ProviderLimitError(
+                f"{provider_key}/{endpoint_key} has no active quota capability row",
+                error_class=ERROR_QUOTA_EXHAUSTED,
+                provider_key=provider_key,
+                endpoint_key=endpoint_key,
+                retry_after_seconds=60,
+            )
+        return None
+    reservation_token = str(uuid4())
+    now = datetime.now(timezone.utc)
+    rows: list[dict[str, Any]] = []
+    for rule in rules:
+        window_start = _window_start(now, int(rule["window_seconds"]))
+        lock_key = (
+            f"market-data-quota:{provider_key}:{endpoint_key}:{partition_key}:"
+            f"{rule['unit']}:{rule['window_seconds']}:{window_start.isoformat()}"
+        )
+        db.execute(
+            text("select pg_advisory_xact_lock(hashtextextended(:lock_key, 0))"),
+            {"lock_key": lock_key},
+        )
+        existing_token = _existing_market_data_quota_token(
+            db,
+            provider_key=provider_key,
+            endpoint_key=endpoint_key,
+            partition_key=partition_key,
+            window_start=window_start,
+            window_seconds=int(rule["window_seconds"]),
+            idempotency_key=idempotency_key,
+        )
+        if existing_token is not None:
+            reservation_token = existing_token
+            continue
+        used = float(
+            db.execute(
+                text(
+                    """
+                    select coalesce(sum(cost), 0)
+                    from market_data_quota_reservation
+                    where provider_key = :provider_key
+                      and endpoint_key = :endpoint_key
+                      and partition_key = :partition_key
+                      and window_start = :window_start
+                      and window_seconds = :window_seconds
+                      and status in ('reserved','succeeded')
+                    """
+                ),
+                {
+                    "provider_key": provider_key,
+                    "endpoint_key": endpoint_key,
+                    "partition_key": partition_key,
+                    "window_start": window_start,
+                    "window_seconds": int(rule["window_seconds"]),
+                },
+            ).scalar_one()
+        )
+        cost = float(rule["cost"])
+        cap = float(rule["limit"])
+        if used + cost > cap:
+            retry_after = max(
+                1,
+                int(
+                    (
+                        window_start + _seconds_delta(int(rule["window_seconds"])) - now
+                    ).total_seconds()
+                ),
+            )
+            _insert_market_data_quota_row(
+                db,
+                reservation_token=reservation_token,
+                provider_key=provider_key,
+                endpoint_key=endpoint_key,
+                partition_key=partition_key,
+                window_start=window_start,
+                window_seconds=int(rule["window_seconds"]),
+                cost=cost,
+                units=units,
+                status="deferred",
+                idempotency_key=idempotency_key,
+                retry_after_seconds=retry_after,
+                error_class=ERROR_QUOTA_EXHAUSTED,
+                details={
+                    "used": used,
+                    "cap": cap,
+                    "unit": rule["unit"],
+                    "factor": MARKET_DATA_QUOTA_FACTOR,
+                },
+            )
+            raise ProviderLimitError(
+                f"{provider_key}/{endpoint_key} reserved quota would exceed the conservative market-data cap",
+                error_class=ERROR_QUOTA_EXHAUSTED,
+                provider_key=provider_key,
+                endpoint_key=endpoint_key,
+                retry_after_seconds=retry_after,
+                next_allowed_at=window_start + _seconds_delta(int(rule["window_seconds"])),
+            )
+        rows.append(
+            {
+                "window_start": window_start,
+                "window_seconds": int(rule["window_seconds"]),
+                "cost": cost,
+                "unit": rule["unit"],
+                "cap": cap,
+                "used": used,
+            }
+        )
+    for row in rows:
+        inserted_token = _insert_market_data_quota_row(
+            db,
+            reservation_token=reservation_token,
+            provider_key=provider_key,
+            endpoint_key=endpoint_key,
+            partition_key=partition_key,
+            window_start=row["window_start"],
+            window_seconds=row["window_seconds"],
+            cost=row["cost"],
+            units=units,
+            status="reserved",
+            idempotency_key=idempotency_key,
+            details={
+                "unit": row["unit"],
+                "used_before": row["used"],
+                "cap": row["cap"],
+                "factor": MARKET_DATA_QUOTA_FACTOR,
+            },
+        )
+        if inserted_token is not None:
+            reservation_token = inserted_token
+    return reservation_token
+
+
+def _existing_market_data_quota_token(
+    db: Session,
+    *,
+    provider_key: str,
+    endpoint_key: str,
+    partition_key: str,
+    window_start: datetime,
+    window_seconds: int,
+    idempotency_key: str | None,
+) -> str | None:
+    if not idempotency_key:
+        return None
+    row = db.execute(
+        text(
+            """
+            select reservation_token
+            from market_data_quota_reservation
+            where provider_key = :provider_key
+              and endpoint_key = :endpoint_key
+              and partition_key = :partition_key
+              and idempotency_key = :idempotency_key
+              and window_start = :window_start
+              and window_seconds = :window_seconds
+              and status in ('reserved','succeeded')
+            limit 1
+            """
+        ),
+        {
+            "provider_key": provider_key,
+            "endpoint_key": endpoint_key,
+            "partition_key": partition_key,
+            "idempotency_key": idempotency_key,
+            "window_start": window_start,
+            "window_seconds": window_seconds,
+        },
+    ).scalar_one_or_none()
+    return str(row) if row else None
+
+
+def _market_data_db_rules(
+    db: Session,
+    *,
+    provider_key: str,
+    endpoint_key: str,
+    units: dict[str, float],
+) -> list[dict[str, Any]]:
+    row = (
+        db.execute(
+            text(
+                """
+                select max_requests_per_minute, max_requests_per_day, cost_per_request
+                from market_data_provider_capability
+                where provider_key = :provider_key
+                  and endpoint_key = :endpoint_key
+                  and active = true
+                """
+            ),
+            {"provider_key": provider_key, "endpoint_key": endpoint_key},
+        )
+        .mappings()
+        .one_or_none()
+    )
+    if not row:
+        return []
+    request_cost = float(units.get("request") or row["cost_per_request"] or 1)
+    rules: list[dict[str, Any]] = []
+    minute_cap = row.get("max_requests_per_minute")
+    if minute_cap is not None:
+        rules.append(
+            {
+                "unit": "request",
+                "window_seconds": 60,
+                "cost": request_cost,
+                "limit": max(1.0, float(minute_cap) * MARKET_DATA_QUOTA_FACTOR),
+            }
+        )
+    day_cap = row.get("max_requests_per_day")
+    if day_cap is not None:
+        rules.append(
+            {
+                "unit": "request",
+                "window_seconds": 86_400,
+                "cost": request_cost,
+                "limit": max(1.0, float(day_cap) * MARKET_DATA_QUOTA_FACTOR),
+            }
+        )
+    return rules
+
+
+def _insert_market_data_quota_row(
+    db: Session,
+    *,
+    reservation_token: str,
+    provider_key: str,
+    endpoint_key: str,
+    partition_key: str,
+    window_start: datetime,
+    window_seconds: int,
+    cost: float,
+    units: dict[str, float],
+    status: str,
+    idempotency_key: str | None,
+    retry_after_seconds: int | None = None,
+    error_class: str | None = None,
+    details: dict[str, Any] | None = None,
+) -> str | None:
+    if idempotency_key and status in {"reserved", "succeeded"}:
+        return str(
+            db.execute(
+                text(
+                    """
+                    insert into market_data_quota_reservation(
+                      reservation_token, provider_key, endpoint_key, partition_key,
+                      window_start, window_seconds, cost, units, status, idempotency_key,
+                      retry_after_seconds, error_class, details
+                    )
+                    values (
+                      :reservation_token, :provider_key, :endpoint_key, :partition_key,
+                      :window_start, :window_seconds, :cost, cast(:units as jsonb), :status,
+                      :idempotency_key, :retry_after_seconds, :error_class, cast(:details as jsonb)
+                    )
+                    on conflict (
+                      provider_key, endpoint_key, partition_key, idempotency_key, window_seconds, window_start
+                    )
+                    where idempotency_key is not null
+                      and status in ('reserved','succeeded')
+                    do update set details = market_data_quota_reservation.details || excluded.details
+                    returning reservation_token
+                    """
+                ),
+                {
+                    "reservation_token": reservation_token,
+                    "provider_key": provider_key,
+                    "endpoint_key": endpoint_key,
+                    "partition_key": partition_key,
+                    "window_start": window_start,
+                    "window_seconds": window_seconds,
+                    "cost": cost,
+                    "units": json.dumps(units),
+                    "status": status,
+                    "idempotency_key": idempotency_key,
+                    "retry_after_seconds": retry_after_seconds,
+                    "error_class": error_class,
+                    "details": json.dumps(details or {}),
+                },
+            ).scalar_one()
+        )
+    db.execute(
+        text(
+            """
+            insert into market_data_quota_reservation(
+              reservation_token, provider_key, endpoint_key, partition_key,
+              window_start, window_seconds, cost, units, status, idempotency_key,
+              retry_after_seconds, error_class, details
+            )
+            values (
+              :reservation_token, :provider_key, :endpoint_key, :partition_key,
+              :window_start, :window_seconds, :cost, cast(:units as jsonb), :status,
+              :idempotency_key, :retry_after_seconds, :error_class, cast(:details as jsonb)
+            )
+            """
+        ),
+        {
+            "reservation_token": reservation_token,
+            "provider_key": provider_key,
+            "endpoint_key": endpoint_key,
+            "partition_key": partition_key,
+            "window_start": window_start,
+            "window_seconds": window_seconds,
+            "cost": cost,
+            "units": json.dumps(units),
+            "status": status,
+            "idempotency_key": idempotency_key,
+            "retry_after_seconds": retry_after_seconds,
+            "error_class": error_class,
+            "details": json.dumps(details or {}),
+        },
+    )
+    return None
+
+
+def _finalize_market_data_quota(
+    db: Session | None,
+    *,
+    reservation_id: str,
+    status: str,
+    error_class: str | None,
+    retry_after_seconds: int | None,
+    actual_units: dict[str, float],
+    details: dict[str, Any],
+) -> None:
+    if (
+        db is None
+        or not _is_uuid(reservation_id)
+        or not _table_available(db, "market_data_quota_reservation")
+    ):
+        return
+    final_status = "succeeded" if status == "succeeded" else "failed"
+    db.execute(
+        text(
+            """
+            update market_data_quota_reservation
+            set status = :status,
+                finalized_at = now(),
+                error_class = :error_class,
+                retry_after_seconds = :retry_after_seconds,
+                units = cast(:actual_units as jsonb),
+                details = details || cast(:details as jsonb)
+            where reservation_token = :reservation_token
+              and status = 'reserved'
+            """
+        ),
+        {
+            "reservation_token": reservation_id,
+            "status": final_status,
+            "error_class": error_class,
+            "retry_after_seconds": retry_after_seconds,
+            "actual_units": json.dumps(actual_units),
+            "details": json.dumps(details),
+        },
+    )
+
+
+def _table_available(db: Session, table_name: str) -> bool:
+    try:
+        row = db.execute(
+            text("select to_regclass(:table_name)"), {"table_name": table_name}
+        ).scalar_one_or_none()
+        return row is not None
+    except Exception:  # noqa: BLE001 - quota table checks must fail closed in production and be invisible in local tests
+        if get_settings().app_env.lower() in _PRODUCTION_ENV_NAMES:
+            raise
+        return False
+
+
+def _window_start(now: datetime, window_seconds: int) -> datetime:
+    timestamp = int(now.timestamp())
+    return datetime.fromtimestamp((timestamp // window_seconds) * window_seconds, tz=timezone.utc)
+
+
+def _is_uuid(value: str) -> bool:
+    try:
+        UUID(value)
+    except (TypeError, ValueError):
+        return False
+    return True
 
 
 def _memory_reserve(
@@ -995,7 +1486,11 @@ def _upsert_runtime_state(
         if retry_after_seconds is not None
         else None
     )
-    open_indefinitely = error_class in {ERROR_AUTH_INVALID, ERROR_FORBIDDEN_SCOPE, ERROR_PAID_NOT_ALLOWED}
+    open_indefinitely = error_class in {
+        ERROR_AUTH_INVALID,
+        ERROR_FORBIDDEN_SCOPE,
+        ERROR_PAID_NOT_ALLOWED,
+    }
     circuit_state = "open" if open_indefinitely or retry_after_seconds is not None else "closed"
     db.execute(
         text(

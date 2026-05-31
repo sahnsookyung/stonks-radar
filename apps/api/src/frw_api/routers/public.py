@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import json
 import os
+import hashlib
 from datetime import date, datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Path as ApiPath, Query
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -41,21 +43,37 @@ def health():
 @router.get("/status")
 def status(db: Session = Depends(get_db)):
     published_manifest = _published_manifest_status()
-    db_snapshot_age = _scalar(db, "select extract(epoch from now() - max(generated_at))/60 from publication_snapshot", 0)
+    db_snapshot_age = _scalar(
+        db, "select extract(epoch from now() - max(generated_at))/60 from publication_snapshot", 0
+    )
     metrics = {
-        "snapshot_age_minutes": published_manifest["age_minutes"] if published_manifest else db_snapshot_age,
-        "published_file_snapshot_age_minutes": published_manifest["age_minutes"] if published_manifest else None,
-        "published_file_generated_at": published_manifest["generated_at"] if published_manifest else None,
+        "snapshot_age_minutes": published_manifest["age_minutes"]
+        if published_manifest
+        else db_snapshot_age,
+        "published_file_snapshot_age_minutes": published_manifest["age_minutes"]
+        if published_manifest
+        else None,
+        "published_file_generated_at": published_manifest["generated_at"]
+        if published_manifest
+        else None,
         "db_snapshot_age_minutes": db_snapshot_age,
-        "dead_letter_jobs": _scalar(db, "select count(*) from job_queue where status = 'dead_letter'", 0),
-        "quota_wait_jobs": _scalar(db, "select count(*) from job_queue where status = 'quota_wait'", 0),
+        "dead_letter_jobs": _scalar(
+            db, "select count(*) from job_queue where status = 'dead_letter'", 0
+        ),
+        "quota_wait_jobs": _scalar(
+            db, "select count(*) from job_queue where status = 'quota_wait'", 0
+        ),
         "open_provider_circuits": _scalar(
             db,
             "select count(*) from provider_runtime_state where circuit_state = 'open'",
             0,
         ),
-        "stale_series_count": _scalar(db, "select count(*) from latest_series_state where freshness_status = 'stale'", 0),
-        "conflict_count": _scalar(db, "select count(*) from latest_series_state where conflict_present = true", 0),
+        "stale_series_count": _scalar(
+            db, "select count(*) from latest_series_state where freshness_status = 'stale'", 0
+        ),
+        "conflict_count": _scalar(
+            db, "select count(*) from latest_series_state where conflict_present = true", 0
+        ),
     }
     return {
         "status": "ok",
@@ -131,9 +149,11 @@ async def market_history(
     db: Session = Depends(get_db),
 ):
     try:
-        payload = await fetch_market_history(symbols=[symbols], start=start, end=end, db=db)
+        payload = await fetch_market_history(
+            symbols=[symbols], start=start, end=end, db=db, public_only=True
+        )
         db.commit()
-        return payload
+        return JSONResponse(payload, headers=_market_history_cache_headers(payload))
     except MarketDataInputError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except MarketDataUnavailable as exc:
@@ -178,6 +198,36 @@ def _public_provider_status(item: dict) -> dict:
         "attribution_required": item["attribution_required"],
         "refresh_interval": _coarsest_refresh_interval(item.get("rules", [])),
         "source_checked_at": item["source_checked_at"],
+    }
+
+
+def _market_history_cache_headers(payload: dict) -> dict[str, str]:
+    if payload.get("display_mode") != "public":
+        return {"Cache-Control": "no-store"}
+    if payload.get("status") == "license_limited":
+        return {
+            "Cache-Control": "no-store",
+            "X-Market-Data-Source": "license-limited",
+        }
+    if payload.get("status") != "ok":
+        return {"Cache-Control": "no-store"}
+    cache_key = {
+        "status": payload.get("status"),
+        "symbols": payload.get("symbols"),
+        "start": payload.get("start"),
+        "end": payload.get("end"),
+        "version": payload.get("market_data_version"),
+        "snapshot_id": payload.get("market_data_snapshot_id"),
+        "provider": payload.get("provider"),
+    }
+    digest = hashlib.sha256(
+        json.dumps(cache_key, sort_keys=True, default=str).encode("utf-8")
+    ).hexdigest()
+    return {
+        "Cache-Control": "public, max-age=300, s-maxage=900, stale-while-revalidate=300",
+        "ETag": f'"market-history-{digest[:24]}"',
+        "Vary": "Accept-Encoding",
+        "X-Market-Data-Source": "stored-snapshot",
     }
 
 

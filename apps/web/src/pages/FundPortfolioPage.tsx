@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { Link, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Database, ExternalLink, FileSpreadsheet, PieChart, Table2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Database,
+  ExternalLink,
+  FileSpreadsheet,
+  PieChart,
+  Table2,
+} from "lucide-react";
 import type { FundPortfolioHolding, FundHoldingKind } from "@frw/shared-types";
 import type { ReactNode } from "react";
 import { EntityLink } from "../components/EntityLink";
@@ -15,7 +22,7 @@ type HoldingFilter = "stocks" | "options" | "all";
 const filterLabels: Record<HoldingFilter, { en: string; ko: string }> = {
   stocks: { en: "Stocks", ko: "주식" },
   options: { en: "Options", ko: "옵션" },
-  all: { en: "All rows", ko: "전체" }
+  all: { en: "All rows", ko: "전체" },
 };
 
 export function FundPortfolioPage() {
@@ -26,7 +33,7 @@ export function FundPortfolioPage() {
   const [filter, setFilter] = useState<HoldingFilter>("stocks");
   const query = useQuery({
     queryKey: ["snapshot", "fund-portfolio", fundKey, locale],
-    queryFn: () => snapshotQueries.fundPortfolio(fundKey, locale)
+    queryFn: () => snapshotQueries.fundPortfolio(fundKey, locale),
   });
 
   if (query.isLoading) return <LoadingState />;
@@ -51,7 +58,9 @@ export function FundPortfolioPage() {
               <FileSpreadsheet className="h-4 w-4" />
               {isKo ? "공개 13F 포트폴리오" : "Public 13F portfolio"}
             </div>
-            <h1 className="safe-text mt-3 text-3xl font-bold leading-tight sm:text-4xl">{data.display_name}</h1>
+            <h1 className="safe-text mt-3 text-3xl font-bold leading-tight sm:text-4xl">
+              {data.display_name}
+            </h1>
             <p className="safe-text mt-3 max-w-5xl text-sm leading-6 text-muted">
               {isKo
                 ? `${data.fund_name}의 SEC 13F XML 정보표를 기반으로 한 출처 연결형 스냅샷입니다. HedgeFollow HTML은 자동 수집하지 않습니다.`
@@ -65,10 +74,22 @@ export function FundPortfolioPage() {
             </div>
           </div>
           <div className="grid min-w-[260px] gap-2 sm:grid-cols-2 xl:min-w-[520px]">
-            <Metric label={isKo ? "롱 주식" : "Long equity"} value={formatUsd(data.summary_metrics.long_equity_value_usd)} />
-            <Metric label={isKo ? "옵션 공시가" : "Option value"} value={formatUsd(data.summary_metrics.option_notional_value_usd)} />
-            <Metric label={isKo ? "보유 행" : "Rows"} value={String(data.summary_metrics.holding_count)} />
-            <Metric label={isKo ? "공시일" : "Filed"} value={data.filing?.filed_at ?? "pending"} />
+            <Metric
+              label={isKo ? "롱 주식" : "Long equity"}
+              value={formatUsd(data.summary_metrics.long_equity_value_usd)}
+            />
+            <Metric
+              label={isKo ? "옵션 공시가" : "Option value"}
+              value={formatUsd(data.summary_metrics.option_notional_value_usd)}
+            />
+            <Metric
+              label={isKo ? "보유 행" : "Rows"}
+              value={String(data.summary_metrics.holding_count)}
+            />
+            <Metric
+              label={isKo ? "공시일" : "Filed"}
+              value={data.filing?.filed_at ?? "pending"}
+            />
           </div>
         </div>
       </section>
@@ -81,7 +102,12 @@ export function FundPortfolioPage() {
               {isKo ? "상위 롱 주식 비중" : "Top long-equity allocation"}
             </h2>
             {data.filing ? (
-              <a className="secondary-action min-h-11 px-3 py-2" href={data.filing.information_table_url} target="_blank" rel="noreferrer">
+              <a
+                className="secondary-action min-h-11 px-3 py-2"
+                href={data.filing.information_table_url}
+                target="_blank"
+                rel="noreferrer"
+              >
                 <ExternalLink className="h-4 w-4" />
                 SEC XML
               </a>
@@ -90,7 +116,13 @@ export function FundPortfolioPage() {
           {data.top_equity_holdings.length ? (
             <AllocationGrid holdings={data.top_equity_holdings.slice(0, 14)} />
           ) : (
-            <EmptyState text={isKo ? "13F 보유 행을 아직 가져오지 못했습니다." : "No 13F holding rows are available yet."} />
+            <EmptyState
+              text={
+                isKo
+                  ? "13F 보유 행을 아직 가져오지 못했습니다."
+                  : "No 13F holding rows are available yet."
+              }
+            />
           )}
         </div>
 
@@ -102,7 +134,12 @@ export function FundPortfolioPage() {
             </h2>
             <div className="mt-4 grid gap-2 text-sm leading-6 text-muted">
               {data.caveats.map((caveat) => (
-                <p key={caveat} className="safe-text rounded-md border border-line bg-panelAlt px-3 py-2">{caveat}</p>
+                <p
+                  key={caveat}
+                  className="safe-text rounded-md border border-line bg-panelAlt px-3 py-2"
+                >
+                  {caveat}
+                </p>
               ))}
             </div>
           </section>
@@ -125,7 +162,11 @@ export function FundPortfolioPage() {
             <Table2 className="h-5 w-5 text-accent" />
             {isKo ? "13F 행" : "13F rows"}
           </h2>
-          <div className="flex rounded-md border border-line bg-panelAlt p-1" role="tablist" aria-label={isKo ? "보유 필터" : "Holding filter"}>
+          <div
+            className="flex rounded-md border border-line bg-panelAlt p-1"
+            role="tablist"
+            aria-label={isKo ? "보유 필터" : "Holding filter"}
+          >
             {(Object.keys(filterLabels) as HoldingFilter[]).map((key) => (
               <button
                 key={key}
@@ -141,18 +182,29 @@ export function FundPortfolioPage() {
           </div>
         </div>
         <div className="mt-4 grid gap-2 md:hidden">
-          {holdings.map((holding) => <HoldingCard key={holding.id} holding={holding} locale={locale} />)}
+          {holdings.map((holding) => (
+            <HoldingCard key={holding.id} holding={holding} locale={locale} />
+          ))}
         </div>
-        <div className="mt-4 hidden overflow-x-auto rounded-md border border-line md:block" data-allow-horizontal-scroll>
+        <div
+          className="mt-4 hidden overflow-x-auto rounded-md border border-line md:block"
+          data-allow-horizontal-scroll
+        >
           <table className="min-w-[900px] w-full text-left text-sm">
             <thead className="bg-panelAlt text-xs uppercase text-muted">
               <tr>
                 <th className="px-3 py-3">{isKo ? "티커" : "Ticker"}</th>
                 <th className="px-3 py-3">{isKo ? "발행사" : "Issuer"}</th>
                 <th className="px-3 py-3">{isKo ? "종류" : "Type"}</th>
-                <th className="px-3 py-3 text-right">{isKo ? "가치" : "Value"}</th>
-                <th className="px-3 py-3 text-right">{isKo ? "주식 수" : "Shares"}</th>
-                <th className="px-3 py-3 text-right">{isKo ? "비중" : "Weight"}</th>
+                <th className="px-3 py-3 text-right">
+                  {isKo ? "가치" : "Value"}
+                </th>
+                <th className="px-3 py-3 text-right">
+                  {isKo ? "주식 수" : "Shares"}
+                </th>
+                <th className="px-3 py-3 text-right">
+                  {isKo ? "비중" : "Weight"}
+                </th>
                 <th className="px-3 py-3">CUSIP</th>
               </tr>
             </thead>
@@ -163,10 +215,18 @@ export function FundPortfolioPage() {
                     <TickerCell holding={holding} locale={locale} />
                   </td>
                   <td className="safe-text px-3 py-3">{holding.issuer_name}</td>
-                  <td className="px-3 py-3">{holdingKindLabel(holding.holding_kind, locale)}</td>
-                  <td className="px-3 py-3 text-right font-semibold">{formatUsd(holding.value_usd)}</td>
-                  <td className="px-3 py-3 text-right">{holding.shares ? formatNumber(holding.shares) : "-"}</td>
-                  <td className="px-3 py-3 text-right">{formatPercent(holding.portfolio_weight)}</td>
+                  <td className="px-3 py-3">
+                    {holdingKindLabel(holding.holding_kind, locale)}
+                  </td>
+                  <td className="px-3 py-3 text-right font-semibold">
+                    {formatUsd(holding.value_usd)}
+                  </td>
+                  <td className="px-3 py-3 text-right">
+                    {holding.shares ? formatNumber(holding.shares) : "-"}
+                  </td>
+                  <td className="px-3 py-3 text-right">
+                    {formatPercent(holding.portfolio_weight)}
+                  </td>
                   <td className="px-3 py-3 text-muted">{holding.cusip}</td>
                 </tr>
               ))}
@@ -176,10 +236,18 @@ export function FundPortfolioPage() {
       </section>
 
       <section className="flex flex-wrap gap-2">
-        <Link className="secondary-action min-h-11 px-3 py-2" to="/$locale/portfolio" params={{ locale }}>
+        <Link
+          className="secondary-action min-h-11 px-3 py-2"
+          to="/$locale/portfolio"
+          params={{ locale }}
+        >
           {isKo ? "포트폴리오 실험실" : "Portfolio lab"}
         </Link>
-        <Link className="secondary-action min-h-11 px-3 py-2" to="/$locale/trump-filings" params={{ locale }}>
+        <Link
+          className="secondary-action min-h-11 px-3 py-2"
+          to="/$locale/trump-filings"
+          params={{ locale }}
+        >
           {isKo ? "트럼프 공시" : "Trump filings"}
         </Link>
       </section>
@@ -203,9 +271,15 @@ function AllocationGrid({ holdings }: { holdings: FundPortfolioHolding[] }) {
             rel="noreferrer"
             style={{ opacity: Math.max(0.42, Math.min(1, 0.5 + weight * 1.8)) }}
           >
-            <span className="safe-text text-2xl font-bold leading-tight">{holding.symbol ?? holding.cusip}</span>
-            <span className="safe-text text-xs leading-5 text-muted">{holding.issuer_name}</span>
-            <span className="mt-auto text-sm font-semibold">{formatPercent(weight)}</span>
+            <span className="safe-text text-2xl font-bold leading-tight">
+              {holding.symbol ?? compactIssuerName(holding.issuer_name)}
+            </span>
+            <span className="safe-text text-xs leading-5 text-muted">
+              {holding.symbol ? holding.issuer_name : `CUSIP ${holding.cusip}`}
+            </span>
+            <span className="mt-auto text-sm font-semibold">
+              {formatPercent(weight)}
+            </span>
           </a>
         );
       })}
@@ -213,26 +287,48 @@ function AllocationGrid({ holdings }: { holdings: FundPortfolioHolding[] }) {
   );
 }
 
-function HoldingCard({ holding, locale }: { holding: FundPortfolioHolding; locale: "en" | "ko" }) {
+function HoldingCard({
+  holding,
+  locale,
+}: {
+  holding: FundPortfolioHolding;
+  locale: "en" | "ko";
+}) {
   const isKo = locale === "ko";
   return (
     <div className="grid gap-2 rounded-md border border-line bg-panelAlt p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="safe-text text-base font-bold"><TickerCell holding={holding} locale={locale} /></div>
-          <div className="safe-text text-sm leading-6 text-muted">{holding.issuer_name}</div>
+          <div className="safe-text text-base font-bold">
+            <TickerCell holding={holding} locale={locale} />
+          </div>
+          <div className="safe-text text-sm leading-6 text-muted">
+            {holding.issuer_name}
+          </div>
         </div>
         <div className="shrink-0 text-right">
-          <div className="text-sm font-bold">{formatUsd(holding.value_usd)}</div>
-          <div className="text-xs text-muted">{formatPercent(holding.portfolio_weight)}</div>
+          <div className="text-sm font-bold">
+            {formatUsd(holding.value_usd)}
+          </div>
+          <div className="text-xs text-muted">
+            {formatPercent(holding.portfolio_weight)}
+          </div>
         </div>
       </div>
       <div className="flex flex-wrap gap-2 text-xs text-muted">
         <span>{holdingKindLabel(holding.holding_kind, locale)}</span>
-        <span>{isKo ? "주식 수" : "shares"} {holding.shares ? formatNumber(holding.shares) : "-"}</span>
+        <span>
+          {isKo ? "주식 수" : "shares"}{" "}
+          {holding.shares ? formatNumber(holding.shares) : "-"}
+        </span>
         <span>CUSIP {holding.cusip}</span>
       </div>
-      <a className="focus-ring inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-accent" href={holding.source_url} target="_blank" rel="noreferrer">
+      <a
+        className="focus-ring inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-accent"
+        href={holding.source_url}
+        target="_blank"
+        rel="noreferrer"
+      >
         <ExternalLink className="h-4 w-4" />
         {isKo ? "SEC 원문" : "SEC source"}
       </a>
@@ -240,9 +336,33 @@ function HoldingCard({ holding, locale }: { holding: FundPortfolioHolding; local
   );
 }
 
-function TickerCell({ holding, locale }: { holding: FundPortfolioHolding; locale: "en" | "ko" }) {
+function TickerCell({
+  holding,
+  locale,
+}: {
+  holding: FundPortfolioHolding;
+  locale: "en" | "ko";
+}) {
   if (!holding.symbol) return <span>{holding.cusip}</span>;
-  return <EntityLink value={holding.symbol} locale={locale} className="focus-ring inline-flex min-h-11 min-w-11 items-center hover:text-accent" />;
+  return (
+    <EntityLink
+      value={holding.symbol}
+      locale={locale}
+      className="focus-ring inline-flex min-h-11 min-w-11 items-center hover:text-accent"
+    />
+  );
+}
+
+function compactIssuerName(value: string) {
+  return (
+    value
+      .replace(
+        /\b(CORPORATION|CORP|INCORPORATED|INC|LIMITED|LTD|COMPANY|CO|NEW)\b/gi,
+        "",
+      )
+      .replace(/\s+/g, " ")
+      .trim() || value
+  );
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
@@ -255,11 +375,17 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 function Badge({ children }: { children: ReactNode }) {
-  return <span className="badge border-line bg-panelAlt text-muted">{children}</span>;
+  return (
+    <span className="badge border-line bg-panelAlt text-muted">{children}</span>
+  );
 }
 
 function EmptyState({ text }: { text: string }) {
-  return <div className="rounded-md border border-dashed border-line p-4 text-sm leading-6 text-muted">{text}</div>;
+  return (
+    <div className="rounded-md border border-dashed border-line p-4 text-sm leading-6 text-muted">
+      {text}
+    </div>
+  );
 }
 
 function holdingKindLabel(kind: FundHoldingKind, locale: "en" | "ko") {
@@ -267,7 +393,7 @@ function holdingKindLabel(kind: FundHoldingKind, locale: "en" | "ko") {
     stock: { en: "Stock", ko: "주식" },
     call: { en: "Call option", ko: "콜옵션" },
     put: { en: "Put option", ko: "풋옵션" },
-    other: { en: "Other", ko: "기타" }
+    other: { en: "Other", ko: "기타" },
   };
   return labels[kind][locale];
 }
@@ -279,7 +405,9 @@ function formatUsd(value: number) {
 }
 
 function formatNumber(value: number) {
-  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(
+    value,
+  );
 }
 
 function formatPercent(value: number) {

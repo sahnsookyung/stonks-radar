@@ -399,6 +399,13 @@ def test_macro_tiles_prefer_current_kospi_and_kodex_quotes(monkeypatch):
     assert "FRED" not in by_key["kospi"]["source"]
 
 
+def test_yahoo_chart_source_url_uses_reachable_chart_endpoint():
+    url = build_seed_snapshots._yahoo_chart_source_url("KRW=X")
+
+    assert url == "https://query1.finance.yahoo.com/v8/finance/chart/KRW%3DX?range=1d&interval=1m"
+    assert "finance.yahoo.com/quote" not in url
+
+
 def test_macro_tiles_choose_freshest_allowed_public_quote_candidate(monkeypatch):
     build_seed_snapshots._reset_runtime_caches()
     _disable_boj_rate(monkeypatch)
@@ -649,6 +656,12 @@ def test_build_snapshots_writes_news_seed_snapshots(tmp_path, monkeypatch):
     }.issubset(event_ids)
     assert index["data"]["filters"]["regions"]
     assert index["data"]["filters"]["topics"]
+    semiconductor_event = next(
+        event for event in index["data"]["events"] if event["id"] == "semiconductor_export_controls_seed"
+    )
+    source_urls = {source["url"] for source in semiconductor_event["source_links"]}
+    assert "https://www.bis.gov/ear" not in source_urls
+    assert "https://www.bis.gov/regulations/ear/table-of-contents" in source_urls
 
     semiconductor = json.loads((tmp_path / "v1" / "en" / "sectors" / "semiconductors.json").read_text())
     semiconductor_data = semiconductor["data"]

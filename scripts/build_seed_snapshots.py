@@ -1412,7 +1412,7 @@ def _yahoo_chart_series(symbol: str) -> dict[str, Any] | None:
         "value": price,
         "updated_at": updated_at,
         "points": points or [{"date": updated_at, "value": price}],
-        "source_url": f"{YAHOO_FINANCE_QUOTE_URL}/{parse.quote(symbol, safe='')}",
+        "source_url": _yahoo_chart_source_url(symbol),
     }
     if previous is not None:
         result_payload["change"] = price - previous
@@ -1420,6 +1420,11 @@ def _yahoo_chart_series(symbol: str) -> dict[str, Any] | None:
             result_payload["percent_change"] = ((price - previous) / previous) * 100
     _YAHOO_QUOTE_CACHE[cache_key] = result_payload
     return result_payload
+
+
+def _yahoo_chart_source_url(symbol: str) -> str:
+    params = parse.urlencode({"range": "1d", "interval": "1m"})
+    return f"{YAHOO_FINANCE_CHART_URL}/{parse.quote(symbol, safe='')}?{params}"
 
 
 def _yahoo_chart_points(result: dict[str, Any]) -> list[dict[str, Any]]:
@@ -2613,7 +2618,7 @@ def _news_event_details(locale: str, generated_at: datetime) -> list[dict[str, A
             "source_links": [
                 _news_source_ref("BIS", "https://www.bis.gov/", "bis", "Bureau of Industry and Security export controls", "미 산업안보국 수출통제", "T0_OFFICIAL", prior, locale),
                 _news_source_ref("SEC EDGAR", "https://www.sec.gov/edgar/search/", "sec_edgar", "Issuer filings for affected companies", "영향 기업 공시", "T1_REGULATED_FILING", prior, locale, False),
-                _news_source_ref("Source policy", "https://www.bis.gov/ear", "source_policy", "Export Administration Regulations reference", "수출관리규정 참고", "T3_REVIEWED_PUBLIC_SOURCE", prior, locale, False),
+                _news_source_ref("Source policy", "https://www.bis.gov/regulations/ear/table-of-contents", "source_policy", "Export Administration Regulations reference", "수출관리규정 참고", "T3_REVIEWED_PUBLIC_SOURCE", prior, locale, False),
             ],
             "one_sentence_summary": _t(locale, "Export-control monitoring remains a cross-region semiconductor risk, not a trade recommendation.", "수출통제 모니터링은 매매 추천이 아니라 지역 간 반도체 리스크입니다."),
             "what_happened": [

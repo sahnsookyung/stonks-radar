@@ -1,13 +1,36 @@
 from __future__ import annotations
 
-from datetime import date
+import ast
+from datetime import date, datetime, timezone
+from pathlib import Path
 
 import httpx
 import pytest
 
 from frw_api.core.settings import get_settings
-from frw_api.services.provider_limits import ProviderQuotaGuard
-from frw_api.services.market_data import MarketDataInputError, clear_market_data_cache, fetch_market_history
+from frw_api.routers import public as public_router
+from frw_api.services.provider_limits import (
+    ERROR_RATE_LIMITED,
+    ProviderLimitError,
+    ProviderQuotaGuard,
+)
+from frw_api.services.market_data import (
+    MarketDataInputError,
+    _stored_payload,
+    clear_market_data_cache,
+    fetch_market_history,
+    refresh_market_history,
+)
+from frw_api.services.market_history_store import (
+    MarketHistoryCalculationNotReady,
+    _staging_metadata,
+    expected_market_sessions,
+    load_stored_market_history,
+    market_history_calculation_readiness,
+    require_calculation_ready_market_history,
+    store_market_history_series,
+    validate_market_history_batch,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -19,6 +42,365 @@ def clear_settings_cache():
     clear_market_data_cache()
     ProviderQuotaGuard.reset_memory()
     get_settings.cache_clear()
+
+
+def test_market_history_staging_metadata_excludes_price_payloads():
+    payload = _staging_metadata(
+        provider_key="twelve_data",
+        symbol="AAPL",
+        points=[
+            {
+                "date": "2026-01-02",
+                "open": 99.0,
+                "high": 101.0,
+                "low": 98.0,
+                "close": 100.0,
+            },
+            {
+                "date": "2026-01-03",
+                "open": 100.0,
+                "high": 103.0,
+                "low": 99.0,
+                "close": 102.0,
+            },
+        ],
+        source_hash="hash",
+        source_policy_digest="policy",
+    )
+
+    assert payload["point_count"] == 2
+    assert payload["first_date"] == "2026-01-02"
+    assert payload["latest_date"] == "2026-01-03"
+    assert payload["payload_retained"] is False
+    assert "points" not in payload
+    assert "close" not in payload
+
+
+class _Result:
+    def __init__(self, value=None, rows=None):
+        self.value = value
+        self.rows = rows or []
+
+    def scalar_one_or_none(self):
+        return self.value
+
+    def scalar_one(self):
+        return self.value
+
+    def mappings(self):
+        return self
+
+    def one_or_none(self):
+        return self.value
+
+    def all(self):
+        return self.rows
+
+
+class _StoredHistoryDb:
+    def __init__(self, rows):
+        self.rows = rows
+
+    def execute(self, statement, params=None):
+        sql = str(statement)
+        params = params or {}
+        if "to_regclass" in sql:
+            return _Result(params["table_name"])
+        if "from market_price_bar bar" in sql:
+            return _Result(rows=self.rows)
+        raise AssertionError(sql)
+
+    def rollback(self):
+        return None
+
+
+def _stored_row(
+    price_date,
+    *,
+    snapshot_id,
+    close,
+    symbol="AAPL",
+    currency="USD",
+    exchange="NASDAQ",
+    timezone_name="America/New_York",
+):
+    return {
+        "symbol": symbol,
+        "price_date": price_date,
+        "provider_key": "twelve_data",
+        "close": close,
+        "adjusted_close": None,
+        "volume": 1000,
+        "currency_code": currency,
+        "exchange": exchange,
+        "timezone": timezone_name,
+        "provider_price_timestamp": None,
+        "ingested_at": datetime(2026, 1, 6, tzinfo=timezone.utc),
+        "source_revision": None,
+        "quality_state": "valid",
+        "market_data_snapshot_id": snapshot_id,
+        "source_policy_json": {"raw_public_allowed": True},
+        "quality_json": {},
+        "snapshot_batch_id": "batch",
+        "snapshot_provider_revision": "revision",
+        "snapshot_content_hash": "hash",
+        "snapshot_quality_state": "valid",
+    }
+
+
+def test_load_stored_market_history_surfaces_mixed_snapshot_coherence():
+    stored = load_stored_market_history(
+        _StoredHistoryDb(
+            [
+                _stored_row(date(2026, 1, 2), snapshot_id="snapshot-a", close=100.0),
+                _stored_row(date(2026, 1, 5), snapshot_id="snapshot-b", close=101.0),
+            ]
+        ),
+        symbols=["AAPL"],
+        start=date(2026, 1, 1),
+        end=date(2026, 1, 31),
+        provider_order=["twelve_data"],
+        display_mode="private",
+        public_display_allowlist=set(),
+    )
+
+    assert stored is not None
+    assert stored.snapshot_id is None
+    assert stored.snapshot_ids == ["snapshot-a", "snapshot-b"]
+    assert stored.coherence_status == "mixed_snapshots"
+    assert any(
+        "multiple market data snapshots" in warning for warning in stored.warnings
+    )
+
+
+def test_market_history_calculation_readiness_requires_single_complete_snapshot():
+    stored = load_stored_market_history(
+        _StoredHistoryDb(
+            [
+                _stored_row(date(2026, 1, 2), snapshot_id="snapshot-a", close=100.0),
+                _stored_row(date(2026, 1, 5), snapshot_id="snapshot-a", close=101.0),
+            ]
+        ),
+        symbols=["AAPL"],
+        start=date(2026, 1, 2),
+        end=date(2026, 1, 5),
+        provider_order=["twelve_data"],
+        display_mode="private",
+        public_display_allowlist=set(),
+    )
+
+    readiness = market_history_calculation_readiness(
+        stored,
+        symbols=["AAPL"],
+        start=date(2026, 1, 2),
+        end=date(2026, 1, 5),
+    )
+
+    assert readiness.ready is True
+    assert readiness.reason is None
+    assert readiness.snapshot_id == "snapshot-a"
+    assert readiness.missing_sessions == {}
+    assert readiness.required_fx_pairs == []
+
+
+def test_market_history_calculation_readiness_rejects_mixed_snapshots():
+    stored = load_stored_market_history(
+        _StoredHistoryDb(
+            [
+                _stored_row(date(2026, 1, 2), snapshot_id="snapshot-a", close=100.0),
+                _stored_row(date(2026, 1, 5), snapshot_id="snapshot-b", close=101.0),
+            ]
+        ),
+        symbols=["AAPL"],
+        start=date(2026, 1, 2),
+        end=date(2026, 1, 5),
+        provider_order=["twelve_data"],
+        display_mode="private",
+        public_display_allowlist=set(),
+    )
+
+    readiness = market_history_calculation_readiness(
+        stored,
+        symbols=["AAPL"],
+        start=date(2026, 1, 2),
+        end=date(2026, 1, 5),
+    )
+
+    assert readiness.ready is False
+    assert readiness.reason == "market_history_mixed_snapshots"
+    assert readiness.snapshot_id is None
+
+
+def test_require_calculation_ready_market_history_raises_for_mixed_snapshots():
+    stored = load_stored_market_history(
+        _StoredHistoryDb(
+            [
+                _stored_row(date(2026, 1, 2), snapshot_id="snapshot-a", close=100.0),
+                _stored_row(date(2026, 1, 5), snapshot_id="snapshot-b", close=101.0),
+            ]
+        ),
+        symbols=["AAPL"],
+        start=date(2026, 1, 2),
+        end=date(2026, 1, 5),
+        provider_order=["twelve_data"],
+        display_mode="private",
+        public_display_allowlist=set(),
+    )
+
+    with pytest.raises(MarketHistoryCalculationNotReady) as exc_info:
+        require_calculation_ready_market_history(
+            stored,
+            symbols=["AAPL"],
+            start=date(2026, 1, 2),
+            end=date(2026, 1, 5),
+        )
+
+    assert exc_info.value.readiness.reason == "market_history_mixed_snapshots"
+
+
+def test_market_history_calculation_readiness_reports_missing_sessions():
+    stored = load_stored_market_history(
+        _StoredHistoryDb(
+            [_stored_row(date(2026, 1, 2), snapshot_id="snapshot-a", close=100.0)]
+        ),
+        symbols=["AAPL"],
+        start=date(2026, 1, 2),
+        end=date(2026, 1, 5),
+        provider_order=["twelve_data"],
+        display_mode="private",
+        public_display_allowlist=set(),
+    )
+
+    readiness = market_history_calculation_readiness(
+        stored,
+        symbols=["AAPL"],
+        start=date(2026, 1, 2),
+        end=date(2026, 1, 5),
+    )
+
+    assert readiness.ready is False
+    assert readiness.reason == "missing_market_sessions"
+    assert readiness.missing_sessions == {"AAPL": ["2026-01-05"]}
+
+
+def test_market_history_calculation_readiness_requires_fx_for_non_base_currency():
+    stored = load_stored_market_history(
+        _StoredHistoryDb(
+            [
+                _stored_row(
+                    date(2026, 1, 2),
+                    snapshot_id="snapshot-kr",
+                    close=80000.0,
+                    symbol="005930.KS",
+                    currency="KRW",
+                    exchange="KRX",
+                    timezone_name="Asia/Seoul",
+                ),
+                _stored_row(
+                    date(2026, 1, 5),
+                    snapshot_id="snapshot-kr",
+                    close=80500.0,
+                    symbol="005930.KS",
+                    currency="KRW",
+                    exchange="KRX",
+                    timezone_name="Asia/Seoul",
+                ),
+            ]
+        ),
+        symbols=["005930.KS"],
+        start=date(2026, 1, 2),
+        end=date(2026, 1, 5),
+        provider_order=["twelve_data"],
+        display_mode="private",
+        public_display_allowlist=set(),
+    )
+
+    readiness = market_history_calculation_readiness(
+        stored,
+        symbols=["005930.KS"],
+        start=date(2026, 1, 2),
+        end=date(2026, 1, 5),
+        base_currency="USD",
+    )
+
+    assert readiness.ready is False
+    assert readiness.reason == "fx_coverage_unsupported"
+    assert readiness.fx_coverage_status == "unsupported_no_fx_snapshot_store"
+    assert readiness.required_fx_pairs == [{"from": "KRW", "to": "USD"}]
+
+
+def test_backend_market_history_consumers_are_explicitly_allowlisted():
+    allowed_call_sites = {
+        ("apps/api/src/frw_api/routers/public.py", "fetch_market_history"),
+        ("apps/api/src/frw_api/services/market_data.py", "load_stored_market_history"),
+        (
+            "apps/api/src/frw_api/services/market_data.py",
+            "market_history_calculation_readiness",
+        ),
+        (
+            "apps/api/src/frw_api/services/market_history_store.py",
+            "market_history_calculation_readiness",
+        ),
+        (
+            "apps/api/src/frw_api/services/market_history_store.py",
+            "require_calculation_ready_market_history",
+        ),
+        ("apps/worker/src/frw_worker/tasks.py", "refresh_market_history"),
+    }
+    watched_calls = {
+        "fetch_market_history",
+        "refresh_market_history",
+        "load_stored_market_history",
+        "market_history_calculation_readiness",
+        "require_calculation_ready_market_history",
+    }
+
+    unexpected = [
+        (path, name)
+        for path, name in _backend_market_history_call_sites(watched_calls)
+        if (path, name) not in allowed_call_sites
+    ]
+
+    assert unexpected == []
+
+
+def test_stored_payload_exposes_coherence_warning():
+    payload = _stored_payload(
+        db=_StoredHistoryDb(
+            [
+                _stored_row(date(2026, 1, 2), snapshot_id="snapshot-a", close=100.0),
+                _stored_row(date(2026, 1, 5), snapshot_id="snapshot-b", close=101.0),
+            ]
+        ),
+        symbols=["AAPL"],
+        start=date(2026, 1, 1),
+        end=date(2026, 1, 31),
+        provider_order=["twelve_data"],
+        display_mode="private",
+        public_display_allowlist=set(),
+    )
+
+    assert payload is not None
+    assert payload["coherence_status"] == "mixed_snapshots"
+    assert payload["market_data_snapshot_ids"] == ["snapshot-a", "snapshot-b"]
+    assert payload["market_data_snapshot_id"] is None
+    assert payload["calculation_readiness"]["ready"] is False
+    assert (
+        payload["calculation_readiness"]["reason"] == "market_history_mixed_snapshots"
+    )
+    assert payload["warnings"]
+
+
+def test_public_market_history_cache_headers_do_not_cache_private_payloads():
+    headers = public_router._market_history_cache_headers(
+        {
+            "status": "ok",
+            "display_mode": "private",
+            "provider": "stored_normalized_daily_bars",
+        }
+    )
+
+    assert headers["Cache-Control"] == "no-store"
 
 
 @pytest.mark.asyncio
@@ -144,7 +526,10 @@ async def test_market_history_cache_separates_public_display_allowlist(monkeypat
     monkeypatch.setattr(settings, "market_data_provider_order", "twelve_data")
     monkeypatch.setattr(settings, "twelve_data_api_key", "test-key")
 
+    calls: list[str] = []
+
     def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(str(request.url))
         return httpx.Response(
             200,
             json={
@@ -171,6 +556,258 @@ async def test_market_history_cache_separates_public_display_allowlist(monkeypat
     )
 
     assert limited["status"] == "license_limited"
-    assert allowed["status"] == "ok"
+    assert allowed["status"] == "license_limited"
     assert allowed["cache"] == "miss"
-    assert allowed["data_freshness"]["is_public_display_allowed"] is True
+    assert allowed["data_freshness"]["is_public_display_allowed"] is False
+    assert calls == []
+
+
+@pytest.mark.asyncio
+async def test_refresh_market_history_preserves_quota_wait_classification(monkeypatch):
+    settings = get_settings()
+    monkeypatch.setattr(
+        settings, "market_data_provider_order", "twelve_data,alpha_vantage"
+    )
+    monkeypatch.setattr(settings, "twelve_data_api_key", None)
+    monkeypatch.setattr(settings, "alpha_vantage_api_key", "test-key")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"Note": "rate limit reached"})
+
+    with pytest.raises(ProviderLimitError) as exc_info:
+        await refresh_market_history(
+            symbols=["AAPL"],
+            start=date(2026, 1, 1),
+            end=date(2026, 1, 31),
+            transport=httpx.MockTransport(handler),
+        )
+
+    assert exc_info.value.error_class == ERROR_RATE_LIMITED
+    assert exc_info.value.quota_related is True
+
+
+def test_market_history_validation_quarantines_ohlc_invariant():
+    result = validate_market_history_batch(
+        [
+            {
+                "symbol": "AAPL",
+                "price_date": date(2026, 1, 2),
+                "provider_key": "twelve_data",
+                "open": 100.0,
+                "high": 99.0,
+                "low": 98.0,
+                "close": 101.0,
+                "adjusted_close": None,
+                "volume": 1000.0,
+                "currency_code": "USD",
+                "exchange": "NASDAQ",
+                "timezone": "America/New_York",
+                "provider_price_timestamp": None,
+                "source_revision": None,
+                "source_hash": "hash",
+                "is_adjusted": False,
+                "quality_json": {},
+            }
+        ],
+        requested_start=date(2026, 1, 2),
+        requested_end=date(2026, 1, 2),
+    )
+
+    assert result.promotable is False
+    assert result.quality_state == "quarantined"
+    assert any(issue["code"] == "ohlc_invariant" for issue in result.issues)
+
+
+def test_market_history_validation_marks_large_daily_move_suspect():
+    result = validate_market_history_batch(
+        [
+            {
+                "symbol": "AAPL",
+                "price_date": date(2026, 1, 2),
+                "provider_key": "twelve_data",
+                "open": 100.0,
+                "high": 101.0,
+                "low": 99.0,
+                "close": 100.0,
+                "adjusted_close": None,
+                "volume": 1000.0,
+                "currency_code": "USD",
+                "exchange": "NASDAQ",
+                "timezone": "America/New_York",
+                "provider_price_timestamp": None,
+                "source_revision": None,
+                "source_hash": "hash1",
+                "is_adjusted": False,
+                "quality_json": {},
+            },
+            {
+                "symbol": "AAPL",
+                "price_date": date(2026, 1, 5),
+                "provider_key": "twelve_data",
+                "open": 199.0,
+                "high": 205.0,
+                "low": 198.0,
+                "close": 200.0,
+                "adjusted_close": None,
+                "volume": 1000.0,
+                "currency_code": "USD",
+                "exchange": "NASDAQ",
+                "timezone": "America/New_York",
+                "provider_price_timestamp": None,
+                "source_revision": None,
+                "source_hash": "hash2",
+                "is_adjusted": False,
+                "quality_json": {},
+            },
+        ],
+        requested_start=date(2026, 1, 2),
+        requested_end=date(2026, 1, 5),
+    )
+
+    assert result.promotable is False
+    assert result.quality_state == "suspect"
+    assert any(issue["code"] == "max_day_over_day_movement" for issue in result.issues)
+
+
+class _StoreDb:
+    def __init__(self):
+        self.candidate_id = 0
+        self.promoted = False
+        self.fetch_run_updates: list[dict] = []
+
+    def execute(self, statement, params=None):
+        sql = str(statement)
+        params = params or {}
+        if "to_regclass" in sql:
+            return _Result(params["table_name"])
+        if "from market_data_source_policy" in sql:
+            return _Result(None)
+        if "insert into market_price_bar_staging" in sql:
+            return _Result(None)
+        if "insert into market_fetch_run" in sql:
+            return _Result("fetch-run-1")
+        if "insert into market_price_bar_candidate" in sql:
+            self.candidate_id += 1
+            return _Result(self.candidate_id)
+        if "update market_fetch_run" in sql:
+            self.fetch_run_updates.append(params)
+            return _Result(None)
+        if "delete from market_price_bar_staging" in sql:
+            return _Result(None)
+        if "insert into market_price_bar" in sql:
+            self.promoted = True
+            raise AssertionError("suspect rows must not be promoted")
+        raise AssertionError(sql)
+
+    def rollback(self):
+        return None
+
+
+def test_store_market_history_quarantines_suspect_moves_without_promoting():
+    db = _StoreDb()
+
+    result = store_market_history_series(
+        db,
+        provider_key="twelve_data",
+        requested_start=date(2026, 1, 2),
+        requested_end=date(2026, 1, 5),
+        series=[
+            {
+                "symbol": "AAPL",
+                "points": [
+                    {
+                        "date": "2026-01-02",
+                        "open": 99.0,
+                        "high": 101.0,
+                        "low": 98.0,
+                        "close": 100.0,
+                    },
+                    {
+                        "date": "2026-01-05",
+                        "open": 199.0,
+                        "high": 205.0,
+                        "low": 198.0,
+                        "close": 200.0,
+                    },
+                ],
+            }
+        ],
+    )
+
+    assert result["stored"] == 0
+    assert result["promoted"] is False
+    assert result["quality_state"] == "suspect"
+    assert any(
+        issue["code"] == "max_day_over_day_movement"
+        for issue in result["validation_issues"]
+    )
+    assert db.promoted is False
+
+
+def test_expected_market_sessions_handle_crypto_weekends_and_us_holidays():
+    crypto = expected_market_sessions("BTC-USD", date(2026, 1, 3), date(2026, 1, 4))
+    us = expected_market_sessions("AAPL", date(2026, 1, 1), date(2026, 1, 5))
+
+    assert [item.isoformat() for item in crypto] == ["2026-01-03", "2026-01-04"]
+    assert "2026-01-01" not in {item.isoformat() for item in us}
+    assert "2026-01-03" not in {item.isoformat() for item in us}
+
+
+@pytest.mark.asyncio
+async def test_public_market_history_route_forces_public_no_store_mode(monkeypatch):
+    calls: list[dict[str, object]] = []
+
+    async def fake_fetch_market_history(**kwargs):
+        calls.append(kwargs)
+        return {
+            "status": "license_limited",
+            "provider": "tradingview_widget_only",
+            "display_mode": "public",
+            "symbols": ["AAPL"],
+            "start": "2026-01-01",
+            "end": "2026-01-31",
+        }
+
+    class FakeDb:
+        def commit(self):
+            return None
+
+    monkeypatch.setattr(
+        public_router, "fetch_market_history", fake_fetch_market_history
+    )
+
+    response = await public_router.market_history(
+        symbols="AAPL",
+        start=date(2026, 1, 1),
+        end=date(2026, 1, 31),
+        db=FakeDb(),
+    )
+
+    assert calls[0]["public_only"] is True
+    assert response.headers["Cache-Control"] == "no-store"
+    assert response.headers["X-Market-Data-Source"] == "license-limited"
+
+
+def _backend_market_history_call_sites(names: set[str]) -> list[tuple[str, str]]:
+    repo_root = Path(__file__).resolve().parents[2]
+    roots = [repo_root / "apps/api/src", repo_root / "apps/worker/src"]
+    call_sites: list[tuple[str, str]] = []
+    for root in roots:
+        for path in root.rglob("*.py"):
+            tree = ast.parse(path.read_text(), filename=str(path))
+            relative_path = path.relative_to(repo_root).as_posix()
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                name = _call_name(node)
+                if name in names:
+                    call_sites.append((relative_path, name))
+    return sorted(call_sites)
+
+
+def _call_name(node: ast.Call) -> str | None:
+    if isinstance(node.func, ast.Name):
+        return node.func.id
+    if isinstance(node.func, ast.Attribute):
+        return node.func.attr
+    return None

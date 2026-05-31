@@ -40,7 +40,7 @@ interface MarketHistoryResponse {
   source_note: string;
   cache: "hit" | "miss";
   display_mode?: "public" | "private";
-  display_status?: "display_allowed" | "license_limited" | "provider_limit_reached" | "unavailable";
+  display_status?: "display_allowed" | "stored_public_allowed" | "internal_stored" | "license_limited" | "provider_limit_reached" | "unavailable";
   data_freshness?: DataFreshness;
   provider_budget_status?: ProviderLimitSnapshot[];
   symbols: string[];

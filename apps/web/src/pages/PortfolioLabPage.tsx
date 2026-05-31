@@ -439,6 +439,7 @@ export function PortfolioLabPage() {
       <PortfolioHeader portfolio={portfolio} section={section} />
       <PortfolioNav active={section} portfolioId={portfolio.portfolioId} />
       <ComplianceBanner />
+      <PortfolioCoverageBanner analysis={analysis} />
 
       {section === "onboarding" ? (
         <OnboardingSection csvText={csvText} setCsvText={setCsvText} csvErrors={csvErrors} importCsv={importCsv} />
@@ -489,6 +490,7 @@ export function PortfolioLabPage() {
       {section.startsWith("settings") ? <SettingsSection section={section} assumptions={assumptions} setAssumptions={setAssumptions} /> : null}
       {section === "glossary" ? <GlossarySection /> : null}
 
+      <PortfolioCoverageLedger analysis={analysis} />
       <DataQualityPanel issues={analysis.dataQualityIssues} />
     </div>
   );
@@ -525,7 +527,7 @@ function PortfolioNav({ active, portfolioId }: { active: PortfolioSection; portf
   const locale = useLocale();
   const navigate = useNavigate();
   const primary = [
-    ["dashboard", "Cockpit", `/${locale}/dashboard`],
+    ["dashboard", "Cockpit", `/${locale}/portfolio`],
     ["portfolios", "Portfolios", `/${locale}/portfolios`],
     ["xray", "X-ray", `/${locale}/portfolios/${portfolioId}/xray`],
     ["atlas", "Exposure", `/${locale}/portfolios/${portfolioId}/atlas`],
@@ -581,6 +583,39 @@ function ComplianceBanner() {
   );
 }
 
+function PortfolioCoverageBanner({ analysis }: { analysis: ReturnType<typeof analyzePortfolio> }) {
+  const summary = analysis.coverageSummary;
+  const toneClass =
+    summary.qualityTier === "HIGH"
+      ? "border-success/40 bg-success/10 text-success"
+      : summary.qualityTier === "MEDIUM"
+        ? "border-line bg-panelAlt text-muted"
+        : "border-warning/50 bg-warning/10 text-warning";
+  return (
+    <section className={`rounded-md border p-4 ${toneClass}`}>
+      <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
+            <DatabaseZap className="h-4 w-4" />
+            Calculation data coverage
+          </div>
+          <p className="safe-text mt-2 text-sm leading-6">
+            {summary.basisLabel}. Coverage tier {summary.qualityTier.toLowerCase()}; covered or manual weight {formatPercent(summary.coveredWeight)}.
+            {summary.oldestPriceAsOf ? ` Price dates span ${summary.oldestPriceAsOf} to ${summary.latestPriceAsOf}.` : ""}
+          </p>
+          <p className="safe-text mt-1 text-xs leading-5 opacity-90">{summary.limitation}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[520px]">
+          <StatusPill label="Mode" value={analysis.marketDataMode.replaceAll("_", " ").toLowerCase()} />
+          <StatusPill label="Base currency" value={analysis.baseCurrency} />
+          <StatusPill label="Benchmark" value={analysis.benchmarkSymbol} />
+          <StatusPill label="Basis" value="daily close" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function DashboardSection({
   portfolio,
   analysis,
@@ -610,6 +645,14 @@ function DashboardSection({
           value={`${Math.round(analysis.dataFreshnessScore * 100)}/100`}
           detail="Daily/delayed source freshness score"
           tone={analysis.dataFreshnessScore < 0.5 ? "watch" : "normal"}
+        />
+        <CockpitCard
+          icon={<ShieldCheck />}
+          title="Coverage quality"
+          termKey="data_quality"
+          value={analysis.coverageQuality.toLowerCase()}
+          detail={`${formatPercent(analysis.coverageSummary.coveredWeight)} covered/manual; ${formatPercent(analysis.coverageSummary.staleWeight)} stale`}
+          tone={analysis.coverageQuality === "LOW" || analysis.coverageQuality === "INSUFFICIENT" ? "watch" : "normal"}
         />
       </div>
       <section className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
@@ -1810,6 +1853,36 @@ function DataQualityPanel({ issues }: { issues: ReturnType<typeof analyzePortfol
             <p className="safe-text mt-2 leading-6 text-muted">{issue.reason}</p>
           </div>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function PortfolioCoverageLedger({ analysis }: { analysis: ReturnType<typeof analyzePortfolio> }) {
+  return (
+    <section className="panel p-4">
+      <SectionTitle icon={<DatabaseZap />} title="Calculation provenance" termKey="data_quality" />
+      <div className="mt-3 grid gap-3 lg:grid-cols-[0.8fr_1.2fr]">
+        <div className="grid gap-2">
+          <StatusPill label="Return basis" value="daily close proxy" />
+          <StatusPill label="Cache policy" value="shared daily bars" />
+          <StatusPill label="Source policy" value="no public live fetch" />
+        </div>
+        <div className="grid gap-2">
+          {analysis.holdingCoverageRows.slice(0, 8).map((row) => (
+            <div key={row.holdingId} className="grid gap-2 rounded-md border border-line bg-panelAlt p-3 sm:grid-cols-[1fr_auto] sm:items-center">
+              <div className="min-w-0">
+                <div className="safe-text text-sm font-semibold">{row.symbol} · {row.name}</div>
+                <div className="safe-text mt-1 text-xs text-muted">
+                  {row.coverageStatus} · {row.qualityLevel.toLowerCase()} · {row.priceAsOf || "date unavailable"}
+                </div>
+              </div>
+              <div className="text-right text-sm font-semibold">
+                {formatPercent(row.weight)}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

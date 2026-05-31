@@ -210,6 +210,45 @@ export interface ExposureRow {
   quality: QualityLevel;
 }
 
+export type CoverageQualityTier = "HIGH" | "MEDIUM" | "LOW" | "INSUFFICIENT";
+export type PortfolioMarketDataMode = "STORED_DAILY" | "USER_PROVIDED" | "SAMPLE_STATIC" | "MIXED";
+
+export interface HoldingCoverageRow {
+  holdingId: string;
+  symbol: string;
+  name: string;
+  weight: number;
+  marketValue: number;
+  priceAsOf: string;
+  priceAgeDays: number | null;
+  qualityLevel: QualityLevel;
+  dataMode: PortfolioMarketDataMode;
+  coverageStatus: "covered" | "proxy" | "stale" | "manual" | "missing";
+}
+
+export interface PortfolioCoverageSummary {
+  qualityTier: CoverageQualityTier;
+  coveredWeight: number;
+  staleWeight: number;
+  proxyWeight: number;
+  missingWeight: number;
+  manualWeight: number;
+  oldestPriceAsOf: string | null;
+  latestPriceAsOf: string | null;
+  basisLabel: string;
+  limitation: string;
+}
+
+export interface PortfolioCalculationProvenance {
+  baseCurrency: string;
+  returnBasis: "daily-close-total-return-proxy";
+  marketDataMode: PortfolioMarketDataMode;
+  benchmarkSymbol: string;
+  generatedAt: string;
+  sourcePolicy: string;
+  cachePolicy: string;
+}
+
 export interface PortfolioAnalysis {
   portfolioValue: number;
   netInvestedCapital: number;
@@ -230,6 +269,14 @@ export interface PortfolioAnalysis {
   currentTargetRows: AllocationDriftRow[];
   dataFreshnessScore: number;
   dataQualityIssues: DataQualityIssue[];
+  baseCurrency: string;
+  returnBasis: "daily-close-total-return-proxy";
+  marketDataMode: PortfolioMarketDataMode;
+  benchmarkSymbol: string;
+  coverageQuality: CoverageQualityTier;
+  coverageSummary: PortfolioCoverageSummary;
+  holdingCoverageRows: HoldingCoverageRow[];
+  calculationProvenance: PortfolioCalculationProvenance;
   healthSummary: string;
 }
 
@@ -905,6 +952,10 @@ export function analyzePortfolio(
   const allocationDrift = currentTargetRows.reduce((sum, row) => sum + Math.abs(row.drift), 0) / 2;
   const dataFreshnessScore = calculateDataFreshnessScore(instruments);
   const dataQualityIssues = buildDataQualityIssues(assetAllocation, instruments, portfolio.holdings);
+  const holdingCoverageRows = calculateHoldingCoverageRows(portfolio, instruments, portfolioValue);
+  const coverageSummary = calculatePortfolioCoverageSummary(holdingCoverageRows);
+  const marketDataMode = calculatePortfolioMarketDataMode(holdingCoverageRows, portfolio.isDemo);
+  const benchmarkSymbol = resolvePortfolioBenchmarkSymbol(assetAllocation);
 
   return {
     portfolioValue,
@@ -926,6 +977,22 @@ export function analyzePortfolio(
     currentTargetRows,
     dataFreshnessScore,
     dataQualityIssues,
+    baseCurrency: portfolio.baseCurrency,
+    returnBasis: "daily-close-total-return-proxy",
+    marketDataMode,
+    benchmarkSymbol,
+    coverageQuality: coverageSummary.qualityTier,
+    coverageSummary,
+    holdingCoverageRows,
+    calculationProvenance: {
+      baseCurrency: portfolio.baseCurrency,
+      returnBasis: "daily-close-total-return-proxy",
+      marketDataMode,
+      benchmarkSymbol,
+      generatedAt: new Date().toISOString(),
+      sourcePolicy: "cache-first normalized daily bars; no public request-path provider fetch",
+      cachePolicy: "historical daily bars are reused across users and refreshed on a scheduled repair cadence"
+    },
     healthSummary: generatePortfolioHealthSummary({
       portfolioValue,
       top5Concentration: topHoldings.slice(0, 5).reduce((sum, row) => sum + row.weight, 0),
@@ -1480,6 +1547,101 @@ export function calculateDataFreshnessScore(instruments: Instrument[], asOf = ne
     return freshness * qualityMultiplier;
   });
   return Math.max(0, Math.min(1, mean(scores)));
+}
+
+export function calculateHoldingCoverageRows(
+  portfolio: Portfolio,
+  instruments: Instrument[],
+  portfolioValue = calculatePortfolioValue(portfolio.holdings, instruments) + portfolio.cashBalance,
+  asOf = new Date()
+): HoldingCoverageRow[] {
+  return portfolio.holdings.map((holding) => {
+    const instrument = findInstrument(holding.instrumentId, instruments);
+    const marketValue = holdingMarketValue(holding, instruments);
+    const priceAgeDays = instrument ? daysSince(instrument.priceAsOf, asOf) : null;
+    const qualityLevel = holding.manualPrice || holding.manualMarketValue ? "USER_PROVIDED" : instrument?.priceQuality ?? "UNAVAILABLE";
+    const dataMode = holding.manualPrice || holding.manualMarketValue
+      ? "USER_PROVIDED"
+      : portfolio.isDemo
+        ? "SAMPLE_STATIC"
+        : "STORED_DAILY";
+    return {
+      holdingId: holding.holdingId,
+      symbol: instrument ? primaryListingFor(instrument).symbol : holding.instrumentId,
+      name: instrument?.name ?? holding.instrumentId,
+      weight: portfolioValue > 0 ? marketValue / portfolioValue : 0,
+      marketValue,
+      priceAsOf: instrument?.priceAsOf ?? "",
+      priceAgeDays,
+      qualityLevel,
+      dataMode,
+      coverageStatus: coverageStatusFor(qualityLevel, priceAgeDays, dataMode)
+    };
+  });
+}
+
+export function calculatePortfolioCoverageSummary(rows: HoldingCoverageRow[]): PortfolioCoverageSummary {
+  const weightByStatus = (status: HoldingCoverageRow["coverageStatus"]) =>
+    rows.filter((row) => row.coverageStatus === status).reduce((sum, row) => sum + row.weight, 0);
+  const coveredWeight = weightByStatus("covered") + weightByStatus("manual");
+  const staleWeight = weightByStatus("stale");
+  const proxyWeight = weightByStatus("proxy");
+  const missingWeight = weightByStatus("missing");
+  const manualWeight = weightByStatus("manual");
+  const validDates = rows.map((row) => row.priceAsOf).filter(Boolean).sort();
+  const qualityTier: CoverageQualityTier =
+    missingWeight > 0.1 || coveredWeight < 0.7
+      ? "INSUFFICIENT"
+      : staleWeight > 0.25 || proxyWeight > 0.4
+        ? "LOW"
+        : staleWeight > 0.05 || proxyWeight > 0.15
+          ? "MEDIUM"
+          : "HIGH";
+  return {
+    qualityTier,
+    coveredWeight,
+    staleWeight,
+    proxyWeight,
+    missingWeight,
+    manualWeight,
+    oldestPriceAsOf: validDates[0] ?? null,
+    latestPriceAsOf: validDates[validDates.length - 1] ?? null,
+    basisLabel: "Daily close / delayed historical data",
+    limitation:
+      "Portfolio analytics use stored or user-entered daily close values. They are suitable for planning, not real-time execution or intraday trading decisions."
+  };
+}
+
+export function calculatePortfolioMarketDataMode(rows: HoldingCoverageRow[], isDemo: boolean): PortfolioMarketDataMode {
+  const modes = new Set(rows.map((row) => row.dataMode));
+  if (modes.size === 1) return [...modes][0] ?? (isDemo ? "SAMPLE_STATIC" : "STORED_DAILY");
+  return "MIXED";
+}
+
+function coverageStatusFor(
+  qualityLevel: QualityLevel,
+  priceAgeDays: number | null,
+  dataMode: PortfolioMarketDataMode
+): HoldingCoverageRow["coverageStatus"] {
+  if (dataMode === "USER_PROVIDED") return "manual";
+  if (qualityLevel === "UNAVAILABLE") return "missing";
+  if (qualityLevel === "PROXY" || qualityLevel === "ESTIMATED") return "proxy";
+  if (qualityLevel === "STALE" || (priceAgeDays ?? 0) > 7) return "stale";
+  return "covered";
+}
+
+function daysSince(dateText: string, asOf: Date): number | null {
+  const parsed = new Date(dateText);
+  if (!Number.isFinite(parsed.getTime())) return null;
+  return Math.max(0, Math.floor((asOf.getTime() - parsed.getTime()) / MS_PER_DAY));
+}
+
+function resolvePortfolioBenchmarkSymbol(assetAllocation: ExposureRow[]) {
+  const largest = assetAllocation[0]?.key ?? "Equity";
+  if (largest === "Fixed Income") return "AGG";
+  if (largest === "Real Assets") return "GLD";
+  if (largest === "Crypto / Digital Assets") return "BTC-USD";
+  return "SPY";
 }
 
 export function generateContributionRebalancePlan(

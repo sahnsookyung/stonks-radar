@@ -19,19 +19,27 @@ export function NewsPage() {
   const [region, setRegion] = useState(params.get("region") ?? "");
   const [topic, setTopic] = useState(params.get("topic") ?? "");
   const [trustTier, setTrustTier] = useState(params.get("trust") ?? "");
-  const [timeRange, setTimeRange] = useState<TimeRange>((params.get("range") as TimeRange) || "all");
-  const [breakingOnly, setBreakingOnly] = useState(params.get("breaking") === "1");
-  const [officialOnly, setOfficialOnly] = useState(params.get("official") === "1");
+  const [timeRange, setTimeRange] = useState<TimeRange>(
+    (params.get("range") as TimeRange) || "all",
+  );
+  const [breakingOnly, setBreakingOnly] = useState(
+    params.get("breaking") === "1",
+  );
+  const [officialOnly, setOfficialOnly] = useState(
+    params.get("official") === "1",
+  );
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   const newsQuery = useQuery({
     queryKey: ["snapshot", "news-index", locale],
-    queryFn: () => snapshotQueries.newsIndex(locale)
+    queryFn: () => snapshotQueries.newsIndex(locale),
   });
 
   const events = newsQuery.data?.data.events ?? [];
   const searchableEvents = useMemo(
-    () => events.map((event) => ({ event, searchableText: searchableText(event) })),
-    [events]
+    () =>
+      events.map((event) => ({ event, searchableText: searchableText(event) })),
+    [events],
   );
 
   useEffect(() => {
@@ -46,28 +54,79 @@ export function NewsPage() {
     if (officialOnly) nextParams.set("official", "1");
     const nextSearch = nextParams.toString();
     const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
-    if (nextUrl !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
+    if (
+      nextUrl !==
+      `${window.location.pathname}${window.location.search}${window.location.hash}`
+    ) {
       window.history.replaceState(null, "", nextUrl);
     }
-  }, [breakingOnly, officialOnly, query, region, ticker, timeRange, topic, trustTier]);
+  }, [
+    breakingOnly,
+    officialOnly,
+    query,
+    region,
+    ticker,
+    timeRange,
+    topic,
+    trustTier,
+  ]);
 
   const filteredEvents = useMemo(() => {
-    return searchableEvents.map((row) => row.event).filter((event, index) =>
-      matchesKeyword(searchableEvents[index].searchableText, query) &&
-      matchesTicker(event, ticker) &&
-      matchesRegion(event, region) &&
-      matchesTopic(event, topic) &&
-      matchesTrust(event, trustTier) &&
-      matchesTime(event, timeRange) &&
-      (!breakingOnly || event.breaking_score >= 70) &&
-      (!officialOnly || event.source_links.some((source) => ["T0_OFFICIAL", "T1_REGULATED_FILING"].includes(source.trust_tier)))
-    );
-  }, [breakingOnly, officialOnly, query, region, searchableEvents, ticker, timeRange, topic, trustTier]);
+    return searchableEvents
+      .map((row) => row.event)
+      .filter(
+        (event, index) =>
+          matchesKeyword(searchableEvents[index].searchableText, query) &&
+          matchesTicker(event, ticker) &&
+          matchesRegion(event, region) &&
+          matchesTopic(event, topic) &&
+          matchesTrust(event, trustTier) &&
+          matchesTime(event, timeRange) &&
+          (!breakingOnly || event.breaking_score >= 70) &&
+          (!officialOnly ||
+            event.source_links.some((source) =>
+              ["T0_OFFICIAL", "T1_REGULATED_FILING"].includes(
+                source.trust_tier,
+              ),
+            )),
+      );
+  }, [
+    breakingOnly,
+    officialOnly,
+    query,
+    region,
+    searchableEvents,
+    ticker,
+    timeRange,
+    topic,
+    trustTier,
+  ]);
 
   if (newsQuery.isLoading) return <LoadingState />;
-  if (newsQuery.isError || !newsQuery.data) return <ErrorState error={newsQuery.error} />;
+  if (newsQuery.isError || !newsQuery.data)
+    return <ErrorState error={newsQuery.error} />;
 
   const filters = newsQuery.data.data.filters;
+  const activeFilterCount = [
+    query.trim(),
+    ticker,
+    region,
+    topic,
+    trustTier,
+    timeRange !== "all" ? timeRange : "",
+    breakingOnly ? "breaking" : "",
+    officialOnly ? "official" : "",
+  ].filter(Boolean).length;
+  const resetFilters = () => {
+    setQuery("");
+    setTicker("");
+    setRegion("");
+    setTopic("");
+    setTrustTier("");
+    setTimeRange("all");
+    setBreakingOnly(false);
+    setOfficialOnly(false);
+  };
   return (
     <div className="grid min-w-0 gap-5">
       <SnapshotBanner snapshot={newsQuery.data} />
@@ -87,11 +146,45 @@ export function NewsPage() {
       </section>
 
       <section className="panel min-w-0 p-4">
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          <SlidersHorizontal className="h-4 w-4 text-accent" />
-          {isKo ? "필터" : "Filters"}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <button
+              type="button"
+              className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-md text-sm font-semibold md:hidden"
+              aria-controls="news-filters-panel"
+              aria-expanded={filtersExpanded}
+              onClick={() => setFiltersExpanded((expanded) => !expanded)}
+            >
+              <SlidersHorizontal className="h-4 w-4 text-accent" />
+              {isKo ? "필터" : "Filters"}
+              <span className="badge border-line bg-panelAlt text-muted">
+                {activeFilterCount || (isKo ? "전체" : "All")}
+              </span>
+            </button>
+            <div className="hidden min-h-11 items-center gap-2 text-sm font-semibold md:inline-flex">
+              <SlidersHorizontal className="h-4 w-4 text-accent" />
+              {isKo ? "필터" : "Filters"}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="badge border-line bg-panelAlt text-muted">
+              {filteredEvents.length} / {events.length}
+            </span>
+            {activeFilterCount ? (
+              <button
+                type="button"
+                className="secondary-action min-h-11 px-3 py-1.5 text-xs"
+                onClick={resetFilters}
+              >
+                {isKo ? "초기화" : "Reset"}
+              </button>
+            ) : null}
+          </div>
         </div>
-        <div className="mt-4 grid min-w-0 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <div
+          id="news-filters-panel"
+          className={`${filtersExpanded ? "grid" : "hidden"} mt-4 min-w-0 gap-3 md:grid md:grid-cols-3 xl:grid-cols-6`}
+        >
           <label className="grid gap-1 text-xs font-semibold uppercase text-muted md:col-span-2 xl:col-span-2">
             {isKo ? "검색어" : "Keyword"}
             <input
@@ -101,15 +194,41 @@ export function NewsPage() {
               placeholder={isKo ? "티커, 지역, 주제" : "ticker, region, topic"}
             />
           </label>
-          <FilterSelect label={isKo ? "티커" : "Ticker"} value={ticker} onChange={setTicker} options={filters.tickers} allLabel={isKo ? "모든 티커" : "All tickers"} />
-          <FilterSelect label={isKo ? "지역" : "Region"} value={region} onChange={setRegion} options={filters.regions} allLabel={isKo ? "모든 지역" : "All regions"} />
-          <FilterSelect label={isKo ? "주제" : "Topic"} value={topic} onChange={setTopic} options={filters.topics} allLabel={isKo ? "모든 주제" : "All topics"} />
-          <FilterSelect label={isKo ? "신뢰" : "Trust"} value={trustTier} onChange={setTrustTier} options={filters.trust_tiers} allLabel={isKo ? "모든 출처" : "All trust"} />
+          <FilterSelect
+            label={isKo ? "티커" : "Ticker"}
+            value={ticker}
+            onChange={setTicker}
+            options={filters.tickers}
+            allLabel={isKo ? "모든 티커" : "All tickers"}
+          />
+          <FilterSelect
+            label={isKo ? "지역" : "Region"}
+            value={region}
+            onChange={setRegion}
+            options={filters.regions}
+            allLabel={isKo ? "모든 지역" : "All regions"}
+          />
+          <FilterSelect
+            label={isKo ? "주제" : "Topic"}
+            value={topic}
+            onChange={setTopic}
+            options={filters.topics}
+            allLabel={isKo ? "모든 주제" : "All topics"}
+          />
+          <FilterSelect
+            label={isKo ? "신뢰" : "Trust"}
+            value={trustTier}
+            onChange={setTrustTier}
+            options={filters.trust_tiers}
+            allLabel={isKo ? "모든 출처" : "All trust"}
+          />
           <label className="grid gap-1 text-xs font-semibold uppercase text-muted">
             {isKo ? "기간" : "Range"}
             <select
               value={timeRange}
-              onChange={(event) => setTimeRange(event.target.value as TimeRange)}
+              onChange={(event) =>
+                setTimeRange(event.target.value as TimeRange)
+              }
               className="focus-ring min-h-11 rounded-md border border-line bg-paper px-3 text-sm font-medium text-ink"
             >
               <option value="all">{isKo ? "전체" : "All"}</option>
@@ -119,9 +238,19 @@ export function NewsPage() {
             </select>
           </label>
         </div>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Toggle checked={breakingOnly} onChange={setBreakingOnly} label={isKo ? "속보만" : "Breaking only"} />
-          <Toggle checked={officialOnly} onChange={setOfficialOnly} label={isKo ? "공식/공시 출처만" : "Official/filing only"} />
+        <div
+          className={`${filtersExpanded ? "flex" : "hidden"} mt-4 flex-wrap gap-3 md:flex`}
+        >
+          <Toggle
+            checked={breakingOnly}
+            onChange={setBreakingOnly}
+            label={isKo ? "속보만" : "Breaking only"}
+          />
+          <Toggle
+            checked={officialOnly}
+            onChange={setOfficialOnly}
+            label={isKo ? "공식/공시 출처만" : "Official/filing only"}
+          />
         </div>
       </section>
 
@@ -129,14 +258,20 @@ export function NewsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-bold">{isKo ? "이벤트" : "Events"}</h2>
           <span className="badge border-line bg-panelAlt text-muted">
-            {filteredEvents.length} / {events.length}
+            {isKo
+              ? `${filteredEvents.length}개 표시`
+              : `${filteredEvents.length} shown`}
           </span>
         </div>
         {filteredEvents.length ? (
-          filteredEvents.map((event) => <NewsEventCard key={event.id} event={event} locale={locale} />)
+          filteredEvents.map((event) => (
+            <NewsEventCard key={event.id} event={event} locale={locale} />
+          ))
         ) : (
           <div className="panel border-dashed p-5 text-sm leading-6 text-muted">
-            {isKo ? "선택한 필터와 일치하는 뉴스 이벤트가 없습니다." : "No news events match the selected filters."}
+            {isKo
+              ? "선택한 필터와 일치하는 뉴스 이벤트가 없습니다."
+              : "No news events match the selected filters."}
           </div>
         )}
       </section>
@@ -155,7 +290,7 @@ function FilterSelect({
   value,
   onChange,
   options,
-  allLabel
+  allLabel,
 }: {
   label: string;
   value: string;
@@ -182,10 +317,22 @@ function FilterSelect({
   );
 }
 
-function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (checked: boolean) => void; label: string }) {
+function Toggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+}) {
   return (
     <label className="focus-within:ring-focus inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-md border border-line bg-panelAlt px-3 text-sm font-semibold">
-      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+      />
       {label}
     </label>
   );
@@ -199,8 +346,10 @@ function searchableText(event: NewsEventListItem) {
     ...event.tickers.flatMap((ticker) => [ticker.symbol, ticker.name]),
     ...event.regions.map((region) => region.name),
     ...event.topics.map((topic) => topic.label),
-    ...event.source_links.flatMap((source) => [source.label, source.title])
-  ].join(" ").toLowerCase();
+    ...event.source_links.flatMap((source) => [source.label, source.title]),
+  ]
+    .join(" ")
+    .toLowerCase();
 }
 
 function matchesKeyword(haystack: string, value: string) {
@@ -211,7 +360,9 @@ function matchesKeyword(haystack: string, value: string) {
 
 function matchesTicker(event: NewsEventListItem, value: string) {
   if (!value) return true;
-  return event.tickers.some((ticker) => ticker.symbol.toUpperCase() === value.toUpperCase());
+  return event.tickers.some(
+    (ticker) => ticker.symbol.toUpperCase() === value.toUpperCase(),
+  );
 }
 
 function matchesRegion(event: NewsEventListItem, value: string) {
