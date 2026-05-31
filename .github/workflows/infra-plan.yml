@@ -12,6 +12,14 @@ on:
           - all
           - cloudflare
           - oci
+      runner:
+        description: "Execution path"
+        required: true
+        default: self-hosted
+        type: choice
+        options:
+          - self-hosted
+          - github-hosted
 
 permissions:
   contents: read
@@ -21,14 +29,14 @@ env:
 
 jobs:
   terraform-fmt:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON((inputs.runner == 'github-hosted' && '["ubuntu-latest"]') || '["self-hosted","linux","stonks-radar-deploy"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
       - run: terraform fmt -check -recursive infra/cloudflare/terraform infra/oci/terraform
 
   cloudflare-plan:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON((inputs.runner == 'github-hosted' && '["ubuntu-latest"]') || '["self-hosted","linux","stonks-radar-deploy"]') }}
     needs: terraform-fmt
     if: ${{ inputs.target == 'all' || inputs.target == 'cloudflare' }}
     defaults:
@@ -49,7 +57,7 @@ jobs:
       - run: terraform plan -input=false
 
   oci-plan:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON((inputs.runner == 'github-hosted' && '["ubuntu-latest"]') || '["self-hosted","linux","stonks-radar-deploy"]') }}
     needs: terraform-fmt
     if: ${{ inputs.target == 'all' || inputs.target == 'oci' }}
     defaults:
@@ -72,4 +80,3 @@ jobs:
       - run: terraform init -input=false
       - run: terraform validate
       - run: terraform plan -input=false
-

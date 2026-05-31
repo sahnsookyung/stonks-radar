@@ -2,13 +2,67 @@ name: deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      runner:
+        description: "Execution path"
+        required: true
+        default: self-hosted
+        type: choice
+        options:
+          - self-hosted
+          - github-hosted
 
 concurrency:
   group: stonks-radar-production
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  deploy-self-hosted:
+    if: ${{ inputs.runner != 'github-hosted' }}
+    runs-on: [self-hosted, linux, stonks-radar-deploy]
+    environment: production
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify
+        run: npm run test:all
+
+      - name: Prepare production snapshot env
+        env:
+          STONKS_PRODUCTION_ENV_B64: ${{ secrets.STONKS_PRODUCTION_ENV_B64 }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$STONKS_PRODUCTION_ENV_B64" | base64 -d > /tmp/stonks-production.env
+          chmod 600 /tmp/stonks-production.env
+
+      - name: Build web assets
+        run: STONKS_SNAPSHOT_ENV_FILE=/tmp/stonks-production.env npm run build
+
+      - name: Deploy local OCI compose stack
+        env:
+          STONKS_DEPLOY_DIR: /opt/stonks-radar
+        run: scripts/deploy_self_hosted_runner.sh /tmp/stonks-production.env
+
+  deploy-github-hosted:
+    if: ${{ inputs.runner == 'github-hosted' }}
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 45
@@ -28,6 +82,9 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
 
       - name: Verify
         run: npm run test:all

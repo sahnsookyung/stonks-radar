@@ -36,12 +36,25 @@ rotated, update both locations and restart the API/worker stack.
 
 The deploy workflow is manual-only: `.github/workflows/deploy.yml`.
 
+Default execution path: `self-hosted`.
+
+The self-hosted path runs on the OCI instance with runner labels
+`self-hosted`, `linux`, and `stonks-radar-deploy`. This avoids GitHub-hosted
+runner minutes and keeps deploys available when GitHub-hosted jobs are blocked
+by account billing/spending-limit state. It checks out the repository, runs the
+normal test/build gates, syncs the checked-out release into `/opt/stonks-radar`,
+writes the production env file, runs Docker Compose, publishes runtime
+snapshots, and verifies local origin health.
+
 Required repository or environment secrets:
+
+- `STONKS_PRODUCTION_ENV_B64`: base64 encoding of the production env file
+
+Additional secrets required only for the `github-hosted` SSH fallback:
 
 - `STONKS_HOST`: OCI public IPv4 or DNS name
 - `STONKS_USER`: SSH user, normally `ubuntu`
 - `STONKS_DEPLOY_KEY`: private SSH key that can access the OCI host
-- `STONKS_PRODUCTION_ENV_B64`: base64 encoding of the production env file
 
 Create `STONKS_PRODUCTION_ENV_B64` from the local secret record:
 
@@ -49,7 +62,39 @@ Create `STONKS_PRODUCTION_ENV_B64` from the local secret record:
 base64 -i .secrets/stonks-radar.production.env | tr -d '\n'
 ```
 
-The workflow runs tests, builds the web assets, rsyncs the repository to
-`/opt/stonks-radar`, writes `.env`, runs Docker Compose, and checks local origin
-health. It is intentionally not scheduled; production deploys require a manual
+One-time OCI runner bootstrap:
+
+```bash
+RUNNER_TOKEN="$(gh api -X POST \
+  repos/sahnsookyung/stonks-radar/actions/runners/registration-token \
+  --jq .token)"
+
+scp scripts/install_github_actions_runner.sh ubuntu@<oci-host>:/tmp/
+printf '%s\n' "$RUNNER_TOKEN" | ssh ubuntu@<oci-host> '
+  read -r GITHUB_RUNNER_TOKEN
+  export GITHUB_RUNNER_TOKEN
+  export GITHUB_REPOSITORY=sahnsookyung/stonks-radar
+  export RUNNER_USER=ubuntu
+  bash /tmp/install_github_actions_runner.sh
+'
+```
+
+The runner service must have Docker access and write access to
+`/opt/stonks-radar`. The installer adds the runner user to the Docker group when
+that group exists; log out/in or restart the service if group membership was
+changed after Docker was installed.
+
+Use the `github-hosted` workflow input only when GitHub-hosted runner billing is
+healthy. Production deploys are intentionally not scheduled; they require manual
 dispatch.
+
+## GitHub Actions Terraform Plans
+
+The Terraform workflow is manual-only: `.github/workflows/infra-plan.yml`.
+
+Default execution path: `self-hosted`.
+
+This workflow performs `terraform fmt`, `validate`, and `plan` for Cloudflare
+and/or OCI without consuming GitHub-hosted minutes. It does not apply Terraform.
+OCI apply remains intentionally manual until the existing instance is imported
+into Terraform state and state storage is explicitly decided.
