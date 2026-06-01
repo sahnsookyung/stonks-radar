@@ -39,6 +39,8 @@ fi
 if [[ ! -d "$deploy_dir" ]]; then
   "${sudo_cmd[@]}" mkdir -p "$deploy_dir"
   "${sudo_cmd[@]}" chown "$(id -u):$(id -g)" "$deploy_dir"
+elif [[ ! -w "$deploy_dir" ]]; then
+  "${sudo_cmd[@]}" chown -R "$(id -u):$(id -g)" "$deploy_dir"
 fi
 
 old_assets_dir="$(mktemp -d)"

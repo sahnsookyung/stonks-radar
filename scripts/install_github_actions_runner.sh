@@ -72,6 +72,10 @@ fi
 
 cd "$install_dir"
 
+if [[ -x bin/installdependencies.sh ]]; then
+  ./bin/installdependencies.sh
+fi
+
 if [[ -f .runner ]]; then
   ./svc.sh stop || true
   sudo -u "$runner_user" ./config.sh remove --token "$runner_token" || true

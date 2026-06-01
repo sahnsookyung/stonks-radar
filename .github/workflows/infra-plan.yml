@@ -32,6 +32,8 @@ jobs:
     runs-on: ${{ fromJSON((inputs.runner == 'github-hosted' && '["ubuntu-latest"]') || '["self-hosted","linux","stonks-radar-deploy"]') }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: hashicorp/setup-terraform@v3
       - run: terraform fmt -check -recursive infra/cloudflare/terraform infra/oci/terraform
 
@@ -51,6 +53,8 @@ jobs:
       TF_VAR_manage_web_analytics: "true"
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: hashicorp/setup-terraform@v3
       - run: terraform init -input=false
       - run: terraform validate
@@ -76,6 +80,8 @@ jobs:
       TF_VAR_ssh_authorized_keys: ${{ secrets.STONKS_SSH_AUTHORIZED_KEYS }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: hashicorp/setup-terraform@v3
       - run: terraform init -input=false
       - run: terraform validate
