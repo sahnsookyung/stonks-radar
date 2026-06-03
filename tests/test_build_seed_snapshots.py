@@ -62,6 +62,15 @@ def test_preserve_previous_active_macro_tile_when_refresh_source_is_unavailable(
     assert "Using last published value" in tile["delay_label"]
 
 
+def test_seed_events_do_not_use_build_time_as_publication_time():
+    events = build_seed_snapshots._events("en", datetime(2026, 6, 3, tzinfo=timezone.utc))
+
+    assert events
+    assert all(event["published_at"] == "2026-05-25T00:00:00Z" for event in events)
+    assert all(event["occurred_at"] == "2026-05-25T00:00:00Z" for event in events)
+    assert all(event["freshness"] == "stale" for event in events)
+
+
 def test_preserve_previous_active_macro_tile_blocks_time_sensitive_fallback(tmp_path, monkeypatch):
     home_path = tmp_path / "v1" / "en" / "home.json"
     home_path.parent.mkdir(parents=True)

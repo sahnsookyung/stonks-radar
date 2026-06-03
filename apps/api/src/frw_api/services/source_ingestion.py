@@ -117,14 +117,20 @@ def _extract_title(body: bytes, content_type: str) -> str | None:
 
 
 def _mode_for_url(url: str, content_type: str) -> str:
-    host = urlparse(url).netloc.lower()
-    if "sec.gov" in host:
+    host = urlparse(url).hostname or ""
+    host = host.rstrip(".").lower()
+    if _is_exact_domain(host, "sec.gov"):
         return "filing"
-    if any(host.endswith(domain) for domain in (".gov", ".gov.kr", ".go.jp", ".europa.eu")):
+    if any(host == domain.lstrip(".") or host.endswith(domain) for domain in (".gov", ".gov.kr", ".go.jp", ".europa.eu")):
         return "official_page" if "html" in content_type else "official_api"
     if "rss" in url.lower() or "xml" in content_type:
         return "rss_metadata"
     return "public_web_fetch"
+
+
+def _is_exact_domain(host: str, domain: str) -> bool:
+    normalized = domain.rstrip(".").lower()
+    return host == normalized or host.endswith(f".{normalized}")
 
 
 def _resolve_source(db: Session, source_key: str | None, url: str) -> str | None:

@@ -139,6 +139,8 @@ export interface NewsEventListItem {
   first_seen_at: string;
   last_seen_at: string;
   published_at: string;
+  source_published_at?: string;
+  observed_at?: string;
   freshness: Freshness;
   severity: Severity;
   confidence: number;

@@ -2,7 +2,7 @@ import gzip
 
 from frw_api.services.fetch_policy import evaluate_url
 from frw_api.services.safe_fetch import SafeFetchError, safe_fetch_bytes
-from frw_api.services.source_ingestion import SourceIngestionError, fetch_source_bytes
+from frw_api.services.source_ingestion import SourceIngestionError, _mode_for_url, fetch_source_bytes
 
 import httpx
 import pytest
@@ -21,6 +21,13 @@ def test_blocks_file_protocol():
 def test_blocks_metadata_ip():
     decision = evaluate_url("http://169.254.169.254/latest/meta-data")
     assert not decision.allowed
+
+
+def test_sec_mode_requires_exact_sec_domain():
+    assert _mode_for_url("https://data.sec.gov/submissions/CIK0000320193.json", "application/json") == "filing"
+    assert _mode_for_url("https://www.sec.gov/Archives/edgar/data/1/doc.htm", "text/html") == "filing"
+    assert _mode_for_url("https://sec.gov.evil.example/Archives/edgar/data/1/doc.htm", "text/html") == "public_web_fetch"
+    assert _mode_for_url("https://user@sec.gov.evil.example/Archives/edgar/data/1/doc.htm", "text/html") == "public_web_fetch"
 
 
 def test_blocks_multicast_ip():

@@ -38,7 +38,7 @@ interface MarketHistoryResponse {
   status: string;
   provider: string;
   source_note: string;
-  cache: "hit" | "miss";
+  cache: "hit" | "miss" | "persistent_hit" | "quota_wait" | "stale_fallback" | "license_limited";
   display_mode?: "public" | "private";
   display_status?: "display_allowed" | "stored_public_allowed" | "internal_stored" | "license_limited" | "provider_limit_reached" | "unavailable";
   data_freshness?: DataFreshness;
@@ -54,7 +54,13 @@ interface DataFreshness {
   provider: string;
   provider_timestamp: string | null;
   fetched_at: string;
+  source_observed_at?: string | null;
   market_session_date: string | null;
+  complete_through?: string | null;
+  hard_expires_at?: string | null;
+  staleness_state?: "active" | "delayed" | "stale_fallback" | "unavailable" | "license_limited" | string;
+  calculation_eligible?: boolean;
+  delayed_by_seconds?: number | null;
   exchange_timezone: string;
   delay_label: string;
   is_same_day_valid: boolean;
@@ -1627,15 +1633,21 @@ interface FreshnessMeta {
 
 function buildFreshnessMeta(payload: MarketHistoryResponse | undefined, updatedAt: number, latestPoint?: MarketPoint): FreshnessMeta {
   if (payload?.data_freshness) {
+    const sourceTime =
+      payload.data_freshness.source_observed_at ??
+      payload.data_freshness.market_session_date ??
+      payload.data_freshness.provider_timestamp ??
+      payload.data_freshness.fetched_at;
+    const staleness = payload.data_freshness.staleness_state;
     return {
       providerLabel: `provider: ${payload.data_freshness.provider}`,
-      delayLabel: payload.data_freshness.delay_label,
+      delayLabel: staleness === "stale_fallback" ? "stale fallback" : payload.data_freshness.delay_label,
       stalenessReason: payload.data_freshness.staleness_reason,
-      ageLabel: relativeAge(new Date(payload.data_freshness.fetched_at).getTime()),
+      ageLabel: relativeAge(new Date(sourceTime).getTime()),
       sameDayValid: payload.data_freshness.is_same_day_valid,
       isPublicDisplayAllowed: payload.data_freshness.is_public_display_allowed,
       licenseMode: payload.data_freshness.license_mode,
-      providerTimestamp: payload.data_freshness.provider_timestamp,
+      providerTimestamp: payload.data_freshness.complete_through ?? payload.data_freshness.provider_timestamp,
       fetchedAt: payload.data_freshness.fetched_at
     };
   }

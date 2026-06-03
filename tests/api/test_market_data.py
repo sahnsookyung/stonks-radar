@@ -16,6 +16,7 @@ from frw_api.services.provider_limits import (
 )
 from frw_api.services.market_data import (
     MarketDataInputError,
+    _sanitize_public_source_url,
     _stored_payload,
     clear_market_data_cache,
     fetch_market_history,
@@ -123,6 +124,8 @@ def _stored_row(
     currency="USD",
     exchange="NASDAQ",
     timezone_name="America/New_York",
+    fetch_completed_at=None,
+    source_hash="sha256:test",
 ):
     return {
         "symbol": symbol,
@@ -136,7 +139,9 @@ def _stored_row(
         "timezone": timezone_name,
         "provider_price_timestamp": None,
         "ingested_at": datetime(2026, 1, 6, tzinfo=timezone.utc),
+        "fetch_completed_at": fetch_completed_at,
         "source_revision": None,
+        "source_hash": source_hash,
         "quality_state": "valid",
         "market_data_snapshot_id": snapshot_id,
         "source_policy_json": {"raw_public_allowed": True},
@@ -145,6 +150,7 @@ def _stored_row(
         "snapshot_provider_revision": "revision",
         "snapshot_content_hash": "hash",
         "snapshot_quality_state": "valid",
+        "snapshot_candidate_id": 123,
     }
 
 
@@ -389,6 +395,53 @@ def test_stored_payload_exposes_coherence_warning():
         payload["calculation_readiness"]["reason"] == "market_history_mixed_snapshots"
     )
     assert payload["warnings"]
+    assert payload["cache"] == "miss"
+    assert payload["data_freshness"]["source_observed_at"] == "2026-01-05"
+    assert payload["data_freshness"]["complete_through"] == "2026-01-05"
+    assert payload["data_freshness"]["staleness_state"] == "stale_fallback"
+    assert payload["data_freshness"]["calculation_eligible"] is False
+    assert payload["data_freshness"]["delayed_by_seconds"] == 26 * 86_400
+    assert payload["calculation_manifest"][0]["candidate_id"] == 123
+    assert payload["calculation_manifest"][0]["content_hash"] == "sha256:test"
+
+
+def test_stored_payload_uses_fetch_completed_timestamp_when_available():
+    payload = _stored_payload(
+        db=_StoredHistoryDb(
+            [
+                _stored_row(
+                    date(2026, 1, 2),
+                    snapshot_id="snapshot-a",
+                    close=100.0,
+                    fetch_completed_at=datetime(2026, 1, 7, 3, 30, tzinfo=timezone.utc),
+                ),
+            ]
+        ),
+        symbols=["AAPL"],
+        start=date(2026, 1, 2),
+        end=date(2026, 1, 2),
+        provider_order=["twelve_data"],
+        display_mode="private",
+        public_display_allowlist=set(),
+    )
+
+    assert payload is not None
+    assert payload["data_freshness"]["fetched_at"] == "2026-01-07T03:30:00+00:00"
+    assert payload["data_freshness"]["staleness_state"] == "active"
+    assert payload["data_freshness"]["calculation_eligible"] is True
+    assert payload["data_freshness"]["delayed_by_seconds"] == 0
+
+
+def test_public_source_url_sanitizer_removes_query_and_fragment():
+    assert (
+        _sanitize_public_source_url("https://api.example.test/path?apikey=secret#frag")
+        == "https://api.example.test/path"
+    )
+    assert (
+        _sanitize_public_source_url("https://user:pass@api.example.test/path?apikey=secret")
+        == "https://api.example.test/path"
+    )
+    assert _sanitize_public_source_url("file:///tmp/key") == ""
 
 
 def test_public_market_history_cache_headers_do_not_cache_private_payloads():

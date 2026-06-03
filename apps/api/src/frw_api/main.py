@@ -16,9 +16,9 @@ settings = get_settings()
 app = FastAPI(
     title="Stonks Radar API",
     version="0.1.0",
-    docs_url="/api/docs" if settings.app_env != "production" else None,
+    docs_url="/api/docs" if not settings.is_production else None,
     redoc_url=None,
-    openapi_url="/api/openapi.json" if settings.app_env != "production" else None,
+    openapi_url="/api/openapi.json" if not settings.is_production else None,
 )
 
 app.middleware("http")(security_headers_middleware)

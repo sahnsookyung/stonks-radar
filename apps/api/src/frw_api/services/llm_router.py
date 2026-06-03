@@ -244,7 +244,7 @@ class LLMRouter:
         headers = {"Content-Type": "application/json"}
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
-        async with httpx.AsyncClient(timeout=60) as client:
+        async with httpx.AsyncClient(timeout=60, trust_env=False) as client:
             kwargs = {
                 "headers": headers,
                 "json": {
@@ -279,7 +279,7 @@ class LLMRouter:
             f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
             f"?key={self.settings.gemini_api_key}"
         )
-        async with httpx.AsyncClient(timeout=60) as client:
+        async with httpx.AsyncClient(timeout=60, trust_env=False) as client:
             response = await provider_request(
                 client,
                 "POST",

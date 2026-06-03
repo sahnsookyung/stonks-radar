@@ -12,7 +12,10 @@ from fastapi import Request, Response
 from frw_api.core.settings import get_settings
 
 WINDOW_SECONDS = 60
+MAX_MEMORY_BUCKETS = 10_000
+MEMORY_BUCKET_CLEANUP_INTERVAL_SECONDS = 30
 _memory_buckets: dict[str, tuple[int, float]] = {}
+_last_memory_cleanup_at = 0.0
 _redis_client: redis.Redis | None = None
 
 
@@ -123,10 +126,29 @@ def _ip_in_networks(
 
 
 def _allow_memory(bucket_key: str, limit: int) -> bool:
+    global _last_memory_cleanup_at
     now = time.time()
+    if now - _last_memory_cleanup_at >= MEMORY_BUCKET_CLEANUP_INTERVAL_SECONDS:
+        _cleanup_memory_buckets(now)
+        _last_memory_cleanup_at = now
+    if len(_memory_buckets) >= MAX_MEMORY_BUCKETS and bucket_key not in _memory_buckets:
+        _evict_oldest_memory_bucket()
     count, expires_at = _memory_buckets.get(bucket_key, (0, now + WINDOW_SECONDS))
     if expires_at < now:
         count, expires_at = 0, now + WINDOW_SECONDS
     count += 1
     _memory_buckets[bucket_key] = (count, expires_at)
     return count <= limit
+
+
+def _cleanup_memory_buckets(now: float) -> None:
+    expired = [key for key, (_count, expires_at) in _memory_buckets.items() if expires_at < now]
+    for key in expired:
+        _memory_buckets.pop(key, None)
+
+
+def _evict_oldest_memory_bucket() -> None:
+    if not _memory_buckets:
+        return
+    oldest_key = min(_memory_buckets, key=lambda key: _memory_buckets[key][1])
+    _memory_buckets.pop(oldest_key, None)

@@ -1239,10 +1239,14 @@ export function calculateCAGR(beginningValue: number, endingValue: number, years
   return Math.pow(endingValue / beginningValue, 1 / years) - 1;
 }
 
-export function calculateTimeWeightedReturn(periods: { beginningValue: number; endingValue: number; externalCashFlow: number }[]): number {
+export function calculateTimeWeightedReturn(periods: { beginningValue: number; endingValue: number; externalCashFlow: number; cashFlowTiming?: "beginning" | "mid" | "end" }[]): number {
   return periods.reduce((compound, period) => {
     if (period.beginningValue <= 0) return compound;
-    const subperiodReturn = (period.endingValue - period.externalCashFlow - period.beginningValue) / period.beginningValue;
+    const timing = period.cashFlowTiming ?? "end";
+    const cashFlowWeight = timing === "beginning" ? 1 : timing === "mid" ? 0.5 : 0;
+    const denominator = period.beginningValue + period.externalCashFlow * cashFlowWeight;
+    if (denominator <= 0) return compound;
+    const subperiodReturn = (period.endingValue - period.beginningValue - period.externalCashFlow) / denominator;
     return compound * (1 + subperiodReturn);
   }, 1) - 1;
 }
@@ -1480,10 +1484,13 @@ export function runMonteCarlo(params: {
     for (let month = 1; month <= months; month += 1) {
       const shock = randomNormal(rng);
       const tailMultiplier = params.method === "fat_tail" && rng() < 0.05 ? 2.8 : 1;
-      const monthlyReturn = weightedAnnualReturn / 12 + shock * (weightedAnnualVolatility / Math.sqrt(12)) * tailMultiplier;
+      const monthlyMeanLogReturn = Math.log1p(weightedAnnualReturn) / 12;
+      const monthlyVolatility = weightedAnnualVolatility / Math.sqrt(12);
+      const monthlyReturn = Math.exp(monthlyMeanLogReturn - (monthlyVolatility ** 2) / 2 + shock * monthlyVolatility * tailMultiplier) - 1;
       value = value * (1 + monthlyReturn) + goal.monthlyContribution;
+      value = Math.max(0, value);
       peak = Math.max(peak, value);
-      worstDrawdown = Math.min(worstDrawdown, value / peak - 1);
+      worstDrawdown = Math.min(worstDrawdown, peak > 0 ? value / peak - 1 : 0);
       if (month % 12 === 0 || month === months) {
         const bucket = checkpoints.get(month) ?? [];
         bucket.push(value);
@@ -1663,6 +1670,16 @@ export function generateContributionRebalancePlan(
   const optionalSellTrades = materialOverweight.map((row) => ({ assetClass: row.key, amount: row.dollarsToTarget * -1 }));
   const estimatedFees = optionalSellTrades.reduce((sum, row) => sum + Math.abs(row.amount) * 0.001, 0);
   const estimatedTaxableGain = optionalSellTrades.reduce((sum, row) => sum + Math.abs(row.amount) * assumptions.taxDragRate, 0);
+  const optionalBuyTrades = underweight.map((row) => ({ assetClass: row.key, amount: Math.max(0, row.dollarsToTarget) }));
+  const postRebalanceWeights = estimatePostRebalanceWeights(
+    analysis.assetAllocation,
+    cashContributionPlan,
+    optionalSellTrades,
+    optionalBuyTrades,
+    estimatedFees,
+    estimatedTaxableGain,
+    analysis.portfolioValue
+  );
   return {
     currentWeight,
     targetWeight: targetAllocation,
@@ -1676,16 +1693,44 @@ export function generateContributionRebalancePlan(
           )
         : Infinity,
     optionalSellTrades,
-    optionalBuyTrades: underweight.map((row) => ({ assetClass: row.key, amount: Math.max(0, row.dollarsToTarget) })),
+    optionalBuyTrades,
     estimatedFees,
     estimatedTaxableGain,
-    postRebalanceWeights: targetAllocation,
+    postRebalanceWeights,
     warnings: [
       "You can reduce most drift with future contributions. Selling is optional unless you want to rebalance faster.",
       "Tax estimates are approximate and depend on your country, account type, and personal circumstances. This is not tax advice."
     ],
     dataQualityIssues: analysis.dataQualityIssues
   };
+}
+
+function estimatePostRebalanceWeights(
+  currentAllocation: ExposureRow[],
+  cashContributionPlan: { assetClass: string; amount: number }[],
+  optionalSellTrades: { assetClass: string; amount: number }[],
+  optionalBuyTrades: { assetClass: string; amount: number }[],
+  estimatedFees: number,
+  estimatedTaxableGain: number,
+  portfolioValue: number
+): Record<string, number> {
+  const values = new Map<string, number>();
+  for (const row of currentAllocation) values.set(row.key, Math.max(0, row.value));
+  for (const trade of optionalSellTrades) {
+    values.set(trade.assetClass, Math.max(0, (values.get(trade.assetClass) ?? 0) - Math.abs(trade.amount)));
+  }
+  const sellProceeds = optionalSellTrades.reduce((sum, row) => sum + Math.abs(row.amount), 0);
+  const contributionCash = cashContributionPlan.reduce((sum, row) => sum + Math.max(0, row.amount), 0);
+  const availableBuyCash = Math.max(0, sellProceeds + contributionCash - estimatedFees - estimatedTaxableGain);
+  const requestedBuyCash = optionalBuyTrades.reduce((sum, row) => sum + Math.max(0, row.amount), 0);
+  for (const trade of optionalBuyTrades) {
+    const requested = Math.max(0, trade.amount);
+    const fundedAmount = requestedBuyCash > 0 ? availableBuyCash * (requested / requestedBuyCash) : 0;
+    values.set(trade.assetClass, (values.get(trade.assetClass) ?? 0) + fundedAmount);
+  }
+  const grossValue = [...values.values()].reduce((sum, value) => sum + value, 0);
+  if (grossValue <= 0) return Object.fromEntries([...values].map(([key]) => [key, 0]));
+  return Object.fromEntries([...values].map(([key, value]) => [key, Math.max(0, value) / grossValue]));
 }
 
 export function estimateTaxLotImpact(

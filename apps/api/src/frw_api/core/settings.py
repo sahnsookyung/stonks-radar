@@ -134,13 +134,17 @@ class Settings(BaseSettings):
     paid_usage_allowed: bool = False
 
     @property
+    def is_production(self) -> bool:
+        return self.app_env.strip().lower() in {"production", "prod"}
+
+    @property
     def locale_list(self) -> list[str]:
         return [value.strip() for value in self.supported_locales.split(",") if value.strip()]
 
     @property
     def cors_origin_list(self) -> list[str]:
         origins = [self.public_base_url]
-        if self.app_env != "production":
+        if not self.is_production:
             origins.extend(value.strip() for value in self.dev_cors_origins.split(",") if value.strip())
         return list(dict.fromkeys(origins))
 
@@ -148,7 +152,7 @@ class Settings(BaseSettings):
     def resolved_market_data_display_mode(self) -> Literal["public", "private"]:
         if self.market_data_display_mode != "auto":
             return self.market_data_display_mode
-        return "public" if self.app_env.lower() in {"production", "prod"} else "private"
+        return "public" if self.is_production else "private"
 
     @property
     def market_data_public_display_allowlist_values(self) -> set[str]:

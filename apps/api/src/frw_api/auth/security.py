@@ -97,7 +97,7 @@ def create_session(db: Session, response: Response, user_id: str, role: str) -> 
         },
     ).scalar_one()
     db.commit()
-    secure = get_settings().app_env == "production"
+    secure = get_settings().is_production
     response.set_cookie(
         SESSION_COOKIE,
         token,

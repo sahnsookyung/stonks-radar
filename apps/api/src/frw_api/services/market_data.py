@@ -5,8 +5,9 @@ from copy import deepcopy
 import re
 import time
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time as datetime_time, timedelta, timezone
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 from sqlalchemy.orm import Session
@@ -166,6 +167,7 @@ async def fetch_market_history(
                     provider=provider,
                     series=series,
                     fetched_at=datetime.now(timezone.utc),
+                    requested_end=end,
                     display_mode=display_mode,
                     public_display_allowed=True,
                 ),
@@ -372,9 +374,12 @@ def _stored_payload(
         "data_freshness": _data_freshness(
             provider=stored.provider,
             series=stored.series,
-            fetched_at=fetched_at,
+            fetched_at=_parse_datetime(stored.fetched_at) or fetched_at,
+            requested_end=end,
             display_mode=display_mode,
             public_display_allowed=public_display_allowed,
+            source_observed_at=stored.source_observed_at,
+            complete_through=stored.complete_through,
         ),
         "provider_budget_status": [
             budget for provider in provider_order for budget in _provider_budget_status(provider)
@@ -388,6 +393,7 @@ def _stored_payload(
         "market_data_version": stored.data_version,
         "market_data_snapshot_id": stored.snapshot_id,
         "market_data_snapshot_ids": stored.snapshot_ids,
+        "calculation_manifest": stored.calculation_manifest or [],
         "coherence_status": stored.coherence_status,
         "quality_state": stored.quality_state,
         "calculation_readiness": calculation_readiness.as_dict(),
@@ -455,7 +461,13 @@ def _license_limited_payload(
             "provider": "tradingview_widget_only",
             "provider_timestamp": None,
             "fetched_at": fetched_at.isoformat(),
+            "source_observed_at": None,
             "market_session_date": None,
+            "complete_through": None,
+            "hard_expires_at": None,
+            "staleness_state": "license_limited",
+            "calculation_eligible": False,
+            "delayed_by_seconds": None,
             "exchange_timezone": "America/New_York",
             "delay_label": "license-limited",
             "is_same_day_valid": False,
@@ -482,15 +494,29 @@ def _data_freshness(
     provider: str,
     series: list[dict[str, Any]],
     fetched_at: datetime,
+    requested_end: date,
     display_mode: str,
     public_display_allowed: bool,
+    source_observed_at: str | None = None,
+    complete_through: str | None = None,
 ) -> dict[str, Any]:
     market_session_date = _latest_market_session_date(series)
+    observed_at = source_observed_at or market_session_date
+    complete = complete_through or market_session_date
+    hard_expires_at = _history_hard_expires_at(complete)
+    staleness_state = _history_staleness_state(complete, requested_end)
+    calculation_eligible = staleness_state in {"active", "delayed"} and bool(complete)
     return {
         "provider": provider,
         "provider_timestamp": market_session_date,
         "fetched_at": fetched_at.isoformat(),
+        "source_observed_at": observed_at,
         "market_session_date": market_session_date,
+        "complete_through": complete,
+        "hard_expires_at": hard_expires_at,
+        "staleness_state": staleness_state,
+        "calculation_eligible": calculation_eligible,
+        "delayed_by_seconds": _history_delayed_by_seconds(complete, requested_end),
         "exchange_timezone": "America/New_York",
         "delay_label": _delay_label(provider, display_mode, market_session_date),
         "is_same_day_valid": False,
@@ -528,8 +554,71 @@ def _delay_label(provider: str, display_mode: str, market_session_date: str | No
 def _provider_source_url(provider: str) -> str:
     for item in ProviderLimitRegistry().as_dicts():
         if item["provider_key"] == provider and item["endpoint_key"] in {"daily_prices", "*"}:
-            return str(item["source_url"])
+            return _sanitize_public_source_url(str(item["source_url"]))
     return ""
+
+
+def _sanitize_public_source_url(url: str) -> str:
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return ""
+    try:
+        port = parsed.port
+    except ValueError:
+        return ""
+    host = parsed.hostname
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    netloc = f"{host}:{port}" if port else host
+    return parsed._replace(netloc=netloc, query="", fragment="").geturl()
+
+
+def _parse_datetime(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
+def _history_hard_expires_at(complete_through: str | None) -> str | None:
+    parsed = _parse_date(complete_through)
+    if parsed is None:
+        return None
+    expires = datetime.combine(parsed + timedelta(days=3), datetime_time(23, 59, 59), tzinfo=timezone.utc)
+    return expires.isoformat()
+
+
+def _history_staleness_state(complete_through: str | None, requested_end: date) -> str:
+    parsed = _parse_date(complete_through)
+    if parsed is None:
+        return "unavailable"
+    lag_days = max(0, (requested_end - parsed).days)
+    if lag_days == 0:
+        return "active"
+    if lag_days <= 3:
+        return "delayed"
+    return "stale_fallback"
+
+
+def _history_delayed_by_seconds(complete_through: str | None, requested_end: date) -> int | None:
+    parsed = _parse_date(complete_through)
+    if parsed is None:
+        return None
+    return max(0, (requested_end - parsed).days) * 86_400
+
+
+def _parse_date(value: str | None) -> date | None:
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value[:10])
+    except ValueError:
+        return None
 
 
 async def _fetch_provider(
@@ -547,7 +636,7 @@ async def _fetch_provider(
         max_connections=max(1, min(len(symbols), settings.market_data_max_symbols)),
         max_keepalive_connections=max(1, min(len(symbols), settings.market_data_max_symbols)),
     )
-    async with httpx.AsyncClient(timeout=timeout, limits=limits, transport=transport) as client:
+    async with httpx.AsyncClient(timeout=timeout, limits=limits, transport=transport, trust_env=False) as client:
         series = []
         for symbol in symbols:
             series.append(await _fetch_symbol(client, provider, key, symbol, start, end, db))

@@ -2342,7 +2342,8 @@ def _envelope(
 
 
 def _events(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
-    ts = generated_at.isoformat().replace("+00:00", "Z")
+    ts = _seed_reference_event_timestamp()
+    freshness = _seed_reference_freshness(generated_at)
     return [
         {
             "id": "event_semis_export_controls_seed",
@@ -2357,7 +2358,7 @@ def _events(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "severity": "medium",
             "confidence": 0.74,
             "source_strength": "reviewed_structured_seed",
-            "freshness": "fresh",
+            "freshness": freshness,
             "evidence_count": 2,
             "latitude": 23.7,
             "longitude": 121.0,
@@ -2378,7 +2379,7 @@ def _events(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "severity": "low",
             "confidence": 0.82,
             "source_strength": "official_structured",
-            "freshness": "fresh",
+            "freshness": freshness,
             "evidence_count": 1,
             "latitude": 38.9,
             "longitude": -77.0,
@@ -2399,7 +2400,7 @@ def _events(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "severity": "low",
             "confidence": 0.78,
             "source_strength": "official_calendar_seed",
-            "freshness": "fresh",
+            "freshness": freshness,
             "evidence_count": 6,
             "latitude": 51.5,
             "longitude": 0.0,
@@ -2435,6 +2436,22 @@ def _events(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
             "correction_status": "none",
         },
     ]
+
+
+def _seed_reference_event_timestamp() -> str:
+    return "2026-05-25T00:00:00Z"
+
+
+def _seed_reference_freshness(generated_at: datetime) -> str:
+    reference = datetime(2026, 5, 25, tzinfo=timezone.utc)
+    age = generated_at - reference
+    if age < timedelta(0):
+        return "watch"
+    if age <= timedelta(hours=24):
+        return "fresh"
+    if age <= timedelta(days=7):
+        return "watch"
+    return "stale"
 
 
 def _write_news_snapshots(

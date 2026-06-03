@@ -28,6 +28,10 @@ class StoredHistoryResult:
     coherence_status: str
     quality_state: str
     warnings: list[str]
+    fetched_at: str | None = None
+    source_observed_at: str | None = None
+    complete_through: str | None = None
+    calculation_manifest: list[dict[str, Any]] | None = None
 
 
 @dataclass(frozen=True)
@@ -223,10 +227,20 @@ def load_stored_market_history(
               snap.batch_id as snapshot_batch_id,
               snap.provider_revision as snapshot_provider_revision,
               snap.content_hash as snapshot_content_hash,
-              snap.quality_state as snapshot_quality_state
+              snap.quality_state as snapshot_quality_state,
+              run.fetch_completed_at,
+              member.candidate_id as snapshot_candidate_id
             from market_price_bar bar
             left join market_data_snapshot snap
               on snap.id = bar.market_data_snapshot_id
+            left join market_fetch_run run
+              on run.id = snap.fetch_run_id
+            left join market_data_snapshot_member member
+              on member.snapshot_id = snap.id
+             and member.symbol = bar.symbol
+             and member.interval = bar.interval
+             and member.price_date = bar.price_date
+             and member.provider_key = bar.provider_key
             where bar.symbol in :symbols
               and bar.interval = :interval
               and bar.price_date between :start and :end
@@ -275,6 +289,9 @@ def load_stored_market_history(
     version_parts: list[str] = []
     snapshot_ids: set[str] = set()
     quality_states: set[str] = set()
+    fetched_times: list[datetime] = []
+    complete_dates: list[str] = []
+    calculation_manifest: list[dict[str, Any]] = []
     unversioned_seen = False
     for symbol in symbols:
         symbol_rows = sorted(
@@ -301,6 +318,23 @@ def load_stored_market_history(
         latest_date = str(symbol_rows[-1]["price_date"])
         latest_ingested_at = max(
             str(row["ingested_at"]) for row in symbol_rows if row.get("ingested_at")
+        )
+        fetched_times.extend(
+            row["fetch_completed_at"] or row["ingested_at"]
+            for row in symbol_rows
+            if row.get("fetch_completed_at") or row.get("ingested_at")
+        )
+        complete_dates.append(latest_date)
+        calculation_manifest.extend(
+            {
+                "symbol": str(row["symbol"]),
+                "date": str(row["price_date"]),
+                "provider": str(row["provider_key"]),
+                "snapshot_id": str(row["market_data_snapshot_id"]) if row.get("market_data_snapshot_id") else None,
+                "candidate_id": int(row["snapshot_candidate_id"]) if row.get("snapshot_candidate_id") is not None else None,
+                "content_hash": str(row.get("source_hash") or row.get("snapshot_content_hash") or ""),
+            }
+            for row in symbol_rows
         )
         policy_json = [
             _stable_json(_policy_from_row(row.get("source_policy_json"))) for row in symbol_rows
@@ -359,6 +393,10 @@ def load_stored_market_history(
         coherence_status=coherence_status,
         quality_state="valid" if quality_states <= {"valid"} else "mixed",
         warnings=warnings,
+        fetched_at=max(fetched_times).isoformat() if fetched_times else None,
+        source_observed_at=max(complete_dates) if complete_dates else None,
+        complete_through=min(complete_dates) if complete_dates else None,
+        calculation_manifest=calculation_manifest,
     )
 
 

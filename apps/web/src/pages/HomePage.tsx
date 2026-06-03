@@ -40,7 +40,6 @@ export function HomePage() {
     data.calendar_preview.filter((item) => item.release_type === "central_bank")
   );
   const dashboardSignals = data.alternative_signals.filter((lane) => dashboardSignalKeys.has(lane.key));
-  const mapEvents = dashboardMapEvents(data.top_events, dashboardSignals, locale);
   const priorityEvent = data.top_events[0];
 
   return (
@@ -76,7 +75,7 @@ export function HomePage() {
               </Link>
             </div>
             <EventMap
-              events={mapEvents}
+              events={data.top_events}
               heightClass="h-[clamp(330px,48svh,500px)] md:h-[560px] xl:h-[610px]"
               footer={t("eventMapFooter")}
               loadStrategy="idle-visible"
@@ -252,49 +251,4 @@ function visibleAlternativeSignalItems(lane: AlternativeSignalLane) {
       return leftMatches - rightMatches;
     })
     .slice(0, 4);
-}
-
-function dashboardMapEvents(events: PublicEvent[], lanes: AlternativeSignalLane[], locale: "en" | "ko") {
-  const breakingLane = lanes.find((lane) => lane.key === "breaking_market_news");
-  const chokepointItems =
-    breakingLane?.items.filter((item) => chokepointNewsPattern.test(`${item.label} ${item.detail}`)) ?? [];
-  if (!breakingLane || chokepointItems.length === 0 || events.some((event) => event.id === "event_breaking_hormuz_watch")) {
-    return events;
-  }
-  const primaryItem = chokepointItems[0];
-  const publishedAt = primaryItem.updated_at || new Date().toISOString();
-  const sourceLinks = primaryItem.source_url
-    ? [
-        {
-          label: primaryItem.source || "News metadata",
-          url: primaryItem.source_url,
-          source_key: "news_headline_metadata",
-          policy_version: 1
-        }
-      ]
-    : [];
-  return [
-    {
-      id: "event_breaking_hormuz_watch",
-      title: locale === "ko" ? "호르무즈 해협 시장 속보 워치" : "Hormuz chokepoint market-news watch",
-      summary: primaryItem.label,
-      why_it_matters: primaryItem.detail,
-      occurred_at: publishedAt,
-      published_at: publishedAt,
-      country_region_keys: ["MIDDLE_EAST_OPEC_GCC"],
-      sector_keys: ["oil-energy"],
-      event_type: "breaking_market_news",
-      severity: primaryItem.severity,
-      confidence: 0.62,
-      source_strength: "public_headline_metadata",
-      freshness: primaryItem.freshness,
-      evidence_count: chokepointItems.length,
-      latitude: 26.566,
-      longitude: 56.25,
-      affected_objects: ["WTI", "shipping", "energy equities"],
-      source_links: sourceLinks,
-      correction_status: "none"
-    },
-    ...events
-  ];
 }

@@ -59,6 +59,16 @@ describe("portfolio atlas calculation engine", () => {
         { beginningValue: 110, endingValue: 130, externalCashFlow: 10 }
       ])
     ).toBeCloseTo(0.2, 6);
+    expect(
+      calculateTimeWeightedReturn([
+        { beginningValue: 100, endingValue: 121, externalCashFlow: 10, cashFlowTiming: "beginning" }
+      ])
+    ).toBeCloseTo(0.1, 6);
+    expect(
+      calculateTimeWeightedReturn([
+        { beginningValue: 100, endingValue: 120.5, externalCashFlow: 10, cashFlowTiming: "mid" }
+      ])
+    ).toBeCloseTo(0.1, 6);
 
     const xirr = calculateMoneyWeightedReturn([
       { date: "2024-01-01", amount: -1000 },
@@ -101,8 +111,11 @@ describe("portfolio atlas calculation engine", () => {
     expect(backtest.equityCurve).toHaveLength(60);
     expect(backtest.endingValue).toBeGreaterThan(0);
     expect(monteCarlo.pathCount).toBe(500);
+    expect(monteCarlo.p5Outcome).toBeGreaterThanOrEqual(0);
     expect(monteCarlo.p90Outcome).toBeGreaterThan(monteCarlo.p10Outcome);
     expect(rebalance.cashContributionPlan.length).toBeGreaterThan(0);
+    expect(Object.values(rebalance.postRebalanceWeights).reduce((sum, value) => sum + value, 0)).toBeCloseTo(1, 6);
+    expect(rebalance.postRebalanceWeights).not.toEqual(portfolio.targetAllocation);
     expect(taxImpact.sellQuantity).toBe(5);
     expect(taxImpact.lotsUsed.length).toBeGreaterThan(0);
     expect(calculateRequiredMonthlyContribution(1200, 12, 0, 0)).toBe(100);

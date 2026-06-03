@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter, defaultdict
+from datetime import datetime, timezone
 from typing import Any, Iterable
 from urllib.parse import urlparse
 
@@ -252,8 +253,8 @@ def _event_sources(db: Session, event_ids: list[str]) -> dict[str, list[dict[str
         trust_tier = str(row["trust_tier"])
         if trust_tier not in TRUST_TIERS or trust_tier in {"T5_UNREVIEWED", "T6_BLOCKED"}:
             continue
-        url = str(row["url"] or "")
-        if not _safe_http_url(url):
+        url = _public_source_url(str(row["url"] or ""))
+        if not url:
             continue
         grouped[str(row["event_id"])].append(
             {
@@ -290,7 +291,9 @@ def _event_list_item(
         "first_seen_at": _iso(event["first_seen_at"]),
         "last_seen_at": _iso(event["last_seen_at"]),
         "published_at": _iso(event["published_at"]),
-        "freshness": "fresh",
+        "source_published_at": _source_published_at(sources),
+        "observed_at": _iso(event["last_seen_at"]),
+        "freshness": _freshness_for_event(event, sources),
         "severity": _severity(event["severity"]),
         "confidence": _clamp_float(event["confidence"]),
         "breaking_score": _clamp_int(event["breaking_score"]),
@@ -499,3 +502,51 @@ def _iso(value: Any) -> str:
 def _safe_http_url(value: str) -> bool:
     parsed = urlparse(value.strip())
     return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def _public_source_url(value: str) -> str:
+    parsed = urlparse(value.strip())
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return ""
+    try:
+        port = parsed.port
+    except ValueError:
+        return ""
+    host = parsed.hostname
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    netloc = f"{host}:{port}" if port else host
+    return parsed._replace(netloc=netloc, query="", fragment="").geturl()
+
+
+def _source_published_at(sources: list[dict[str, Any]]) -> str:
+    timestamps = sorted(source.get("published_at", "") for source in sources if source.get("published_at"))
+    return timestamps[-1] if timestamps else ""
+
+
+def _freshness_for_event(event: dict[str, Any], sources: list[dict[str, Any]]) -> str:
+    timestamp = _source_published_at(sources) or _iso(event.get("published_at")) or _iso(event.get("last_seen_at"))
+    parsed = _parse_iso(timestamp)
+    if parsed is None:
+        return "watch"
+    now = datetime.now(timezone.utc)
+    age_seconds = (now - parsed).total_seconds()
+    if age_seconds < 0:
+        return "watch"
+    if age_seconds <= 24 * 60 * 60:
+        return "fresh"
+    if age_seconds <= 7 * 24 * 60 * 60:
+        return "watch"
+    return "stale"
+
+
+def _parse_iso(value: str) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)

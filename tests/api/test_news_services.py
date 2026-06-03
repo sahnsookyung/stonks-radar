@@ -13,12 +13,12 @@ from frw_api.services.news.clusterer import cluster_documents
 from frw_api.services.news.email_alerts import _extract_links, email_webhook_signature
 from frw_api.services.news.entity_matcher import EntityProfile, match_entities
 from frw_api.services.news.ingestion import build_news_source_request, parse_news_response
-from frw_api.services.news.page_reader import detect_denial_reason, headers_for_fetch_profile
+from frw_api.services.news.page_reader import detect_denial_reason, headers_for_fetch_profile, _headers_for_document, _provider_for_document
 from frw_api.services.news import page_reader
 from frw_api.services.news.pipeline import news_entity_profiles
 from frw_api.services.news.region_classifier import classify_regions
 from frw_api.services.news.scoring import breaking_score, classify_provider_error
-from frw_api.services.news.snapshot_builder import _reviewed_events
+from frw_api.services.news.snapshot_builder import _event_list_item, _public_source_url, _reviewed_events
 from frw_api.services.news.source_registry import source_registry
 from frw_api.services.news.facts import public_summary_cited_facts_valid
 from frw_api.services.news.summary_builder import build_summary
@@ -96,6 +96,57 @@ def test_breaking_score_is_clamped():
         topic_severity_score=200,
         cross_region_impact_score=200,
     ) == 100
+
+
+def test_news_snapshot_event_freshness_uses_source_time_and_sanitizes_urls():
+    assert _public_source_url("https://example.com/news?token=secret#frag") == "https://example.com/news"
+    assert _public_source_url("https://user:pass@example.com/news?token=secret") == "https://example.com/news"
+
+    item = _event_list_item(
+        {
+            "id": "event-1",
+            "canonical_title": "Old source-backed item",
+            "summary_json": {"one_sentence_summary": "Old source-backed item."},
+            "event_type": "company_update",
+            "first_seen_at": datetime(2026, 5, 1, tzinfo=timezone.utc),
+            "last_seen_at": datetime(2026, 5, 1, tzinfo=timezone.utc),
+            "published_at": datetime(2026, 5, 1, tzinfo=timezone.utc),
+            "severity": "medium",
+            "confidence": 0.8,
+            "breaking_score": 40,
+            "trust_score": 80,
+        },
+        tickers=[],
+        regions=[],
+        topics=[],
+        sources=[
+            {
+                "published_at": "2026-05-01T00:00:00+00:00",
+                "url": "https://example.com/news",
+            }
+        ],
+    )
+
+    assert item["source_published_at"] == "2026-05-01T00:00:00+00:00"
+    assert item["observed_at"] == "2026-05-01T00:00:00+00:00"
+    assert item["freshness"] == "stale"
+
+
+def test_sec_page_reader_helpers_require_exact_sec_host():
+    assert _provider_for_document("unknown", {}, "https://www.sec.gov/Archives/edgar/data/1/doc.htm") == (
+        "sec_edgar",
+        "filing_document",
+    )
+    assert _provider_for_document("unknown", {}, "https://sec.gov.evil.example/Archives/edgar/data/1/doc.htm") == (
+        "company_ir",
+        "html",
+    )
+    headers = _headers_for_document(
+        "https://sec.gov.evil.example/Archives/edgar/data/1/doc.htm",
+        {},
+        "StonksRadar test@example.com",
+    )
+    assert "Mozilla" in headers["User-Agent"]
 
 
 def test_trust_tier_publication_rules():

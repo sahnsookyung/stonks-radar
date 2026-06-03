@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 
 from frw_api.core.settings import Settings
+from frw_api.core.settings import get_settings
 from scripts import deploy_preflight
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -61,6 +63,26 @@ def test_production_cors_excludes_dev_origins() -> None:
     settings = Settings(app_env="production", public_base_url="https://stonks.sookyungahn.com")
 
     assert settings.cors_origin_list == ["https://stonks.sookyungahn.com"]
+
+
+def test_prod_alias_uses_production_security_defaults(monkeypatch) -> None:
+    settings = Settings(app_env="prod", public_base_url="https://stonks.sookyungahn.com")
+
+    assert settings.is_production is True
+    assert settings.cors_origin_list == ["https://stonks.sookyungahn.com"]
+    assert settings.resolved_market_data_display_mode == "public"
+
+    monkeypatch.setenv("APP_ENV", "prod")
+    get_settings.cache_clear()
+    import frw_api.main as main_module
+
+    prod_main = importlib.reload(main_module)
+    assert prod_main.app.docs_url is None
+    assert prod_main.app.openapi_url is None
+
+    monkeypatch.setenv("APP_ENV", "development")
+    get_settings.cache_clear()
+    importlib.reload(main_module)
 
 
 def test_direct_deploy_uses_production_secret_env_file() -> None:

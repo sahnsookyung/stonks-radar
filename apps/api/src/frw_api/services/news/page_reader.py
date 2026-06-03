@@ -469,10 +469,10 @@ def _looks_like_error_page(title: str) -> bool:
 
 
 def _headers_for_document(url: str, metadata: dict[str, Any], default_user_agent: str) -> dict[str, str]:
-    host = urlparse(url).netloc.lower()
+    host = (urlparse(url).hostname or "").lower()
     profile = str(metadata.get("fetch_profile") or "").strip()
     if not profile:
-        profile = "default" if host.endswith("sec.gov") else "ir_vendor"
+        profile = "default" if _host_matches_domain(host, "sec.gov") else "ir_vendor"
     return headers_for_fetch_profile(profile, default_user_agent)
 
 
@@ -484,10 +484,16 @@ def _provider_for_document(source_key: str, metadata: dict[str, Any], url: str) 
         if profile.rate_limit_provider_key == "company_ir":
             return "company_ir", "html"
         return profile.rate_limit_provider_key, profile.rate_limit_endpoint_key
-    host = urlparse(url).netloc.lower()
-    if host.endswith("sec.gov"):
+    host = (urlparse(url).hostname or "").lower()
+    if _host_matches_domain(host, "sec.gov"):
         return "sec_edgar", "filing_document"
     return str(metadata.get("rate_limit_provider_key") or "company_ir"), str(metadata.get("rate_limit_endpoint_key") or "html")
+
+
+def _host_matches_domain(host: str, domain: str) -> bool:
+    clean_host = host.rstrip(".").lower()
+    clean_domain = domain.rstrip(".").lower()
+    return clean_host == clean_domain or clean_host.endswith(f".{clean_domain}")
 
 
 def _url_authorized_for_source(url: str, source_key: str, metadata: dict[str, Any]) -> bool:
