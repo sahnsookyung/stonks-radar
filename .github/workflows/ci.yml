@@ -23,6 +23,7 @@ jobs:
       - run: npm run web:test
       - run: npm run web:build
       - run: npm run api:test
+      - run: npx playwright install --with-deps chromium
       - run: npm run web:e2e
       - run: npm run api:compile
       - run: uv run --project . alembic -c alembic.ini upgrade head --sql
