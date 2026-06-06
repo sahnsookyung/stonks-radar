@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from frw_api.db.session import get_db
 from frw_api.services.instruments import instrument_detail, resolve_instrument, search_instruments
+from frw_api.services.rate_limit import _client_identity
 
 router = APIRouter()
 
@@ -83,8 +84,33 @@ def create_review_request(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    peer = request.client.host if request.client else "unknown"
+    peer = _client_identity(request)
     ip_hash = hashlib.sha256(peer.encode()).hexdigest()
+    query = payload.query.strip()
+    optional_notes = payload.optional_notes.strip() if payload.optional_notes else None
+    existing = db.execute(
+        text(
+            """
+            select id, status
+            from instrument_review_request
+            where request_ip_hash = :request_ip_hash
+              and lower(query) = lower(:query)
+              and context_screen = :context_screen
+              and status in ('queued', 'in_review')
+              and created_at >= now() - interval '1 day'
+            order by created_at desc
+            limit 1
+            """
+        ),
+        {
+            "query": query,
+            "context_screen": payload.context_screen,
+            "request_ip_hash": ip_hash,
+        },
+    ).mappings().first()
+    if existing is not None:
+        return {"id": str(existing["id"]), "status": existing["status"], "deduped": True}
+
     row_id = db.execute(
         text(
             """
@@ -94,9 +120,9 @@ def create_review_request(
             """
         ),
         {
-            "query": payload.query.strip(),
+            "query": query,
             "context_screen": payload.context_screen,
-            "optional_notes": payload.optional_notes,
+            "optional_notes": optional_notes,
             "request_ip_hash": ip_hash,
         },
     ).scalar_one()

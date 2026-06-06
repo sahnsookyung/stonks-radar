@@ -39,13 +39,26 @@ def test_memory_rate_limit_fallback_is_bounded(monkeypatch):
 def test_instrument_autocomplete_has_dedicated_rate_limit(monkeypatch):
     settings = get_settings()
     monkeypatch.setattr(settings, "instrument_autocomplete_ip_rate_limit_per_minute", 17)
-    request = SimpleNamespace(url=SimpleNamespace(path="/api/instruments/search"))
+    request = SimpleNamespace(url=SimpleNamespace(path="/api/instruments/search"), method="GET")
 
     limit = _limit_for_request(request)
 
     assert limit is not None
     assert limit.key == "instrument-autocomplete"
     assert limit.limit == 17
+
+
+def test_instrument_review_requests_have_tighter_rate_limit(monkeypatch):
+    settings = get_settings()
+    monkeypatch.setattr(settings, "instrument_autocomplete_ip_rate_limit_per_minute", 17)
+    monkeypatch.setattr(settings, "instrument_review_ip_rate_limit_per_minute", 3)
+    request = SimpleNamespace(url=SimpleNamespace(path="/api/instruments/review-requests"), method="POST")
+
+    limit = _limit_for_request(request)
+
+    assert limit is not None
+    assert limit.key == "instrument-review-request"
+    assert limit.limit == 3
 
 
 def test_client_identity_uses_rightmost_untrusted_forwarded_for():

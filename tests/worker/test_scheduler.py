@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 from frw_worker.scheduler import (
     _market_history_gap_specs_from_versions,
+    instrument_search_index_job_specs,
     market_history_job_specs,
     news_fetch_job_specs,
     news_pipeline_job_specs,
@@ -38,6 +39,7 @@ def _settings(**overrides):
         "market_data_daily_repair_days": 21,
         "market_data_full_backfill_days": 1095,
         "market_data_refresh_stagger_seconds": 3600,
+        "instrument_universe_refresh_seconds": 14400,
     }
     values.update(overrides)
     return SimpleNamespace(**values)
@@ -181,6 +183,7 @@ def test_news_pipeline_scheduler_chains_local_processing_jobs(monkeypatch):
             news_source_refresh_seconds=0,
             trump_disclosure_sec_poll_seconds=0,
             trump_disclosure_oge_poll_seconds=0,
+            instrument_universe_refresh_seconds=0,
         ),
     )
 
@@ -229,6 +232,44 @@ def test_market_history_scheduler_adds_rolling_backfill_one_symbol_per_day():
     ]
     assert len(backfills) == 1
     assert backfills[0]["payload"]["days"] == 1095
+
+
+def test_instrument_search_index_scheduler_creates_four_hour_refresh_spec():
+    specs = instrument_search_index_job_specs(
+        now=datetime(2026, 5, 26, 1, 17, tzinfo=timezone.utc),
+        settings=_settings(),
+    )
+
+    assert specs == [
+        {
+            "job_type": "instrument_search_index_update",
+            "idempotency_key": "instrument-universe:123594",
+            "payload": {"source": "CONFIGURED_FREE_SOURCES", "mode": "FULL"},
+            "job_group": "instrument_universe",
+            "priority": 85,
+            "provider_key": "instrument_universe",
+            "run_after": specs[0]["run_after"],
+        }
+    ]
+    assert specs[0]["run_after"].date().isoformat() == "2026-05-26"
+
+
+def test_instrument_search_index_scheduler_has_one_hour_floor():
+    specs = instrument_search_index_job_specs(
+        now=datetime(2026, 5, 26, 1, 17, tzinfo=timezone.utc),
+        settings=_settings(instrument_universe_refresh_seconds=60),
+    )
+
+    assert specs[0]["idempotency_key"] == "instrument-universe:494377"
+
+
+def test_instrument_search_index_scheduler_can_be_disabled():
+    specs = instrument_search_index_job_specs(
+        now=datetime(2026, 5, 26, 1, 17, tzinfo=timezone.utc),
+        settings=_settings(instrument_universe_refresh_seconds=0),
+    )
+
+    assert specs == []
 
 
 def test_market_history_gap_scheduler_enqueues_newest_first_catchup():

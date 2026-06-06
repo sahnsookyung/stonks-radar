@@ -13,8 +13,10 @@ from selectolax.parser import HTMLParser
 
 from frw_api.adapters.base import AdapterResult, empty_result
 from frw_api.core.settings import get_settings
+from frw_api.services.fetch_policy import evaluate_url
 from frw_api.services.market_data import SYMBOL_RE
 from frw_api.services.provider_limits import provider_request
+from frw_api.services.safe_fetch import SafeFetchError, _validate_peer_ip, safe_fetch_bytes
 
 DEFAULT_SHORT_RESEARCH_SOURCES = {
     "muddy_waters": "https://www.muddywatersresearch.com/",
@@ -130,15 +132,21 @@ class PublicShortResearchAdapter:
             return empty_result(self.source_key, "public_short_research_watch", ["No supported short-research sources selected"])
         documents: list[dict[str, Any]] = []
         unsupported: list[str] = []
-        async with httpx.AsyncClient(timeout=20, follow_redirects=True, transport=transport) as client:
-            for source_key, url in selected.items():
-                try:
-                    response = await client.get(url, headers={"User-Agent": get_settings().sec_user_agent})
-                    response.raise_for_status()
-                except httpx.HTTPError as exc:
-                    unsupported.append(f"{source_key}: {exc}")
-                    continue
-                documents.append(_html_document(source_key, url, response.text, risk="medium"))
+        settings = get_settings()
+        for source_key, url in selected.items():
+            try:
+                fetched = await safe_fetch_bytes(
+                    url,
+                    headers={"User-Agent": settings.sec_user_agent},
+                    transport=transport,
+                    max_bytes=settings.source_fetch_max_bytes,
+                    timeout_seconds=20,
+                )
+            except (SafeFetchError, httpx.HTTPError) as exc:
+                unsupported.append(f"{source_key}: {exc}")
+                continue
+            text = fetched.body.decode(fetched.response.encoding or "utf-8", errors="replace")
+            documents.append(_html_document(source_key, fetched.final_url or url, text, risk="medium"))
         return AdapterResult(self.source_key, "public_short_research_watch", [], [], documents, unsupported if not documents else [])
 
 
@@ -154,15 +162,20 @@ class PentagonPizzaAdapter:
         if not settings.pentagon_pizza_base_url:
             return empty_result(self.source_key, "pentagon_pizza", ["PENTAGON_PIZZA_BASE_URL is disabled"])
         url = settings.pentagon_pizza_base_url.rstrip("/")
-        async with httpx.AsyncClient(timeout=20, follow_redirects=True, transport=transport) as client:
-            try:
-                response = await client.get(url, headers={"User-Agent": settings.sec_user_agent})
-                response.raise_for_status()
-            except httpx.HTTPError as exc:
-                return empty_result(self.source_key, "pentagon_pizza", [str(exc)])
-            payload = await _pentagon_pizza_payload(client, base_url=url, html=response.text)
+        try:
+            fetched = await safe_fetch_bytes(
+                url,
+                headers={"User-Agent": settings.sec_user_agent},
+                transport=transport,
+                max_bytes=settings.source_fetch_max_bytes,
+                timeout_seconds=20,
+            )
+        except (SafeFetchError, httpx.HTTPError) as exc:
+            return empty_result(self.source_key, "pentagon_pizza", [str(exc)])
+        html = fetched.body.decode(fetched.response.encoding or "utf-8", errors="replace")
+        payload = await _pentagon_pizza_payload(base_url=fetched.final_url or url, html=html, transport=transport)
         observed_at = datetime.now(timezone.utc).isoformat()
-        document = _html_document("pentagon_pizza", url, response.text, risk="high")
+        document = _html_document("pentagon_pizza", fetched.final_url or url, html, risk="high")
         summary = _pentagon_pizza_summary(payload)
         if not summary:
             return AdapterResult(
@@ -201,23 +214,24 @@ class PentagonPizzaAdapter:
 
 
 async def _pentagon_pizza_payload(
-    client: httpx.AsyncClient,
     *,
     base_url: str,
     html: str,
+    transport: httpx.AsyncBaseTransport | None,
 ) -> dict[str, Any] | None:
     settings = get_settings()
     function_url = settings.pentagon_pizza_function_url
     anon_key = settings.pentagon_pizza_supabase_anon_key
     if not function_url or not anon_key:
-        discovered = await _discover_pentagon_pizza_api(client, base_url=base_url, html=html)
+        discovered = await _discover_pentagon_pizza_api(base_url=base_url, html=html, transport=transport)
         if discovered:
             function_url, anon_key = discovered
     if not function_url or not anon_key:
         return None
     try:
-        response = await client.post(
+        payload = await _post_pentagon_pizza_json(
             function_url,
+            transport=transport,
             headers={
                 "Accept": "application/json",
                 "Authorization": f"Bearer {anon_key}",
@@ -225,30 +239,33 @@ async def _pentagon_pizza_payload(
                 "User-Agent": settings.sec_user_agent,
             },
         )
-        response.raise_for_status()
-        payload = response.json()
-    except (httpx.HTTPError, ValueError):
+    except (SafeFetchError, httpx.HTTPError, ValueError):
         return None
     return payload if isinstance(payload, dict) else None
 
 
 async def _discover_pentagon_pizza_api(
-    client: httpx.AsyncClient,
     *,
     base_url: str,
     html: str,
+    transport: httpx.AsyncBaseTransport | None,
 ) -> tuple[str, str] | None:
     script_match = _PENTAGON_PIZZA_SCRIPT_RE.search(html)
     script_text = ""
     if script_match:
         try:
-            script_response = await client.get(
+            script_response = await safe_fetch_bytes(
                 urljoin(base_url.rstrip("/") + "/", script_match.group(1)),
                 headers={"User-Agent": get_settings().sec_user_agent},
+                transport=transport,
+                max_bytes=get_settings().source_fetch_max_bytes,
+                timeout_seconds=20,
             )
-            script_response.raise_for_status()
-            script_text = script_response.text
-        except httpx.HTTPError:
+            script_text = script_response.body.decode(
+                script_response.response.encoding or "utf-8",
+                errors="replace",
+            )
+        except (SafeFetchError, httpx.HTTPError):
             script_text = ""
     source = f"{html}\n{script_text}"
     url_match = _PENTAGON_PIZZA_SUPABASE_RE.search(source)
@@ -256,6 +273,25 @@ async def _discover_pentagon_pizza_api(
     if not url_match or not key_match:
         return None
     return f"{url_match.group(1).rstrip('/')}/functions/v1/fetch-busyness", key_match.group(1)
+
+
+async def _post_pentagon_pizza_json(
+    url: str,
+    *,
+    headers: dict[str, str],
+    transport: httpx.AsyncBaseTransport | None,
+) -> dict[str, Any]:
+    decision = evaluate_url(url)
+    if not decision.allowed:
+        raise SafeFetchError(decision.reason)
+    async with httpx.AsyncClient(timeout=20, follow_redirects=False, trust_env=False, transport=transport) as client:
+        response = await client.post(url, headers=headers)
+        _validate_peer_ip(response, require_peer_ip=transport is None)
+        response.raise_for_status()
+        payload = response.json()
+    if not isinstance(payload, dict):
+        raise ValueError("Pentagon.Pizza API did not return a JSON object")
+    return payload
 
 
 def _pentagon_pizza_summary(payload: dict[str, Any] | None) -> dict[str, Any] | None:

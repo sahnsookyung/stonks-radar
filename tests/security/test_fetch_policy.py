@@ -1,7 +1,7 @@
 import gzip
 
 from frw_api.services.fetch_policy import evaluate_url
-from frw_api.services.safe_fetch import SafeFetchError, safe_fetch_bytes
+from frw_api.services.safe_fetch import SafeFetchError, _validate_peer_ip, safe_fetch_bytes
 from frw_api.services.source_ingestion import SourceIngestionError, _mode_for_url, fetch_source_bytes
 
 import httpx
@@ -68,6 +68,29 @@ def test_safe_fetch_blocks_private_peer_ip(monkeypatch):
         import asyncio
 
         asyncio.run(safe_fetch_bytes("https://example.com", transport=httpx.MockTransport(handler)))
+
+
+def test_safe_fetch_requires_peer_ip_when_requested():
+    response = httpx.Response(200, request=httpx.Request("GET", "https://example.com"))
+
+    with pytest.raises(SafeFetchError, match="Unable to validate peer IP"):
+        _validate_peer_ip(response, require_peer_ip=True)
+
+
+def test_safe_fetch_accepts_server_addr_peer_extension():
+    class FakeStream:
+        def get_extra_info(self, key):
+            if key == "server_addr":
+                return ("93.184.216.34", 443)
+            return None
+
+    response = httpx.Response(
+        200,
+        request=httpx.Request("GET", "https://example.com"),
+        extensions={"network_stream": FakeStream()},
+    )
+
+    _validate_peer_ip(response, require_peer_ip=True)
 
 
 def test_safe_fetch_materializes_decoded_response_without_double_decode(monkeypatch):

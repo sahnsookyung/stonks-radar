@@ -14,7 +14,7 @@ from frw_api.services.news.email_alerts import _extract_links, email_webhook_sig
 from frw_api.services.news.entity_matcher import EntityProfile, match_entities
 from frw_api.services.news.ingestion import build_news_source_request, parse_news_response
 from frw_api.services.news.page_reader import detect_denial_reason, headers_for_fetch_profile, _headers_for_document, _provider_for_document
-from frw_api.services.news import page_reader
+from frw_api.services.news import ingestion, page_reader
 from frw_api.services.news.pipeline import news_entity_profiles
 from frw_api.services.news.region_classifier import classify_regions
 from frw_api.services.news.scoring import breaking_score, classify_provider_error
@@ -26,7 +26,8 @@ from frw_api.services.news.summaries import NEWS_EVENT_SUMMARY_SCHEMA, _ticker_c
 from frw_api.services.news.taxonomy import can_publish_trust_tiers
 from frw_api.services.news.watchlist import watchlist_entity_dicts, watchlist_source_dicts
 from frw_api.services.news.topic_classifier import classify_topics
-from frw_api.services.provider_limits import ERROR_FORBIDDEN_SCOPE, ERROR_QUOTA_EXHAUSTED, ProviderLimitError
+from frw_api.services.provider_limits import ERROR_FORBIDDEN_SCOPE, ERROR_QUOTA_EXHAUSTED, ERROR_SCHEMA_CHANGED, ProviderLimitError
+from frw_api.services.safe_fetch import SafeFetchError
 
 
 def test_ambiguous_ticker_requires_strong_evidence():
@@ -189,6 +190,51 @@ def test_news_source_request_uses_constrained_provider_endpoint():
     assert ticker_request is not None
     assert ticker_request.url == "https://news.google.com/rss/search"
     assert "NVIDIA Corporation" in ticker_request.params["q"]
+
+
+def test_scheduled_news_fetch_uses_safe_fetch_and_finalizes_rejections(monkeypatch):
+    finalizations = []
+
+    class FakeGuard:
+        def reserve(self, **kwargs):
+            return SimpleNamespace(reservation_id="reservation")
+
+        def finalize(self, reservation, **kwargs):
+            finalizations.append(kwargs)
+
+    async def fake_safe_fetch_bytes(url, **kwargs):
+        assert url == "https://example.com/feed?q=NVDA"
+        assert kwargs["headers"]["User-Agent"]
+        raise SafeFetchError("blocked private redirect")
+
+    monkeypatch.setattr(ingestion.ProviderQuotaGuard, "default", classmethod(lambda cls: FakeGuard()))
+    monkeypatch.setattr(ingestion, "safe_fetch_bytes", fake_safe_fetch_bytes)
+
+    with pytest.raises(ProviderLimitError) as exc_info:
+        asyncio.run(
+            ingestion._fetch_limited_provider_response(
+                provider_key="company_ir",
+                endpoint_key="rss",
+                db=None,
+                idempotency_key="test",
+                max_bytes=1000,
+                timeout_seconds=5,
+                headers={"User-Agent": "test-agent"},
+                url="https://example.com/feed",
+                params={"q": "NVDA"},
+                transport=None,
+            )
+        )
+
+    assert exc_info.value.error_class == ERROR_SCHEMA_CHANGED
+    assert finalizations == [
+        {
+            "status": "failed",
+            "db": None,
+            "error_class": ERROR_SCHEMA_CHANGED,
+            "details": {"reason": "safe_fetch_rejected", "message": "blocked private redirect"},
+        }
+    ]
 
 
 def test_sec_submissions_parser_builds_filing_documents():

@@ -88,6 +88,15 @@ export interface Instrument {
   listings?: InstrumentListing[];
   primaryListingId?: string;
   lookThroughHoldings?: { symbol: string; weight: number }[];
+  metadataCoverage?: "full" | "partial" | "unavailable";
+  priceCoverage?: "available" | "unavailable" | "stale" | "license_limited";
+  calculationEligible?: boolean;
+  requiresUserPrice?: boolean;
+  sourceProviders?: string[];
+  sourceObservedAt?: string;
+  staleAfter?: string;
+  hardExpiresAt?: string;
+  stalenessState?: "fresh" | "stale" | "hard_stale";
 }
 
 export interface Holding {
@@ -120,6 +129,15 @@ export interface InstrumentSearchResult {
   isStale: boolean;
   qualityLevel: QualityLevel;
   qualityMessage: string;
+  metadataCoverage: "full" | "partial" | "unavailable";
+  priceCoverage: "available" | "unavailable" | "stale" | "license_limited";
+  calculationEligible: boolean;
+  requiresUserPrice: boolean;
+  sourceProviders: string[];
+  sourceObservedAt?: string;
+  staleAfter?: string;
+  hardExpiresAt?: string;
+  stalenessState?: "fresh" | "stale" | "hard_stale";
   score: number;
   matchedOn: string[];
   tooltipKeys: string[];
@@ -210,6 +228,61 @@ export interface ExposureRow {
   quality: QualityLevel;
 }
 
+export const DEFAULT_ASSET_CLASS_CORRELATION_MATRIX: Record<string, Record<string, number>> = {
+  "Cash & Cash Equivalents": {
+    "Fixed Income": 0.2,
+    Equity: 0.1,
+    "Real Assets": 0.05,
+    Alternatives: 0.1,
+    "Crypto / Digital Assets": 0.05,
+    "Derivatives / Leveraged Products": 0.15,
+    "Other Assets": 0.1,
+    Liabilities: -0.1
+  },
+  "Fixed Income": {
+    Equity: 0.25,
+    "Real Assets": 0.2,
+    Alternatives: 0.15,
+    "Crypto / Digital Assets": 0.05,
+    "Derivatives / Leveraged Products": 0.2,
+    "Other Assets": 0.15,
+    Liabilities: 0
+  },
+  Equity: {
+    "Real Assets": 0.55,
+    Alternatives: 0.6,
+    "Crypto / Digital Assets": 0.35,
+    "Derivatives / Leveraged Products": 0.75,
+    "Other Assets": 0.5,
+    Liabilities: 0.1
+  },
+  "Real Assets": {
+    Alternatives: 0.45,
+    "Crypto / Digital Assets": 0.25,
+    "Derivatives / Leveraged Products": 0.5,
+    "Other Assets": 0.4,
+    Liabilities: 0.05
+  },
+  Alternatives: {
+    "Crypto / Digital Assets": 0.35,
+    "Derivatives / Leveraged Products": 0.6,
+    "Other Assets": 0.45,
+    Liabilities: 0.05
+  },
+  "Crypto / Digital Assets": {
+    "Derivatives / Leveraged Products": 0.3,
+    "Other Assets": 0.25,
+    Liabilities: 0
+  },
+  "Derivatives / Leveraged Products": {
+    "Other Assets": 0.45,
+    Liabilities: 0.1
+  },
+  "Other Assets": {
+    Liabilities: 0
+  }
+};
+
 export type CoverageQualityTier = "HIGH" | "MEDIUM" | "LOW" | "INSUFFICIENT";
 export type PortfolioMarketDataMode = "STORED_DAILY" | "USER_PROVIDED" | "SAMPLE_STATIC" | "MIXED";
 
@@ -249,6 +322,22 @@ export interface PortfolioCalculationProvenance {
   cachePolicy: string;
 }
 
+export interface KellyCriterionResult {
+  fullKellyFraction: number;
+  fractionalKellyFraction: number;
+  cappedKellyFraction: number;
+  edge: number;
+  winProbability?: number;
+  lossProbability?: number;
+  netOdds?: number;
+  gainPerUnit?: number;
+  lossPerUnit?: number;
+  expectedExcessReturn?: number;
+  variance?: number;
+  convention: "binary_net_odds" | "gain_loss" | "continuous_normal";
+  warnings: string[];
+}
+
 export interface PortfolioAnalysis {
   portfolioValue: number;
   netInvestedCapital: number;
@@ -277,6 +366,7 @@ export interface PortfolioAnalysis {
   coverageSummary: PortfolioCoverageSummary;
   holdingCoverageRows: HoldingCoverageRow[];
   calculationProvenance: PortfolioCalculationProvenance;
+  kellyEstimate: KellyCriterionResult;
   healthSummary: string;
 }
 
@@ -446,6 +536,18 @@ const QUALITY_MESSAGES: Record<QualityLevel, string> = {
   ESTIMATED: "Some fields are estimated. Results may be approximate.",
   UNAVAILABLE: "The app cannot fully classify or price this instrument yet."
 };
+
+const ASSET_CLASS_VALUES: AssetClass[] = [
+  "Cash & Cash Equivalents",
+  "Fixed Income",
+  "Equity",
+  "Real Assets",
+  "Alternatives",
+  "Crypto / Digital Assets",
+  "Derivatives / Leveraged Products",
+  "Other Assets",
+  "Liabilities"
+];
 
 const TOOLTIP_KEYS = {
   ticker: "ticker",
@@ -695,7 +797,7 @@ export function searchInstruments(
     if (qualityLevel === "PARTIAL") tooltipKeys.push(TOOLTIP_KEYS.partialData);
     if (qualityLevel === "ESTIMATED") tooltipKeys.push(TOOLTIP_KEYS.estimatedData);
 
-    const result = {
+    const result: InstrumentSearchResult = {
       instrumentId: instrument.instrumentId,
       listingId: listing.listingId,
       displaySymbol: listing.symbol.toUpperCase(),
@@ -712,6 +814,15 @@ export function searchInstruments(
       isStale: stale,
       qualityLevel,
       qualityMessage,
+      metadataCoverage: qualityLevel === "COMPLETE" ? "full" : qualityLevel === "UNAVAILABLE" ? "unavailable" : "partial",
+      priceCoverage: stale ? "stale" : instrument.priceQuality === "UNAVAILABLE" ? "unavailable" : "available",
+      calculationEligible: instrument.priceQuality !== "UNAVAILABLE",
+      requiresUserPrice: instrument.priceQuality === "UNAVAILABLE",
+      sourceProviders: instrument.sourceProviders ?? ["local_catalog"],
+      sourceObservedAt: instrument.sourceObservedAt ?? instrument.priceAsOf,
+      staleAfter: instrument.staleAfter,
+      hardExpiresAt: instrument.hardExpiresAt,
+      stalenessState: instrument.stalenessState,
       score,
       matchedOn: [...new Set(matchedOn)],
       tooltipKeys
@@ -738,6 +849,47 @@ export function resolveInstrumentReference(reference: string, instruments: Instr
 
 export function resolveInstrumentSearchResult(reference: string, instruments: Instrument[]): InstrumentSearchResult | undefined {
   return searchInstruments(reference, instruments, { includeAdvanced: true, includeInactive: true, limit: 1 })[0];
+}
+
+export function instrumentFromSearchResult(result: InstrumentSearchResult): Instrument {
+  const assetClass = ASSET_CLASS_VALUES.includes(result.assetClass as AssetClass) ? (result.assetClass as AssetClass) : "Other Assets";
+  const symbol = result.displaySymbol.toUpperCase();
+  const listingId = result.listingId || `${result.exchange}:${symbol}`;
+  return {
+    instrumentId: result.instrumentId,
+    symbol,
+    exchange: result.exchange,
+    name: result.name,
+    instrumentType: result.instrumentType,
+    isActive: result.isActive,
+    assetClass,
+    subAssetClass: result.instrumentType === "etf" ? "ETF" : result.instrumentType === "stock" ? "Single Stocks" : "Source-backed",
+    country: result.country,
+    domicileCountry: result.country,
+    currency: result.currency,
+    sector: result.sector || "Unclassified",
+    industry: "Unclassified",
+    theme: ["Source-backed listing"],
+    expenseRatio: 0,
+    dataQualityScore: result.metadataCoverage === "full" ? 0.6 : result.metadataCoverage === "partial" ? 0.35 : 0.1,
+    currentPrice: 0,
+    previousClose: 0,
+    priceAsOf: result.sourceObservedAt ?? new Date().toISOString().slice(0, 10),
+    priceQuality: "UNAVAILABLE",
+    aliases: [result.name].filter(Boolean),
+    identifiers: [],
+    listings: [{ listingId, symbol, exchange: result.exchange, country: result.country, currency: result.currency, localCode: symbol, isPrimary: result.isPrimaryListing, isActive: result.isActive }],
+    primaryListingId: listingId,
+    metadataCoverage: result.metadataCoverage,
+    priceCoverage: result.priceCoverage,
+    calculationEligible: false,
+    requiresUserPrice: true,
+    sourceProviders: result.sourceProviders,
+    sourceObservedAt: result.sourceObservedAt,
+    staleAfter: result.staleAfter,
+    hardExpiresAt: result.hardExpiresAt,
+    stalenessState: result.stalenessState
+  };
 }
 
 export function instrumentReferenceKeys(instrument: Instrument): string[] {
@@ -846,7 +998,7 @@ export const defaultAssumptions: AssumptionSet = {
     "Other Assets": 0.12,
     Liabilities: 0.02
   },
-  correlationMatrix: {}
+  correlationMatrix: DEFAULT_ASSET_CLASS_CORRELATION_MATRIX
 };
 
 export const featureGates: FeatureGate[] = [
@@ -956,6 +1108,14 @@ export function analyzePortfolio(
   const coverageSummary = calculatePortfolioCoverageSummary(holdingCoverageRows);
   const marketDataMode = calculatePortfolioMarketDataMode(holdingCoverageRows, portfolio.isDemo);
   const benchmarkSymbol = resolvePortfolioBenchmarkSymbol(assetAllocation);
+  const portfolioMoments = calculatePortfolioAssumptionMoments(assetAllocation, assumptions);
+  const kellyEstimate = calculateContinuousKellyFraction({
+    expectedAnnualReturn: portfolioMoments.annualReturn,
+    annualVolatility: portfolioMoments.annualVolatility,
+    riskFreeRate: assumptions.riskFreeRate,
+    fractionalKelly: 0.25,
+    maxRecommendedFraction: 0.25
+  });
 
   return {
     portfolioValue,
@@ -993,6 +1153,7 @@ export function analyzePortfolio(
       sourcePolicy: "cache-first normalized daily bars; no public request-path provider fetch",
       cachePolicy: "historical daily bars are reused across users and refreshed on a scheduled repair cadence"
     },
+    kellyEstimate,
     healthSummary: generatePortfolioHealthSummary({
       portfolioValue,
       top5Concentration: topHoldings.slice(0, 5).reduce((sum, row) => sum + row.weight, 0),
@@ -1239,7 +1400,7 @@ export function calculateCAGR(beginningValue: number, endingValue: number, years
   return Math.pow(endingValue / beginningValue, 1 / years) - 1;
 }
 
-export function calculateTimeWeightedReturn(periods: { beginningValue: number; endingValue: number; externalCashFlow: number; cashFlowTiming?: "beginning" | "mid" | "end" }[]): number {
+export function calculateModifiedDietzReturn(periods: { beginningValue: number; endingValue: number; externalCashFlow: number; cashFlowTiming?: "beginning" | "mid" | "end" }[]): number {
   return periods.reduce((compound, period) => {
     if (period.beginningValue <= 0) return compound;
     const timing = period.cashFlowTiming ?? "end";
@@ -1249,6 +1410,14 @@ export function calculateTimeWeightedReturn(periods: { beginningValue: number; e
     const subperiodReturn = (period.endingValue - period.beginningValue - period.externalCashFlow) / denominator;
     return compound * (1 + subperiodReturn);
   }, 1) - 1;
+}
+
+export function calculateTimeWeightedReturn(periods: { beginningValue: number; endingValue: number; externalCashFlow: number; cashFlowTiming?: "beginning" | "mid" | "end" }[]): number {
+  return calculateModifiedDietzReturn(periods);
+}
+
+export function calculateLinkedTimeWeightedReturn(subperiodReturns: number[]): number {
+  return cumulativeReturn(subperiodReturns);
 }
 
 export function calculateMoneyWeightedReturn(cashFlows: { date: string; amount: number }[]): number | null {
@@ -1291,7 +1460,15 @@ export function calculateMoneyWeightedReturn(cashFlows: { date: string; amount: 
 }
 
 export function calculateVolatility(returns: number[], periodsPerYear = TRADING_DAYS_PER_YEAR): number {
-  return standardDeviation(returns, true) * Math.sqrt(periodsPerYear);
+  return calculateAnnualizedVolatility(returns, periodsPerYear, "sample");
+}
+
+export function calculateAnnualizedVolatility(
+  returns: number[],
+  periodsPerYear = TRADING_DAYS_PER_YEAR,
+  convention: "sample" | "population" = "sample"
+): number {
+  return standardDeviation(returns, convention === "sample") * Math.sqrt(periodsPerYear);
 }
 
 export function calculateMaxDrawdownFromReturns(returns: number[]): number {
@@ -1324,6 +1501,20 @@ export function calculateSharpe(annualizedReturn: number, annualizedVolatility: 
   return annualizedVolatility > 0 ? (annualizedReturn - riskFreeRate) / annualizedVolatility : null;
 }
 
+export function calculateReturnSeriesSharpe(
+  periodicReturns: number[],
+  riskFreeRate: number,
+  periodsPerYear = MONTHS_PER_YEAR,
+  convention: "sample" | "population" = "sample"
+): number | null {
+  if (periodicReturns.length < 2 || periodsPerYear <= 0) return null;
+  const riskFreePerPeriod = Math.pow(1 + riskFreeRate, 1 / periodsPerYear) - 1;
+  const excessReturns = periodicReturns.map((value) => value - riskFreePerPeriod);
+  const annualizedExcessReturn = mean(excessReturns) * periodsPerYear;
+  const annualizedExcessVolatility = standardDeviation(excessReturns, convention === "sample") * Math.sqrt(periodsPerYear);
+  return annualizedExcessVolatility > 0 ? annualizedExcessReturn / annualizedExcessVolatility : null;
+}
+
 export function calculateSortino(
   annualizedReturn: number,
   periodicReturns: number[],
@@ -1352,6 +1543,124 @@ export function calculateTrackingError(portfolioReturns: number[], benchmarkRetu
   return standardDeviation(activeReturns, true) * Math.sqrt(periodsPerYear);
 }
 
+export function calculateBinaryKellyCriterion(params: {
+  winProbability: number;
+  netOdds: number;
+  fractionalKelly?: number;
+  maxRecommendedFraction?: number;
+}): KellyCriterionResult {
+  const warnings: string[] = [];
+  const p = clamp(params.winProbability, 0, 1);
+  const q = 1 - p;
+  const b = params.netOdds;
+  if (params.winProbability !== p) warnings.push("Win probability was clamped to [0, 1].");
+  if (b <= 0 || !Number.isFinite(b)) {
+    return emptyKellyResult("binary_net_odds", ["Net odds must be positive."]);
+  }
+  const fullKellyFraction = (b * p - q) / b;
+  return finalizeKellyResult({
+    fullKellyFraction,
+    fractionalKelly: params.fractionalKelly,
+    maxRecommendedFraction: params.maxRecommendedFraction,
+    convention: "binary_net_odds",
+    edge: b * p - q,
+    winProbability: p,
+    lossProbability: q,
+    netOdds: b,
+    warnings
+  });
+}
+
+export function calculateGainLossKellyCriterion(params: {
+  winProbability: number;
+  gainPerUnit: number;
+  lossPerUnit: number;
+  fractionalKelly?: number;
+  maxRecommendedFraction?: number;
+}): KellyCriterionResult {
+  const warnings: string[] = [];
+  const p = clamp(params.winProbability, 0, 1);
+  const q = 1 - p;
+  if (params.winProbability !== p) warnings.push("Win probability was clamped to [0, 1].");
+  if (params.gainPerUnit <= 0 || params.lossPerUnit <= 0 || !Number.isFinite(params.gainPerUnit) || !Number.isFinite(params.lossPerUnit)) {
+    return emptyKellyResult("gain_loss", ["Gain and loss per unit must be positive."]);
+  }
+  const fullKellyFraction = p / params.lossPerUnit - q / params.gainPerUnit;
+  return finalizeKellyResult({
+    fullKellyFraction,
+    fractionalKelly: params.fractionalKelly,
+    maxRecommendedFraction: params.maxRecommendedFraction,
+    convention: "gain_loss",
+    edge: p * params.gainPerUnit - q * params.lossPerUnit,
+    winProbability: p,
+    lossProbability: q,
+    gainPerUnit: params.gainPerUnit,
+    lossPerUnit: params.lossPerUnit,
+    warnings
+  });
+}
+
+export function calculateContinuousKellyFraction(params: {
+  expectedAnnualReturn: number;
+  annualVolatility: number;
+  riskFreeRate?: number;
+  fractionalKelly?: number;
+  maxRecommendedFraction?: number;
+}): KellyCriterionResult {
+  const riskFreeRate = params.riskFreeRate ?? 0;
+  const expectedExcessReturn = params.expectedAnnualReturn - riskFreeRate;
+  const varianceValue = params.annualVolatility ** 2;
+  if (params.annualVolatility <= 0 || !Number.isFinite(varianceValue)) {
+    return emptyKellyResult("continuous_normal", ["Annual volatility must be positive."]);
+  }
+  const fullKellyFraction = expectedExcessReturn / varianceValue;
+  return finalizeKellyResult({
+    fullKellyFraction,
+    fractionalKelly: params.fractionalKelly,
+    maxRecommendedFraction: params.maxRecommendedFraction,
+    convention: "continuous_normal",
+    edge: expectedExcessReturn,
+    expectedExcessReturn,
+    variance: varianceValue,
+    warnings: [
+      "Continuous Kelly assumes annual excess return and annual variance use the same horizon.",
+      "Sizing guidance is not investment advice."
+    ]
+  });
+}
+
+export function calculatePortfolioAssumptionMoments(allocation: ExposureRow[], assumptions: AssumptionSet): { annualReturn: number; annualVolatility: number; annualVariance: number } {
+  const rows = allocation.filter((row) => row.weight > 0);
+  const annualReturn = rows.reduce(
+    (sum, row) => sum + row.weight * (assumptions.expectedReturnByAssetClass[row.key] ?? 0.05),
+    0
+  );
+  let annualVariance = 0;
+  for (const left of rows) {
+    const leftVolatility = assumptions.volatilityByAssetClass[left.key] ?? 0.15;
+    for (const right of rows) {
+      const rightVolatility = assumptions.volatilityByAssetClass[right.key] ?? 0.15;
+      const correlation = assetClassCorrelation(left.key, right.key, assumptions.correlationMatrix);
+      annualVariance += left.weight * right.weight * leftVolatility * rightVolatility * correlation;
+    }
+  }
+  annualVariance = Math.max(0, annualVariance);
+  return { annualReturn, annualVolatility: Math.sqrt(annualVariance), annualVariance };
+}
+
+function assetClassCorrelation(left: string, right: string, matrix: Record<string, Record<string, number>>): number {
+  if (left === right) {
+    return 1;
+  }
+  return (
+    matrix[left]?.[right] ??
+    matrix[right]?.[left] ??
+    DEFAULT_ASSET_CLASS_CORRELATION_MATRIX[left]?.[right] ??
+    DEFAULT_ASSET_CLASS_CORRELATION_MATRIX[right]?.[left] ??
+    0.25
+  );
+}
+
 export function calculateAllocationDrift(current: ExposureRow[], targetAllocation: Record<string, number>, portfolioValue: number): AllocationDriftRow[] {
   const currentMap = new Map(current.map((row) => [row.key, row.weight]));
   const keys = [...new Set([...currentMap.keys(), ...Object.keys(targetAllocation)])];
@@ -1374,6 +1683,7 @@ export function runBacktest(params: {
   portfolio: Portfolio;
   instruments: Instrument[];
   assumptions?: AssumptionSet;
+  analysis?: ReturnType<typeof analyzePortfolio>;
   startDate?: string;
   years?: number;
   initialAmount?: number;
@@ -1381,7 +1691,7 @@ export function runBacktest(params: {
   rebalanceFrequencyMonths?: number;
 }): BacktestResult {
   const assumptions = params.assumptions ?? defaultAssumptions;
-  const analysis = analyzePortfolio(params.portfolio, params.instruments, assumptions);
+  const analysis = params.analysis ?? analyzePortfolio(params.portfolio, params.instruments, assumptions);
   const years = Math.max(1, params.years ?? 10);
   const monthCount = years * MONTHS_PER_YEAR;
   const initialAmount = params.initialAmount ?? Math.max(1, analysis.netInvestedCapital || analysis.portfolioValue);
@@ -1393,21 +1703,15 @@ export function runBacktest(params: {
   const benchmarkReturns: number[] = [];
   const equityCurve: BacktestResult["equityCurve"] = [];
   const start = new Date(params.startDate ?? "2016-01-31");
-  const weightedAnnualReturn = analysis.assetAllocation.reduce(
-    (sum, row) => sum + row.weight * (assumptions.expectedReturnByAssetClass[row.key] ?? 0.05),
-    0
-  );
-  const weightedAnnualVol = Math.sqrt(
-    analysis.assetAllocation.reduce(
-      (sum, row) => sum + row.weight * row.weight * (assumptions.volatilityByAssetClass[row.key] ?? 0.15) ** 2,
-      0
-    )
-  );
+  const portfolioMoments = calculatePortfolioAssumptionMoments(analysis.assetAllocation, assumptions);
+  const weightedAnnualReturn = portfolioMoments.annualReturn;
+  const weightedAnnualVol = portfolioMoments.annualVolatility;
   for (let month = 1; month <= monthCount; month += 1) {
     const seasonalShock = Math.sin(month * 1.7) * weightedAnnualVol / Math.sqrt(12) * 0.38;
     const stressShock = month % 37 === 0 ? -weightedAnnualVol * 0.22 : 0;
-    const monthlyReturn = weightedAnnualReturn / 12 + seasonalShock + stressShock;
-    const benchmarkReturn = 0.07 / 12 + Math.sin(month * 1.45) * 0.18 / Math.sqrt(12) * 0.35 + (month % 41 === 0 ? -0.04 : 0);
+    const expectedMonthlyReturn = Math.pow(1 + weightedAnnualReturn, 1 / MONTHS_PER_YEAR) - 1;
+    const monthlyReturn = expectedMonthlyReturn + seasonalShock + stressShock;
+    const benchmarkReturn = Math.pow(1.07, 1 / MONTHS_PER_YEAR) - 1 + Math.sin(month * 1.45) * 0.18 / Math.sqrt(12) * 0.35 + (month % 41 === 0 ? -0.04 : 0);
     monthlyReturns.push(monthlyReturn);
     benchmarkReturns.push(benchmarkReturn);
     value = value * (1 + monthlyReturn) + monthlyContribution;
@@ -1432,7 +1736,7 @@ export function runBacktest(params: {
     worstYear: Math.min(...annualizedReturns, 0),
     rolling12MonthReturns: rollingReturns(monthlyReturns, 12),
     rolling36MonthReturns: rollingReturns(monthlyReturns, 36),
-    sharpe: calculateSharpe(annualizedReturn, calculateVolatility(monthlyReturns, MONTHS_PER_YEAR), assumptions.riskFreeRate),
+    sharpe: calculateReturnSeriesSharpe(monthlyReturns, assumptions.riskFreeRate, MONTHS_PER_YEAR),
     sortino: calculateSortino(annualizedReturn, monthlyReturns, assumptions.downsideTargetRate, MONTHS_PER_YEAR),
     benchmarkRelativeReturn: annualizedReturn - benchmarkAnnualizedReturn,
     trackingError: calculateTrackingError(monthlyReturns, benchmarkReturns),
@@ -1454,26 +1758,20 @@ export function runMonteCarlo(params: {
   portfolio: Portfolio;
   instruments: Instrument[];
   assumptions?: AssumptionSet;
+  analysis?: ReturnType<typeof analyzePortfolio>;
   pathCount?: number;
   method?: "normal" | "bootstrap" | "fat_tail";
   seed?: number;
 }): MonteCarloResult {
   const assumptions = params.assumptions ?? defaultAssumptions;
-  const analysis = analyzePortfolio(params.portfolio, params.instruments, assumptions);
+  const analysis = params.analysis ?? analyzePortfolio(params.portfolio, params.instruments, assumptions);
   const goal = params.portfolio.goal;
   const months = Math.max(1, monthsBetween(new Date(), new Date(goal.targetDate)));
   const pathCount = Math.min(Math.max(100, params.pathCount ?? 5000), 10_000);
   const rng = mulberry32(params.seed ?? 42);
-  const weightedAnnualReturn = analysis.assetAllocation.reduce(
-    (sum, row) => sum + row.weight * (assumptions.expectedReturnByAssetClass[row.key] ?? 0.05),
-    0
-  );
-  const weightedAnnualVolatility = Math.sqrt(
-    analysis.assetAllocation.reduce(
-      (sum, row) => sum + row.weight * row.weight * (assumptions.volatilityByAssetClass[row.key] ?? 0.15) ** 2,
-      0
-    )
-  );
+  const portfolioMoments = calculatePortfolioAssumptionMoments(analysis.assetAllocation, assumptions);
+  const weightedAnnualReturn = portfolioMoments.annualReturn;
+  const weightedAnnualVolatility = portfolioMoments.annualVolatility;
   const terminalValues: number[] = [];
   const badDrawdowns: number[] = [];
   const checkpoints = new Map<number, number[]>();
@@ -1484,9 +1782,7 @@ export function runMonteCarlo(params: {
     for (let month = 1; month <= months; month += 1) {
       const shock = randomNormal(rng);
       const tailMultiplier = params.method === "fat_tail" && rng() < 0.05 ? 2.8 : 1;
-      const monthlyMeanLogReturn = Math.log1p(weightedAnnualReturn) / 12;
-      const monthlyVolatility = weightedAnnualVolatility / Math.sqrt(12);
-      const monthlyReturn = Math.exp(monthlyMeanLogReturn - (monthlyVolatility ** 2) / 2 + shock * monthlyVolatility * tailMultiplier) - 1;
+      const monthlyReturn = calculateMonthlyGbmReturn(weightedAnnualReturn, weightedAnnualVolatility, shock, MONTHS_PER_YEAR, tailMultiplier);
       value = value * (1 + monthlyReturn) + goal.monthlyContribution;
       value = Math.max(0, value);
       peak = Math.max(peak, value);
@@ -1534,12 +1830,25 @@ export function runMonteCarlo(params: {
 
 export function calculateRequiredMonthlyContribution(targetAmount: number, months: number, currentValue: number, annualReturn: number) {
   if (months <= 0) return 0;
-  const monthlyReturn = annualReturn / 12;
+  const monthlyReturn = Math.pow(1 + annualReturn, 1 / MONTHS_PER_YEAR) - 1;
   const futureCurrent = currentValue * Math.pow(1 + monthlyReturn, months);
   const gap = targetAmount - futureCurrent;
   if (gap <= 0) return 0;
   if (Math.abs(monthlyReturn) < 1e-9) return gap / months;
   return gap * monthlyReturn / (Math.pow(1 + monthlyReturn, months) - 1);
+}
+
+export function calculateMonthlyGbmReturn(
+  annualSimpleReturn: number,
+  annualVolatility: number,
+  standardNormalShock: number,
+  periodsPerYear = MONTHS_PER_YEAR,
+  tailMultiplier = 1
+): number {
+  if (periodsPerYear <= 0) return 0;
+  const logDriftPerPeriod = Math.log1p(annualSimpleReturn) / periodsPerYear;
+  const volatilityPerPeriod = Math.max(0, annualVolatility) / Math.sqrt(periodsPerYear);
+  return Math.exp(logDriftPerPeriod - (volatilityPerPeriod ** 2) / 2 + standardNormalShock * volatilityPerPeriod * tailMultiplier) - 1;
 }
 
 export function calculateDataFreshnessScore(instruments: Instrument[], asOf = new Date(), staleAfterDays = 2): number {
@@ -1566,8 +1875,9 @@ export function calculateHoldingCoverageRows(
     const instrument = findInstrument(holding.instrumentId, instruments);
     const marketValue = holdingMarketValue(holding, instruments);
     const priceAgeDays = instrument ? daysSince(instrument.priceAsOf, asOf) : null;
-    const qualityLevel = holding.manualPrice || holding.manualMarketValue ? "USER_PROVIDED" : instrument?.priceQuality ?? "UNAVAILABLE";
-    const dataMode = holding.manualPrice || holding.manualMarketValue
+    const hasManualValuation = Number.isFinite(holding.manualPrice) || Number.isFinite(holding.manualMarketValue);
+    const qualityLevel = hasManualValuation ? "USER_PROVIDED" : instrument?.priceQuality ?? "UNAVAILABLE";
+    const dataMode = hasManualValuation
       ? "USER_PROVIDED"
       : portfolio.isDemo
         ? "SAMPLE_STATIC"
@@ -2044,6 +2354,21 @@ function buildDataQualityIssues(assetAllocation: ExposureRow[], instruments: Ins
       affectedWeightPercent: undefined
     });
   }
+  const metadataOnly = holdings.filter((holding) => {
+    const instrument = findInstrument(holding.instrumentId, instruments);
+    const hasManualValuation = Number.isFinite(holding.manualPrice) || Number.isFinite(holding.manualMarketValue);
+    return instrument && instrument.requiresUserPrice && !hasManualValuation;
+  });
+  if (metadataOnly.length > 0) {
+    issues.push({
+      issueId: "metadata-only-holdings",
+      metricKey: "calculation_eligibility",
+      severity: "warning",
+      qualityLevel: "UNAVAILABLE",
+      reason: `${metadataOnly.length} source-backed holdings have listing metadata only. Add a manual price or market value before relying on portfolio calculations.`,
+      affectedWeightPercent: undefined
+    });
+  }
   issues.push({
     issueId: "daily-delayed",
     metricKey: "data_freshness",
@@ -2092,6 +2417,59 @@ function splitCsvLine(line: string) {
   }
   cells.push(cell);
   return cells;
+}
+
+function clamp(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, value));
+}
+
+function emptyKellyResult(convention: KellyCriterionResult["convention"], warnings: string[]): KellyCriterionResult {
+  return {
+    fullKellyFraction: 0,
+    fractionalKellyFraction: 0,
+    cappedKellyFraction: 0,
+    edge: 0,
+    convention,
+    warnings
+  };
+}
+
+function finalizeKellyResult(params: {
+  fullKellyFraction: number;
+  fractionalKelly?: number;
+  maxRecommendedFraction?: number;
+  convention: KellyCriterionResult["convention"];
+  edge: number;
+  winProbability?: number;
+  lossProbability?: number;
+  netOdds?: number;
+  gainPerUnit?: number;
+  lossPerUnit?: number;
+  expectedExcessReturn?: number;
+  variance?: number;
+  warnings: string[];
+}): KellyCriterionResult {
+  const fractionalKelly = clamp(params.fractionalKelly ?? 0.5, 0, 1);
+  const maxRecommendedFraction = clamp(params.maxRecommendedFraction ?? 0.25, 0, 1);
+  const fullKellyFraction = Number.isFinite(params.fullKellyFraction) ? params.fullKellyFraction : 0;
+  const fractionalKellyFraction = fullKellyFraction * fractionalKelly;
+  const positiveFraction = Math.max(0, fractionalKellyFraction);
+  return {
+    fullKellyFraction,
+    fractionalKellyFraction,
+    cappedKellyFraction: Math.min(maxRecommendedFraction, positiveFraction),
+    edge: params.edge,
+    winProbability: params.winProbability,
+    lossProbability: params.lossProbability,
+    netOdds: params.netOdds,
+    gainPerUnit: params.gainPerUnit,
+    lossPerUnit: params.lossPerUnit,
+    expectedExcessReturn: params.expectedExcessReturn,
+    variance: params.variance,
+    convention: params.convention,
+    warnings: params.warnings
+  };
 }
 
 function mean(values: number[]) {

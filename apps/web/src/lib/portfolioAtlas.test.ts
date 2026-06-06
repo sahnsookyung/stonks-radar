@@ -8,11 +8,21 @@ import {
   calculateFundOverlap,
   calculateGeographicExposure,
   calculateHHI,
+  calculateAnnualizedVolatility,
+  calculateBinaryKellyCriterion,
+  calculateContinuousKellyFraction,
+  calculateGainLossKellyCriterion,
+  DEFAULT_ASSET_CLASS_CORRELATION_MATRIX,
+  calculateLinkedTimeWeightedReturn,
   calculateMaxDrawdown,
   calculateMoneyWeightedReturn,
+  calculateModifiedDietzReturn,
+  calculateMonthlyGbmReturn,
+  calculatePortfolioAssumptionMoments,
   calculateNetInvestedCapital,
   calculateRequiredMonthlyContribution,
   calculateSharpe,
+  calculateReturnSeriesSharpe,
   calculateSectorExposure,
   calculateSortino,
   calculateTotalGainLoss,
@@ -23,6 +33,7 @@ import {
   demoInstruments,
   estimateTaxLotImpact,
   generateContributionRebalancePlan,
+  instrumentFromSearchResult,
   isFeatureEnabled,
   resolveInstrumentSearchResult,
   runBacktest,
@@ -60,6 +71,12 @@ describe("portfolio atlas calculation engine", () => {
       ])
     ).toBeCloseTo(0.2, 6);
     expect(
+      calculateModifiedDietzReturn([
+        { beginningValue: 100, endingValue: 120.5, externalCashFlow: 10, cashFlowTiming: "mid" }
+      ])
+    ).toBeCloseTo(0.1, 6);
+    expect(calculateLinkedTimeWeightedReturn([0.1, -0.05, 0.02])).toBeCloseTo(1.1 * 0.95 * 1.02 - 1, 10);
+    expect(
       calculateTimeWeightedReturn([
         { beginningValue: 100, endingValue: 121, externalCashFlow: 10, cashFlowTiming: "beginning" }
       ])
@@ -78,10 +95,47 @@ describe("portfolio atlas calculation engine", () => {
     expect(xirr ?? 0).toBeCloseTo(0.1, 2);
 
     const returns = [0.01, -0.02, 0.03, -0.01, 0.02];
+    expect(calculateAnnualizedVolatility([0.01, 0.03, 0.05], 12, "population")).toBeCloseTo(Math.sqrt(0.0002666666666666667) * Math.sqrt(12), 10);
+    expect(calculateAnnualizedVolatility([0.01, 0.03, 0.05], 12, "sample")).toBeCloseTo(0.02 * Math.sqrt(12), 10);
     expect(calculateVolatility(returns, 12)).toBeGreaterThan(0);
     expect(calculateMaxDrawdown([0.1, -0.2, 0.05])).toBeCloseTo(-0.2, 6);
     expect(calculateSharpe(0.08, 0.16, 0.04)).toBeCloseTo(0.25, 6);
+    expect(calculateReturnSeriesSharpe([0.02, 0.01, -0.01, 0.03], 0, 12, "population")).toBeCloseTo((0.0125 * 12) / (Math.sqrt(0.00021875) * Math.sqrt(12)), 10);
     expect(calculateSortino(0.12, [0.02, -0.01, 0.03, -0.02], 0, 12)).toBeCloseTo(3.098, 3);
+  });
+
+  it("implements Kelly sizing formulas with explicit conventions", () => {
+    const binary = calculateBinaryKellyCriterion({
+      winProbability: 0.6,
+      netOdds: 1,
+      fractionalKelly: 0.5,
+      maxRecommendedFraction: 0.25
+    });
+    expect(binary.fullKellyFraction).toBeCloseTo(0.2, 10);
+    expect(binary.fractionalKellyFraction).toBeCloseTo(0.1, 10);
+    expect(binary.cappedKellyFraction).toBeCloseTo(0.1, 10);
+    expect(binary.convention).toBe("binary_net_odds");
+
+    const gainLoss = calculateGainLossKellyCriterion({
+      winProbability: 0.55,
+      gainPerUnit: 0.12,
+      lossPerUnit: 0.08,
+      fractionalKelly: 0.25,
+      maxRecommendedFraction: 0.5
+    });
+    expect(gainLoss.fullKellyFraction).toBeCloseTo(0.55 / 0.08 - 0.45 / 0.12, 10);
+    expect(gainLoss.edge).toBeCloseTo(0.55 * 0.12 - 0.45 * 0.08, 10);
+
+    const continuous = calculateContinuousKellyFraction({
+      expectedAnnualReturn: 0.08,
+      annualVolatility: 0.2,
+      riskFreeRate: 0.03,
+      fractionalKelly: 0.25,
+      maxRecommendedFraction: 0.5
+    });
+    expect(continuous.fullKellyFraction).toBeCloseTo(1.25, 10);
+    expect(continuous.fractionalKellyFraction).toBeCloseTo(0.3125, 10);
+    expect(continuous.cappedKellyFraction).toBeCloseTo(0.3125, 10);
   });
 
   it("keeps cash-flow math from double-counting portfolio buys", () => {
@@ -119,6 +173,41 @@ describe("portfolio atlas calculation engine", () => {
     expect(taxImpact.sellQuantity).toBe(5);
     expect(taxImpact.lotsUsed.length).toBeGreaterThan(0);
     expect(calculateRequiredMonthlyContribution(1200, 12, 0, 0)).toBe(100);
+    expect(calculateRequiredMonthlyContribution(12_682.5, 12, 0, 0.12682503013196977)).toBeCloseTo(1000, 2);
+  });
+
+  it("uses correlation-aware portfolio moments and testable GBM conversion", () => {
+    const moments = calculatePortfolioAssumptionMoments(
+      [
+        { key: "Equity", label: "Equity", value: 60, weight: 0.6, topHoldings: [], quality: "COMPLETE" },
+        { key: "Fixed Income", label: "Fixed Income", value: 40, weight: 0.4, topHoldings: [], quality: "COMPLETE" }
+      ],
+      {
+        ...defaultAssumptions,
+        expectedReturnByAssetClass: { ...defaultAssumptions.expectedReturnByAssetClass, Equity: 0.08, "Fixed Income": 0.04 },
+        volatilityByAssetClass: { ...defaultAssumptions.volatilityByAssetClass, Equity: 0.2, "Fixed Income": 0.1 },
+        correlationMatrix: { Equity: { "Fixed Income": 0.25 } }
+      }
+    );
+    expect(moments.annualReturn).toBeCloseTo(0.064, 10);
+    expect(moments.annualVariance).toBeCloseTo(0.6 ** 2 * 0.2 ** 2 + 0.4 ** 2 * 0.1 ** 2 + 2 * 0.6 * 0.4 * 0.2 * 0.1 * 0.25, 10);
+    expect(defaultAssumptions.correlationMatrix).toBe(DEFAULT_ASSET_CLASS_CORRELATION_MATRIX);
+    expect(calculatePortfolioAssumptionMoments(
+      [
+        { key: "Equity", label: "Equity", value: 60, weight: 0.6, topHoldings: [], quality: "COMPLETE" },
+        { key: "Fixed Income", label: "Fixed Income", value: 40, weight: 0.4, topHoldings: [], quality: "COMPLETE" }
+      ],
+      {
+        ...defaultAssumptions,
+        volatilityByAssetClass: { ...defaultAssumptions.volatilityByAssetClass, Equity: 0.2, "Fixed Income": 0.1 },
+        correlationMatrix: {}
+      }
+    ).annualVariance).toBeCloseTo(0.6 ** 2 * 0.2 ** 2 + 0.4 ** 2 * 0.1 ** 2 + 2 * 0.6 * 0.4 * 0.2 * 0.1 * 0.25, 10);
+
+    expect(calculateMonthlyGbmReturn(0.12, 0.24, 0, 12)).toBeCloseTo(
+      Math.exp(Math.log1p(0.12) / 12 - (0.24 / Math.sqrt(12)) ** 2 / 2) - 1,
+      10
+    );
   });
 
   it("validates CSV import and blocks malformed or unsafe rows", () => {
@@ -155,6 +244,75 @@ describe("portfolio atlas calculation engine", () => {
     expect(searchInstruments("005930", demoInstruments)[0]?.listingId).toBe("KRX:005930");
     expect(searchInstruments("삼성전자", demoInstruments)[0]?.instrumentId).toBe("005930.KS");
     expect(resolveInstrumentSearchResult("005930", demoInstruments)?.listingId).toBe("KRX:005930");
+  });
+
+  it("materializes API-only search results as metadata-only instruments", () => {
+    const result = {
+      instrumentId: "ZZZAPI",
+      listingId: "NASDAQ:ZZZAPI",
+      displaySymbol: "ZZZAPI",
+      name: "API Only Corp.",
+      exchange: "NASDAQ",
+      country: "US",
+      currency: "USD",
+      assetClass: "Equity",
+      instrumentType: "stock" as const,
+      sector: "Unclassified",
+      isPrimaryListing: true,
+      isAdvancedInstrument: false,
+      isActive: true,
+      isStale: false,
+      qualityLevel: "PARTIAL" as const,
+      qualityMessage: "Source-backed listing metadata; price requires separate market data.",
+      metadataCoverage: "partial" as const,
+      priceCoverage: "unavailable" as const,
+      calculationEligible: false,
+      requiresUserPrice: true,
+      sourceProviders: ["nasdaq_trader", "sec_company_tickers"],
+      sourceObservedAt: "2026-06-06T00:00:00Z",
+      score: 1000,
+      matchedOn: ["SYMBOL_EXACT"],
+      tooltipKeys: ["ticker"]
+    };
+
+    const instrument = instrumentFromSearchResult(result);
+    const portfolio = {
+      ...createDemoPortfolio(),
+      holdings: [
+        {
+          holdingId: "h-api",
+          portfolioId: "demo-growth-income",
+          accountId: "taxable",
+          instrumentId: "ZZZAPI",
+          listingId: "NASDAQ:ZZZAPI",
+          quantity: 10,
+          currency: "USD",
+          source: "manual" as const
+        }
+      ],
+      cashBalance: 0,
+      transactions: [],
+      taxLots: []
+    };
+    const analysisWithoutPrice = analyzePortfolio(portfolio, [instrument], defaultAssumptions);
+
+    expect(instrument.priceQuality).toBe("UNAVAILABLE");
+    expect(instrument.requiresUserPrice).toBe(true);
+    expect(analysisWithoutPrice.portfolioValue).toBe(0);
+    expect(analysisWithoutPrice.dataQualityIssues.some((issue) => issue.issueId === "metadata-only-holdings")).toBe(true);
+
+    const analysisWithManualPrice = analyzePortfolio(
+      {
+        ...portfolio,
+        holdings: [{ ...portfolio.holdings[0], manualPrice: 12 }]
+      },
+      [instrument],
+      defaultAssumptions
+    );
+
+    expect(analysisWithManualPrice.portfolioValue).toBe(120);
+    expect(analysisWithManualPrice.dataQualityIssues.some((issue) => issue.issueId === "metadata-only-holdings")).toBe(false);
+    expect(analysisWithManualPrice.holdingCoverageRows[0]?.coverageStatus).toBe("manual");
   });
 
   it("keeps advanced and inactive instruments gated unless explicitly requested", () => {

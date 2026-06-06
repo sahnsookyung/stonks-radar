@@ -322,6 +322,36 @@ def market_history_job_specs(
     return specs
 
 
+def instrument_search_index_job_specs(
+    *,
+    now: datetime | None = None,
+    settings: Settings | None = None,
+) -> list[dict[str, Any]]:
+    settings = settings or get_settings()
+    if (
+        not settings.worker_scheduler_enabled
+        or settings.instrument_universe_refresh_seconds <= 0
+    ):
+        return []
+    now = now or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    refresh_seconds = max(3600, int(settings.instrument_universe_refresh_seconds))
+    window = int(now.timestamp()) // refresh_seconds
+    window_start = datetime.fromtimestamp(window * refresh_seconds, tz=timezone.utc)
+    return [
+        {
+            "job_type": "instrument_search_index_update",
+            "idempotency_key": f"instrument-universe:{window}",
+            "payload": {"source": "CONFIGURED_FREE_SOURCES", "mode": "FULL"},
+            "job_group": "instrument_universe",
+            "priority": 85,
+            "provider_key": "instrument_universe",
+            "run_after": window_start + timedelta(seconds=_stable_offset("instrument-universe", min(refresh_seconds, 3600))),
+        }
+    ]
+
+
 def market_history_gap_job_specs(
     db: Session,
     *,
@@ -368,6 +398,10 @@ def schedule_due_jobs(
         if symbol and _has_nonterminal_market_history(
             db, symbol, str(spec["idempotency_key"])
         ):
+            continue
+        job_ids.append(enqueue_job(db, **spec))
+    for spec in instrument_search_index_job_specs(now=now, settings=settings):
+        if _has_nonterminal_instrument_index(db, str(spec["idempotency_key"])):
             continue
         job_ids.append(enqueue_job(db, **spec))
     for spec in news_fetch_job_specs(now=now, settings=settings):
@@ -422,6 +456,23 @@ def _has_nonterminal_market_history(
             """
         ),
         {"symbol": symbol, "idempotency_key": idempotency_key},
+    ).scalar_one_or_none()
+    return row is not None
+
+
+def _has_nonterminal_instrument_index(db: Session, idempotency_key: str) -> bool:
+    row = db.execute(
+        text(
+            """
+            select 1
+            from job_queue
+            where job_type = 'instrument_search_index_update'
+              and status in ('queued','running','retry_wait','quota_wait')
+              and idempotency_key <> :idempotency_key
+            limit 1
+            """
+        ),
+        {"idempotency_key": idempotency_key},
     ).scalar_one_or_none()
     return row is not None
 

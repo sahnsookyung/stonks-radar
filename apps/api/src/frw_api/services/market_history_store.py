@@ -83,6 +83,13 @@ class MarketHistoryCalculationNotReady(ValueError):
         super().__init__(readiness.reason or "market history is not calculation ready")
 
 
+class MarketCalendarCoverageError(ValueError):
+    def __init__(self, calendar: str, year: int) -> None:
+        self.calendar = calendar
+        self.year = year
+        super().__init__(f"{calendar} exchange calendar coverage is not available for {year}")
+
+
 def market_history_calculation_readiness(
     stored: StoredHistoryResult | None,
     *,
@@ -125,9 +132,26 @@ def market_history_calculation_readiness(
             for point in points
             if isinstance(point, dict) and point.get("date")
         }
-        expected_dates = [
-            session.isoformat() for session in expected_market_sessions(symbol, start, end)
-        ]
+        try:
+            expected_dates = [
+                session.isoformat() for session in expected_market_sessions(symbol, start, end)
+            ]
+        except MarketCalendarCoverageError:
+            return CalculationReadiness(
+                ready=False,
+                reason="market_calendar_coverage_incomplete",
+                snapshot_id=stored.snapshot_id,
+                coherence_status=stored.coherence_status,
+                snapshot_ids=stored.snapshot_ids,
+                missing_symbols=missing_symbols,
+                missing_sessions={},
+                required_fx_pairs=[],
+                fx_coverage_status="not_required",
+                symbols=normalized_symbols,
+                start=start.isoformat(),
+                end=end.isoformat(),
+                base_currency=normalized_base_currency,
+            )
         missing = [session for session in expected_dates if session not in actual_dates]
         if missing:
             missing_sessions[symbol] = missing
@@ -614,7 +638,22 @@ def validate_market_history_batch(
         currencies = {str(row.get("currency_code") or "") for row in symbol_rows}
         exchanges = {str(row.get("exchange") or "") for row in symbol_rows if row.get("exchange")}
         timezones = {str(row.get("timezone") or "") for row in symbol_rows if row.get("timezone")}
-        expected = expected_market_sessions(symbol, requested_start, requested_end)
+        try:
+            expected = expected_market_sessions(symbol, requested_start, requested_end)
+        except MarketCalendarCoverageError as exc:
+            expected = []
+            issues.append(
+                _issue(
+                    symbol,
+                    None,
+                    None,
+                    "quarantine",
+                    "calendar_coverage_incomplete",
+                    str(exc),
+                    calendar=exc.calendar,
+                    year=exc.year,
+                )
+            )
         expected_sessions[symbol] = [item.isoformat() for item in expected]
         actual_dates = {row["price_date"] for row in symbol_rows}
         for row in symbol_rows:
@@ -905,14 +944,33 @@ def _calendar_key(symbol: str) -> str:
 
 
 def _market_holidays(calendar: str, year: int) -> set[date]:
+    _assert_calendar_coverage(calendar, year)
     if calendar == "korea":
-        return _observed_fixed_holidays(
+        holidays = _observed_sunday_fixed_holidays(
             year, ((1, 1), (3, 1), (5, 5), (6, 6), (8, 15), (10, 3), (10, 9), (12, 25))
         )
+        holidays.update({date(year, 5, 1), date(year, 12, 31)})
+        holidays.update(_KOREA_EXCHANGE_ADDITIONAL_HOLIDAYS.get(year, set()))
+        return holidays
     if calendar == "japan":
-        return _observed_fixed_holidays(
-            year, ((1, 1), (2, 11), (2, 23), (4, 29), (5, 3), (5, 4), (5, 5), (11, 3), (11, 23))
+        holidays = _observed_sunday_fixed_holidays(
+            year, ((1, 1), (2, 11), (2, 23), (4, 29), (5, 3), (5, 4), (5, 5), (8, 11), (11, 3), (11, 23))
         )
+        holidays.update(
+            {
+                date(year, 1, 2),
+                date(year, 1, 3),
+                date(year, 12, 31),
+                _nth_weekday(year, 1, 0, 2),
+                _nth_weekday(year, 7, 0, 3),
+                _nth_weekday(year, 9, 0, 3),
+                _nth_weekday(year, 10, 0, 2),
+                date(year, 3, _vernal_equinox_day(year)),
+                date(year, 9, _autumn_equinox_day(year)),
+            }
+        )
+        holidays.update(_JAPAN_EXCHANGE_ADDITIONAL_HOLIDAYS.get(year, set()))
+        return holidays
     if calendar == "us":
         holidays = _observed_fixed_holidays(year, ((1, 1), (6, 19), (7, 4), (12, 25)))
         holidays.update(
@@ -922,10 +980,77 @@ def _market_holidays(calendar: str, year: int) -> set[date]:
                 _last_weekday(year, 5, 0),
                 _nth_weekday(year, 9, 0, 1),
                 _nth_weekday(year, 11, 3, 4),
+                _easter_sunday(year) - timedelta(days=2),
             }
         )
+        holidays.update(_US_EXCHANGE_ADDITIONAL_HOLIDAYS.get(year, set()))
         return holidays
     return set()
+
+
+def _assert_calendar_coverage(calendar: str, year: int) -> None:
+    if calendar == "korea" and year not in _KOREA_EXCHANGE_ADDITIONAL_HOLIDAYS:
+        raise MarketCalendarCoverageError(calendar, year)
+    if calendar == "japan" and year not in _JAPAN_EXCHANGE_ADDITIONAL_HOLIDAYS:
+        raise MarketCalendarCoverageError(calendar, year)
+
+
+_KOREA_EXCHANGE_ADDITIONAL_HOLIDAYS: dict[int, set[date]] = {
+    2023: {
+        date(2023, 1, 23),
+        date(2023, 1, 24),
+        date(2023, 5, 29),
+        date(2023, 9, 28),
+        date(2023, 9, 29),
+        date(2023, 10, 2),
+        date(2023, 12, 29),
+    },
+    2024: {
+        date(2024, 2, 9),
+        date(2024, 2, 12),
+        date(2024, 4, 10),
+        date(2024, 5, 6),
+        date(2024, 5, 15),
+        date(2024, 9, 16),
+        date(2024, 9, 17),
+        date(2024, 9, 18),
+    },
+    2025: {
+        date(2025, 1, 27),
+        date(2025, 1, 28),
+        date(2025, 1, 29),
+        date(2025, 1, 30),
+        date(2025, 3, 3),
+        date(2025, 5, 6),
+        date(2025, 6, 3),
+        date(2025, 10, 6),
+        date(2025, 10, 7),
+        date(2025, 10, 8),
+    },
+    2026: {
+        date(2026, 2, 16),
+        date(2026, 2, 17),
+        date(2026, 2, 18),
+        date(2026, 3, 2),
+        date(2026, 5, 25),
+        date(2026, 6, 3),
+        date(2026, 8, 17),
+        date(2026, 9, 24),
+        date(2026, 9, 25),
+        date(2026, 10, 5),
+    },
+}
+
+_JAPAN_EXCHANGE_ADDITIONAL_HOLIDAYS: dict[int, set[date]] = {
+    2023: set(),
+    2024: {date(2024, 5, 6), date(2024, 8, 12), date(2024, 11, 4)},
+    2025: {date(2025, 2, 24), date(2025, 5, 6), date(2025, 11, 24)},
+    2026: {date(2026, 5, 6), date(2026, 9, 22), date(2026, 11, 24)},
+}
+
+_US_EXCHANGE_ADDITIONAL_HOLIDAYS: dict[int, set[date]] = {
+    2025: {date(2025, 1, 9)},
+}
 
 
 def _observed_fixed_holidays(year: int, values: tuple[tuple[int, int], ...]) -> set[date]:
@@ -938,6 +1063,46 @@ def _observed_fixed_holidays(year: int, values: tuple[tuple[int, int], ...]) -> 
         elif holiday.weekday() == 6:
             holidays.add(holiday + timedelta(days=1))
     return holidays
+
+
+def _observed_sunday_fixed_holidays(year: int, values: tuple[tuple[int, int], ...]) -> set[date]:
+    holidays: set[date] = set()
+    for month, day in values:
+        holiday = date(year, month, day)
+        holidays.add(holiday)
+        if holiday.weekday() == 6:
+            holidays.add(holiday + timedelta(days=1))
+    return holidays
+
+
+def _easter_sunday(year: int) -> date:
+    a = year % 19
+    b = year // 100
+    c = year % 100
+    d = b // 4
+    e = b % 4
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i = c // 4
+    k = c % 4
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    month = (h + l - 7 * m + 114) // 31
+    day = ((h + l - 7 * m + 114) % 31) + 1
+    return date(year, month, day)
+
+
+def _vernal_equinox_day(year: int) -> int:
+    if year <= 2099:
+        return int(20.8431 + 0.242194 * (year - 1980) - ((year - 1980) // 4))
+    return int(21.851 + 0.242194 * (year - 1980) - ((year - 1980) // 4))
+
+
+def _autumn_equinox_day(year: int) -> int:
+    if year <= 2099:
+        return int(23.2488 + 0.242194 * (year - 1980) - ((year - 1980) // 4))
+    return int(24.2488 + 0.242194 * (year - 1980) - ((year - 1980) // 4))
 
 
 def _nth_weekday(year: int, month: int, weekday: int, n: int) -> date:

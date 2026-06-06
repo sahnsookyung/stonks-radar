@@ -48,6 +48,7 @@ import {
   defaultAssumptions,
   demoInstruments,
   INSTRUMENT_SEARCH_QUERY_MAX_LENGTH,
+  instrumentFromSearchResult,
   instrumentReferenceKeys,
   resolveInstrumentReference,
   resolveInstrumentSearchResult,
@@ -124,6 +125,7 @@ type ManualHoldingPayload = {
 type AddHoldingPayload = {
   instrumentId: string;
   listingId?: string;
+  searchResult?: InstrumentSearchResult;
   manual?: ManualHoldingPayload;
 };
 
@@ -156,7 +158,12 @@ type InstrumentSearchApiResponse = {
   cache?: string;
   dataFreshness?: {
     instrumentIndexLastUpdatedAt?: string;
+    observedAt?: string;
     status?: string;
+    stalenessState?: string;
+    ageSeconds?: number | null;
+    staleAfter?: string | null;
+    hardExpiresAt?: string | null;
     source?: string;
   };
 };
@@ -184,10 +191,18 @@ const MANUAL_INSTRUMENT_TYPE_OPTIONS: ManualInstrumentType[] = ["", "stock", "et
 interface PortfolioBuildControls {
   updateCashBalance: (value: number) => void;
   updateHoldingQuantity: (holdingId: string, quantity: number) => void;
+  updateHoldingManualPrice: (holdingId: string, price?: number) => void;
+  updateHoldingManualMarketValue: (holdingId: string, marketValue?: number) => void;
   removeHolding: (holdingId: string) => void;
   addHolding: (holding: AddHoldingPayload) => void;
   resetPortfolio: () => void;
 }
+
+type PortfolioEditorControls = PortfolioBuildControls & {
+  assumptions?: AssumptionSet;
+  updateGoal?: <K extends keyof Portfolio["goal"]>(key: K, value: Portfolio["goal"][K]) => void;
+  setAssumptions?: Dispatch<SetStateAction<AssumptionSet>>;
+};
 
 export function PortfolioLabPage() {
   const locale = useLocale();
@@ -204,22 +219,28 @@ export function PortfolioLabPage() {
   const [csvErrors, setCsvErrors] = useState<string[]>([]);
   const instrumentsCatalog = useMemo(() => [...demoInstruments, ...manualInstruments], [manualInstruments]);
   const analysis = useMemo(() => analyzePortfolio(portfolio, instrumentsCatalog, assumptions), [portfolio, assumptions, instrumentsCatalog]);
-  const needsFullBacktest = section === "backtest";
-  const needsFullMonteCarlo = section === "dashboard" || section === "overview" || section === "monte-carlo";
-  const backtest = useMemo(
-    () =>
-      runBacktest({
+  const shouldRunBacktest = section === "backtest";
+  const monteCarloPathCount = section === "monte-carlo" ? 5000 : section === "dashboard" || section === "overview" ? 1000 : 0;
+  const backtest = useMemo<ReturnType<typeof runBacktest> | null>(
+    () => {
+      if (!shouldRunBacktest) return null;
+      return runBacktest({
         portfolio,
         instruments: instrumentsCatalog,
         assumptions,
-        years: needsFullBacktest ? 10 : 1,
+        analysis,
+        years: 10,
         monthlyContribution: portfolio.goal.monthlyContribution
-      }),
-    [assumptions, instrumentsCatalog, needsFullBacktest, portfolio]
+      });
+    },
+    [analysis, assumptions, instrumentsCatalog, portfolio, shouldRunBacktest]
   );
-  const monteCarlo = useMemo(
-    () => runMonteCarlo({ portfolio, instruments: instrumentsCatalog, assumptions, pathCount: needsFullMonteCarlo ? 5000 : 100, seed: 20260531 }),
-    [assumptions, instrumentsCatalog, needsFullMonteCarlo, portfolio]
+  const monteCarlo = useMemo<ReturnType<typeof runMonteCarlo> | null>(
+    () => {
+      if (!monteCarloPathCount) return null;
+      return runMonteCarlo({ portfolio, instruments: instrumentsCatalog, assumptions, analysis, pathCount: monteCarloPathCount, seed: 20260531 });
+    },
+    [analysis, assumptions, instrumentsCatalog, monteCarloPathCount, portfolio]
   );
   const rebalancePlan = useMemo(
     () => generateContributionRebalancePlan(analysis, portfolio.targetAllocation, portfolio.goal.monthlyContribution, assumptions),
@@ -268,6 +289,28 @@ export function PortfolioLabPage() {
     }));
   }
 
+  function updateHoldingManualPrice(holdingId: string, price?: number) {
+    setPortfolio((current) => ({
+      ...clearSourceLinkedRecords(current),
+      holdings: current.holdings.map((holding) =>
+        holding.holdingId === holdingId
+          ? { ...holding, manualPrice: price, manualMarketValue: undefined, source: "manual" }
+          : holding
+      )
+    }));
+  }
+
+  function updateHoldingManualMarketValue(holdingId: string, marketValue?: number) {
+    setPortfolio((current) => ({
+      ...clearSourceLinkedRecords(current),
+      holdings: current.holdings.map((holding) =>
+        holding.holdingId === holdingId
+          ? { ...holding, manualMarketValue: marketValue, manualPrice: undefined, source: "manual" }
+          : holding
+      )
+    }));
+  }
+
   function removeHolding(holdingId: string) {
     setPortfolio((current) => ({
       ...clearSourceLinkedRecords(current),
@@ -275,29 +318,38 @@ export function PortfolioLabPage() {
     }));
   }
 
-  function addHolding({ instrumentId, listingId, manual }: AddHoldingPayload) {
+  function addHolding({ instrumentId, listingId, searchResult, manual }: AddHoldingPayload) {
     const normalizedInput = instrumentId.trim().toUpperCase();
     if (!normalizedInput) return;
     const manualInstrumentId = manual ? `manual:${normalizedInstrumentId(normalizedInput)}` : normalizedInput;
     const instrument = manual ? undefined : resolveInstrumentReference(normalizedInput, instrumentsCatalog);
-    const canonicalInstrumentId = manual ? manualInstrumentId : instrument?.instrumentId ?? normalizedInput;
+    const sourceBackedInstrument = !manual && !instrument && searchResult ? instrumentFromSearchResult(searchResult) : undefined;
+    const effectiveInstrument = instrument ?? sourceBackedInstrument;
+    const canonicalInstrumentId = manual ? manualInstrumentId : effectiveInstrument?.instrumentId ?? normalizedInput;
     if (currentHoldingAlreadyExists(portfolio, canonicalInstrumentId, listingId)) return;
     if (manual) {
       setManualInstruments((current) => [
         ...current.filter((item) => item.instrumentId !== manualInstrumentId),
         createManualInstrumentFromInput(manual, manualInstrumentId)
       ]);
+    } else if (sourceBackedInstrument) {
+      setManualInstruments((current) => [
+        ...current.filter((item) => item.instrumentId !== sourceBackedInstrument.instrumentId),
+        sourceBackedInstrument
+      ]);
     }
     setPortfolio((current) => {
       if (currentHoldingAlreadyExists(current, canonicalInstrumentId, listingId)) return current;
       const quantity = manual
         ? manual.quantity
-        : instrument?.instrumentType === "crypto"
+        : effectiveInstrument?.instrumentType === "crypto"
           ? 0.05
-          : instrument
-            ? instrument.currentPrice >= 500
+          : effectiveInstrument
+            ? effectiveInstrument.currentPrice >= 500
               ? 1
-              : 10
+              : effectiveInstrument.currentPrice > 0
+                ? 10
+                : 1
             : 1;
       const normalizedHoldingId = toSafeId(`${canonicalInstrumentId}`);
       return {
@@ -311,7 +363,7 @@ export function PortfolioLabPage() {
             instrumentId: canonicalInstrumentId,
             listingId: listingId ?? canonicalInstrumentId,
             quantity,
-            currency: manual?.currency?.toUpperCase() ?? instrument?.currency ?? "USD",
+            currency: manual?.currency?.toUpperCase() ?? effectiveInstrument?.currency ?? "USD",
             manualPrice: manual?.price,
             manualMarketValue: manual?.marketValue,
             source: "manual"
@@ -444,8 +496,27 @@ export function PortfolioLabPage() {
       {section === "onboarding" ? (
         <OnboardingSection csvText={csvText} setCsvText={setCsvText} csvErrors={csvErrors} importCsv={importCsv} />
       ) : null}
-      {section === "dashboard" || section === "overview" ? (
-        <DashboardSection portfolio={portfolio} analysis={analysis} monteCarlo={monteCarlo} rebalancePlan={rebalancePlan} />
+      {(section === "dashboard" || section === "overview") && monteCarlo ? (
+        <EditablePortfolioWorkspace
+          portfolio={portfolio}
+          instrumentCatalog={instrumentsCatalog}
+          analysis={analysis}
+          assumptions={assumptions}
+          updateGoal={updateGoal}
+          setAssumptions={setAssumptions}
+          updateCashBalance={updateCashBalance}
+          updateHoldingQuantity={updateHoldingQuantity}
+          updateHoldingManualPrice={updateHoldingManualPrice}
+          updateHoldingManualMarketValue={updateHoldingManualMarketValue}
+          removeHolding={removeHolding}
+          addHolding={addHolding}
+          resetPortfolio={resetPortfolio}
+          contextScreen="BUILDER"
+          reviewRequests={reviewRequests}
+          requestInstrumentReview={(query) => requestInstrumentReview(query, "BUILDER")}
+        >
+          <DashboardSection portfolio={portfolio} analysis={analysis} monteCarlo={monteCarlo} rebalancePlan={rebalancePlan} />
+        </EditablePortfolioWorkspace>
       ) : null}
       {section === "portfolios" ? <PortfoliosSection portfolio={portfolio} analysis={analysis} /> : null}
       {section === "xray" || section === "atlas" ? (
@@ -455,6 +526,8 @@ export function PortfolioLabPage() {
           analysis={analysis}
           updateCashBalance={updateCashBalance}
           updateHoldingQuantity={updateHoldingQuantity}
+          updateHoldingManualPrice={updateHoldingManualPrice}
+          updateHoldingManualMarketValue={updateHoldingManualMarketValue}
           removeHolding={removeHolding}
           addHolding={addHolding}
           resetPortfolio={resetPortfolio}
@@ -467,10 +540,13 @@ export function PortfolioLabPage() {
           portfolio={portfolio}
           instrumentCatalog={instrumentsCatalog}
           analysis={analysis}
+          assumptions={assumptions}
           updateGoal={updateGoal}
           updateTarget={updateTarget}
           updateCashBalance={updateCashBalance}
           updateHoldingQuantity={updateHoldingQuantity}
+          updateHoldingManualPrice={updateHoldingManualPrice}
+          updateHoldingManualMarketValue={updateHoldingManualMarketValue}
           removeHolding={removeHolding}
           addHolding={addHolding}
           resetPortfolio={resetPortfolio}
@@ -478,12 +554,96 @@ export function PortfolioLabPage() {
           onRequestInstrumentReview={(query) => requestInstrumentReview(query, "BUILDER")}
         />
       ) : null}
-      {section === "backtest" ? <BacktestSection result={backtest} /> : null}
-      {section === "monte-carlo" ? <MonteCarloSection result={monteCarlo} portfolio={portfolio} updateGoal={updateGoal} /> : null}
-      {section === "rebalance" ? <RebalanceSection plan={rebalancePlan} analysis={analysis} /> : null}
+      {section === "backtest" && backtest ? (
+        <EditablePortfolioWorkspace
+          portfolio={portfolio}
+          instrumentCatalog={instrumentsCatalog}
+          analysis={analysis}
+          assumptions={assumptions}
+          updateGoal={updateGoal}
+          setAssumptions={setAssumptions}
+          updateCashBalance={updateCashBalance}
+          updateHoldingQuantity={updateHoldingQuantity}
+          updateHoldingManualPrice={updateHoldingManualPrice}
+          updateHoldingManualMarketValue={updateHoldingManualMarketValue}
+          removeHolding={removeHolding}
+          addHolding={addHolding}
+          resetPortfolio={resetPortfolio}
+          contextScreen="BUILDER"
+          reviewRequests={reviewRequests}
+          requestInstrumentReview={(query) => requestInstrumentReview(query, "BUILDER")}
+        >
+          <BacktestSection result={backtest} />
+        </EditablePortfolioWorkspace>
+      ) : null}
+      {section === "monte-carlo" && monteCarlo ? (
+        <EditablePortfolioWorkspace
+          portfolio={portfolio}
+          instrumentCatalog={instrumentsCatalog}
+          analysis={analysis}
+          assumptions={assumptions}
+          updateGoal={updateGoal}
+          setAssumptions={setAssumptions}
+          updateCashBalance={updateCashBalance}
+          updateHoldingQuantity={updateHoldingQuantity}
+          updateHoldingManualPrice={updateHoldingManualPrice}
+          updateHoldingManualMarketValue={updateHoldingManualMarketValue}
+          removeHolding={removeHolding}
+          addHolding={addHolding}
+          resetPortfolio={resetPortfolio}
+          contextScreen="BUILDER"
+          reviewRequests={reviewRequests}
+          requestInstrumentReview={(query) => requestInstrumentReview(query, "BUILDER")}
+        >
+          <MonteCarloSection result={monteCarlo} portfolio={portfolio} updateGoal={updateGoal} />
+        </EditablePortfolioWorkspace>
+      ) : null}
+      {section === "rebalance" ? (
+        <EditablePortfolioWorkspace
+          portfolio={portfolio}
+          instrumentCatalog={instrumentsCatalog}
+          analysis={analysis}
+          assumptions={assumptions}
+          updateGoal={updateGoal}
+          setAssumptions={setAssumptions}
+          updateCashBalance={updateCashBalance}
+          updateHoldingQuantity={updateHoldingQuantity}
+          updateHoldingManualPrice={updateHoldingManualPrice}
+          updateHoldingManualMarketValue={updateHoldingManualMarketValue}
+          removeHolding={removeHolding}
+          addHolding={addHolding}
+          resetPortfolio={resetPortfolio}
+          contextScreen="BUILDER"
+          reviewRequests={reviewRequests}
+          requestInstrumentReview={(query) => requestInstrumentReview(query, "BUILDER")}
+        >
+          <RebalanceSection plan={rebalancePlan} analysis={analysis} />
+        </EditablePortfolioWorkspace>
+      ) : null}
       {section === "fees" ? <FeesSection analysis={analysis} assumptions={assumptions} setAssumptions={setAssumptions} /> : null}
       {section === "tax-lots" ? <TaxLotsSection portfolio={portfolio} taxImpact={taxImpact} /> : null}
-      {section === "holdings" ? <HoldingsSection portfolio={portfolio} analysis={analysis} instrumentCatalog={instrumentsCatalog} /> : null}
+      {section === "holdings" ? (
+        <EditablePortfolioWorkspace
+          portfolio={portfolio}
+          instrumentCatalog={instrumentsCatalog}
+          analysis={analysis}
+          assumptions={assumptions}
+          updateGoal={updateGoal}
+          setAssumptions={setAssumptions}
+          updateCashBalance={updateCashBalance}
+          updateHoldingQuantity={updateHoldingQuantity}
+          updateHoldingManualPrice={updateHoldingManualPrice}
+          updateHoldingManualMarketValue={updateHoldingManualMarketValue}
+          removeHolding={removeHolding}
+          addHolding={addHolding}
+          resetPortfolio={resetPortfolio}
+          contextScreen="HOLDING_ENTRY"
+          reviewRequests={reviewRequests}
+          requestInstrumentReview={(query) => requestInstrumentReview(query, "HOLDING_ENTRY")}
+        >
+          <HoldingsSection portfolio={portfolio} analysis={analysis} instrumentCatalog={instrumentsCatalog} />
+        </EditablePortfolioWorkspace>
+      ) : null}
       {section === "transactions" ? (
         <TransactionsSection portfolio={portfolio} csvText={csvText} setCsvText={setCsvText} csvErrors={csvErrors} importCsv={importCsv} />
       ) : null}
@@ -616,6 +776,58 @@ function PortfolioCoverageBanner({ analysis }: { analysis: ReturnType<typeof ana
   );
 }
 
+function EditablePortfolioWorkspace({
+  children,
+  portfolio,
+  instrumentCatalog,
+  analysis,
+  assumptions,
+  contextScreen,
+  reviewRequests,
+  requestInstrumentReview,
+  updateCashBalance,
+  updateHoldingQuantity,
+  updateHoldingManualPrice,
+  updateHoldingManualMarketValue,
+  removeHolding,
+  addHolding,
+  resetPortfolio,
+  updateGoal,
+  setAssumptions
+}: {
+  children: ReactNode;
+  portfolio: Portfolio;
+  instrumentCatalog: Instrument[];
+  analysis: ReturnType<typeof analyzePortfolio>;
+  contextScreen: ManualEditorContext;
+  reviewRequests: InstrumentReviewRequest[];
+  requestInstrumentReview: (query: string) => void;
+} & PortfolioEditorControls) {
+  return (
+    <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="min-w-0">{children}</div>
+      <PortfolioEditorPanel
+        portfolio={portfolio}
+        analysis={analysis}
+        assumptions={assumptions}
+        instrumentCatalog={instrumentCatalog}
+        contextScreen={contextScreen}
+        reviewRequests={reviewRequests}
+        requestInstrumentReview={requestInstrumentReview}
+        updateCashBalance={updateCashBalance}
+        updateHoldingQuantity={updateHoldingQuantity}
+        updateHoldingManualPrice={updateHoldingManualPrice}
+        updateHoldingManualMarketValue={updateHoldingManualMarketValue}
+        removeHolding={removeHolding}
+        addHolding={addHolding}
+        resetPortfolio={resetPortfolio}
+        updateGoal={updateGoal}
+        setAssumptions={setAssumptions}
+      />
+    </section>
+  );
+}
+
 function DashboardSection({
   portfolio,
   analysis,
@@ -636,6 +848,14 @@ function DashboardSection({
         <CockpitCard icon={<Activity />} title="Risk status" termKey="annualized_volatility" value={analysis.diversificationScore < 55 ? "High" : "Moderate"} detail={`Top 5 concentration ${formatPercent(analysis.top5Concentration)}`} tone={analysis.diversificationScore < 55 ? "risk" : "watch"} />
         <CockpitCard icon={<PieChart />} title="Diversification score" termKey="concentration" value={`${analysis.diversificationScore}/100`} detail={`HHI ${analysis.hhi.toFixed(3)}`} />
         <CockpitCard icon={<BarChart3 />} title="Fee drag" termKey="fee_drag" value={formatMoney(analysis.estimatedAnnualFees)} detail={`${formatPercent(analysis.weightedExpenseRatio)} weighted fund expenses`} />
+        <CockpitCard
+          icon={<ShieldCheck />}
+          title="Kelly sizing"
+          termKey="allocation_drift"
+          value={formatPercent(analysis.kellyEstimate.cappedKellyFraction)}
+          detail={`Full ${formatPercent(analysis.kellyEstimate.fullKellyFraction)}; capped fractional guidance`}
+          tone={analysis.kellyEstimate.cappedKellyFraction > 0.2 ? "watch" : "normal"}
+        />
         <CockpitCard icon={<RefreshCcw />} title="Allocation drift" termKey="allocation_drift" value={formatPercent(analysis.allocationDrift)} detail="Current vs target allocation" tone={analysis.allocationDrift > 0.12 ? "watch" : "normal"} />
         <CockpitCard icon={<ArrowRight />} title="Next action" termKey="rebalancing" value={nextContribution?.assetClass ?? "Hold course"} detail={nextContribution ? `${formatMoney(nextContribution.amount)} of next contribution` : "No material contribution drift"} />
         <CockpitCard
@@ -750,6 +970,8 @@ function AtlasSection({
   analysis,
   updateCashBalance,
   updateHoldingQuantity,
+  updateHoldingManualPrice,
+  updateHoldingManualMarketValue,
   removeHolding,
   addHolding,
   resetPortfolio,
@@ -782,6 +1004,8 @@ function AtlasSection({
           instrumentCatalog={instrumentCatalog}
           updateCashBalance={updateCashBalance}
           updateHoldingQuantity={updateHoldingQuantity}
+          updateHoldingManualPrice={updateHoldingManualPrice}
+          updateHoldingManualMarketValue={updateHoldingManualMarketValue}
           removeHolding={removeHolding}
           addHolding={addHolding}
           contextScreen="HOLDING_ENTRY"
@@ -805,10 +1029,13 @@ function BuilderSection({
   portfolio,
   instrumentCatalog,
   analysis,
+  assumptions,
   updateGoal,
   updateTarget,
   updateCashBalance,
   updateHoldingQuantity,
+  updateHoldingManualPrice,
+  updateHoldingManualMarketValue,
   removeHolding,
   addHolding,
   resetPortfolio,
@@ -818,6 +1045,7 @@ function BuilderSection({
   portfolio: Portfolio;
   instrumentCatalog: Instrument[];
   analysis: ReturnType<typeof analyzePortfolio>;
+  assumptions: AssumptionSet;
   updateGoal: <K extends keyof Portfolio["goal"]>(key: K, value: Portfolio["goal"][K]) => void;
   updateTarget: (assetClass: string, value: number) => void;
   reviewRequests: InstrumentReviewRequest[];
@@ -852,9 +1080,12 @@ function BuilderSection({
       <PortfolioEditorPanel
         portfolio={portfolio}
         analysis={analysis}
+        assumptions={assumptions}
         instrumentCatalog={instrumentCatalog}
         updateCashBalance={updateCashBalance}
         updateHoldingQuantity={updateHoldingQuantity}
+        updateHoldingManualPrice={updateHoldingManualPrice}
+        updateHoldingManualMarketValue={updateHoldingManualMarketValue}
         removeHolding={removeHolding}
         addHolding={addHolding}
         contextScreen="BUILDER"
@@ -930,15 +1161,20 @@ function TargetAllocationPanel({
 function PortfolioEditorPanel({
   portfolio,
   analysis,
+  assumptions,
   instrumentCatalog,
   contextScreen,
   reviewRequests,
   requestInstrumentReview,
   updateCashBalance,
   updateHoldingQuantity,
+  updateHoldingManualPrice,
+  updateHoldingManualMarketValue,
   removeHolding,
   addHolding,
-  resetPortfolio
+  resetPortfolio,
+  updateGoal,
+  setAssumptions
 }: {
   portfolio: Portfolio;
   analysis: ReturnType<typeof analyzePortfolio>;
@@ -946,7 +1182,7 @@ function PortfolioEditorPanel({
   contextScreen: ManualEditorContext;
   reviewRequests: InstrumentReviewRequest[];
   requestInstrumentReview: (query: string) => void;
-} & PortfolioBuildControls) {
+} & PortfolioEditorControls) {
   const searchInputId = useId();
   const resultListId = useId();
   const manualHelpId = useId();
@@ -1112,7 +1348,7 @@ function PortfolioEditorPanel({
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
 
   const selectResult = (result: InstrumentSearchResult) => {
-    addHolding({ instrumentId: result.instrumentId, listingId: result.listingId });
+    addHolding({ instrumentId: result.instrumentId, listingId: result.listingId, searchResult: result });
     resetManualDraft();
     setSearchTerm("");
   };
@@ -1189,6 +1425,28 @@ function PortfolioEditorPanel({
       <p className="safe-text mt-2 text-sm leading-6 text-muted">
         Change quantities, cash, or add sample instruments and the exposure views update immediately in this workspace.
       </p>
+      {updateGoal || setAssumptions ? (
+        <details className="mt-4 rounded-md border border-line bg-panelAlt p-3" open>
+          <summary className="cursor-pointer text-sm font-bold text-ink">Goal and assumptions</summary>
+          <div className="mt-3 grid gap-2">
+            {updateGoal ? (
+              <>
+                <NumberField label="Target amount" termKey="success_probability" value={portfolio.goal.targetAmount} onChange={(value) => updateGoal("targetAmount", value)} />
+                <NumberField label="Monthly contribution" termKey="rebalancing" value={portfolio.goal.monthlyContribution} onChange={(value) => updateGoal("monthlyContribution", value)} />
+              </>
+            ) : null}
+            {setAssumptions ? (
+              <>
+                <PercentField label="Risk-free rate" termKey="sharpe_ratio" value={assumptions?.riskFreeRate ?? defaultAssumptions.riskFreeRate} onChange={(value) => setAssumptions((current) => ({ ...current, riskFreeRate: value }))} />
+                <PercentField label="Equity expected return" termKey="expected_return" value={assumptions?.expectedReturnByAssetClass.Equity ?? defaultAssumptions.expectedReturnByAssetClass.Equity ?? 0} onChange={(value) => setAssumptions((current) => ({ ...current, expectedReturnByAssetClass: { ...current.expectedReturnByAssetClass, Equity: value } }))} />
+              </>
+            ) : null}
+            <div className="rounded-md border border-line bg-paper p-3 text-xs leading-5 text-muted">
+              Kelly sizing uses annual excess return over annual variance. It is a planning diagnostic, not an order-size recommendation.
+            </div>
+          </div>
+        </details>
+      ) : null}
       <label className="mt-4 block text-sm font-semibold">
         <MetricLabel label="Cash balance" termKey="portfolio_value" />
         <input
@@ -1199,11 +1457,12 @@ function PortfolioEditorPanel({
           onChange={(event) => updateCashBalance(Number(event.target.value))}
         />
       </label>
-        <div className="mt-4 grid gap-2">
-          {portfolio.holdings.map((holding) => {
+      <div className="mt-4 grid gap-2">
+        {portfolio.holdings.map((holding) => {
           const instrument = instrumentCatalog.find((item) => item.instrumentId === holding.instrumentId);
           const row = analysis.topHoldings.find((item) => item.key === holding.instrumentId);
           const symbol = instrument?.symbol ?? holding.instrumentId;
+          const needsManualValue = Boolean(instrument?.requiresUserPrice) && !Number.isFinite(holding.manualPrice) && !Number.isFinite(holding.manualMarketValue);
           return (
             <div key={holding.holdingId} className="rounded-md border border-line bg-panelAlt p-3">
               <div className="flex items-start justify-between gap-3">
@@ -1220,7 +1479,7 @@ function PortfolioEditorPanel({
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
-              <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_120px] sm:items-end">
+              <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_1fr_120px] sm:items-end">
                 <label className="block text-xs font-semibold uppercase tracking-wide text-muted">
                   Quantity
                   <input
@@ -1233,11 +1492,42 @@ function PortfolioEditorPanel({
                     onChange={(event) => updateHoldingQuantity(holding.holdingId, Number(event.target.value))}
                   />
                 </label>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-muted">
+                  Manual price
+                  <input
+                    className="input-control mt-2 w-full"
+                    aria-label={`${symbol} manual price`}
+                    type="number"
+                    min={0}
+                    step="any"
+                    placeholder="optional"
+                    value={holding.manualPrice ?? ""}
+                    onChange={(event) => updateHoldingManualPrice(holding.holdingId, event.target.value === "" ? undefined : Number(event.target.value))}
+                  />
+                </label>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-muted">
+                  Market value
+                  <input
+                    className="input-control mt-2 w-full"
+                    aria-label={`${symbol} manual market value`}
+                    type="number"
+                    min={0}
+                    step="any"
+                    placeholder="optional"
+                    value={holding.manualMarketValue ?? ""}
+                    onChange={(event) => updateHoldingManualMarketValue(holding.holdingId, event.target.value === "" ? undefined : Number(event.target.value))}
+                  />
+                </label>
                 <div className="rounded-md border border-line bg-panel p-3 text-right">
                   <div className="text-xs font-semibold uppercase tracking-wide text-muted">Weight</div>
                   <div className="mt-1 font-bold text-accent">{row ? formatPercent(row.weight) : "n/a"}</div>
                 </div>
               </div>
+              {needsManualValue ? (
+                <div className="mt-3 rounded-md border border-warning/50 bg-warning/10 p-3 text-xs leading-5 text-warning">
+                  Metadata-only directory match. Add a manual price or market value to include this holding in calculations.
+                </div>
+              ) : null}
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 <div className="rounded-md border border-line bg-panel p-3">
                   <div className="text-xs font-semibold uppercase tracking-wide text-muted">Value</div>
@@ -1334,6 +1624,7 @@ function PortfolioEditorPanel({
                     {result.isStale ? <InlineBadge label="Stale price" termKey="stale_data" tone="warning" /> : null}
                     {!result.isActive ? <InlineBadge label="Inactive" termKey="inactive_security" tone="danger" /> : null}
                     {result.isAdvancedInstrument ? <InlineBadge label="Advanced" termKey="advanced_instrument" tone="muted" /> : null}
+                    {result.requiresUserPrice ? <InlineBadge label="Needs price" termKey="data_quality" tone="warning" /> : null}
                   </div>
                   <div className="safe-text text-xs text-muted">{result.name}</div>
                   <div className="mt-2 flex flex-wrap gap-2">
@@ -1357,6 +1648,11 @@ function PortfolioEditorPanel({
                     <p className="mt-1 text-xs text-warning">
                       <TermTooltip termKey={result.qualityLevel === "PARTIAL" ? "partial_data" : "estimated_data"} />
                       <span className="ml-1">Some metadata is incomplete.</span>
+                    </p>
+                  ) : null}
+                  {result.requiresUserPrice ? (
+                    <p className="mt-1 text-xs text-warning">
+                      Directory match only. Add a manual price or market value after selection to include it in calculations.
                     </p>
                   ) : null}
                 </button>

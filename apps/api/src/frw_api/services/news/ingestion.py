@@ -5,7 +5,7 @@ import hashlib
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
-from urllib.parse import urlencode, urlparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 from xml.etree import ElementTree
 
 import httpx
@@ -32,6 +32,7 @@ from frw_api.services.provider_limits import (
     ProviderQuotaGuard,
     provider_error_from_response,
 )
+from frw_api.services.safe_fetch import SafeFetchError, safe_fetch_bytes
 
 
 class NewsIngestionError(ValueError):
@@ -120,45 +121,41 @@ async def fetch_news_source(
         **headers_for_fetch_profile(profile.fetch_profile, settings.sec_user_agent),
         **request.headers,
     }
-    async with httpx.AsyncClient(
-        timeout=settings.source_fetch_timeout_seconds,
-        headers=headers,
-        trust_env=False,
-        transport=transport,
-    ) as client:
-        try:
-            response = await _fetch_limited_provider_response(
-                client,
-                provider_key=profile.rate_limit_provider_key,
-                endpoint_key=profile.rate_limit_endpoint_key,
-                db=db,
-                idempotency_key=_request_idempotency_key(source_key, request),
-                max_bytes=settings.source_fetch_max_bytes,
-                url=request.url,
-                params=request.params or None,
+    try:
+        response = await _fetch_limited_provider_response(
+            provider_key=profile.rate_limit_provider_key,
+            endpoint_key=profile.rate_limit_endpoint_key,
+            db=db,
+            idempotency_key=_request_idempotency_key(source_key, request),
+            max_bytes=settings.source_fetch_max_bytes,
+            timeout_seconds=settings.source_fetch_timeout_seconds,
+            headers=headers,
+            url=request.url,
+            params=request.params or None,
+            transport=transport,
+        )
+    except ProviderLimitError as exc:
+        if exc.error_class in {ERROR_AUTH_INVALID, ERROR_FORBIDDEN_SCOPE} and profile.rate_limit_provider_key == "company_ir":
+            upsert_source_health(
+                db,
+                source_key=source_key,
+                status="denied",
+                error=exc.error_class,
+                details={
+                    "reason": exc.error_class,
+                    "fetch_kind": profile.fetch_kind,
+                    "status_code": exc.status_code,
+                    "source_type": profile.source_type,
+                },
             )
-        except ProviderLimitError as exc:
-            if exc.error_class in {ERROR_AUTH_INVALID, ERROR_FORBIDDEN_SCOPE} and profile.rate_limit_provider_key == "company_ir":
-                upsert_source_health(
-                    db,
-                    source_key=source_key,
-                    status="denied",
-                    error=exc.error_class,
-                    details={
-                        "reason": exc.error_class,
-                        "fetch_kind": profile.fetch_kind,
-                        "status_code": exc.status_code,
-                        "source_type": profile.source_type,
-                    },
-                )
-                return {
-                    "source_key": source_key,
-                    "status": "denied",
-                    "documents": 0,
-                    "persisted": {"documents": 0, "observations": 0, "releases": 0, "source_status": "denied"},
-                    "denial_reason": exc.error_class,
-                }
-            raise
+            return {
+                "source_key": source_key,
+                "status": "denied",
+                "documents": 0,
+                "persisted": {"documents": 0, "observations": 0, "releases": 0, "source_status": "denied"},
+                "denial_reason": exc.error_class,
+            }
+        raise
 
     response_text = response.content.decode(response.encoding or "utf-8", errors="replace")
     denial_reason = detect_denial_reason(
@@ -469,15 +466,17 @@ def _normalized_document_dict(profile: SourceProfile, payload: dict[str, Any]) -
 
 
 async def _fetch_limited_provider_response(
-    client: httpx.AsyncClient,
     *,
     provider_key: str,
     endpoint_key: str,
     db: Session | None,
     idempotency_key: str,
     max_bytes: int,
+    timeout_seconds: int,
+    headers: dict[str, str],
     url: str,
     params: dict[str, str] | None,
+    transport: httpx.AsyncBaseTransport | None,
 ) -> httpx.Response:
     guard = ProviderQuotaGuard.default()
     reservation = guard.reserve(
@@ -489,47 +488,45 @@ async def _fetch_limited_provider_response(
         db=db,
     )
     try:
-        async with client.stream("GET", url, params=params) as response:
-            provider_error = provider_error_from_response(response, provider_key, endpoint_key)
-            if provider_error is not None:
-                guard.finalize(
-                    reservation,
-                    status="failed",
-                    db=db,
-                    error_class=provider_error.error_class,
-                    status_code=response.status_code,
-                    retry_after_seconds=provider_error.retry_after_seconds,
-                )
-                raise provider_error
-            chunks: list[bytes] = []
-            total = 0
-            async for chunk in response.aiter_bytes():
-                total += len(chunk)
-                if total > max_bytes:
-                    guard.finalize(
-                        reservation,
-                        status="failed",
-                        db=db,
-                        error_class=ERROR_SCHEMA_CHANGED,
-                        status_code=response.status_code,
-                        details={"reason": "response_too_large", "max_bytes": max_bytes},
-                    )
-                    raise NewsIngestionError("News response exceeded SOURCE_FETCH_MAX_BYTES")
-                chunks.append(chunk)
-            body = b"".join(chunks)
-            guard.finalize(reservation, status="succeeded", db=db, status_code=response.status_code)
-            headers = dict(response.headers)
-            headers.pop("content-encoding", None)
-            headers.pop("Content-Encoding", None)
-            headers.pop("content-length", None)
-            headers.pop("Content-Length", None)
-            return httpx.Response(
-                response.status_code,
-                headers=headers,
-                content=body,
-                request=response.request,
-                extensions=response.extensions,
+        fetched = await safe_fetch_bytes(
+            _url_with_params(url, params),
+            headers=headers,
+            transport=transport,
+            max_bytes=max_bytes,
+            timeout_seconds=timeout_seconds,
+            raise_for_status=False,
+        )
+        response = fetched.response
+        provider_error = provider_error_from_response(response, provider_key, endpoint_key)
+        if provider_error is not None:
+            guard.finalize(
+                reservation,
+                status="failed",
+                db=db,
+                error_class=provider_error.error_class,
+                status_code=response.status_code,
+                retry_after_seconds=provider_error.retry_after_seconds,
             )
+            raise provider_error
+        guard.finalize(reservation, status="succeeded", db=db, status_code=response.status_code)
+        return response
+    except SafeFetchError as exc:
+        details = {"reason": "safe_fetch_rejected", "message": str(exc)}
+        if "exceeded" in str(exc).lower():
+            details = {"reason": "response_too_large", "max_bytes": max_bytes}
+        guard.finalize(
+            reservation,
+            status="failed",
+            db=db,
+            error_class=ERROR_SCHEMA_CHANGED,
+            details=details,
+        )
+        raise ProviderLimitError(
+            f"{provider_key}/{endpoint_key} safe fetch rejected: {exc}",
+            error_class=ERROR_SCHEMA_CHANGED,
+            provider_key=provider_key,
+            endpoint_key=endpoint_key,
+        ) from exc
     except httpx.TimeoutException as exc:
         guard.finalize(reservation, status="failed", db=db, error_class=ERROR_TIMEOUT, retry_after_seconds=30)
         raise ProviderLimitError(
@@ -553,6 +550,15 @@ async def _fetch_limited_provider_response(
 def _request_idempotency_key(source_key: str, request: NewsSourceRequest) -> str:
     encoded = f"{source_key}|{request.url}|{urlencode(sorted(request.params.items()))}"
     return "sha256:" + hashlib.sha256(encoded.encode()).hexdigest()
+
+
+def _url_with_params(url: str, params: dict[str, str] | None) -> str:
+    if not params:
+        return url
+    parsed = urlparse(url)
+    query_items = parse_qsl(parsed.query, keep_blank_values=True)
+    query_items.extend(sorted(params.items()))
+    return urlunparse(parsed._replace(query=urlencode(query_items)))
 
 
 def _response_url(response: httpx.Response, profile: SourceProfile) -> str:

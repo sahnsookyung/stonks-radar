@@ -450,7 +450,7 @@ class LLMRouter:
 
     def _reserve_external_llm_budget(self, task: LLMTask, profile: dict[str, Any], messages: list[dict[str, str]]) -> str:
         if self.db is None:
-            return f"llm_{uuid4().hex}"
+            raise LLMRoutingError("External LLM usage requires persistent budget state")
         provider_key = profile["provider_key"]
         quantity = 1
         period_key = datetime.now(timezone.utc).date().isoformat()

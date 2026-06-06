@@ -20,6 +20,16 @@ import type {
 
 const manifestUrl = "/public/latest/manifest.json";
 
+export class SnapshotHardExpiredError extends Error {
+  constructor(
+    readonly objectKey: string,
+    readonly hardExpiresAt: string
+  ) {
+    super(`Snapshot ${objectKey} expired at ${hardExpiresAt}`);
+    this.name = "SnapshotHardExpiredError";
+  }
+}
+
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, {
     headers: {
@@ -45,7 +55,11 @@ export async function getSnapshot<T>(
   if (!path) {
     throw new Error(`Snapshot object ${objectKey}/${locale} is not in the manifest`);
   }
-  return fetchJson<SnapshotEnvelope<T>>(`/${path}`);
+  const snapshot = await fetchJson<SnapshotEnvelope<T>>(`/${path}`);
+  if (isHardExpired(snapshot.hard_expires_at)) {
+    throw new SnapshotHardExpiredError(objectKey, snapshot.hard_expires_at);
+  }
+  return snapshot;
 }
 
 export const snapshotQueries = {
@@ -79,4 +93,14 @@ export const snapshotQueries = {
 
 export function isStale(staleAfter: string): boolean {
   return Date.now() > new Date(staleAfter).getTime();
+}
+
+export function isHardExpired(hardExpiresAt: string): boolean {
+  return Date.now() > new Date(hardExpiresAt).getTime();
+}
+
+export function snapshotFreshness(snapshot: Pick<SnapshotEnvelope<unknown>, "stale_after" | "hard_expires_at">) {
+  if (isHardExpired(snapshot.hard_expires_at)) return "expired";
+  if (isStale(snapshot.stale_after)) return "stale";
+  return "active";
 }

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import httpx
 import pytest
 
@@ -19,6 +21,10 @@ def clear_settings_cache():
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
+
+
+def _allow_url(url: str):
+    return SimpleNamespace(allowed=True, reason="allowed", resolved_ips=["93.184.216.34"])
 
 
 @pytest.mark.asyncio
@@ -166,7 +172,9 @@ async def test_finra_adapters_degrade_without_credentials():
 
 
 @pytest.mark.asyncio
-async def test_public_short_research_adapter_keeps_metadata_only():
+async def test_public_short_research_adapter_keeps_metadata_only(monkeypatch):
+    monkeypatch.setattr("frw_api.services.safe_fetch.evaluate_url", _allow_url)
+
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
             200,
@@ -196,6 +204,8 @@ async def test_pentagon_pizza_adapter_marks_weak_osint(monkeypatch):
     monkeypatch.setattr(get_settings(), "pentagon_pizza_base_url", "https://pizza.test")
     monkeypatch.setattr(get_settings(), "pentagon_pizza_function_url", None)
     monkeypatch.setattr(get_settings(), "pentagon_pizza_supabase_anon_key", None)
+    monkeypatch.setattr("frw_api.services.safe_fetch.evaluate_url", _allow_url)
+    monkeypatch.setattr("frw_api.adapters.alternative_signals.evaluate_url", _allow_url)
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.host == "pizza.test" and request.url.path == "/":

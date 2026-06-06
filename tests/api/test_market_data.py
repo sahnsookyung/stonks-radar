@@ -24,6 +24,8 @@ from frw_api.services.market_data import (
 )
 from frw_api.services.market_history_store import (
     MarketHistoryCalculationNotReady,
+    MarketCalendarCoverageError,
+    StoredHistoryResult,
     _staging_metadata,
     expected_market_sessions,
     load_stored_market_history,
@@ -804,6 +806,63 @@ def test_expected_market_sessions_handle_crypto_weekends_and_us_holidays():
     assert [item.isoformat() for item in crypto] == ["2026-01-03", "2026-01-04"]
     assert "2026-01-01" not in {item.isoformat() for item in us}
     assert "2026-01-03" not in {item.isoformat() for item in us}
+
+
+def test_expected_market_sessions_exclude_exchange_specific_holidays():
+    us = {item.isoformat() for item in expected_market_sessions("AAPL", date(2026, 4, 2), date(2026, 4, 6))}
+    korea_2023 = {
+        item.isoformat()
+        for item in expected_market_sessions("005930.KS", date(2023, 9, 25), date(2023, 10, 4))
+    }
+    korea = {
+        item.isoformat()
+        for item in expected_market_sessions("005930.KS", date(2026, 2, 13), date(2026, 2, 20))
+    }
+    japan = {
+        item.isoformat()
+        for item in expected_market_sessions("7203.T", date(2026, 1, 9), date(2026, 1, 14))
+    }
+
+    assert "2026-04-03" not in us
+    assert "2023-09-28" not in korea_2023
+    assert "2023-09-29" not in korea_2023
+    assert "2023-10-02" not in korea_2023
+    assert "2026-02-16" not in korea
+    assert "2026-02-17" not in korea
+    assert "2026-02-18" not in korea
+    assert "2026-01-12" not in japan
+    assert "2026-01-13" in japan
+
+
+def test_exchange_calendar_coverage_fails_closed_for_unsupported_year():
+    with pytest.raises(MarketCalendarCoverageError):
+        expected_market_sessions("005930.KS", date(2027, 1, 1), date(2027, 1, 5))
+
+    readiness = market_history_calculation_readiness(
+        StoredHistoryResult(
+            provider="fixture",
+            series=[
+                {
+                    "symbol": "005930.KS",
+                    "points": [{"date": "2027-01-04", "currency": "KRW"}],
+                }
+            ],
+            coverage=[],
+            source_policy_digest="fixture",
+            data_version="fixture",
+            snapshot_id="snapshot",
+            snapshot_ids=["snapshot"],
+            coherence_status="single_snapshot",
+            quality_state="valid",
+            warnings=[],
+        ),
+        symbols=["005930.KS"],
+        start=date(2027, 1, 1),
+        end=date(2027, 1, 5),
+    )
+
+    assert readiness.ready is False
+    assert readiness.reason == "market_calendar_coverage_incomplete"
 
 
 @pytest.mark.asyncio

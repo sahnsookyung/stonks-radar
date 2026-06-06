@@ -49,7 +49,7 @@ async def safe_fetch_bytes(
                 raise SafeFetchError(decision.reason)
             all_resolved_ips.update(decision.resolved_ips)
             async with client.stream("GET", current_url) as response:
-                _validate_peer_ip(response)
+                _validate_peer_ip(response, require_peer_ip=transport is None)
                 if response.is_redirect:
                     redirects += 1
                     if redirects > MAX_REDIRECTS:
@@ -95,8 +95,10 @@ def _materialized_response(response: httpx.Response, body: bytes) -> httpx.Respo
     )
 
 
-def _validate_peer_ip(response: httpx.Response) -> None:
+def _validate_peer_ip(response: httpx.Response, *, require_peer_ip: bool = False) -> None:
     peer_ip = _peer_ip(response.extensions)
+    if require_peer_ip and not peer_ip:
+        raise SafeFetchError("Unable to validate peer IP for safe fetch")
     if peer_ip and is_blocked_ip(peer_ip):
         raise SafeFetchError(f"Private or metadata peer IP blocked: {peer_ip}")
 
@@ -111,7 +113,7 @@ def _peer_ip(extensions: dict[str, Any]) -> str | None:
     stream = extensions.get("network_stream")
     getter = getattr(stream, "get_extra_info", None)
     if callable(getter):
-        for key in ("peername", "socket"):
+        for key in ("peername", "server_addr", "socket"):
             try:
                 value = getter(key)
             except Exception:  # noqa: BLE001 - transport-specific introspection is best effort
