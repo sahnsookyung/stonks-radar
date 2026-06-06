@@ -45,7 +45,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Verify
-        run: npm run test:all
+        run: npm run seed:snapshots && npm run test:all
 
       - name: Prepare production snapshot env
         env:
@@ -91,7 +91,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Verify
-        run: npm run test:all
+        run: npm run seed:snapshots && npm run test:all
 
       - name: Prepare production snapshot env
         env:

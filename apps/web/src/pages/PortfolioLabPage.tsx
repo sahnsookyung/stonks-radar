@@ -1543,29 +1543,33 @@ function PortfolioEditorPanel({
         })}
       </div>
       <div className="mt-4 grid gap-2">
-        <div className="block text-sm font-semibold">
+        <div className="block min-w-0 text-sm font-semibold">
           <label htmlFor={searchInputId}>Add holding</label>
-          <div className="mt-1 flex items-center justify-between gap-2 text-xs">
-            <span className="text-muted">Search ticker, company, ETF, ISIN, FIGI, or local code</span>
-            <div className="inline-flex items-center gap-3">
-              <label className="inline-flex items-center gap-1">
+          <div className="mt-1 flex min-w-0 flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between">
+            <span className="safe-text min-w-0 text-muted">Search ticker, company, ETF, ISIN, FIGI, or local code</span>
+            <div className="grid min-w-0 grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:inline-flex sm:items-center sm:gap-3">
+              <label className="focus-ring relative inline-flex min-h-11 min-w-0 items-center gap-2 rounded-md border border-line bg-panelAlt px-3 py-2 text-left">
                 <input
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                   type="checkbox"
                   checked={includeAdvancedInstruments}
                   onChange={(event) => setIncludeAdvancedInstruments(event.target.checked)}
                 />
-                <span className="inline-flex items-center gap-1">
+                <span aria-hidden="true" className={`h-4 w-4 shrink-0 rounded border ${includeAdvancedInstruments ? "border-accent bg-accent" : "border-line bg-panel"}`} />
+                <span className="safe-text inline-flex min-w-0 items-center gap-1">
                   Include advanced
                   <TermTooltip termKey="advanced_instrument" />
                 </span>
               </label>
-              <label className="inline-flex items-center gap-1">
+              <label className="focus-ring relative inline-flex min-h-11 min-w-0 items-center gap-2 rounded-md border border-line bg-panelAlt px-3 py-2 text-left">
                 <input
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                   type="checkbox"
                   checked={includeInactiveInstruments}
                   onChange={(event) => setIncludeInactiveInstruments(event.target.checked)}
                 />
-                <span className="inline-flex items-center gap-1">
+                <span aria-hidden="true" className={`h-4 w-4 shrink-0 rounded border ${includeInactiveInstruments ? "border-accent bg-accent" : "border-line bg-panel"}`} />
+                <span className="safe-text inline-flex min-w-0 items-center gap-1">
                   Include inactive
                   <TermTooltip termKey="inactive_security" />
                 </span>
