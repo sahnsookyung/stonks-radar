@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-30T15:35:31Z",
-  "stale_after": "2026-05-31T03:35:31Z",
-  "hard_expires_at": "2026-06-06T15:35:31Z",
+  "generated_at": "2026-06-07T11:08:47Z",
+  "stale_after": "2026-06-07T23:08:47Z",
+  "hard_expires_at": "2026-06-14T11:08:47Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_RGTI",
-  "content_hash": "sha256:3e64032694ccd934dbe662a5d977e9ee697eba9bd50e48b030fe33336a539c53",
+  "content_hash": "sha256:eef5d697736bfec148957be565cd6bbfa79ffb28a3e847524bf3afccef3775f7",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "RGTI",
     "name": "Rigetti Computing, Inc.",
-    "generated_label": "2026-05-30T15:35:31Z",
+    "generated_label": "2026-06-07T11:08:47Z",
     "summary": "No approved news events are currently linked to RGTI.",
     "events": []
   },

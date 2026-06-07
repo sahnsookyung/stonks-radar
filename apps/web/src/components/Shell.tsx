@@ -12,6 +12,7 @@ import {
   SearchCheck,
   ShieldAlert,
   TrendingUp,
+  LineChart,
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -45,6 +46,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const primaryNavRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
   const compactNavLabels = {
     marketPulse: locale === "ko" ? "펄스" : "Pulse",
+    yieldCurves: locale === "ko" ? "금리곡선" : "Curves",
     portfolio: locale === "ko" ? "포트폴리오" : "Portfolio",
     funds: locale === "ko" ? "펀드" : "Funds",
     disclaimer: locale === "ko" ? "고지" : "Legal",
@@ -135,6 +137,15 @@ export function Shell({ children }: { children: React.ReactNode }) {
               params={{ locale }}
               icon={<TrendingUp />}
               label={compactNavLabels.marketPulse}
+            />
+            <NavLink
+              active={activePrimaryNavKey === "yield-curves"}
+              navKey="yield-curves"
+              registerRef={registerPrimaryNavRef}
+              to="/$locale/yield-curves"
+              params={{ locale }}
+              icon={<LineChart />}
+              label={compactNavLabels.yieldCurves}
             />
             <NavLink
               active={activePrimaryNavKey === "portfolio"}
@@ -339,6 +350,7 @@ function getActivePrimaryNavKey(pathname: string) {
   if (path.startsWith("/calendar") || path.startsWith("/central-banks"))
     return "calendar";
   if (path.startsWith("/market-pulse")) return "market-pulse";
+  if (path.startsWith("/yield-curves")) return "yield-curves";
   if (
     path.startsWith("/portfolio") ||
     path.startsWith("/dashboard") ||

@@ -1877,11 +1877,16 @@ export function calculateHoldingCoverageRows(
     const priceAgeDays = instrument ? daysSince(instrument.priceAsOf, asOf) : null;
     const hasManualValuation = Number.isFinite(holding.manualPrice) || Number.isFinite(holding.manualMarketValue);
     const qualityLevel = hasManualValuation ? "USER_PROVIDED" : instrument?.priceQuality ?? "UNAVAILABLE";
+    const hasStoredDailyPrice =
+      instrument?.priceCoverage === "available" &&
+      Boolean(instrument.sourceProviders?.includes("stored_normalized_daily_bars"));
     const dataMode = hasManualValuation
       ? "USER_PROVIDED"
-      : portfolio.isDemo
-        ? "SAMPLE_STATIC"
-        : "STORED_DAILY";
+      : hasStoredDailyPrice
+        ? "STORED_DAILY"
+        : portfolio.isDemo
+          ? "SAMPLE_STATIC"
+          : "STORED_DAILY";
     return {
       holdingId: holding.holdingId,
       symbol: instrument ? primaryListingFor(instrument).symbol : holding.instrumentId,

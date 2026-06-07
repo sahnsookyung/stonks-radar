@@ -26,6 +26,12 @@ class Settings(BaseSettings):
     admin_email: str = "owner@example.com"
     admin_bootstrap_password: str | None = None
     admin_totp_secret: str | None = None
+    google_oauth_admin_enabled: bool = False
+    google_oauth_client_id: str | None = None
+    google_oauth_client_secret: str | None = None
+    google_oauth_redirect_path: str = "/api/auth/google/callback"
+    google_oauth_allowed_emails: str = ""
+    google_oauth_allowed_domains: str = ""
 
     gemini_api_key: str | None = None
     groq_api_key: str | None = None
@@ -66,6 +72,17 @@ class Settings(BaseSettings):
     market_data_daily_repair_days: int = Field(default=21, ge=1, le=180)
     market_data_full_backfill_days: int = Field(default=1095, ge=30, le=3650)
     market_data_refresh_stagger_seconds: int = Field(default=3600, ge=60, le=86400)
+    market_data_refresh_anchor: str = "us_market_close"
+    market_data_refresh_after_close_minutes: int = Field(default=45, ge=0, le=360)
+    market_data_refresh_spread_minutes: int = Field(default=240, ge=15, le=1440)
+    market_data_snapshot_window_days: int = Field(default=1095, ge=30, le=3650)
+    market_data_morning_catchup_enabled: bool = True
+    market_data_morning_catchup_local_time: str = "09:00"
+    market_data_initial_backfill_daily_cap: int = Field(default=250, ge=1, le=2000)
+    yahoo_admin_enabled: bool = False
+    yahoo_admin_base_url: str = "https://query1.finance.yahoo.com"
+    yahoo_admin_rate_limit_per_minute: int = Field(default=1, ge=1, le=30)
+    yahoo_admin_daily_limit: int = Field(default=30, ge=1, le=500)
     twelve_data_api_key: str | None = None
     alpha_vantage_api_key: str | None = None
     fmp_api_key: str | None = None
@@ -187,6 +204,26 @@ class Settings(BaseSettings):
     @property
     def news_email_allowed_recipient_list(self) -> list[str]:
         return [value.strip().lower() for value in self.news_email_allowed_recipients.split(",") if value.strip()]
+
+    @property
+    def google_oauth_allowed_email_list(self) -> list[str]:
+        emails = [
+            value.strip().lower()
+            for value in self.google_oauth_allowed_emails.split(",")
+            if value.strip()
+        ]
+        admin_email = self.admin_email.strip().lower()
+        if admin_email and admin_email not in emails:
+            emails.append(admin_email)
+        return emails
+
+    @property
+    def google_oauth_allowed_domain_list(self) -> list[str]:
+        return [
+            value.strip().lower().lstrip("@")
+            for value in self.google_oauth_allowed_domains.split(",")
+            if value.strip()
+        ]
 
 
 @lru_cache(maxsize=1)

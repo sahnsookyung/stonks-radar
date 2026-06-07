@@ -271,6 +271,20 @@ async function mockOptionalPublicApis(page: Page) {
       })
     });
   });
+  await page.route("**/api/auth/me", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({})
+    });
+  });
+  await page.route("**/api/instruments/search**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ results: [] })
+    });
+  });
   await page.route("**/api/public/filings**", async (route) => {
     await route.fulfill({
       status: 200,

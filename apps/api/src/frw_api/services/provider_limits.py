@@ -39,7 +39,14 @@ QUOTA_ERROR_CLASSES = {ERROR_RATE_LIMITED, ERROR_QUOTA_EXHAUSTED}
 _PRODUCTION_ENV_NAMES = {"production", "prod"}
 _DURATION_RE = re.compile(r"(?:(?P<minutes>\d+(?:\.\d+)?)m)?(?:(?P<seconds>\d+(?:\.\d+)?)s)?$")
 MARKET_DATA_ENDPOINT_KEY = "daily_prices"
-MARKET_DATA_PROVIDER_KEYS = {"twelve_data", "alpha_vantage", "fmp", "nasdaq_data_link", "finnhub"}
+MARKET_DATA_PROVIDER_KEYS = {
+    "twelve_data",
+    "alpha_vantage",
+    "fmp",
+    "nasdaq_data_link",
+    "finnhub",
+    "yahoo_admin",
+}
 # market_data_provider_capability rows store the effective conservative free-tier cap.
 # Keep this at 1.0 so the 70% safety policy is not applied twice.
 MARKET_DATA_QUOTA_FACTOR = 1.0
@@ -661,6 +668,17 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
             _rule("byte", 2_592_000, 400_000_000, "500MB/30 days", "400MB/30 days"),
         ),
         "https://site.financialmodelingprep.com/pricing-plans",
+        public_display_allowed=False,
+    ),
+    _limit(
+        "yahoo_admin",
+        "daily_prices",
+        (
+            _rule("request", 60, 1, "unofficial private/admin chart endpoint", "1 request/minute"),
+            _rule("request", 86_400, 30, "unofficial private/admin chart endpoint", "30 requests/day"),
+        ),
+        "https://legal.yahoo.com/us/en/yahoo/terms/product-atos/apiforydn/index.html",
+        notes="Private/admin only; not eligible for public snapshots or redistribution.",
         public_display_allowed=False,
     ),
     _limit(

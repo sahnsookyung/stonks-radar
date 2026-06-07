@@ -198,12 +198,15 @@ def test_news_pipeline_scheduler_chains_local_processing_jobs(monkeypatch):
     ]
 
 
-def test_market_history_scheduler_staggers_daily_refresh_specs():
+def test_market_history_scheduler_staggers_full_window_refresh_specs_after_close():
     specs = market_history_job_specs(
-        now=datetime(2026, 5, 26, 1, 17, tzinfo=timezone.utc),
+        now=datetime(2026, 5, 26, 14, 17, tzinfo=timezone.utc),
         settings=_settings(
             market_data_refresh_symbol_list=["AAPL", "MSFT"],
             market_data_full_backfill_days=21,
+            market_data_refresh_after_close_minutes=45,
+            market_data_refresh_spread_minutes=240,
+            market_data_snapshot_window_days=1095,
         ),
     )
 
@@ -212,26 +215,50 @@ def test_market_history_scheduler_staggers_daily_refresh_specs():
         "market_data.refresh_history",
     ]
     assert {spec["payload"]["symbol"] for spec in specs} == {"AAPL", "MSFT"}
-    assert all(spec["payload"]["mode"] == "daily_repair" for spec in specs)
+    assert all(spec["payload"]["mode"] == "rolling_3y_snapshot" for spec in specs)
+    assert all(spec["payload"]["window_key"] == "rolling_3y" for spec in specs)
+    assert all(spec["payload"]["window_days"] == 1095 for spec in specs)
+    assert all(spec["payload"]["market_session_date"] == "2026-05-26" for spec in specs)
+    assert all(spec["payload"]["start"] == "2023-05-27" for spec in specs)
+    assert all(spec["payload"]["end"] == "2026-05-26" for spec in specs)
     assert all(spec["job_group"] == "market_data" for spec in specs)
     assert all("run_after" in spec for spec in specs)
+    assert all(spec["run_after"] >= datetime(2026, 5, 26, 20, 45, tzinfo=timezone.utc) for spec in specs)
+    assert all(spec["run_after"] < datetime(2026, 5, 27, 0, 45, tzinfo=timezone.utc) for spec in specs)
 
 
-def test_market_history_scheduler_adds_rolling_backfill_one_symbol_per_day():
+def test_market_history_scheduler_does_not_add_separate_incremental_backfill():
     specs = market_history_job_specs(
-        now=datetime(2026, 5, 26, 1, 17, tzinfo=timezone.utc),
+        now=datetime(2026, 5, 26, 14, 17, tzinfo=timezone.utc),
         settings=_settings(
             market_data_refresh_symbol_list=["AAPL", "MSFT"],
             market_data_daily_repair_days=21,
             market_data_full_backfill_days=1095,
+            market_data_snapshot_window_days=1095,
         ),
     )
 
     backfills = [
         spec for spec in specs if spec["payload"]["mode"] == "rolling_backfill"
     ]
-    assert len(backfills) == 1
-    assert backfills[0]["payload"]["days"] == 1095
+    assert backfills == []
+    assert {spec["payload"]["mode"] for spec in specs} == {"rolling_3y_snapshot"}
+
+
+def test_market_history_scheduler_uses_early_close_anchor():
+    specs = market_history_job_specs(
+        now=datetime(2026, 11, 27, 15, 0, tzinfo=timezone.utc),
+        settings=_settings(
+            market_data_refresh_symbol_list=["AAPL"],
+            market_data_refresh_after_close_minutes=45,
+            market_data_refresh_spread_minutes=15,
+            market_data_snapshot_window_days=1095,
+        ),
+    )
+
+    assert specs[0]["payload"]["market_session_date"] == "2026-11-27"
+    assert specs[0]["run_after"] >= datetime(2026, 11, 27, 18, 45, tzinfo=timezone.utc)
+    assert specs[0]["run_after"] < datetime(2026, 11, 27, 19, 0, tzinfo=timezone.utc)
 
 
 def test_instrument_search_index_scheduler_creates_four_hour_refresh_spec():
@@ -283,11 +310,16 @@ def test_market_history_gap_scheduler_enqueues_newest_first_catchup():
         settings=_settings(),
     )
 
-    assert [spec["payload"]["mode"] for spec in specs] == ["gap_catchup", "gap_catchup"]
+    assert [spec["payload"]["mode"] for spec in specs] == [
+        "full_window_catchup",
+        "full_window_catchup",
+    ]
     assert specs[0]["payload"]["end"] == "2026-01-05"
     assert specs[0]["priority"] == 55
     btc = next(spec for spec in specs if spec["payload"]["symbol"] == "BTC-USD")
     assert btc["payload"]["missing_dates"] == ["2026-01-05", "2026-01-04"]
+    assert btc["payload"]["start"] == "2023-01-06"
+    assert btc["payload"]["window_key"] == "rolling_3y"
 
 
 def test_trump_disclosure_job_dispatches_ingestion(monkeypatch):

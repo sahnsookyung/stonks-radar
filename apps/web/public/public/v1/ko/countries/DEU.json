@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-30T15:35:31Z",
-  "stale_after": "2026-05-31T03:35:31Z",
-  "hard_expires_at": "2026-06-06T15:35:31Z",
+  "generated_at": "2026-06-07T11:08:47Z",
+  "stale_after": "2026-06-07T23:08:47Z",
+  "hard_expires_at": "2026-06-14T11:08:47Z",
   "object_type": "country_region",
   "object_key": "DEU",
-  "content_hash": "sha256:fcacc19e75199c04546ee34112c45abbdfde57b0f72d1a25ab60ad2cd8ea41ef",
+  "content_hash": "sha256:d21b1737794a1b677104b372bdaf06344135fa172ad2eb90f40157b90198aa2b",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -170,8 +170,8 @@
         "title": "반도체 수출통제 모니터링 강도 유지",
         "summary": "승인된 시드 이벤트가 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
         "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다.",
-        "occurred_at": "2026-05-30T15:35:31Z",
-        "published_at": "2026-05-30T15:35:31Z",
+        "occurred_at": "2026-05-25T00:00:00Z",
+        "published_at": "2026-05-25T00:00:00Z",
         "country_region_keys": [
           "USA",
           "TWN",
@@ -187,7 +187,7 @@
         "severity": "medium",
         "confidence": 0.74,
         "source_strength": "reviewed_structured_seed",
-        "freshness": "fresh",
+        "freshness": "stale",
         "evidence_count": 2,
         "latitude": 23.7,
         "longitude": 121.0,
@@ -251,491 +251,439 @@
       {
         "key": "nasdaq_composite",
         "label": "나스닥 종합",
-        "value": "26,972.62",
+        "value": "25,709.43",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "watch",
-        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-05-29T21:15:59Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-05-29T21:15:59Z",
+        "freshness": "stale",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-05T21:15:59Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-05T21:15:59Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
-        "source_url": "https://finance.yahoo.com/quote/%5EIXIC",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EIXIC?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-05-29T15:06:00Z",
-            "value": 26954.99609375
+            "date": "2026-06-05T15:06:00Z",
+            "value": 26284.896484375
           },
           {
-            "date": "2026-05-29T15:54:00Z",
-            "value": 26973.013671875
+            "date": "2026-06-05T15:54:00Z",
+            "value": 26205.677734375
           },
           {
-            "date": "2026-05-29T16:42:00Z",
-            "value": 27024.14453125
+            "date": "2026-06-05T16:42:00Z",
+            "value": 26028.31640625
           },
           {
-            "date": "2026-05-29T17:30:00Z",
-            "value": 26966.865234375
+            "date": "2026-06-05T17:30:00Z",
+            "value": 26055.4296875
           },
           {
-            "date": "2026-05-29T18:18:00Z",
-            "value": 26946.14453125
+            "date": "2026-06-05T18:18:00Z",
+            "value": 25894.833984375
           },
           {
-            "date": "2026-05-29T19:06:00Z",
-            "value": 26954.955078125
+            "date": "2026-06-05T19:06:00Z",
+            "value": 25815.388671875
           },
           {
-            "date": "2026-05-29T19:54:00Z",
-            "value": 26986.5234375
+            "date": "2026-06-05T19:54:00Z",
+            "value": 25805.70703125
           },
           {
-            "date": "2026-05-29T20:00:00Z",
-            "value": 26972.619140625
+            "date": "2026-06-05T20:00:00Z",
+            "value": 25709.431640625
           }
         ],
-        "refresh_delta": 55.14999999999782,
-        "refresh_delta_percent": 0.20488552601711013
+        "refresh_delta": -1121.5249999999978,
+        "refresh_delta_percent": -4.179966446966457
       },
       {
         "key": "nasdaq_100",
         "label": "나스닥 100",
-        "value": "30,333.18",
+        "value": "28,957.6",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "watch",
-        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-05-29T21:15:59Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-05-29T21:15:59Z",
+        "freshness": "stale",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-05T21:15:59Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-05T21:15:59Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
-        "source_url": "https://finance.yahoo.com/quote/%5ENDX",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-05-29T15:06:00Z",
-            "value": 30304.609375
+            "date": "2026-06-05T15:06:00Z",
+            "value": 29715.025390625
           },
           {
-            "date": "2026-05-29T15:54:00Z",
-            "value": 30317.822265625
+            "date": "2026-06-05T15:54:00Z",
+            "value": 29619.1953125
           },
           {
-            "date": "2026-05-29T16:42:00Z",
-            "value": 30362.638671875
+            "date": "2026-06-05T16:42:00Z",
+            "value": 29384.974609375
           },
           {
-            "date": "2026-05-29T17:30:00Z",
-            "value": 30297.455078125
+            "date": "2026-06-05T17:30:00Z",
+            "value": 29402.46484375
           },
           {
-            "date": "2026-05-29T18:18:00Z",
-            "value": 30281.736328125
+            "date": "2026-06-05T18:18:00Z",
+            "value": 29224.76171875
           },
           {
-            "date": "2026-05-29T19:06:00Z",
-            "value": 30290.228515625
+            "date": "2026-06-05T19:06:00Z",
+            "value": 29146.81640625
           },
           {
-            "date": "2026-05-29T19:54:00Z",
-            "value": 30343.04296875
+            "date": "2026-06-05T19:54:00Z",
+            "value": 29084.375
           },
           {
-            "date": "2026-05-29T20:00:00Z",
-            "value": 30333.1796875
+            "date": "2026-06-05T20:00:00Z",
+            "value": 28957.599609375
           }
         ],
-        "refresh_delta": 109.29100000000108,
-        "refresh_delta_percent": 0.3616046895884282
+        "refresh_delta": -1450.2100000000028,
+        "refresh_delta_percent": -4.769202385834437
       },
       {
         "key": "kospi",
         "label": "코스피",
-        "value": "8,476.15",
-        "source": "Stooq delayed quote",
-        "freshness": "watch",
-        "delay_label": "사용 가능한 최신 Stooq delayed quote 관측 2026-05-29T21:00:00Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-05-29T21:00:00Z",
+        "value": "8,160.59",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "stale",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-05T09:05:40Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-05T09:05:40Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
-        "source_url": "https://stooq.com/q/?s=%5Ekospi",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EKS11?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-05-29T12:00:00Z",
-            "value": 8384.31
+            "date": "2026-06-05T00:45:00Z",
+            "value": 8130.52001953125
           },
           {
-            "date": "2026-05-29T13:00:00Z",
-            "value": 8273.74
+            "date": "2026-06-05T01:30:00Z",
+            "value": 8132.5400390625
           },
           {
-            "date": "2026-05-29T14:00:00Z",
-            "value": 8476.15
+            "date": "2026-06-05T02:15:00Z",
+            "value": 8322.83984375
           },
           {
-            "date": "2026-05-29T15:00:00Z",
-            "value": 8476.15
+            "date": "2026-06-05T03:00:00Z",
+            "value": 8275.8603515625
+          },
+          {
+            "date": "2026-06-05T03:45:00Z",
+            "value": 8254.66015625
+          },
+          {
+            "date": "2026-06-05T04:30:00Z",
+            "value": 8160.3701171875
+          },
+          {
+            "date": "2026-06-05T05:15:00Z",
+            "value": 8224.1796875
+          },
+          {
+            "date": "2026-06-05T06:00:00Z",
+            "value": 8160.58984375
           }
         ],
-        "refresh_delta": 91.84000000000015,
-        "refresh_delta_percent": 1.0953793454679055
+        "refresh_delta": -478.8199999999997,
+        "refresh_delta_percent": -5.542276613796541
       },
       {
         "key": "kodex_200",
         "label": "KODEX 200 ETF",
-        "value": "134,815",
+        "value": "131,030",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "watch",
-        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-05-29T06:30:07Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-05-29T06:30:07Z",
+        "freshness": "stale",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-05T06:30:26Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-05T06:30:26Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "KRW",
-        "source_url": "https://finance.yahoo.com/quote/069500.KS",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/069500.KS?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-05-29T00:45:00Z",
-            "value": 133470.0
+            "date": "2026-06-05T00:45:00Z",
+            "value": 130140.0
           },
           {
-            "date": "2026-05-29T01:30:00Z",
-            "value": 133425.0
+            "date": "2026-06-05T01:30:00Z",
+            "value": 130380.0
           },
           {
-            "date": "2026-05-29T02:15:00Z",
-            "value": 133400.0
+            "date": "2026-06-05T02:15:00Z",
+            "value": 133550.0
           },
           {
-            "date": "2026-05-29T03:00:00Z",
-            "value": 133310.0
+            "date": "2026-06-05T03:00:00Z",
+            "value": 132830.0
           },
           {
-            "date": "2026-05-29T03:45:00Z",
-            "value": 133745.0
+            "date": "2026-06-05T03:45:00Z",
+            "value": 132165.0
           },
           {
-            "date": "2026-05-29T04:30:00Z",
-            "value": 134340.0
+            "date": "2026-06-05T04:30:00Z",
+            "value": 130460.0
           },
           {
-            "date": "2026-05-29T05:15:00Z",
-            "value": 134750.0
+            "date": "2026-06-05T05:15:00Z",
+            "value": 131510.0
           },
           {
-            "date": "2026-05-29T06:00:00Z",
-            "value": 134815.0
+            "date": "2026-06-05T06:00:00Z",
+            "value": 131030.0
           }
         ],
-        "refresh_delta": 4825.0,
-        "refresh_delta_percent": 3.7118239864604967
+        "refresh_delta": -7700.0,
+        "refresh_delta_percent": -5.550349599942335
       },
       {
         "key": "wti_crude",
         "label": "WTI 원유 선물",
-        "value": "87.36",
-        "source": "Stooq delayed quote",
-        "freshness": "watch",
-        "delay_label": "사용 가능한 최신 Stooq delayed quote 관측 2026-05-29T21:00:00Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-05-29T21:00:00Z",
+        "value": "90.54",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "stale",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-05T20:59:59Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-05T20:59:59Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "$",
-        "source_url": "https://stooq.com/q/?s=cl.f",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/CL%3DF?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-05-29T12:00:00Z",
-            "value": 88.55
-          },
-          {
-            "date": "2026-05-29T13:00:00Z",
-            "value": 86.35
-          },
-          {
-            "date": "2026-05-29T14:00:00Z",
-            "value": 89.02
-          },
-          {
-            "date": "2026-05-29T15:00:00Z",
-            "value": 87.36
+            "date": "2026-06-05T20:59:59Z",
+            "value": 90.54
           }
         ],
-        "refresh_delta": -1.1899999999999977,
-        "refresh_delta_percent": -1.3438735177865586
+        "refresh_delta": -2.5,
+        "refresh_delta_percent": -2.687016337059329
       },
       {
         "key": "gold_futures",
         "label": "금 선물",
-        "value": "4,593",
-        "source": "Stooq delayed quote",
-        "freshness": "watch",
-        "delay_label": "사용 가능한 최신 Stooq delayed quote 관측 2026-05-29T21:00:00Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-05-29T21:00:00Z",
+        "value": "4,365.3",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "stale",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-05T20:59:59Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-05T20:59:59Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "$",
-        "source_url": "https://stooq.com/q/?s=gc.f",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-05-29T12:00:00Z",
-            "value": 4527.6
-          },
-          {
-            "date": "2026-05-29T13:00:00Z",
-            "value": 4519.5
-          },
-          {
-            "date": "2026-05-29T14:00:00Z",
-            "value": 4627.1
-          },
-          {
-            "date": "2026-05-29T15:00:00Z",
-            "value": 4593.0
+            "date": "2026-06-05T20:59:59Z",
+            "value": 4365.3
           }
         ],
-        "refresh_delta": 65.39999999999964,
-        "refresh_delta_percent": 1.444473893453477
+        "refresh_delta": -139.69999999999982,
+        "refresh_delta_percent": -3.1009988901220824
       },
       {
         "key": "silver_futures",
         "label": "은 선물",
-        "value": "75.875",
-        "source": "Stooq delayed quote",
-        "freshness": "watch",
-        "delay_label": "사용 가능한 최신 Stooq delayed quote 관측 2026-05-29T21:00:00Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-05-29T21:00:00Z",
+        "value": "69.103",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "stale",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-05T20:59:55Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-05T20:59:55Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "$",
-        "source_url": "https://stooq.com/q/?s=si.f",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/SI%3DF?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-05-29T12:00:00Z",
-            "value": 76.025
-          },
-          {
-            "date": "2026-05-29T13:00:00Z",
-            "value": 74.815
-          },
-          {
-            "date": "2026-05-29T14:00:00Z",
-            "value": 76.96000000000001
-          },
-          {
-            "date": "2026-05-29T15:00:00Z",
-            "value": 75.875
+            "date": "2026-06-05T20:59:55Z",
+            "value": 69.103
           }
         ],
-        "refresh_delta": -0.15,
-        "refresh_delta_percent": -0.19730351857941467
+        "refresh_delta": -4.868000000000009,
+        "refresh_delta_percent": -6.580957402225208
       },
       {
         "key": "copper_futures",
         "label": "구리 선물",
-        "value": "6.4195",
-        "source": "Stooq delayed quote",
-        "freshness": "watch",
-        "delay_label": "사용 가능한 최신 Stooq delayed quote 관측 2026-05-29T21:39:49Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-05-29T21:39:49Z",
+        "value": "6.285",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "stale",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-05T20:59:57Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-05T20:59:57Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "$",
-        "source_url": "https://stooq.com/q/?s=hg.f",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/HG%3DF?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-05-29T12:00:00Z",
-            "value": 6.4195
-          },
-          {
-            "date": "2026-05-29T13:00:00Z",
-            "value": 6.3713
-          },
-          {
-            "date": "2026-05-29T14:00:00Z",
-            "value": 6.4407000000000005
-          },
-          {
-            "date": "2026-05-29T15:00:00Z",
-            "value": 6.4195
+            "date": "2026-06-05T20:59:57Z",
+            "value": 6.285
           }
         ],
-        "refresh_delta": 0.0,
-        "refresh_delta_percent": 0.0
+        "refresh_delta": -0.25,
+        "refresh_delta_percent": -3.825554705432287
       },
       {
         "key": "vix",
         "label": "VIX",
-        "value": "15.32",
+        "value": "21.51",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "watch",
-        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-05-29T20:15:01Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-05-29T20:15:01Z",
+        "freshness": "stale",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-05T20:15:01Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-05T20:15:01Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
-        "source_url": "https://finance.yahoo.com/quote/%5EVIX",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-05-29T08:52:00Z",
-            "value": 15.800000190734863
+            "date": "2026-06-05T08:52:00Z",
+            "value": 15.710000038146973
           },
           {
-            "date": "2026-05-29T10:29:00Z",
-            "value": 15.829999923706055
+            "date": "2026-06-05T10:29:00Z",
+            "value": 15.649999618530273
           },
           {
-            "date": "2026-05-29T12:06:00Z",
-            "value": 15.819999694824219
+            "date": "2026-06-05T12:06:00Z",
+            "value": 15.75
           },
           {
-            "date": "2026-05-29T13:48:00Z",
-            "value": 15.609999656677246
+            "date": "2026-06-05T13:48:00Z",
+            "value": 16.399999618530273
           },
           {
-            "date": "2026-05-29T15:25:00Z",
-            "value": 15.5
+            "date": "2026-06-05T15:25:00Z",
+            "value": 16.6299991607666
           },
           {
-            "date": "2026-05-29T17:02:00Z",
-            "value": 15.270000457763672
+            "date": "2026-06-05T17:02:00Z",
+            "value": 18.770000457763672
           },
           {
-            "date": "2026-05-29T18:39:00Z",
-            "value": 15.25
+            "date": "2026-06-05T18:39:00Z",
+            "value": 19.299999237060547
           },
           {
-            "date": "2026-05-29T20:15:00Z",
-            "value": 15.319999694824219
+            "date": "2026-06-05T20:15:00Z",
+            "value": 21.510000228881836
           }
         ],
-        "refresh_delta": -0.41999999999999993,
-        "refresh_delta_percent": -2.66836086404066
+        "refresh_delta": 6.110000000000001,
+        "refresh_delta_percent": 39.67532467532468
       },
       {
         "key": "usd_krw",
         "label": "달러/원",
-        "value": "1,507.13",
+        "value": "1,558.84",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "watch",
-        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-05-29T21:32:29Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-05-29T21:32:29Z",
+        "freshness": "stale",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-05T23:32:58Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-05T23:32:58Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "KRW",
-        "source_url": "https://finance.yahoo.com/quote/KRW%3DX",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/KRW%3DX?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-05-29T05:14:00Z",
-            "value": 1503.8800048828125
+            "date": "2026-06-05T05:13:00Z",
+            "value": 1542.489990234375
           },
           {
-            "date": "2026-05-29T07:51:00Z",
-            "value": 1507.949951171875
+            "date": "2026-06-05T07:51:00Z",
+            "value": 1539.3699951171875
           },
           {
-            "date": "2026-05-29T10:28:00Z",
-            "value": 1507.8499755859375
+            "date": "2026-06-05T10:29:00Z",
+            "value": 1537.239990234375
           },
           {
-            "date": "2026-05-29T13:05:00Z",
-            "value": 1505.6600341796875
+            "date": "2026-06-05T13:07:00Z",
+            "value": 1552.75
           },
           {
-            "date": "2026-05-29T15:42:00Z",
-            "value": 1503.47998046875
+            "date": "2026-06-05T15:45:00Z",
+            "value": 1555.18994140625
           },
           {
-            "date": "2026-05-29T18:19:00Z",
-            "value": 1504.4000244140625
+            "date": "2026-06-05T18:23:00Z",
+            "value": 1558.5999755859375
           },
           {
-            "date": "2026-05-29T20:56:00Z",
-            "value": 1507.1800537109375
+            "date": "2026-06-05T22:02:00Z",
+            "value": 1558.8399658203125
           },
           {
-            "date": "2026-05-29T21:32:00Z",
-            "value": 1507.1300048828125
+            "date": "2026-06-05T22:59:00Z",
+            "value": 1558.8399658203125
           }
         ],
-        "refresh_delta": 13.340000000000146,
-        "refresh_delta_percent": 0.8930304795185499
+        "refresh_delta": 25.87999999999988,
+        "refresh_delta_percent": 1.6882371359983224
       },
       {
         "key": "usd_jpy",
         "label": "달러/엔",
-        "value": "159.25",
+        "value": "160.29",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "watch",
-        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-05-30T04:21:11Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-05-30T04:21:11Z",
+        "freshness": "stale",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-05T20:59:40Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-05T20:59:40Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "JPY",
-        "source_url": "https://finance.yahoo.com/quote/JPY%3DX",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/JPY%3DX?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-05-29T01:45:00Z",
-            "value": 159.2949981689453
+            "date": "2026-06-05T01:45:00Z",
+            "value": 159.94400024414062
           },
           {
-            "date": "2026-05-29T04:30:00Z",
-            "value": 159.33900451660156
+            "date": "2026-06-05T04:30:00Z",
+            "value": 159.9600067138672
           },
           {
-            "date": "2026-05-29T07:15:00Z",
-            "value": 159.23599243164062
+            "date": "2026-06-05T07:15:00Z",
+            "value": 159.9219970703125
           },
           {
-            "date": "2026-05-29T10:00:00Z",
-            "value": 159.2989959716797
+            "date": "2026-06-05T10:00:00Z",
+            "value": 159.927001953125
           },
           {
-            "date": "2026-05-29T12:45:00Z",
-            "value": 159.27200317382812
+            "date": "2026-06-05T12:45:00Z",
+            "value": 160.02999877929688
           },
           {
-            "date": "2026-05-29T15:30:00Z",
-            "value": 159.16000366210938
+            "date": "2026-06-05T15:30:00Z",
+            "value": 160.25
           },
           {
-            "date": "2026-05-29T18:15:00Z",
-            "value": 159.2570037841797
+            "date": "2026-06-05T18:15:00Z",
+            "value": 160.2969970703125
           },
           {
-            "date": "2026-05-29T21:00:00Z",
-            "value": 159.2550048828125
+            "date": "2026-06-05T20:59:00Z",
+            "value": 160.29299926757812
           }
         ],
-        "refresh_delta": 0.03799999999998249,
-        "refresh_delta_percent": 0.023866798143403336
+        "refresh_delta": 0.32900000000000773,
+        "refresh_delta_percent": 0.2056712760371132
       },
       {
         "key": "us_2y",
         "label": "미국 국채 2년",
-        "value": "3.98",
+        "value": "4.17",
         "source": "U.S. Treasury XML feed",
         "freshness": "fresh",
-        "delay_label": "Treasury 2Y 실제값, 2026-05-29까지",
-        "updated_at": "2026-05-29T21:00:00Z",
+        "delay_label": "Treasury 2Y 실제값, 2026-06-05까지",
+        "updated_at": "2026-06-05T21:00:00Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "%",
         "source_url": "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed",
         "points": [
-          {
-            "date": "2026-05-19",
-            "value": 4.13
-          },
-          {
-            "date": "2026-05-20",
-            "value": 4.04
-          },
-          {
-            "date": "2026-05-21",
-            "value": 4.08
-          },
-          {
-            "date": "2026-05-22",
-            "value": 4.13
-          },
-          {
-            "date": "2026-05-26",
-            "value": 4.01
-          },
           {
             "date": "2026-05-27",
             "value": 4.0
@@ -747,6 +695,26 @@
           {
             "date": "2026-05-29",
             "value": 3.98
+          },
+          {
+            "date": "2026-06-01",
+            "value": 4.05
+          },
+          {
+            "date": "2026-06-02",
+            "value": 4.05
+          },
+          {
+            "date": "2026-06-03",
+            "value": 4.08
+          },
+          {
+            "date": "2026-06-04",
+            "value": 4.05
+          },
+          {
+            "date": "2026-06-05",
+            "value": 4.17
           }
         ],
         "next_event": {
@@ -759,36 +727,16 @@
       {
         "key": "us_3y",
         "label": "미국 국채 3년",
-        "value": "4.06",
+        "value": "4.22",
         "source": "U.S. Treasury XML feed",
         "freshness": "fresh",
-        "delay_label": "Treasury 3Y 실제값, 2026-05-29까지",
-        "updated_at": "2026-05-29T21:00:00Z",
+        "delay_label": "Treasury 3Y 실제값, 2026-06-05까지",
+        "updated_at": "2026-06-05T21:00:00Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "%",
         "source_url": "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed",
         "points": [
-          {
-            "date": "2026-05-19",
-            "value": 4.2
-          },
-          {
-            "date": "2026-05-20",
-            "value": 4.11
-          },
-          {
-            "date": "2026-05-21",
-            "value": 4.13
-          },
-          {
-            "date": "2026-05-22",
-            "value": 4.18
-          },
-          {
-            "date": "2026-05-26",
-            "value": 4.1
-          },
           {
             "date": "2026-05-27",
             "value": 4.09
@@ -800,6 +748,26 @@
           {
             "date": "2026-05-29",
             "value": 4.06
+          },
+          {
+            "date": "2026-06-01",
+            "value": 4.09
+          },
+          {
+            "date": "2026-06-02",
+            "value": 4.09
+          },
+          {
+            "date": "2026-06-03",
+            "value": 4.14
+          },
+          {
+            "date": "2026-06-04",
+            "value": 4.1
+          },
+          {
+            "date": "2026-06-05",
+            "value": 4.22
           }
         ],
         "next_event": {
@@ -812,36 +780,16 @@
       {
         "key": "us_5y",
         "label": "미국 국채 5년",
-        "value": "4.13",
+        "value": "4.29",
         "source": "U.S. Treasury XML feed",
         "freshness": "fresh",
-        "delay_label": "Treasury 5Y 실제값, 2026-05-29까지",
-        "updated_at": "2026-05-29T21:00:00Z",
+        "delay_label": "Treasury 5Y 실제값, 2026-06-05까지",
+        "updated_at": "2026-06-05T21:00:00Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "%",
         "source_url": "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed",
         "points": [
-          {
-            "date": "2026-05-19",
-            "value": 4.32
-          },
-          {
-            "date": "2026-05-20",
-            "value": 4.22
-          },
-          {
-            "date": "2026-05-21",
-            "value": 4.25
-          },
-          {
-            "date": "2026-05-22",
-            "value": 4.27
-          },
-          {
-            "date": "2026-05-26",
-            "value": 4.19
-          },
           {
             "date": "2026-05-27",
             "value": 4.17
@@ -853,6 +801,26 @@
           {
             "date": "2026-05-29",
             "value": 4.13
+          },
+          {
+            "date": "2026-06-01",
+            "value": 4.18
+          },
+          {
+            "date": "2026-06-02",
+            "value": 4.17
+          },
+          {
+            "date": "2026-06-03",
+            "value": 4.21
+          },
+          {
+            "date": "2026-06-04",
+            "value": 4.18
+          },
+          {
+            "date": "2026-06-05",
+            "value": 4.29
           }
         ],
         "next_event": {
@@ -865,36 +833,16 @@
       {
         "key": "us_10y",
         "label": "미국 국채 10년",
-        "value": "4.45",
+        "value": "4.55",
         "source": "U.S. Treasury XML feed",
         "freshness": "fresh",
-        "delay_label": "Treasury 10Y 실제값, 2026-05-29까지",
-        "updated_at": "2026-05-29T21:00:00Z",
+        "delay_label": "Treasury 10Y 실제값, 2026-06-05까지",
+        "updated_at": "2026-06-05T21:00:00Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "%",
         "source_url": "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed",
         "points": [
-          {
-            "date": "2026-05-19",
-            "value": 4.67
-          },
-          {
-            "date": "2026-05-20",
-            "value": 4.57
-          },
-          {
-            "date": "2026-05-21",
-            "value": 4.57
-          },
-          {
-            "date": "2026-05-22",
-            "value": 4.56
-          },
-          {
-            "date": "2026-05-26",
-            "value": 4.5
-          },
           {
             "date": "2026-05-27",
             "value": 4.48
@@ -906,6 +854,26 @@
           {
             "date": "2026-05-29",
             "value": 4.45
+          },
+          {
+            "date": "2026-06-01",
+            "value": 4.47
+          },
+          {
+            "date": "2026-06-02",
+            "value": 4.46
+          },
+          {
+            "date": "2026-06-03",
+            "value": 4.49
+          },
+          {
+            "date": "2026-06-04",
+            "value": 4.47
+          },
+          {
+            "date": "2026-06-05",
+            "value": 4.55
           }
         ],
         "next_event": {
@@ -921,33 +889,13 @@
         "value": "0.727",
         "source": "BoJ Time-Series Data Search",
         "freshness": "fresh",
-        "delay_label": "일본은행 FM01/STRDCLUCON 일일 평균 실제값, 2026-05-27까지; API 최종 갱신 2026-05-29.",
-        "updated_at": "2026-05-29T21:00:00Z",
+        "delay_label": "일본은행 FM01/STRDCLUCON 일일 평균 실제값, 2026-06-03까지; API 최종 갱신 2026-06-05.",
+        "updated_at": "2026-06-05T21:00:00Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "%",
-        "source_url": "https://www.stat-search.boj.or.jp/api/v1/getDataCode?format=csv&lang=en&db=FM01&code=STRDCLUCON&startDate=202605&endDate=202605",
+        "source_url": "https://www.stat-search.boj.or.jp/api/v1/getDataCode?format=csv&lang=en&db=FM01&code=STRDCLUCON&startDate=202606&endDate=202606",
         "points": [
-          {
-            "date": "2026-05-18",
-            "value": 0.728
-          },
-          {
-            "date": "2026-05-19",
-            "value": 0.728
-          },
-          {
-            "date": "2026-05-20",
-            "value": 0.728
-          },
-          {
-            "date": "2026-05-21",
-            "value": 0.727
-          },
-          {
-            "date": "2026-05-22",
-            "value": 0.726
-          },
           {
             "date": "2026-05-25",
             "value": 0.727
@@ -958,6 +906,26 @@
           },
           {
             "date": "2026-05-27",
+            "value": 0.727
+          },
+          {
+            "date": "2026-05-28",
+            "value": 0.727
+          },
+          {
+            "date": "2026-05-29",
+            "value": 0.727
+          },
+          {
+            "date": "2026-06-01",
+            "value": 0.726
+          },
+          {
+            "date": "2026-06-02",
+            "value": 0.727
+          },
+          {
+            "date": "2026-06-03",
             "value": 0.727
           }
         ],
@@ -971,31 +939,31 @@
       {
         "key": "japan_2y",
         "label": "일본 국채 2년",
-        "value": "1.4",
+        "value": "1.39",
         "source": "Japan MOF JGB yield curve",
         "freshness": "watch",
-        "delay_label": "MOF 2Y JGB 실제값, 2026-04-30까지",
-        "updated_at": "2026-04-30T21:00:00Z",
+        "delay_label": "MOF 2Y JGB 실제값, 2026-05-29까지",
+        "updated_at": "2026-05-29T21:00:00Z",
         "coverage_status": "active",
         "refresh_seconds": 2592000,
         "unit": "%",
         "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
         "points": [
           {
-            "date": "2026-04-24",
-            "value": 1.363
+            "date": "2026-05-26",
+            "value": 1.421
           },
           {
-            "date": "2026-04-27",
-            "value": 1.375
+            "date": "2026-05-27",
+            "value": 1.399
           },
           {
-            "date": "2026-04-28",
-            "value": 1.389
+            "date": "2026-05-28",
+            "value": 1.366
           },
           {
-            "date": "2026-04-30",
-            "value": 1.402
+            "date": "2026-05-29",
+            "value": 1.393
           }
         ],
         "next_event": {
@@ -1008,31 +976,31 @@
       {
         "key": "japan_5y",
         "label": "일본 국채 5년",
-        "value": "1.9",
+        "value": "1.92",
         "source": "Japan MOF JGB yield curve",
         "freshness": "watch",
-        "delay_label": "MOF 5Y JGB 실제값, 2026-04-30까지",
-        "updated_at": "2026-04-30T21:00:00Z",
+        "delay_label": "MOF 5Y JGB 실제값, 2026-05-29까지",
+        "updated_at": "2026-05-29T21:00:00Z",
         "coverage_status": "active",
         "refresh_seconds": 2592000,
         "unit": "%",
         "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
         "points": [
           {
-            "date": "2026-04-24",
-            "value": 1.842
+            "date": "2026-05-26",
+            "value": 1.995
           },
           {
-            "date": "2026-04-27",
-            "value": 1.862
+            "date": "2026-05-27",
+            "value": 1.963
           },
           {
-            "date": "2026-04-28",
-            "value": 1.868
+            "date": "2026-05-28",
+            "value": 1.94
           },
           {
-            "date": "2026-04-30",
-            "value": 1.903
+            "date": "2026-05-29",
+            "value": 1.919
           }
         ],
         "next_event": {
@@ -1045,31 +1013,31 @@
       {
         "key": "japan_10y",
         "label": "일본 국채 10년",
-        "value": "2.52",
+        "value": "2.66",
         "source": "Japan MOF JGB yield curve",
         "freshness": "watch",
-        "delay_label": "MOF 10Y JGB 실제값, 2026-04-30까지",
-        "updated_at": "2026-04-30T21:00:00Z",
+        "delay_label": "MOF 10Y JGB 실제값, 2026-05-29까지",
+        "updated_at": "2026-05-29T21:00:00Z",
         "coverage_status": "active",
         "refresh_seconds": 2592000,
         "unit": "%",
         "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
         "points": [
           {
-            "date": "2026-04-24",
-            "value": 2.443
+            "date": "2026-05-26",
+            "value": 2.713
           },
           {
-            "date": "2026-04-27",
-            "value": 2.477
+            "date": "2026-05-27",
+            "value": 2.687
           },
           {
-            "date": "2026-04-28",
-            "value": 2.468
+            "date": "2026-05-28",
+            "value": 2.692
           },
           {
-            "date": "2026-04-30",
-            "value": 2.52
+            "date": "2026-05-29",
+            "value": 2.657
           }
         ],
         "next_event": {
@@ -1082,31 +1050,31 @@
       {
         "key": "pentagon_pizza_index",
         "label": "펜타곤 피자 지수",
-        "value": "40.1",
+        "value": "7.6",
         "source": "Pentagon.Pizza",
         "freshness": "fresh",
-        "delay_label": "Pentagon.Pizza 모니터링 지점 18곳 평균 혼잡도; 이상치 0건, 2026-05-30까지",
-        "updated_at": "2026-05-30T15:35:36.046Z",
+        "delay_label": "Pentagon.Pizza 모니터링 지점 18곳 평균 혼잡도; 이상치 2건, 2026-06-07까지",
+        "updated_at": "2026-06-07T11:08:51.445Z",
         "coverage_status": "active",
         "refresh_seconds": 300,
         "unit": "/100",
         "source_url": "https://pentagon.pizza/",
         "points": [
           {
-            "date": "2026-05-30T14:50:31Z",
-            "value": 30.0
+            "date": "2026-06-07T10:23:47Z",
+            "value": 0.0
           },
           {
-            "date": "2026-05-30T15:05:31Z",
-            "value": 38.0
+            "date": "2026-06-07T10:38:47Z",
+            "value": 5.0
           },
           {
-            "date": "2026-05-30T15:20:31Z",
-            "value": 42.0
+            "date": "2026-06-07T10:53:47Z",
+            "value": 10.0
           },
           {
-            "date": "2026-05-30T15:35:31Z",
-            "value": 53.0
+            "date": "2026-06-07T11:08:47Z",
+            "value": 23.0
           }
         ]
       }

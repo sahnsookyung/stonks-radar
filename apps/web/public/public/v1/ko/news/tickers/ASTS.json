@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-30T15:35:31Z",
-  "stale_after": "2026-05-31T03:35:31Z",
-  "hard_expires_at": "2026-06-06T15:35:31Z",
+  "generated_at": "2026-06-07T11:08:47Z",
+  "stale_after": "2026-06-07T23:08:47Z",
+  "hard_expires_at": "2026-06-14T11:08:47Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_ASTS",
-  "content_hash": "sha256:6c8bc12e5af705a56068753637317f40bb65b6beb4d435e8ef46741ff9a08e9a",
+  "content_hash": "sha256:b83b064a6eac1bf493a22460bee77e9c46bb887c8d197d15afe77b4c45641fe1",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "ASTS",
     "name": "AST 스페이스모바일",
-    "generated_label": "2026-05-30T15:35:31Z",
+    "generated_label": "2026-06-07T11:08:47Z",
     "summary": "ASTS에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
     "events": []
   },

@@ -12,6 +12,7 @@ import { MapPage } from "./pages/MapPage";
 
 const CalendarPage = lazyRoute(() => import("./pages/CalendarPage"), "CalendarPage");
 const MarketPulsePage = lazyRoute(() => import("./pages/MarketPulsePage"), "MarketPulsePage");
+const YieldCurvesPage = lazyRoute(() => import("./pages/YieldCurvesPage"), "YieldCurvesPage");
 const CentralBanksPage = lazyRoute(async () => {
   const module = await import("./pages/CalendarPage");
   return { default: () => <module.CalendarPage centralBanksOnly /> };
@@ -83,6 +84,12 @@ const marketPulseRoute = createRoute({
   getParentRoute: () => localeRoute,
   path: "market-pulse",
   component: MarketPulsePage
+});
+
+const yieldCurvesRoute = createRoute({
+  getParentRoute: () => localeRoute,
+  path: "yield-curves",
+  component: YieldCurvesPage
 });
 
 const centralBanksRoute = createRoute({
@@ -388,6 +395,7 @@ const routeTree = rootRoute.addChildren([
     mapRoute,
     calendarRoute,
     marketPulseRoute,
+    yieldCurvesRoute,
     centralBanksRoute,
     portfolioRoute,
     portfolioGlossaryRoute,

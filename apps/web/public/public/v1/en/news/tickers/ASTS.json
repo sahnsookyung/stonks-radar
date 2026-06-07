@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-30T15:35:31Z",
-  "stale_after": "2026-05-31T03:35:31Z",
-  "hard_expires_at": "2026-06-06T15:35:31Z",
+  "generated_at": "2026-06-07T11:08:47Z",
+  "stale_after": "2026-06-07T23:08:47Z",
+  "hard_expires_at": "2026-06-14T11:08:47Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_ASTS",
-  "content_hash": "sha256:b7f9b4382fec99a7fbc81e061ec6f2447f58b3e841bdbc829a4f02ad829ecf4d",
+  "content_hash": "sha256:c2aa0e5f4721a3d8b874925f07dad647580576f2d5802f16e851238f27a2f73b",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "ASTS",
     "name": "AST SpaceMobile, Inc.",
-    "generated_label": "2026-05-30T15:35:31Z",
+    "generated_label": "2026-06-07T11:08:47Z",
     "summary": "No approved news events are currently linked to ASTS.",
     "events": []
   },

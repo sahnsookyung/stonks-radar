@@ -29,6 +29,7 @@ from frw_api.services.market_history_store import (
     _staging_metadata,
     expected_market_sessions,
     load_stored_market_history,
+    mark_market_history_refresh_failed,
     market_history_calculation_readiness,
     require_calculation_ready_market_history,
     store_market_history_series,
@@ -80,9 +81,10 @@ def test_market_history_staging_metadata_excludes_price_payloads():
 
 
 class _Result:
-    def __init__(self, value=None, rows=None):
+    def __init__(self, value=None, rows=None, rowcount=0):
         self.value = value
         self.rows = rows or []
+        self.rowcount = rowcount
 
     def scalar_one_or_none(self):
         return self.value
@@ -101,20 +103,40 @@ class _Result:
 
 
 class _StoredHistoryDb:
-    def __init__(self, rows):
+    def __init__(self, rows, current_rows=None):
         self.rows = rows
+        self.current_rows = current_rows
 
     def execute(self, statement, params=None):
         sql = str(statement)
         params = params or {}
         if "to_regclass" in sql:
             return _Result(params["table_name"])
+        if "from market_data_snapshot_current" in sql:
+            if self.current_rows is None:
+                raise AssertionError(sql)
+            return _Result(rows=self.current_rows)
         if "from market_price_bar bar" in sql:
             return _Result(rows=self.rows)
         raise AssertionError(sql)
 
     def rollback(self):
         return None
+
+
+class _CurrentSnapshotUpdateDb:
+    def __init__(self):
+        self.update_params = None
+
+    def execute(self, statement, params=None):
+        sql = str(statement)
+        params = params or {}
+        if "to_regclass" in sql:
+            return _Result(params["table_name"])
+        if "update market_data_snapshot_current" in sql:
+            self.update_params = dict(params)
+            return _Result(rowcount=2)
+        raise AssertionError(sql)
 
 
 def _stored_row(
@@ -154,6 +176,22 @@ def _stored_row(
         "snapshot_quality_state": "valid",
         "snapshot_candidate_id": 123,
     }
+
+
+def test_mark_market_history_refresh_failed_marks_current_snapshots_only():
+    db = _CurrentSnapshotUpdateDb()
+
+    updated = mark_market_history_refresh_failed(
+        db,
+        symbols=["aapl", "AAPL", "MSFT"],
+        provider_key="twelve_data",
+    )
+
+    assert updated == 2
+    assert db.update_params["symbols"] == ("AAPL", "MSFT")
+    assert db.update_params["provider_key"] == "twelve_data"
+    assert db.update_params["endpoint_key"] == "daily_prices"
+    assert db.update_params["window_key"] == "rolling_3y"
 
 
 def test_load_stored_market_history_surfaces_mixed_snapshot_coherence():
@@ -237,6 +275,93 @@ def test_market_history_calculation_readiness_rejects_mixed_snapshots():
     assert readiness.ready is False
     assert readiness.reason == "market_history_mixed_snapshots"
     assert readiness.snapshot_id is None
+
+
+def test_market_history_readiness_allows_current_per_symbol_snapshots():
+    stored = load_stored_market_history(
+        _StoredHistoryDb(
+            [
+                _stored_row(date(2026, 1, 2), snapshot_id="snapshot-a", close=100.0, symbol="AAPL"),
+                _stored_row(date(2026, 1, 5), snapshot_id="snapshot-a", close=101.0, symbol="AAPL"),
+                _stored_row(date(2026, 1, 2), snapshot_id="snapshot-b", close=200.0, symbol="MSFT"),
+                _stored_row(date(2026, 1, 5), snapshot_id="snapshot-b", close=202.0, symbol="MSFT"),
+            ],
+            current_rows=[
+                {
+                    "symbol": "AAPL",
+                    "provider_key": "twelve_data",
+                    "snapshot_id": "snapshot-a",
+                    "previous_snapshot_id": None,
+                    "requested_start": date(2023, 1, 5),
+                    "requested_end": date(2026, 1, 5),
+                    "price_start": date(2023, 1, 5),
+                    "complete_through": date(2026, 1, 5),
+                    "source_observed_at": datetime(2026, 1, 6, tzinfo=timezone.utc),
+                    "hard_expires_at": datetime(2026, 1, 9, tzinfo=timezone.utc),
+                    "staleness_state": "active",
+                    "calculation_eligible": True,
+                    "source_policy_digest": "policy",
+                    "content_hash": "hash-a",
+                    "updated_at": datetime(2026, 1, 6, tzinfo=timezone.utc),
+                },
+                {
+                    "symbol": "MSFT",
+                    "provider_key": "twelve_data",
+                    "snapshot_id": "snapshot-b",
+                    "previous_snapshot_id": None,
+                    "requested_start": date(2023, 1, 5),
+                    "requested_end": date(2026, 1, 5),
+                    "price_start": date(2023, 1, 5),
+                    "complete_through": date(2026, 1, 5),
+                    "source_observed_at": datetime(2026, 1, 6, tzinfo=timezone.utc),
+                    "hard_expires_at": datetime(2026, 1, 9, tzinfo=timezone.utc),
+                    "staleness_state": "active",
+                    "calculation_eligible": True,
+                    "source_policy_digest": "policy",
+                    "content_hash": "hash-b",
+                    "updated_at": datetime(2026, 1, 6, tzinfo=timezone.utc),
+                },
+            ],
+        ),
+        symbols=["AAPL", "MSFT"],
+        start=date(2026, 1, 2),
+        end=date(2026, 1, 5),
+        provider_order=["twelve_data"],
+        display_mode="private",
+        public_display_allowlist=set(),
+    )
+
+    assert stored is not None
+    assert stored.coherence_status == "current_snapshots"
+    assert stored.snapshot_ids == ["snapshot-a", "snapshot-b"]
+    readiness = market_history_calculation_readiness(
+        stored,
+        symbols=["AAPL", "MSFT"],
+        start=date(2026, 1, 2),
+        end=date(2026, 1, 5),
+    )
+    assert readiness.ready is True
+    assert readiness.reason is None
+
+
+def test_current_snapshot_table_blocks_stale_symbol_fallback():
+    stored = load_stored_market_history(
+        _StoredHistoryDb(
+            [
+                _stored_row(date(2026, 1, 2), snapshot_id="old-aapl", close=100.0, symbol="AAPL"),
+                _stored_row(date(2026, 1, 5), snapshot_id="old-aapl", close=101.0, symbol="AAPL"),
+            ],
+            current_rows=[],
+        ),
+        symbols=["AAPL"],
+        start=date(2026, 1, 2),
+        end=date(2026, 1, 5),
+        provider_order=["twelve_data"],
+        display_mode="private",
+        public_display_allowlist=set(),
+    )
+
+    assert stored is None
 
 
 def test_require_calculation_ready_market_history_raises_for_mixed_snapshots():
@@ -486,6 +611,55 @@ async def test_fetch_market_history_uses_twelve_data(monkeypatch):
 
     assert payload["provider"] == "twelve_data"
     assert payload["series"][0]["symbol"] == "AAPL"
+    assert payload["series"][0]["points"][1]["close"] == 102.0
+
+
+@pytest.mark.asyncio
+async def test_private_yahoo_admin_fetch_uses_chart_endpoint(monkeypatch):
+    settings = get_settings()
+    monkeypatch.setattr(settings, "market_data_display_mode", "private")
+    monkeypatch.setattr(settings, "market_data_provider_order", "yahoo_admin")
+    monkeypatch.setattr(settings, "yahoo_admin_enabled", True)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "query1.finance.yahoo.com"
+        assert request.url.path == "/v8/finance/chart/AAPL"
+        return httpx.Response(
+            200,
+            json={
+                "chart": {
+                    "result": [
+                        {
+                            "timestamp": [1767398400, 1767657600],
+                            "indicators": {
+                                "quote": [
+                                    {
+                                        "open": [99.0, 101.0],
+                                        "high": [101.0, 103.0],
+                                        "low": [98.0, 100.0],
+                                        "close": [100.0, 102.0],
+                                        "volume": [1000, 1100],
+                                    }
+                                ],
+                                "adjclose": [{"adjclose": [100.0, 102.0]}],
+                            },
+                        }
+                    ],
+                    "error": None,
+                }
+            },
+        )
+
+    payload = await fetch_market_history(
+        symbols=["AAPL"],
+        start=date(2026, 1, 1),
+        end=date(2026, 1, 31),
+        transport=httpx.MockTransport(handler),
+    )
+
+    assert payload["provider"] == "yahoo_admin"
+    assert payload["display_mode"] == "private"
+    assert payload["series"][0]["points"][0]["date"] == "2026-01-03"
     assert payload["series"][0]["points"][1]["close"] == 102.0
 
 

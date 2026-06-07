@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { AlertTriangle, Database, RefreshCw } from "lucide-react";
-import { useState } from "react";
-import { apiGet, apiPost } from "../lib/api";
+import { useEffect, useState } from "react";
+import { apiGet, apiPost, syncCsrfTokenFromCookie } from "../lib/api";
 import { featureGates, usageQuotas } from "../lib/portfolioAtlas";
 
 interface AdminDashboardPayload {
@@ -87,11 +87,14 @@ interface AdminInstrumentReviewPayload {
 }
 
 export function AdminDashboard() {
-  const csrf = sessionStorage.getItem("frw_csrf") ?? undefined;
+  const csrf = syncCsrfTokenFromCookie() ?? undefined;
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const section = adminSectionFromPath(pathname);
   const [message, setMessage] = useState<string | null>(null);
   const [instrumentQuery, setInstrumentQuery] = useState("AAPL");
+  useEffect(() => {
+    syncCsrfTokenFromCookie();
+  }, []);
   const query = useQuery({
     queryKey: ["admin-dashboard"],
     queryFn: () => apiGet<AdminDashboardPayload>("/api/admin/dashboard")

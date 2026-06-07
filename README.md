@@ -39,6 +39,8 @@ The production compose path intentionally exposes only Caddy on `80/443`; use
 The app runs with seeded snapshots without provider credentials. The following are needed for live ingestion, private/admin production operation, or publication:
 
 - `ADMIN_BOOTSTRAP_PASSWORD`, `ADMIN_TOTP_SECRET`, `SESSION_SECRET`, `PASSWORD_PEPPER`
+- Google admin OAuth, optional but preferred for private/admin portfolio data: `GOOGLE_OAUTH_ADMIN_ENABLED`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_OAUTH_ALLOWED_EMAILS` and/or `GOOGLE_OAUTH_ALLOWED_DOMAINS`
+- Private Yahoo admin mode, disabled by default and never used for public snapshots: `YAHOO_ADMIN_ENABLED`
 - provider keys: `FRED_API_KEY`, `BLS_API_KEY`, `EIA_API_KEY`, FINRA OAuth credentials (`FINRA_API_CLIENT_ID` and `FINRA_API_CLIENT_SECRET`, or legacy `FINRA_API_TOKEN`), plus optional market-data and LLM keys
 - `SEC_USER_AGENT` with a real contact
 - Cloudflare Terraform requires `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`, and the OCI origin IPv4; object storage is not required

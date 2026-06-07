@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-05-30T15:35:31Z",
-  "stale_after": "2026-05-31T03:35:31Z",
-  "hard_expires_at": "2026-06-06T15:35:31Z",
+  "generated_at": "2026-06-07T11:08:47Z",
+  "stale_after": "2026-06-07T23:08:47Z",
+  "hard_expires_at": "2026-06-14T11:08:47Z",
   "object_type": "news_region",
   "object_key": "news_region_BRA",
-  "content_hash": "sha256:2025d90e7e2db209d9424d77a7133a8f6b87bf557b2573dbecced65e8814ce15",
+  "content_hash": "sha256:be780b2e1b4c4ae898536ea95f1a4e1a6cebe637fe54ff4a7f307fbc47925d70",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "BRA",
     "name": "브라질",
-    "generated_label": "2026-05-30T15:35:31Z",
+    "generated_label": "2026-06-07T11:08:47Z",
     "regional_brief": "브라질 관련 승인 뉴스 이벤트 3건이 있으며 발생지, 영향 지역, 시장 지역 라벨을 분리합니다.",
     "events": [
       {
@@ -121,9 +121,9 @@
         "title": "에너지 공급 리스크 워치가 해상 요충지, 재고, 인플레이션 민감 시장을 연결",
         "summary": "공식 에너지 데이터와 검토된 지정학 맥락을 미국, 유럽, 중국, 한국, 일본, 브라질에 영향을 줄 수 있는 공급 리스크 이벤트로 묶습니다.",
         "event_type": "geopolitical_supply_risk",
-        "first_seen_at": "2026-05-28T15:35:31Z",
-        "last_seen_at": "2026-05-30T15:35:31Z",
-        "published_at": "2026-05-30T15:35:31Z",
+        "first_seen_at": "2026-06-05T11:08:47Z",
+        "last_seen_at": "2026-06-07T11:08:47Z",
+        "published_at": "2026-06-07T11:08:47Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.72,
@@ -194,7 +194,7 @@
             "source_key": "eia",
             "policy_version": 1,
             "title": "주간 석유 현황 보고서",
-            "published_at": "2026-05-29T21:35:31Z",
+            "published_at": "2026-06-06T17:08:47Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -204,7 +204,7 @@
             "source_key": "iea",
             "policy_version": 1,
             "title": "석유 시장 보고서",
-            "published_at": "2026-05-29T21:35:31Z",
+            "published_at": "2026-06-06T17:08:47Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           },
@@ -214,7 +214,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "공식 에너지 데이터 맥락",
-            "published_at": "2026-05-29T21:35:31Z",
+            "published_at": "2026-06-06T17:08:47Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }
@@ -225,9 +225,9 @@
         "title": "공중보건 경보 모니터링이 브라질, 미국, 유럽, 아시아 여행 민감 시장을 포괄",
         "summary": "공식 공중보건 피드는 금융 뉴스와 별도로 분류되어 시장 맥락 리스크로만 표시됩니다.",
         "event_type": "public_health_alert",
-        "first_seen_at": "2026-05-28T15:35:31Z",
-        "last_seen_at": "2026-05-30T11:35:31Z",
-        "published_at": "2026-05-30T11:35:31Z",
+        "first_seen_at": "2026-06-05T11:08:47Z",
+        "last_seen_at": "2026-06-07T07:08:47Z",
+        "published_at": "2026-06-07T07:08:47Z",
         "freshness": "watch",
         "severity": "medium",
         "confidence": 0.74,
@@ -287,7 +287,7 @@
             "source_key": "who",
             "policy_version": 1,
             "title": "질병 발생 뉴스",
-            "published_at": "2026-05-29T21:35:31Z",
+            "published_at": "2026-06-06T17:08:47Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -297,7 +297,7 @@
             "source_key": "cdc",
             "policy_version": 1,
             "title": "여행 건강 고지",
-            "published_at": "2026-05-29T21:35:31Z",
+            "published_at": "2026-06-06T17:08:47Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": false
           }
@@ -308,9 +308,9 @@
         "title": "FOMC, 일본은행, 한국은행, ECB, 브라질 COPOM 결정 일정 리스크",
         "summary": "공식 일정을 하나의 정책 이벤트 워치로 묶어 앱을 벗어나지 않고 금리 결정일을 확인할 수 있습니다.",
         "event_type": "central_bank_calendar",
-        "first_seen_at": "2026-05-28T15:35:31Z",
-        "last_seen_at": "2026-05-30T15:35:31Z",
-        "published_at": "2026-05-30T15:35:31Z",
+        "first_seen_at": "2026-06-05T11:08:47Z",
+        "last_seen_at": "2026-06-07T11:08:47Z",
+        "published_at": "2026-06-07T11:08:47Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.86,
@@ -390,7 +390,7 @@
             "source_key": "federal_reserve",
             "policy_version": 1,
             "title": "FOMC 일정",
-            "published_at": "2026-05-29T21:35:31Z",
+            "published_at": "2026-06-06T17:08:47Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -400,7 +400,7 @@
             "source_key": "bank_of_korea",
             "policy_version": 1,
             "title": "통화정책 일정",
-            "published_at": "2026-05-29T21:35:31Z",
+            "published_at": "2026-06-06T17:08:47Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -410,7 +410,7 @@
             "source_key": "bank_of_japan",
             "policy_version": 1,
             "title": "통화정책회의",
-            "published_at": "2026-05-29T21:35:31Z",
+            "published_at": "2026-06-06T17:08:47Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -420,7 +420,7 @@
             "source_key": "ecb",
             "policy_version": 1,
             "title": "ECB 정책위원회 일정",
-            "published_at": "2026-05-29T21:35:31Z",
+            "published_at": "2026-06-06T17:08:47Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -430,7 +430,7 @@
             "source_key": "bcb",
             "policy_version": 1,
             "title": "COPOM 일정",
-            "published_at": "2026-05-29T21:35:31Z",
+            "published_at": "2026-06-06T17:08:47Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           }

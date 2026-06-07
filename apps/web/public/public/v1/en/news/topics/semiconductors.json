@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-30T15:35:31Z",
-  "stale_after": "2026-05-31T03:35:31Z",
-  "hard_expires_at": "2026-06-06T15:35:31Z",
+  "generated_at": "2026-06-07T11:08:47Z",
+  "stale_after": "2026-06-07T23:08:47Z",
+  "hard_expires_at": "2026-06-14T11:08:47Z",
   "object_type": "news_topic",
   "object_key": "news_topic_semiconductors",
-  "content_hash": "sha256:cb6e2f6de97135e7cfdeeb3b56fbaf7e241355f1b59133d6dda86df4c44b8f63",
+  "content_hash": "sha256:a48de79afc21a0ea0fd0439bc824fb04fb99aeb90b143c128f9c4a61a95b8121",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "semiconductors",
     "label": "Semiconductors",
-    "generated_label": "2026-05-30T15:35:31Z",
+    "generated_label": "2026-06-07T11:08:47Z",
     "topic_brief": "Semiconductors includes 1 approved event cluster(s) built from source-linked public metadata.",
     "events": [
       {
@@ -121,9 +121,9 @@
         "title": "China-origin export-control risk remains elevated for AI-chip supply chains",
         "summary": "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.",
         "event_type": "trade_policy",
-        "first_seen_at": "2026-05-28T15:35:31Z",
-        "last_seen_at": "2026-05-30T15:35:31Z",
-        "published_at": "2026-05-30T15:35:31Z",
+        "first_seen_at": "2026-06-05T11:08:47Z",
+        "last_seen_at": "2026-06-07T11:08:47Z",
+        "published_at": "2026-06-07T11:08:47Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.78,
@@ -220,7 +220,7 @@
             "source_key": "bis",
             "policy_version": 1,
             "title": "Bureau of Industry and Security export controls",
-            "published_at": "2026-05-29T21:35:31Z",
+            "published_at": "2026-06-06T17:08:47Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -230,17 +230,17 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "Issuer filings for affected companies",
-            "published_at": "2026-05-29T21:35:31Z",
+            "published_at": "2026-06-06T17:08:47Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           },
           {
             "label": "Source policy",
-            "url": "https://www.bis.gov/ear",
+            "url": "https://www.bis.gov/regulations/ear/table-of-contents",
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "Export Administration Regulations reference",
-            "published_at": "2026-05-29T21:35:31Z",
+            "published_at": "2026-06-06T17:08:47Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }

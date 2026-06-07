@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time as datetime_time, timedelta, timezone
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import bindparam, text
 from sqlalchemy.orm import Session
@@ -12,6 +13,9 @@ from frw_api.services.job_queue import enqueue_job
 from frw_api.services.market_history_store import expected_market_sessions
 from frw_api.services.news.source_registry import SourceProfile
 from frw_api.services.news.source_registry import enabled_news_sources
+
+US_MARKET_TIMEZONE = ZoneInfo("America/New_York")
+MARKET_HISTORY_WINDOW_KEY = "rolling_3y"
 
 
 def trump_disclosure_job_specs(
@@ -270,53 +274,34 @@ def market_history_job_specs(
     now = now or datetime.now(timezone.utc)
     if now.tzinfo is None:
         now = now.replace(tzinfo=timezone.utc)
-    timestamp = int(now.timestamp())
-    window = timestamp // 86_400
-    window_start = datetime.fromtimestamp(window * 86_400, tz=timezone.utc)
-    stagger_seconds = max(
-        60, int(getattr(settings, "market_data_refresh_stagger_seconds", 3600))
+    session_date = _target_us_market_session(now)
+    anchor = _market_history_session_anchor(session_date, settings)
+    spread_seconds = max(
+        60,
+        int(getattr(settings, "market_data_refresh_spread_minutes", 240)) * 60,
     )
-    daily_repair_days = int(getattr(settings, "market_data_daily_repair_days", 21))
+    window_days = int(getattr(settings, "market_data_snapshot_window_days", 1095))
+    start = session_date - timedelta(days=window_days)
     specs: list[dict[str, Any]] = []
     for symbol in symbols:
-        offset = _stable_offset(symbol, stagger_seconds)
+        offset = _stable_offset(symbol, spread_seconds)
         specs.append(
             {
                 "job_type": "market_data.refresh_history",
-                "idempotency_key": f"market-history:daily:{symbol}:{window}",
+                "idempotency_key": f"market-history:{MARKET_HISTORY_WINDOW_KEY}:{symbol}:{session_date.isoformat()}",
                 "payload": {
                     "symbol": symbol,
-                    "mode": "daily_repair",
-                    "days": daily_repair_days,
+                    "mode": "rolling_3y_snapshot",
+                    "window_key": MARKET_HISTORY_WINDOW_KEY,
+                    "window_days": window_days,
+                    "market_session_date": session_date.isoformat(),
+                    "start": start.isoformat(),
+                    "end": session_date.isoformat(),
                 },
                 "job_group": "market_data",
                 "priority": 65,
                 "provider_key": "market_data",
-                "run_after": window_start + timedelta(seconds=offset),
-            }
-        )
-    # One symbol per day gets a deeper repair, spreading 3-year backfills across the month.
-    backfill_days = int(getattr(settings, "market_data_full_backfill_days", 1095))
-    if backfill_days > daily_repair_days:
-        backfill_symbol = symbols[window % len(symbols)]
-        specs.append(
-            {
-                "job_type": "market_data.refresh_history",
-                "idempotency_key": f"market-history:backfill:{backfill_symbol}:{window}",
-                "payload": {
-                    "symbol": backfill_symbol,
-                    "mode": "rolling_backfill",
-                    "days": backfill_days,
-                },
-                "job_group": "market_data",
-                "priority": 75,
-                "provider_key": "market_data",
-                "run_after": window_start
-                + timedelta(
-                    seconds=_stable_offset(
-                        f"backfill:{backfill_symbol}", stagger_seconds
-                    )
-                ),
+                "run_after": anchor + timedelta(seconds=offset),
             }
         )
     return specs
@@ -502,10 +487,18 @@ def _market_history_gap_specs_from_versions(
     now: datetime,
     settings: Settings,
 ) -> list[dict[str, Any]]:
-    end = now.date()
-    repair_days = int(getattr(settings, "market_data_daily_repair_days", 21))
-    stagger_seconds = max(
-        60, int(getattr(settings, "market_data_refresh_stagger_seconds", 3600))
+    end = _target_us_market_session(now)
+    window_days = int(getattr(settings, "market_data_snapshot_window_days", 1095))
+    repair_days = min(
+        int(getattr(settings, "market_data_daily_repair_days", 21)),
+        window_days,
+    )
+    spread_seconds = max(
+        60,
+        min(
+            int(getattr(settings, "market_data_refresh_spread_minutes", 240)) * 60,
+            3600,
+        ),
     )
     specs: list[dict[str, Any]] = []
     for symbol in symbols:
@@ -523,25 +516,28 @@ def _market_history_gap_specs_from_versions(
         newest_first = sorted(missing, reverse=True)
         latest_missing = newest_first[0]
         earliest_missing = newest_first[-1]
-        window = int(now.timestamp()) // 86_400
+        snapshot_start = latest_missing - timedelta(days=window_days)
+        anchor = _market_history_gap_anchor(latest_missing, now, settings)
         specs.append(
             {
                 "job_type": "market_data.refresh_history",
-                "idempotency_key": f"market-history:gap:{symbol}:{latest_missing.isoformat()}:{window}",
+                "idempotency_key": f"market-history:gap-{MARKET_HISTORY_WINDOW_KEY}:{symbol}:{latest_missing.isoformat()}",
                 "payload": {
                     "symbol": symbol,
-                    "mode": "gap_catchup",
-                    "start": earliest_missing.isoformat(),
+                    "mode": "full_window_catchup",
+                    "window_key": MARKET_HISTORY_WINDOW_KEY,
+                    "window_days": window_days,
+                    "market_session_date": latest_missing.isoformat(),
+                    "start": snapshot_start.isoformat(),
                     "end": latest_missing.isoformat(),
                     "missing_dates": [item.isoformat() for item in newest_first[:20]],
+                    "missing_since": earliest_missing.isoformat(),
                 },
                 "job_group": "market_data",
                 "priority": 55,
                 "provider_key": "market_data",
-                "run_after": now
-                + timedelta(
-                    seconds=_stable_offset(f"gap:{symbol}", min(stagger_seconds, 900))
-                ),
+                "run_after": anchor
+                + timedelta(seconds=_stable_offset(f"gap:{symbol}", spread_seconds)),
             }
         )
     return sorted(
@@ -559,6 +555,70 @@ def _table_available(db: Session, table_name: str) -> bool:
     except Exception:  # noqa: BLE001 - scheduler must keep running against partially migrated databases
         return False
     return row is not None
+
+
+def _target_us_market_session(now: datetime) -> date:
+    local_now = now.astimezone(US_MARKET_TIMEZONE)
+    current = local_now.date()
+    while not expected_market_sessions("AAPL", current, current):
+        current -= timedelta(days=1)
+    return current
+
+
+def _market_history_session_anchor(session_date: date, settings: Settings) -> datetime:
+    close_local = datetime.combine(
+        session_date,
+        _us_market_close_time(session_date),
+        tzinfo=US_MARKET_TIMEZONE,
+    )
+    delay_minutes = int(getattr(settings, "market_data_refresh_after_close_minutes", 45))
+    return (close_local + timedelta(minutes=delay_minutes)).astimezone(timezone.utc)
+
+
+def _market_history_gap_anchor(
+    session_date: date, now: datetime, settings: Settings
+) -> datetime:
+    after_close = _market_history_session_anchor(session_date, settings)
+    if not bool(getattr(settings, "market_data_morning_catchup_enabled", True)):
+        return max(after_close, now)
+    catchup_local = datetime.combine(
+        session_date + timedelta(days=1),
+        _parse_local_time(
+            str(getattr(settings, "market_data_morning_catchup_local_time", "09:00"))
+        ),
+        tzinfo=US_MARKET_TIMEZONE,
+    )
+    return max(after_close, catchup_local.astimezone(timezone.utc), now)
+
+
+def _parse_local_time(value: str) -> datetime_time:
+    try:
+        hour_s, minute_s = value.split(":", 1)
+        return datetime_time(hour=int(hour_s), minute=int(minute_s[:2]))
+    except (TypeError, ValueError):
+        return datetime_time(hour=9, minute=0)
+
+
+def _us_market_close_time(session_date: date) -> datetime_time:
+    if _is_us_market_early_close(session_date):
+        return datetime_time(hour=13, minute=0)
+    return datetime_time(hour=16, minute=0)
+
+
+def _is_us_market_early_close(session_date: date) -> bool:
+    if session_date == _nth_weekday(session_date.year, 11, 3, 4) + timedelta(days=1):
+        return True
+    if session_date.month == 12 and session_date.day == 24 and session_date.weekday() < 5:
+        return True
+    if session_date.month == 7 and session_date.day == 3 and session_date.weekday() < 5:
+        return True
+    return False
+
+
+def _nth_weekday(year: int, month: int, weekday: int, n: int) -> date:
+    current = date(year, month, 1)
+    offset = (weekday - current.weekday()) % 7
+    return current + timedelta(days=offset + (n - 1) * 7)
 
 
 def _stable_offset(key: str, modulo_seconds: int) -> int:

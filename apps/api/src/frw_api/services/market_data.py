@@ -21,6 +21,7 @@ from frw_api.services.provider_limits import (
 )
 from frw_api.services.market_history_store import (
     load_stored_market_history,
+    mark_market_history_refresh_failed,
     market_history_calculation_readiness,
     store_market_history_series,
 )
@@ -95,7 +96,9 @@ async def fetch_market_history(
 
     provider_status = _provider_status()
     provider_order = [
-        item for item in _provider_order() if item in {"twelve_data", "alpha_vantage", "fmp"}
+        item
+        for item in _provider_order()
+        if item in {"twelve_data", "alpha_vantage", "fmp", "yahoo_admin"}
     ]
     stored_payload = _stored_payload(
         db=db,
@@ -219,7 +222,9 @@ async def refresh_market_history(
             f"date range exceeds {settings.market_data_max_history_days} days"
         )
     provider_order = [
-        item for item in _provider_order() if item in {"twelve_data", "alpha_vantage", "fmp"}
+        item
+        for item in _provider_order()
+        if item in {"twelve_data", "alpha_vantage", "fmp", "yahoo_admin"}
     ]
     failures: list[str] = []
     quota_failure: ProviderLimitError | None = None
@@ -265,7 +270,16 @@ async def refresh_market_history(
         failures.append(f"{provider}: one or more symbols returned no usable daily closes")
         non_quota_failure_seen = True
     if quota_failure is not None and not non_quota_failure_seen:
+        mark_market_history_refresh_failed(
+            db,
+            symbols=normalized,
+            provider_key=quota_failure.provider_key,
+        )
         raise quota_failure
+    mark_market_history_refresh_failed(
+        db,
+        symbols=normalized,
+    )
     raise MarketDataUnavailable(
         "No configured market-data provider returned usable historical closes",
         provider_status=_provider_status()
@@ -314,6 +328,8 @@ def _api_key(provider: str) -> str | None:
         return settings.fmp_api_key or (
             settings.market_data_api_key if settings.market_data_provider == "fmp" else None
         )
+    if provider == "yahoo_admin":
+        return "enabled" if settings.yahoo_admin_enabled else None
     return None
 
 
@@ -658,6 +674,8 @@ async def _fetch_symbol(
         points = await _fetch_alpha_vantage(client, key, symbol, start, end, db)
     elif provider == "fmp":
         points = await _fetch_fmp(client, key, symbol, start, end, db)
+    elif provider == "yahoo_admin":
+        points = await _fetch_yahoo_admin(client, symbol, start, end, db)
     else:
         raise ValueError(f"unsupported market-data provider {provider}")
     return {"symbol": symbol, "points": [point.__dict__ for point in points]}
@@ -817,6 +835,95 @@ async def _fetch_fmp(
     )
 
 
+async def _fetch_yahoo_admin(
+    client: httpx.AsyncClient,
+    symbol: str,
+    start: date,
+    end: date,
+    db: Session | None,
+) -> list[HistoryPoint]:
+    settings = get_settings()
+    period1 = int(datetime.combine(start, datetime_time.min, tzinfo=timezone.utc).timestamp())
+    period2 = int(
+        datetime.combine(end + timedelta(days=1), datetime_time.min, tzinfo=timezone.utc).timestamp()
+    )
+    response = await provider_request(
+        client,
+        "GET",
+        f"{settings.yahoo_admin_base_url.rstrip('/')}/v8/finance/chart/{symbol}",
+        provider_key="yahoo_admin",
+        endpoint_key="daily_prices",
+        db=db,
+        idempotency_key=_provider_call_idempotency_key("yahoo_admin", symbol, start, end),
+        params={
+            "period1": period1,
+            "period2": period2,
+            "interval": "1d",
+            "events": "history",
+            "includeAdjustedClose": "true",
+        },
+    )
+    payload = response.json()
+    chart = payload.get("chart") if isinstance(payload, dict) else None
+    if not isinstance(chart, dict) or chart.get("error"):
+        raise ValueError("Yahoo admin chart response did not include usable data")
+    results = chart.get("result")
+    if not isinstance(results, list) or not results:
+        raise ValueError("Yahoo admin chart returned no result rows")
+    result = results[0]
+    if not isinstance(result, dict):
+        raise ValueError("Yahoo admin chart returned malformed result")
+    timestamps = result.get("timestamp")
+    indicators = result.get("indicators")
+    if not isinstance(timestamps, list) or not isinstance(indicators, dict):
+        raise ValueError("Yahoo admin chart returned no daily timestamps")
+    quote_rows = indicators.get("quote")
+    quote = quote_rows[0] if isinstance(quote_rows, list) and quote_rows else {}
+    adj_rows = indicators.get("adjclose")
+    adjusted = adj_rows[0] if isinstance(adj_rows, list) and adj_rows else {}
+    if not isinstance(quote, dict):
+        raise ValueError("Yahoo admin chart returned no quote rows")
+    closes = quote.get("close") if isinstance(quote.get("close"), list) else []
+    opens = quote.get("open") if isinstance(quote.get("open"), list) else []
+    highs = quote.get("high") if isinstance(quote.get("high"), list) else []
+    lows = quote.get("low") if isinstance(quote.get("low"), list) else []
+    volumes = quote.get("volume") if isinstance(quote.get("volume"), list) else []
+    adjusted_closes = (
+        adjusted.get("adjclose")
+        if isinstance(adjusted, dict) and isinstance(adjusted.get("adjclose"), list)
+        else []
+    )
+    rows: list[dict[str, Any]] = []
+    for index, raw_timestamp in enumerate(timestamps):
+        try:
+            row_date = datetime.fromtimestamp(int(raw_timestamp), tz=timezone.utc).date()
+        except (TypeError, ValueError, OSError):
+            continue
+        if row_date < start or row_date > end:
+            continue
+        rows.append(
+            {
+                "date": row_date.isoformat(),
+                "open": opens[index] if index < len(opens) else None,
+                "high": highs[index] if index < len(highs) else None,
+                "low": lows[index] if index < len(lows) else None,
+                "close": closes[index] if index < len(closes) else None,
+                "volume": volumes[index] if index < len(volumes) else None,
+                "adjclose": adjusted_closes[index] if index < len(adjusted_closes) else None,
+            }
+        )
+    return _points_from_rows(
+        rows,
+        date_field="date",
+        close_fields=("adjclose", "close"),
+        adjusted_close_field="adjclose",
+        open_field="open",
+        high_field="high",
+        low_field="low",
+        source_revision=_response_source_revision(response),
+    )
+
+
 def _provider_call_idempotency_key(provider: str, symbol: str, start: date, end: date) -> str:
     return f"market-history:{provider}:{symbol}:{start.isoformat()}:{end.isoformat()}"
 
@@ -932,5 +1039,6 @@ def _source_note(provider: str) -> str:
         "twelve_data": "Primary free-key candidate; daily/weekly/monthly prices are split-adjusted by provider docs.",
         "alpha_vantage": "Secondary free-key candidate; compact daily endpoint avoids premium full-history mode.",
         "fmp": "Tertiary free-key candidate; useful for EOD prices plus fundamentals, constrained by free-call limits.",
+        "yahoo_admin": "Private/admin-only chart history. Disabled by default and excluded from public snapshots.",
     }
     return notes.get(provider, "Configured provider")

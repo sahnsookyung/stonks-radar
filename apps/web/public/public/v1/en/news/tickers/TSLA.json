@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-05-30T15:35:31Z",
-  "stale_after": "2026-05-31T03:35:31Z",
-  "hard_expires_at": "2026-06-06T15:35:31Z",
+  "generated_at": "2026-06-07T11:08:47Z",
+  "stale_after": "2026-06-07T23:08:47Z",
+  "hard_expires_at": "2026-06-14T11:08:47Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_TSLA",
-  "content_hash": "sha256:1761b4f7bd79414d6218739f57589314e0f456dff15c41e3305fd7e74e9b3f90",
+  "content_hash": "sha256:92cd91fe6e319f6b58ff53f0e82166c6dff09bb53da62532b73de6b2b5939efb",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "TSLA",
     "name": "Tesla, Inc.",
-    "generated_label": "2026-05-30T15:35:31Z",
+    "generated_label": "2026-06-07T11:08:47Z",
     "summary": "No approved news events are currently linked to TSLA.",
     "events": []
   },

@@ -112,6 +112,7 @@ async def handle_job(job: dict[str, Any], heartbeat: Callable[[], Awaitable[None
         symbol = payload.get("symbol")
         if not isinstance(symbol, str) or not symbol:
             raise ValueError("market_data.refresh_history requires symbol")
+        settings = get_settings()
         today = datetime.now(timezone.utc).date()
         start_value = payload.get("start")
         end_value = payload.get("end")
@@ -119,8 +120,20 @@ async def handle_job(job: dict[str, Any], heartbeat: Callable[[], Awaitable[None
             start = date.fromisoformat(start_value[:10])
             end = date.fromisoformat(end_value[:10])
         else:
-            days = max(1, int(payload.get("days") or get_settings().market_data_daily_repair_days))
-            end = today
+            session_value = payload.get("market_session_date")
+            end = (
+                date.fromisoformat(session_value[:10])
+                if isinstance(session_value, str) and session_value
+                else today
+            )
+            days = max(
+                1,
+                int(
+                    payload.get("window_days")
+                    or payload.get("days")
+                    or settings.market_data_snapshot_window_days
+                ),
+            )
             start = end - timedelta(days=days)
         with SessionLocal() as db:
             result = await refresh_market_history(symbols=[symbol], start=start, end=end, db=db)

@@ -168,6 +168,61 @@ type InstrumentSearchApiResponse = {
   };
 };
 
+type MarketHistoryCoverageStatus = "idle" | "loading" | "ready" | "partial" | "limited" | "error";
+
+type MarketHistoryCoverageState = {
+  status: MarketHistoryCoverageStatus;
+  requestedSymbols: string[];
+  coveredSymbols: string[];
+  missingSymbols: string[];
+  queuedSymbols: string[];
+  latestPricesBySymbol: Record<string, StoredMarketHistoryPrice>;
+  provider?: string;
+  cache?: string;
+  completeThrough?: string | null;
+  stalenessState?: string | null;
+  calculationEligible?: boolean;
+  sourcePolicy?: string;
+  message: string;
+  warnings: string[];
+};
+
+type StoredMarketHistoryPrice = {
+  close: number;
+  date: string;
+  provider: string;
+  currency?: string;
+  exchange?: string;
+  timezone?: string;
+  calculationEligible: boolean;
+  stalenessState?: string | null;
+};
+
+type MarketHistoryCoverageResponse = {
+  status: string;
+  provider?: string;
+  cache?: string;
+  display_status?: string;
+  data_freshness?: {
+    complete_through?: string | null;
+    staleness_state?: string | null;
+    calculation_eligible?: boolean;
+    staleness_reason?: string;
+  };
+  symbols?: string[];
+  series?: Array<{
+    symbol: string;
+    providers?: string[];
+    points?: Array<{ date?: string; close?: number; adjusted_close?: number; currency?: string; exchange?: string; timezone?: string }>;
+  }>;
+  warnings?: string[];
+};
+
+type AdminAuthState =
+  | { status: "checking" }
+  | { status: "signed_out" }
+  | { status: "signed_in"; email: string; role: string };
+
 const PORTFOLIO_WORKSPACE_STORAGE_VERSION = 1;
 const PORTFOLIO_WORKSPACE_STORAGE_PREFIX = "stonks-radar:portfolio-workspace:";
 const MANUAL_TEXT_MAX_LENGTH = 96;
@@ -218,7 +273,19 @@ export function PortfolioLabPage() {
   const [csvText, setCsvText] = useState("symbol,quantity,price\nAAPL,10,195.40\nVXUS,30,62.10");
   const [csvErrors, setCsvErrors] = useState<string[]>([]);
   const instrumentsCatalog = useMemo(() => [...demoInstruments, ...manualInstruments], [manualInstruments]);
-  const analysis = useMemo(() => analyzePortfolio(portfolio, instrumentsCatalog, assumptions), [portfolio, assumptions, instrumentsCatalog]);
+  const marketHistorySymbols = useMemo(
+    () => marketHistorySymbolsForPortfolio(portfolio, instrumentsCatalog),
+    [instrumentsCatalog, portfolio]
+  );
+  const [marketHistoryCoverage, setMarketHistoryCoverage] = useState<MarketHistoryCoverageState>(() =>
+    emptyMarketHistoryCoverage(marketHistorySymbols)
+  );
+  const [adminAuthState, setAdminAuthState] = useState<AdminAuthState>({ status: "checking" });
+  const calculationInstruments = useMemo(
+    () => applyStoredMarketHistoryPrices(instrumentsCatalog, marketHistoryCoverage),
+    [instrumentsCatalog, marketHistoryCoverage]
+  );
+  const analysis = useMemo(() => analyzePortfolio(portfolio, calculationInstruments, assumptions), [portfolio, assumptions, calculationInstruments]);
   const shouldRunBacktest = section === "backtest";
   const monteCarloPathCount = section === "monte-carlo" ? 5000 : section === "dashboard" || section === "overview" ? 1000 : 0;
   const backtest = useMemo<ReturnType<typeof runBacktest> | null>(
@@ -226,29 +293,29 @@ export function PortfolioLabPage() {
       if (!shouldRunBacktest) return null;
       return runBacktest({
         portfolio,
-        instruments: instrumentsCatalog,
+        instruments: calculationInstruments,
         assumptions,
         analysis,
         years: 10,
         monthlyContribution: portfolio.goal.monthlyContribution
       });
     },
-    [analysis, assumptions, instrumentsCatalog, portfolio, shouldRunBacktest]
+    [analysis, assumptions, calculationInstruments, portfolio, shouldRunBacktest]
   );
   const monteCarlo = useMemo<ReturnType<typeof runMonteCarlo> | null>(
     () => {
       if (!monteCarloPathCount) return null;
-      return runMonteCarlo({ portfolio, instruments: instrumentsCatalog, assumptions, analysis, pathCount: monteCarloPathCount, seed: 20260531 });
+      return runMonteCarlo({ portfolio, instruments: calculationInstruments, assumptions, analysis, pathCount: monteCarloPathCount, seed: 20260531 });
     },
-    [analysis, assumptions, instrumentsCatalog, monteCarloPathCount, portfolio]
+    [analysis, assumptions, calculationInstruments, monteCarloPathCount, portfolio]
   );
   const rebalancePlan = useMemo(
     () => generateContributionRebalancePlan(analysis, portfolio.targetAllocation, portfolio.goal.monthlyContribution, assumptions),
     [analysis, assumptions, portfolio.goal.monthlyContribution, portfolio.targetAllocation]
   );
   const taxImpact = useMemo(
-    () => estimateTaxLotImpact(portfolio.taxLots, instrumentsCatalog, "AAPL", 10, "LOWEST_GAIN_FIRST"),
-    [portfolio.taxLots]
+    () => estimateTaxLotImpact(portfolio.taxLots, calculationInstruments, "AAPL", 10, "LOWEST_GAIN_FIRST"),
+    [calculationInstruments, portfolio.taxLots]
   );
 
   useEffect(() => {
@@ -264,6 +331,95 @@ export function PortfolioLabPage() {
     if (loadedWorkspaceId !== workspacePortfolioId) return;
     savePortfolioWorkspace(workspacePortfolioId, { portfolio, manualInstruments, reviewRequests, assumptions });
   }, [assumptions, loadedWorkspaceId, manualInstruments, portfolio, reviewRequests, workspacePortfolioId]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void (async () => {
+      try {
+        const response = await fetch("/api/auth/me", {
+          credentials: "include",
+          headers: { Accept: "application/json" },
+          signal: controller.signal
+        });
+        if (!response.ok) {
+          setAdminAuthState({ status: "signed_out" });
+          return;
+        }
+        const payload = (await response.json()) as { email?: string; role?: string };
+        if (!payload.email) {
+          setAdminAuthState({ status: "signed_out" });
+          return;
+        }
+        setAdminAuthState({
+          status: "signed_in",
+          email: payload.email,
+          role: payload.role ?? "admin"
+        });
+      } catch (_error) {
+        if (!controller.signal.aborted) {
+          setAdminAuthState({ status: "signed_out" });
+        }
+      }
+    })();
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const symbols = marketHistorySymbols;
+    if (!symbols.length) {
+      setMarketHistoryCoverage(emptyMarketHistoryCoverage(symbols));
+      return;
+    }
+    const controller = new AbortController();
+    const { start, end } = rollingThreeYearHistoryWindow();
+    setMarketHistoryCoverage({
+      status: "loading",
+      requestedSymbols: symbols,
+      coveredSymbols: [],
+      missingSymbols: symbols,
+      queuedSymbols: symbols,
+      latestPricesBySymbol: {},
+      message: "Checking stored public daily-history snapshots...",
+      warnings: []
+    });
+    void (async () => {
+      try {
+        const batches = chunkMarketHistorySymbols(symbols);
+        const payloads: MarketHistoryCoverageResponse[] = [];
+        for (const batch of batches) {
+          const response = await fetch(
+            `/api/public/market/history?symbols=${encodeURIComponent(batch.join(","))}&start=${start}&end=${end}`,
+            {
+              credentials: "include",
+              headers: { Accept: "application/json" },
+              signal: controller.signal
+            }
+          );
+          if (!response.ok) throw new Error(`coverage request failed: ${response.status}`);
+          payloads.push((await response.json()) as MarketHistoryCoverageResponse);
+        }
+        if (!controller.signal.aborted) {
+          setMarketHistoryCoverage(mergeMarketHistoryCoverage(payloads, symbols));
+        }
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setMarketHistoryCoverage({
+          status: "error",
+          requestedSymbols: symbols,
+          coveredSymbols: [],
+          missingSymbols: symbols,
+          queuedSymbols: symbols,
+          latestPricesBySymbol: {},
+          message: "Stored market-history coverage is temporarily unavailable.",
+          warnings: [
+            "Calculations remain limited to the editable portfolio's current/manual prices until stored daily bars are available.",
+            "The public page does not fetch live provider data or spend quota during this check."
+          ]
+        });
+      }
+    })();
+    return () => controller.abort();
+  }, [marketHistorySymbols]);
 
   function updateGoal<K extends keyof Portfolio["goal"]>(key: K, value: Portfolio["goal"][K]) {
     setPortfolio((current) => ({ ...current, goal: { ...current.goal, [key]: value } }));
@@ -491,7 +647,11 @@ export function PortfolioLabPage() {
       <PortfolioHeader portfolio={portfolio} section={section} />
       <PortfolioNav active={section} portfolioId={portfolio.portfolioId} />
       <ComplianceBanner />
-      <PortfolioCoverageBanner analysis={analysis} />
+      <PortfolioCoverageBanner
+        analysis={analysis}
+        marketHistoryCoverage={marketHistoryCoverage}
+        adminAuthState={adminAuthState}
+      />
 
       {section === "onboarding" ? (
         <OnboardingSection csvText={csvText} setCsvText={setCsvText} csvErrors={csvErrors} importCsv={importCsv} />
@@ -499,7 +659,7 @@ export function PortfolioLabPage() {
       {(section === "dashboard" || section === "overview") && monteCarlo ? (
         <EditablePortfolioWorkspace
           portfolio={portfolio}
-          instrumentCatalog={instrumentsCatalog}
+          instrumentCatalog={calculationInstruments}
           analysis={analysis}
           assumptions={assumptions}
           updateGoal={updateGoal}
@@ -522,7 +682,7 @@ export function PortfolioLabPage() {
       {section === "xray" || section === "atlas" ? (
         <AtlasSection
           portfolio={portfolio}
-          instrumentCatalog={instrumentsCatalog}
+          instrumentCatalog={calculationInstruments}
           analysis={analysis}
           updateCashBalance={updateCashBalance}
           updateHoldingQuantity={updateHoldingQuantity}
@@ -538,7 +698,7 @@ export function PortfolioLabPage() {
       {section === "builder" ? (
         <BuilderSection
           portfolio={portfolio}
-          instrumentCatalog={instrumentsCatalog}
+          instrumentCatalog={calculationInstruments}
           analysis={analysis}
           assumptions={assumptions}
           updateGoal={updateGoal}
@@ -557,7 +717,7 @@ export function PortfolioLabPage() {
       {section === "backtest" && backtest ? (
         <EditablePortfolioWorkspace
           portfolio={portfolio}
-          instrumentCatalog={instrumentsCatalog}
+          instrumentCatalog={calculationInstruments}
           analysis={analysis}
           assumptions={assumptions}
           updateGoal={updateGoal}
@@ -579,7 +739,7 @@ export function PortfolioLabPage() {
       {section === "monte-carlo" && monteCarlo ? (
         <EditablePortfolioWorkspace
           portfolio={portfolio}
-          instrumentCatalog={instrumentsCatalog}
+          instrumentCatalog={calculationInstruments}
           analysis={analysis}
           assumptions={assumptions}
           updateGoal={updateGoal}
@@ -601,7 +761,7 @@ export function PortfolioLabPage() {
       {section === "rebalance" ? (
         <EditablePortfolioWorkspace
           portfolio={portfolio}
-          instrumentCatalog={instrumentsCatalog}
+          instrumentCatalog={calculationInstruments}
           analysis={analysis}
           assumptions={assumptions}
           updateGoal={updateGoal}
@@ -625,7 +785,7 @@ export function PortfolioLabPage() {
       {section === "holdings" ? (
         <EditablePortfolioWorkspace
           portfolio={portfolio}
-          instrumentCatalog={instrumentsCatalog}
+          instrumentCatalog={calculationInstruments}
           analysis={analysis}
           assumptions={assumptions}
           updateGoal={updateGoal}
@@ -641,7 +801,7 @@ export function PortfolioLabPage() {
           reviewRequests={reviewRequests}
           requestInstrumentReview={(query) => requestInstrumentReview(query, "HOLDING_ENTRY")}
         >
-          <HoldingsSection portfolio={portfolio} analysis={analysis} instrumentCatalog={instrumentsCatalog} />
+          <HoldingsSection portfolio={portfolio} analysis={analysis} instrumentCatalog={calculationInstruments} />
         </EditablePortfolioWorkspace>
       ) : null}
       {section === "transactions" ? (
@@ -654,6 +814,213 @@ export function PortfolioLabPage() {
       <DataQualityPanel issues={analysis.dataQualityIssues} />
     </div>
   );
+}
+
+function marketHistorySymbolsForPortfolio(portfolio: Portfolio, instruments: Instrument[]): string[] {
+  const symbols: string[] = [];
+  for (const holding of portfolio.holdings) {
+    const instrument = resolveInstrumentReference(holding.instrumentId, instruments);
+    if (!instrument || instrument.instrumentType === "cash" || instrument.instrumentType === "manual") continue;
+    const listing =
+      instrument.listings?.find((item) => item.listingId === holding.listingId) ??
+      instrument.listings?.find((item) => item.listingId === instrument.primaryListingId) ??
+      instrument.listings?.find((item) => item.isPrimary) ??
+      instrument.listings?.[0];
+    const symbol = (listing?.symbol ?? instrument.symbol ?? "").trim().toUpperCase();
+    if (symbol && /^[A-Z0-9.\-]{1,24}$/.test(symbol)) symbols.push(symbol);
+  }
+  return Array.from(new Set(symbols)).sort();
+}
+
+function rollingThreeYearHistoryWindow() {
+  const endDate = new Date();
+  const startDate = new Date(endDate);
+  startDate.setUTCDate(startDate.getUTCDate() - 1095);
+  return {
+    start: startDate.toISOString().slice(0, 10),
+    end: endDate.toISOString().slice(0, 10)
+  };
+}
+
+function chunkMarketHistorySymbols(symbols: string[]): string[][] {
+  const batches: string[][] = [];
+  let current: string[] = [];
+  let currentLength = 0;
+  for (const symbol of symbols) {
+    const addedLength = symbol.length + (current.length ? 1 : 0);
+    if (current.length && currentLength + addedLength > 220) {
+      batches.push(current);
+      current = [];
+      currentLength = 0;
+    }
+    current.push(symbol);
+    currentLength += addedLength;
+  }
+  if (current.length) batches.push(current);
+  return batches;
+}
+
+function emptyMarketHistoryCoverage(symbols: string[]): MarketHistoryCoverageState {
+  return {
+    status: symbols.length ? "idle" : "limited",
+    requestedSymbols: symbols,
+    coveredSymbols: [],
+    missingSymbols: symbols,
+    queuedSymbols: [],
+    latestPricesBySymbol: {},
+    message: symbols.length
+      ? "Stored public daily-history coverage has not been checked yet."
+      : "No exchange-traded holdings need stored daily-history coverage.",
+    warnings: []
+  };
+}
+
+function mergeMarketHistoryCoverage(
+  payloads: MarketHistoryCoverageResponse[],
+  requestedSymbols: string[]
+): MarketHistoryCoverageState {
+  const covered = new Set<string>();
+  const latestPricesBySymbol: Record<string, StoredMarketHistoryPrice> = {};
+  const warnings: string[] = [];
+  let provider: string | undefined;
+  let cache: string | undefined;
+  let completeThrough: string | null | undefined;
+  let stalenessState: string | null | undefined;
+  let calculationEligible = false;
+  let licenseLimited = false;
+  for (const payload of payloads) {
+    provider ??= payload.provider;
+    cache ??= payload.cache;
+    licenseLimited ||= payload.status === "license_limited" || payload.display_status === "license_limited";
+    if (payload.data_freshness) {
+      const freshness = payload.data_freshness;
+      completeThrough = maxIsoDate(completeThrough, freshness.complete_through);
+      stalenessState ??= freshness.staleness_state;
+      calculationEligible ||= Boolean(freshness.calculation_eligible);
+      if (freshness.staleness_reason) warnings.push(freshness.staleness_reason);
+    }
+    for (const warning of payload.warnings ?? []) warnings.push(warning);
+    for (const item of payload.series ?? []) {
+      const symbol = item.symbol.toUpperCase();
+      if (item.points?.length) {
+        covered.add(symbol);
+        const latestPoint = latestMarketHistoryPoint(item.points);
+        if (latestPoint) {
+          const price = Number(latestPoint.adjusted_close ?? latestPoint.close);
+          if (Number.isFinite(price) && price > 0) {
+            latestPricesBySymbol[symbol] = {
+              close: price,
+              date: String(latestPoint.date).slice(0, 10),
+              provider: item.providers?.[0] ?? payload.provider ?? "stored_normalized_daily_bars",
+              currency: latestPoint.currency,
+              exchange: latestPoint.exchange,
+              timezone: latestPoint.timezone,
+              calculationEligible: Boolean(payload.data_freshness?.calculation_eligible),
+              stalenessState: payload.data_freshness?.staleness_state
+            };
+          }
+        }
+      }
+    }
+  }
+  const coveredSymbols = requestedSymbols.filter((symbol) => covered.has(symbol));
+  const missingSymbols = requestedSymbols.filter((symbol) => !covered.has(symbol));
+  const status: MarketHistoryCoverageStatus = licenseLimited
+    ? "limited"
+    : missingSymbols.length === 0 && calculationEligible
+      ? "ready"
+      : coveredSymbols.length
+        ? "partial"
+        : "limited";
+  const message =
+    status === "ready"
+      ? "Stored public 3-year daily snapshots are available for all resolved holdings."
+      : status === "partial"
+        ? "Some holdings have stored public daily bars; missing symbols remain queued or unavailable."
+        : "No approved public daily-history snapshot is available yet for one or more holdings.";
+  return {
+    status,
+    requestedSymbols,
+    coveredSymbols,
+    missingSymbols,
+    queuedSymbols: missingSymbols,
+    latestPricesBySymbol,
+    provider,
+    cache,
+    completeThrough,
+    stalenessState,
+    calculationEligible,
+    sourcePolicy: licenseLimited ? "public display blocked until an approved stored snapshot exists" : undefined,
+    message,
+    warnings: Array.from(new Set(warnings)).slice(0, 4)
+  };
+}
+
+function latestMarketHistoryPoint(
+  points: Array<{ date?: string; close?: number; adjusted_close?: number; currency?: string; exchange?: string; timezone?: string }>
+) {
+  return points
+    .filter((point) => point.date && Number.isFinite(Number(point.adjusted_close ?? point.close)))
+    .sort((left, right) => String(left.date).localeCompare(String(right.date)))
+    .at(-1);
+}
+
+function applyStoredMarketHistoryPrices(instruments: Instrument[], coverage: MarketHistoryCoverageState): Instrument[] {
+  if (!Object.keys(coverage.latestPricesBySymbol).length) return instruments;
+  const calculationEligible =
+    coverage.calculationEligible && coverage.status !== "limited" && coverage.status !== "error";
+  return instruments.map((instrument) => {
+    const candidateSymbols = [
+      instrument.symbol,
+      instrument.primaryListingId,
+      ...(instrument.listings ?? []).flatMap((listing) => [listing.symbol, listing.localCode, listing.listingId])
+    ]
+      .filter(Boolean)
+      .map((value) => String(value).toUpperCase());
+    const price = candidateSymbols.map((symbol) => coverage.latestPricesBySymbol[symbol]).find(Boolean);
+    if (!price) return instrument;
+    const quality: Instrument["priceQuality"] =
+      calculationEligible && price.calculationEligible && price.stalenessState !== "stale_fallback"
+        ? "COMPLETE"
+        : "STALE";
+    const primaryListing = primaryListingForInstrumentLike(instrument);
+    return {
+      ...instrument,
+      currentPrice: price.close,
+      previousClose: instrument.currentPrice || price.close,
+      priceAsOf: price.date,
+      priceQuality: quality,
+      priceCoverage: calculationEligible ? "available" : "stale",
+      calculationEligible,
+      sourceProviders: Array.from(new Set([...(instrument.sourceProviders ?? []), "stored_normalized_daily_bars", price.provider])),
+      sourceObservedAt: price.date,
+      stalenessState: quality === "STALE" ? "stale" : "fresh",
+      exchange: price.exchange ?? instrument.exchange ?? primaryListing.exchange,
+      currency: price.currency ?? instrument.currency ?? primaryListing.currency
+    };
+  });
+}
+
+function primaryListingForInstrumentLike(instrument: Instrument) {
+  return (
+    instrument.listings?.find((item) => item.listingId === instrument.primaryListingId) ??
+    instrument.listings?.find((item) => item.isPrimary) ??
+    instrument.listings?.[0] ?? {
+      listingId: instrument.symbol,
+      symbol: instrument.symbol,
+      exchange: instrument.exchange,
+      country: instrument.country,
+      currency: instrument.currency,
+      isActive: true,
+      isPrimary: true
+    }
+  );
+}
+
+function maxIsoDate(left: string | null | undefined, right: string | null | undefined) {
+  if (!left) return right;
+  if (!right) return left;
+  return right > left ? right : left;
 }
 
 function PortfolioHeader({ portfolio, section }: { portfolio: Portfolio; section: PortfolioSection }) {
@@ -743,10 +1110,22 @@ function ComplianceBanner() {
   );
 }
 
-function PortfolioCoverageBanner({ analysis }: { analysis: ReturnType<typeof analyzePortfolio> }) {
+function PortfolioCoverageBanner({
+  analysis,
+  marketHistoryCoverage,
+  adminAuthState
+}: {
+  analysis: ReturnType<typeof analyzePortfolio>;
+  marketHistoryCoverage: MarketHistoryCoverageState;
+  adminAuthState: AdminAuthState;
+}) {
+  const locale = useLocale();
   const summary = analysis.coverageSummary;
+  const isBackendLimited = ["limited", "error"].includes(marketHistoryCoverage.status);
   const toneClass =
-    summary.qualityTier === "HIGH"
+    isBackendLimited
+      ? "border-warning/50 bg-warning/10 text-warning"
+      : summary.qualityTier === "HIGH" && marketHistoryCoverage.status === "ready"
       ? "border-success/40 bg-success/10 text-success"
       : summary.qualityTier === "MEDIUM"
         ? "border-line bg-panelAlt text-muted"
@@ -771,6 +1150,67 @@ function PortfolioCoverageBanner({ analysis }: { analysis: ReturnType<typeof ana
           <StatusPill label="Benchmark" value={analysis.benchmarkSymbol} />
           <StatusPill label="Basis" value="daily close" />
         </div>
+      </div>
+      <div className="mt-4 grid gap-3 border-t border-current/20 pt-4 lg:grid-cols-[1fr_auto] lg:items-start">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+            <span>Stored 3Y snapshot status</span>
+            <span className="rounded border border-current/30 px-2 py-1">{marketHistoryCoverage.status.replaceAll("_", " ")}</span>
+          </div>
+          <p className="safe-text mt-2 text-sm leading-6">{marketHistoryCoverage.message}</p>
+          {marketHistoryCoverage.missingSymbols.length ? (
+            <p className="safe-text mt-1 text-xs leading-5 opacity-90">
+              Missing approved history: {marketHistoryCoverage.missingSymbols.slice(0, 10).join(", ")}
+              {marketHistoryCoverage.missingSymbols.length > 10 ? ` +${marketHistoryCoverage.missingSymbols.length - 10} more` : ""}.
+            </p>
+          ) : null}
+          {marketHistoryCoverage.queuedSymbols.length ? (
+            <p className="safe-text mt-1 text-xs leading-5 opacity-90">
+              Refresh queue: {marketHistoryCoverage.queuedSymbols.slice(0, 8).join(", ")}
+              {marketHistoryCoverage.queuedSymbols.length > 8 ? ` +${marketHistoryCoverage.queuedSymbols.length - 8} more` : ""} will be retried by the scheduled after-close jobs when quota permits.
+            </p>
+          ) : null}
+          {marketHistoryCoverage.warnings.length ? (
+            <ul className="mt-2 grid gap-1 text-xs leading-5 opacity-90">
+              {marketHistoryCoverage.warnings.map((warning) => (
+                <li key={warning} className="safe-text">
+                  {warning}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 lg:min-w-[650px]">
+          <StatusPill label="Covered" value={`${marketHistoryCoverage.coveredSymbols.length}/${marketHistoryCoverage.requestedSymbols.length}`} />
+          <StatusPill label="Queued" value={String(marketHistoryCoverage.queuedSymbols.length)} />
+          <StatusPill label="Provider" value={marketHistoryCoverage.provider ?? "stored only"} />
+          <StatusPill label="Complete through" value={marketHistoryCoverage.completeThrough ?? "pending"} />
+          <StatusPill label="Eligible" value={marketHistoryCoverage.calculationEligible ? "yes" : "no"} />
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3 border-t border-current/20 pt-4 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+            <ShieldCheck className="h-4 w-4" />
+            <span>Private admin data mode</span>
+            <span className="rounded border border-current/30 px-2 py-1">
+              {adminAuthState.status === "signed_in" ? "Google/admin session active" : adminAuthState.status}
+            </span>
+          </div>
+          <p className="safe-text mt-2 text-sm leading-6">
+            Public calculations use stored approved snapshots only. Google admin sign-in can unlock a private Yahoo queue for personal analysis, but those rows stay excluded from public snapshots and must be labeled private/admin-only.
+          </p>
+        </div>
+        {adminAuthState.status === "signed_in" ? (
+          <div className="grid grid-cols-2 gap-2 lg:min-w-[320px]">
+            <StatusPill label="Admin" value={adminAuthState.email} />
+            <StatusPill label="Role" value={adminAuthState.role} />
+          </div>
+        ) : (
+          <Link className="secondary-action justify-center" to="/admin/login">
+            {locale === "ko" ? "관리자 로그인" : "Sign in for private mode"}
+          </Link>
+        )}
       </div>
     </section>
   );

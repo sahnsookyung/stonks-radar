@@ -17,6 +17,7 @@ from frw_api.core.settings import get_settings
 from frw_api.db.session import get_db
 
 SESSION_COOKIE = "frw_session"
+CSRF_COOKIE = "frw_csrf"
 PBKDF2_ITERATIONS = 260_000
 
 
@@ -76,7 +77,14 @@ class CurrentUser:
     csrf_token: str
 
 
-def create_session(db: Session, response: Response, user_id: str, role: str) -> str:
+def create_session(
+    db: Session,
+    response: Response,
+    user_id: str,
+    role: str,
+    *,
+    expose_csrf_cookie: bool = False,
+) -> str:
     token = new_session_token()
     csrf_token = new_session_token()
     expires_at = datetime.now(timezone.utc) + timedelta(hours=12)
@@ -107,11 +115,22 @@ def create_session(db: Session, response: Response, user_id: str, role: str) -> 
         max_age=12 * 60 * 60,
         path="/",
     )
+    if expose_csrf_cookie:
+        response.set_cookie(
+            CSRF_COOKIE,
+            csrf_token,
+            httponly=False,
+            secure=secure,
+            samesite="lax",
+            max_age=5 * 60,
+            path="/",
+        )
     return csrf_token
 
 
 def clear_session(response: Response) -> None:
     response.delete_cookie(SESSION_COOKIE, path="/")
+    response.delete_cookie(CSRF_COOKIE, path="/")
 
 
 def get_current_user(

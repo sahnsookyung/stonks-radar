@@ -13,6 +13,8 @@ from sqlalchemy.orm import Session
 
 DEFAULT_ENDPOINT = "daily_prices"
 DEFAULT_INTERVAL = "1day"
+DEFAULT_WINDOW_KEY = "rolling_3y"
+DEFAULT_WINDOW_DAYS = 1095
 STAGING_METADATA_RETENTION_DAYS = 14
 
 
@@ -169,7 +171,7 @@ def market_history_calculation_readiness(
 
     fx_coverage_status = "unsupported_no_fx_snapshot_store" if required_fx_pairs else "not_required"
     reason = None
-    if stored.coherence_status != "single_snapshot":
+    if stored.coherence_status not in {"single_snapshot", "current_snapshots"}:
         reason = f"market_history_{stored.coherence_status}"
     elif missing_symbols:
         reason = "missing_market_history_symbols"
@@ -229,6 +231,19 @@ def load_stored_market_history(
         return None
     if not _table_available(db, "market_price_bar"):
         return None
+    current_snapshot_table_available = _table_available(db, "market_data_snapshot_current")
+    current_snapshot_result = (
+        _current_snapshot_rows(
+            db,
+            symbols=symbols,
+            start=start,
+            provider_order=provider_order,
+        )
+        if current_snapshot_table_available
+        else {}
+    )
+    current_snapshot_table_authoritative = current_snapshot_result is not None
+    current_snapshots = current_snapshot_result or {}
     stmt = text(
         """
             select
@@ -243,6 +258,7 @@ def load_stored_market_history(
               bar.timezone,
               bar.provider_price_timestamp,
               bar.ingested_at,
+              bar.source_hash,
               bar.source_revision,
               bar.quality_state,
               bar.market_data_snapshot_id,
@@ -292,7 +308,19 @@ def load_stored_market_history(
     provider_rank = {provider: index for index, provider in enumerate(provider_order)}
     chosen: dict[tuple[str, date], dict[str, Any]] = {}
     for row in rows:
-        provider = str(row["provider_key"])
+        row_dict = dict(row)
+        symbol = str(row_dict["symbol"])
+        provider = str(row_dict["provider_key"])
+        current_snapshot = current_snapshots.get(symbol)
+        if current_snapshot_table_authoritative:
+            if current_snapshot is None:
+                continue
+            if provider != str(current_snapshot["provider_key"]):
+                continue
+            if str(row_dict.get("market_data_snapshot_id") or "") != str(
+                current_snapshot["snapshot_id"]
+            ):
+                continue
         policy = _policy_from_row(row.get("source_policy_json"))
         if (
             display_mode == "public"
@@ -305,7 +333,7 @@ def load_stored_market_history(
         if existing is None or _provider_rank(provider, provider_rank) < _provider_rank(
             str(existing["provider_key"]), provider_rank
         ):
-            chosen[key] = dict(row)
+            chosen[key] = row_dict
 
     series: list[dict[str, Any]] = []
     coverage: list[dict[str, Any]] = []
@@ -393,7 +421,14 @@ def load_stored_market_history(
     digest = _sha256("|".join(sorted(policy_parts)))
     data_version = _sha256("|".join(version_parts))[:16]
     sorted_snapshot_ids = sorted(snapshot_ids)
-    if not sorted_snapshot_ids:
+    if (
+        current_snapshot_table_authoritative
+        and len(current_snapshots) >= len(symbols)
+        and len(sorted_snapshot_ids) >= 1
+        and not unversioned_seen
+    ):
+        coherence_status = "current_snapshots"
+    elif not sorted_snapshot_ids:
         coherence_status = "unversioned"
     elif len(sorted_snapshot_ids) == 1 and not unversioned_seen:
         coherence_status = "single_snapshot"
@@ -422,6 +457,73 @@ def load_stored_market_history(
         complete_through=min(complete_dates) if complete_dates else None,
         calculation_manifest=calculation_manifest,
     )
+
+
+def _current_snapshot_rows(
+    db: Session,
+    *,
+    symbols: list[str],
+    start: date,
+    provider_order: list[str],
+) -> dict[str, dict[str, Any]] | None:
+    if not _table_available(db, "market_data_snapshot_current"):
+        return {}
+    stmt = text(
+        """
+        select
+          symbol,
+          provider_key,
+          snapshot_id,
+          previous_snapshot_id,
+          requested_start,
+          requested_end,
+          price_start,
+          complete_through,
+          source_observed_at,
+          hard_expires_at,
+          staleness_state,
+          calculation_eligible,
+          source_policy_digest,
+          content_hash,
+          updated_at
+        from market_data_snapshot_current
+        where symbol in :symbols
+          and interval = :interval
+          and endpoint_key = :endpoint_key
+          and window_key = :window_key
+          and requested_start <= :start
+          and complete_through >= :start
+        order by symbol, updated_at desc
+        """
+    ).bindparams(bindparam("symbols", expanding=True))
+    try:
+        rows = (
+            db.execute(
+                stmt,
+                {
+                    "symbols": tuple(symbols),
+                    "interval": DEFAULT_INTERVAL,
+                    "endpoint_key": DEFAULT_ENDPOINT,
+                    "window_key": DEFAULT_WINDOW_KEY,
+                    "start": start,
+                },
+            )
+            .mappings()
+            .all()
+        )
+    except Exception:  # noqa: BLE001 - legacy test doubles and partial migrations should fall back safely
+        return None
+    provider_rank = {provider: index for index, provider in enumerate(provider_order)}
+    chosen: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        symbol = str(row["symbol"])
+        provider = str(row["provider_key"])
+        current = chosen.get(symbol)
+        if current is None or _provider_rank(provider, provider_rank) < _provider_rank(
+            str(current["provider_key"]), provider_rank
+        ):
+            chosen[symbol] = dict(row)
+    return chosen
 
 
 def store_market_history_series(
@@ -582,6 +684,16 @@ def store_market_history_series(
         policy_json=policy_json,
         snapshot_id=snapshot_id,
         candidate_ids=candidate_ids,
+    )
+    _upsert_current_snapshots(
+        db,
+        provider_key=provider_key,
+        snapshot_id=snapshot_id,
+        rows=normalized_rows,
+        requested_start=requested_start,
+        requested_end=requested_end,
+        policy_digest=policy_digest,
+        content_hash=content_hash,
     )
     _mark_fetch_run(
         db,
@@ -1476,6 +1588,179 @@ def _promote_rows(
             },
         )
     return stored
+
+
+def _upsert_current_snapshots(
+    db: Session,
+    *,
+    provider_key: str,
+    snapshot_id: str,
+    rows: list[dict[str, Any]],
+    requested_start: date,
+    requested_end: date,
+    policy_digest: str,
+    content_hash: str,
+) -> None:
+    if not rows or not _table_available(db, "market_data_snapshot_current"):
+        return
+    by_symbol: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        by_symbol.setdefault(str(row["symbol"]), []).append(row)
+    for symbol, symbol_rows in by_symbol.items():
+        price_dates = [row["price_date"] for row in symbol_rows]
+        complete_through = max(price_dates)
+        price_start = min(price_dates)
+        source_observed_at = datetime.combine(
+            complete_through,
+            datetime.min.time(),
+            tzinfo=timezone.utc,
+        )
+        hard_expires_at = source_observed_at + timedelta(days=4)
+        previous_snapshot_id = db.execute(
+            text(
+                """
+                select snapshot_id
+                from market_data_snapshot_current
+                where symbol = :symbol
+                  and provider_key = :provider_key
+                  and endpoint_key = :endpoint_key
+                  and interval = :interval
+                  and window_key = :window_key
+                """
+            ),
+            {
+                "symbol": symbol,
+                "provider_key": provider_key,
+                "endpoint_key": DEFAULT_ENDPOINT,
+                "interval": DEFAULT_INTERVAL,
+                "window_key": DEFAULT_WINDOW_KEY,
+            },
+        ).scalar_one_or_none()
+        db.execute(
+            text(
+                """
+                insert into market_data_snapshot_current(
+                  symbol,
+                  provider_key,
+                  endpoint_key,
+                  interval,
+                  window_key,
+                  window_days,
+                  snapshot_id,
+                  previous_snapshot_id,
+                  requested_start,
+                  requested_end,
+                  price_start,
+                  complete_through,
+                  source_observed_at,
+                  hard_expires_at,
+                  staleness_state,
+                  calculation_eligible,
+                  source_policy_digest,
+                  content_hash,
+                  updated_at
+                )
+                values (
+                  :symbol,
+                  :provider_key,
+                  :endpoint_key,
+                  :interval,
+                  :window_key,
+                  :window_days,
+                  :snapshot_id,
+                  :previous_snapshot_id,
+                  :requested_start,
+                  :requested_end,
+                  :price_start,
+                  :complete_through,
+                  :source_observed_at,
+                  :hard_expires_at,
+                  'active',
+                  true,
+                  :source_policy_digest,
+                  :content_hash,
+                  now()
+                )
+                on conflict (symbol, provider_key, endpoint_key, interval, window_key)
+                do update set
+                  previous_snapshot_id = market_data_snapshot_current.snapshot_id,
+                  snapshot_id = excluded.snapshot_id,
+                  window_days = excluded.window_days,
+                  requested_start = excluded.requested_start,
+                  requested_end = excluded.requested_end,
+                  price_start = excluded.price_start,
+                  complete_through = excluded.complete_through,
+                  source_observed_at = excluded.source_observed_at,
+                  hard_expires_at = excluded.hard_expires_at,
+                  staleness_state = 'active',
+                  calculation_eligible = true,
+                  source_policy_digest = excluded.source_policy_digest,
+                  content_hash = excluded.content_hash,
+                  updated_at = now()
+                """
+            ),
+            {
+                "symbol": symbol,
+                "provider_key": provider_key,
+                "endpoint_key": DEFAULT_ENDPOINT,
+                "interval": DEFAULT_INTERVAL,
+                "window_key": DEFAULT_WINDOW_KEY,
+                "window_days": DEFAULT_WINDOW_DAYS,
+                "snapshot_id": snapshot_id,
+                "previous_snapshot_id": previous_snapshot_id,
+                "requested_start": requested_start,
+                "requested_end": requested_end,
+                "price_start": price_start,
+                "complete_through": complete_through,
+                "source_observed_at": source_observed_at,
+                "hard_expires_at": hard_expires_at,
+                "source_policy_digest": policy_digest,
+                "content_hash": content_hash,
+            },
+        )
+
+
+def mark_market_history_refresh_failed(
+    db: Session | None,
+    *,
+    symbols: list[str],
+    provider_key: str | None = None,
+) -> int:
+    if db is None or not symbols or not _table_available(db, "market_data_snapshot_current"):
+        return 0
+    normalized_symbols = tuple(dict.fromkeys(str(symbol).upper() for symbol in symbols if symbol))
+    if not normalized_symbols:
+        return 0
+    provider_filter = "and provider_key = :provider_key" if provider_key else ""
+    result = db.execute(
+        text(
+            f"""
+            update market_data_snapshot_current
+               set staleness_state = case
+                     when hard_expires_at is not null and hard_expires_at < now() then 'hard_expired'
+                     else 'stale_fallback'
+                   end,
+                   calculation_eligible = case
+                     when hard_expires_at is not null and hard_expires_at < now() then false
+                     else calculation_eligible
+                   end,
+                   updated_at = now()
+             where symbol in :symbols
+               and endpoint_key = :endpoint_key
+               and interval = :interval
+               and window_key = :window_key
+               {provider_filter}
+            """
+        ).bindparams(bindparam("symbols", expanding=True)),
+        {
+            "symbols": normalized_symbols,
+            "provider_key": provider_key,
+            "endpoint_key": DEFAULT_ENDPOINT,
+            "interval": DEFAULT_INTERVAL,
+            "window_key": DEFAULT_WINDOW_KEY,
+        },
+    )
+    return int(result.rowcount or 0)
 
 
 def _mark_fetch_run(
