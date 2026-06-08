@@ -11,6 +11,14 @@ on:
         options:
           - local-smoke
           - configured
+      organization:
+        description: "Optional SonarQube Cloud organization override"
+        required: false
+        default: ""
+      project_key:
+        description: "Optional SonarQube project key override"
+        required: false
+        default: ""
   push:
     branches:
       - main
@@ -31,8 +39,8 @@ jobs:
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL || secrets.SONAR_HOST_URL }}
-      SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION || github.repository_owner }}
-      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY || 'stonks-radar' }}
+      SONAR_ORGANIZATION: ${{ github.event.inputs.organization || vars.SONAR_ORGANIZATION || github.repository_owner }}
+      SONAR_PROJECT_KEY: ${{ github.event.inputs.project_key || vars.SONAR_PROJECT_KEY || 'stonks-radar' }}
     steps:
       - uses: actions/checkout@v4
         with:
