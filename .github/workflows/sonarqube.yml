@@ -112,5 +112,4 @@ jobs:
         with:
           args: >
             -Dsonar.projectKey=stonks-radar-local-smoke
-            -Dsonar.projectName=Stonks Radar Local Smoke
             -Dsonar.qualitygate.wait=false
