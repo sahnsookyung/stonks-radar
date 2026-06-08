@@ -1,0 +1,116 @@
+name: sonarqube
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Analysis target"
+        required: true
+        default: local-smoke
+        type: choice
+        options:
+          - local-smoke
+          - configured
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sonarqube-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  configured-analysis:
+    name: Configured SonarQube analysis
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.mode == 'configured' }}
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL || secrets.SONAR_HOST_URL }}
+      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY || 'stonks-radar' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check SonarQube configuration
+        id: sonar-config
+        run: |
+          set -euo pipefail
+          if [ -z "${SONAR_TOKEN:-}" ] || [ -z "${SONAR_HOST_URL:-}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::SONAR_TOKEN and SONAR_HOST_URL are not configured; skipping external SonarQube analysis."
+            exit 0
+          fi
+          echo "configured=true" >> "$GITHUB_OUTPUT"
+
+      - name: SonarQube scan
+        if: ${{ steps.sonar-config.outputs.configured == 'true' }}
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
+            -Dsonar.qualitygate.wait=${{ vars.SONAR_QUALITY_GATE_WAIT || 'true' }}
+
+  local-smoke-analysis:
+    name: Local SonarQube smoke analysis
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'local-smoke' }}
+    runs-on: ubuntu-latest
+    services:
+      sonarqube:
+        image: sonarqube:lts-community
+        ports:
+          - 9000:9000
+        env:
+          SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Wait for local SonarQube
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 120); do
+            status="$(curl -fsS http://localhost:9000/api/system/status 2>/dev/null \
+              | python3 -c 'import json,sys; print(json.load(sys.stdin).get("status",""))' 2>/dev/null || true)"
+            if [ "$status" = "UP" ]; then
+              echo "SonarQube is UP"
+              exit 0
+            fi
+            echo "Waiting for SonarQube (${attempt}/120): ${status:-not-ready}"
+            sleep 5
+          done
+          docker logs "${{ job.services.sonarqube.id }}" || true
+          exit 1
+
+      - name: Create local SonarQube analysis token
+        id: local-token
+        run: |
+          set -euo pipefail
+          token="$(
+            curl -fsS -u admin:admin -X POST \
+              --data-urlencode "name=github-actions-smoke-${GITHUB_RUN_ID}" \
+              http://localhost:9000/api/user_tokens/generate \
+              | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])'
+          )"
+          echo "::add-mask::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+
+      - name: SonarQube smoke scan
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ steps.local-token.outputs.token }}
+          SONAR_HOST_URL: http://localhost:9000
+        with:
+          args: >
+            -Dsonar.projectKey=stonks-radar-local-smoke
+            -Dsonar.projectName=Stonks Radar Local Smoke
+            -Dsonar.qualitygate.wait=false
