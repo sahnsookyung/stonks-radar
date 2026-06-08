@@ -80,7 +80,9 @@ jobs:
             -Dsonar.qualitygate.wait=${{ vars.SONAR_QUALITY_GATE_WAIT || 'true' }}
 
       - name: SonarQube Cloud scan
+        id: sonar-cloud-scan
         if: ${{ steps.sonar-config.outputs.target == 'cloud' }}
+        continue-on-error: true
         uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995
         env:
           SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
@@ -91,6 +93,52 @@ jobs:
             -Dsonar.organization=${{ env.SONAR_ORGANIZATION }}
             -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
             -Dsonar.qualitygate.wait=${{ vars.SONAR_QUALITY_GATE_WAIT || 'true' }}
+
+      - name: Report SonarQube Cloud processing result
+        if: ${{ steps.sonar-config.outputs.target == 'cloud' && always() }}
+        env:
+          SCAN_OUTCOME: ${{ steps.sonar-cloud-scan.outcome }}
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -f .scannerwork/report-task.txt ]; then
+            echo "::error::.scannerwork/report-task.txt was not produced; scanner outcome was ${SCAN_OUTCOME}."
+            exit 1
+          fi
+
+          echo "=== Sonar task metadata ==="
+          sed -E 's/(serverUrl=).*/\1[redacted]/' .scannerwork/report-task.txt
+
+          ce_task_url="$(grep '^ceTaskUrl=' .scannerwork/report-task.txt | cut -d= -f2-)"
+          if [ -z "$ce_task_url" ]; then
+            echo "::error::No ceTaskUrl found in .scannerwork/report-task.txt."
+            exit 1
+          fi
+
+          response="$(curl -fsS -u "${SONAR_TOKEN}:" "$ce_task_url")"
+          RESPONSE="$response" python3 - <<'PY'
+          import json
+          import os
+          import sys
+
+          data = json.loads(os.environ["RESPONSE"])
+          task = data.get("task", {})
+          print("=== Sonar CE task ===")
+          for key in ("id", "type", "componentKey", "componentName", "status", "submittedAt", "startedAt", "executedAt", "executionTimeMs", "analysisId", "errorMessage"):
+              value = task.get(key)
+              if value is not None:
+                  print(f"{key}: {value}")
+          if task.get("errorStacktrace"):
+              print("errorStacktrace:")
+              print(task["errorStacktrace"])
+          PY
+
+          status="$(RESPONSE="$response" python3 -c 'import json,os; print(json.loads(os.environ["RESPONSE"]).get("task", {}).get("status", ""))')"
+          if [ "$SCAN_OUTCOME" != "success" ] || [ "$status" != "SUCCESS" ]; then
+            echo "::error::SonarQube Cloud scan outcome=${SCAN_OUTCOME}, CE status=${status}."
+            exit 1
+          fi
 
   local-smoke-analysis:
     name: Local SonarQube smoke analysis
