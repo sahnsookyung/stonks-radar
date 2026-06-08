@@ -8,6 +8,8 @@ dist/
 build/
 .vite/
 coverage/
+coverage.xml
+.coverage
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/

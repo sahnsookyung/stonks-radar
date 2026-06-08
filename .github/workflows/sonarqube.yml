@@ -24,12 +24,10 @@ on:
       - main
   pull_request:
 
-permissions:
-  contents: read
-  pull-requests: read
+permissions: {}
 
 concurrency:
-  group: sonarqube-${{ github.ref }}
+  group: sonarqube-${{ github.workflow }}-${{ github.event.pull_request.number || github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -37,13 +35,17 @@ jobs:
     name: Configured SonarQube analysis
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.mode == 'configured' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL || secrets.SONAR_HOST_URL }}
       SONAR_ORGANIZATION: ${{ github.event.inputs.organization || vars.SONAR_ORGANIZATION || github.repository_owner }}
       SONAR_PROJECT_KEY: ${{ github.event.inputs.project_key || vars.SONAR_PROJECT_KEY || format('{0}_{1}', github.repository_owner, github.event.repository.name) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -66,6 +68,46 @@ jobs:
             echo "target=cloud" >> "$GITHUB_OUTPUT"
             echo "Using SonarQube Cloud organization ${SONAR_ORGANIZATION}"
           fi
+
+      - name: Set up Python
+        if: ${{ steps.sonar-config.outputs.configured == 'true' }}
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        if: ${{ steps.sonar-config.outputs.configured == 'true' }}
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+        with:
+          version: "0.11.2"
+
+      - name: Install Node dependencies
+        if: ${{ steps.sonar-config.outputs.configured == 'true' }}
+        run: npm ci
+
+      - name: Run backend tests with coverage
+        if: ${{ steps.sonar-config.outputs.configured == 'true' }}
+        env:
+          PYTHONPATH: apps/api/src:apps/worker/src:apps/fetch-sandbox/src
+        run: |
+          uv run --project apps/api --extra dev --with ./apps/fetch-sandbox --with pytest-cov \
+            python -m pytest -q tests \
+              --cov=apps/api/src \
+              --cov=apps/worker/src \
+              --cov=apps/fetch-sandbox/src \
+              --cov=scripts \
+              --cov-report=xml:coverage.xml
+
+      - name: Run frontend tests with coverage
+        if: ${{ steps.sonar-config.outputs.configured == 'true' }}
+        run: npm --workspace apps/web run test:coverage
+
+      - name: Verify coverage reports exist
+        if: ${{ steps.sonar-config.outputs.configured == 'true' }}
+        run: |
+          set -euo pipefail
+          test -s coverage.xml
+          test -s apps/web/coverage/lcov.info
 
       - name: SonarQube Server scan
         if: ${{ steps.sonar-config.outputs.target == 'server' }}
@@ -147,6 +189,9 @@ jobs:
     name: Local SonarQube smoke analysis
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'local-smoke' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
     services:
       sonarqube:
         image: sonarqube:lts-community
@@ -155,7 +200,7 @@ jobs:
         env:
           SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
           persist-credentials: false
