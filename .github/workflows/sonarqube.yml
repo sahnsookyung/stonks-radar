@@ -31,6 +31,7 @@ jobs:
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL || secrets.SONAR_HOST_URL }}
+      SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION || github.repository_owner }}
       SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY || 'stonks-radar' }}
     steps:
       - uses: actions/checkout@v4
@@ -41,21 +42,40 @@ jobs:
         id: sonar-config
         run: |
           set -euo pipefail
-          if [ -z "${SONAR_TOKEN:-}" ] || [ -z "${SONAR_HOST_URL:-}" ]; then
+          if [ -z "${SONAR_TOKEN:-}" ]; then
             echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::SONAR_TOKEN and SONAR_HOST_URL are not configured; skipping external SonarQube analysis."
+            echo "target=none" >> "$GITHUB_OUTPUT"
+            echo "::notice::SONAR_TOKEN is not configured; skipping external SonarQube analysis."
             exit 0
           fi
           echo "configured=true" >> "$GITHUB_OUTPUT"
+          if [ -n "${SONAR_HOST_URL:-}" ]; then
+            echo "target=server" >> "$GITHUB_OUTPUT"
+            echo "Using configured SonarQube Server at ${SONAR_HOST_URL}"
+          else
+            echo "target=cloud" >> "$GITHUB_OUTPUT"
+            echo "Using SonarQube Cloud organization ${SONAR_ORGANIZATION}"
+          fi
 
-      - name: SonarQube scan
-        if: ${{ steps.sonar-config.outputs.configured == 'true' }}
+      - name: SonarQube Server scan
+        if: ${{ steps.sonar-config.outputs.target == 'server' }}
         uses: SonarSource/sonarqube-scan-action@v7
         env:
           SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
         with:
           args: >
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
+            -Dsonar.qualitygate.wait=${{ vars.SONAR_QUALITY_GATE_WAIT || 'true' }}
+
+      - name: SonarQube Cloud scan
+        if: ${{ steps.sonar-config.outputs.target == 'cloud' }}
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }}
             -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
             -Dsonar.qualitygate.wait=${{ vars.SONAR_QUALITY_GATE_WAIT || 'true' }}
 
