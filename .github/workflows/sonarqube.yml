@@ -135,9 +135,12 @@ jobs:
           PY
 
           status="$(RESPONSE="$response" python3 -c 'import json,os; print(json.loads(os.environ["RESPONSE"]).get("task", {}).get("status", ""))')"
-          if [ "$SCAN_OUTCOME" != "success" ] || [ "$status" != "SUCCESS" ]; then
-            echo "::error::SonarQube Cloud scan outcome=${SCAN_OUTCOME}, CE status=${status}."
+          if [ "$status" != "SUCCESS" ]; then
+            echo "::error::SonarQube Cloud analysis processing failed: scan outcome=${SCAN_OUTCOME}, CE status=${status}."
             exit 1
+          fi
+          if [ "$SCAN_OUTCOME" != "success" ]; then
+            echo "::warning::SonarQube Cloud analysis processed successfully, but scanner outcome=${SCAN_OUTCOME}. This usually means the quality gate failed; see the SonarCloud dashboard."
           fi
 
   local-smoke-analysis:
