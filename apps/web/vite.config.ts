@@ -32,7 +32,7 @@ export default defineConfig({
     setupFiles: "./src/test/setup.ts",
     coverage: {
       include: ["src/**/*.{ts,tsx}"],
-      exclude: ["src/**/*.test.{ts,tsx}", "src/test/**"],
+      exclude: ["src/**/*.test.{ts,tsx}", "src/**/*.d.ts", "src/test/**"],
       reporter: ["text", "lcov"]
     }
   }
