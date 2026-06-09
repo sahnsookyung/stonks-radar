@@ -1,4 +1,4 @@
-import type { PublicEvent } from "@frw/shared-types";
+import type { NewsMapPoint, PublicEvent } from "@frw/shared-types";
 import type maplibregl from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -6,6 +6,9 @@ type MutableRef<T> = { current: T };
 
 interface EventMapProps extends Readonly<{
   events: PublicEvent[];
+  mapPoints?: NewsMapPoint[];
+  selectedMapPointId?: string | null;
+  onMapPointSelect?: (eventId: string) => void;
   heightClass?: string;
   footer?: string;
   loadStrategy?: "visible" | "idle-visible" | "immediate";
@@ -19,6 +22,9 @@ function shouldExposeMapDebugHook() {
 
 export function EventMap({
   events,
+  mapPoints = [],
+  selectedMapPointId = null,
+  onMapPointSelect,
   heightClass = "h-[540px] md:h-[680px]",
   footer = "Static approved events only. Base boundaries: Natural Earth Admin 0, 1:110m, vendored as local GeoJSON.",
   loadStrategy = "visible"
@@ -29,6 +35,8 @@ export function EventMap({
   const markerRefs = useRef<maplibregl.Marker[]>([]);
   const hoveredCountryRef = useRef<string | null>(null);
   const eventsRef = useRef(events);
+  const mapPointsRef = useRef(mapPoints);
+  const onMapPointSelectRef = useRef(onMapPointSelect);
   const [shouldLoad, setShouldLoad] = useState(loadStrategy === "immediate");
   const [isReady, setIsReady] = useState(false);
   const [hoveredCountry, setHoveredCountry] = useState<HoveredCountry | null>(null);
@@ -37,6 +45,14 @@ export function EventMap({
   useEffect(() => {
     eventsRef.current = events;
   }, [events]);
+
+  useEffect(() => {
+    mapPointsRef.current = mapPoints;
+  }, [mapPoints]);
+
+  useEffect(() => {
+    onMapPointSelectRef.current = onMapPointSelect;
+  }, [onMapPointSelect]);
 
   useEffect(() => {
     if (shouldLoad || !containerRef.current) return;
@@ -186,7 +202,8 @@ export function EventMap({
         );
         mapRef.current?.resize();
         wireCountryHover(mapRef.current, setHoveredCountry, hoveredCountryRef);
-        syncMarkers(maplibre, mapRef.current, markerRefs, eventsRef.current);
+        syncNewsMapPoints(maplibre, mapRef.current, mapPointsRef.current, onMapPointSelectRef);
+        syncMarkers(maplibre, mapRef.current, markerRefs, mapPointsRef.current.length ? [] : eventsRef.current);
         setIsReady(true);
       });
     });
@@ -203,8 +220,27 @@ export function EventMap({
 
   useEffect(() => {
     if (!mapRef.current || !maplibreRef.current) return;
-    syncMarkers(maplibreRef.current, mapRef.current, markerRefs, events);
-  }, [events]);
+    syncMarkers(maplibreRef.current, mapRef.current, markerRefs, mapPoints.length ? [] : events);
+  }, [events, mapPoints.length]);
+
+  useEffect(() => {
+    if (!mapRef.current || !maplibreRef.current) return;
+    syncNewsMapPoints(maplibreRef.current, mapRef.current, mapPoints, onMapPointSelectRef);
+    if (mapPoints.length) {
+      syncMarkers(maplibreRef.current, mapRef.current, markerRefs, []);
+    }
+  }, [mapPoints]);
+
+  useEffect(() => {
+    if (!mapRef.current || !selectedMapPointId) return;
+    const selected = mapPoints.find((point) => point.event_id === selectedMapPointId || point.point_id === selectedMapPointId);
+    if (!selected || !isValidLngLat(selected.longitude, selected.latitude)) return;
+    mapRef.current.easeTo({
+      center: [selected.longitude, selected.latitude],
+      zoom: Math.max(mapRef.current.getZoom(), 3),
+      duration: 500
+    });
+  }, [mapPoints, selectedMapPointId]);
 
   useEffect(() => {
     if (!shouldLoad || !containerRef.current) return;
@@ -265,6 +301,12 @@ type HoveredCountry = {
   x: number;
   y: number;
 };
+
+const NEWS_SOURCE_ID = "breaking-news-points";
+const NEWS_CLUSTER_LAYER_ID = "breaking-news-clusters";
+const NEWS_CLUSTER_COUNT_LAYER_ID = "breaking-news-cluster-count";
+const NEWS_POINT_LAYER_ID = "breaking-news-unclustered";
+const wiredClusterMaps = new WeakSet<maplibregl.Map>();
 
 function cancelDeferredLoad(handle: number) {
   const cancelIdle = globalThis.window.cancelIdleCallback;
@@ -371,6 +413,197 @@ function syncMarkers(
       )
       .addTo(map);
   });
+}
+
+function syncNewsMapPoints(
+  maplibre: typeof maplibregl,
+  map: maplibregl.Map | null,
+  mapPoints: NewsMapPoint[],
+  onMapPointSelectRef: MutableRef<((eventId: string) => void) | undefined>
+) {
+  if (!map || !map.isStyleLoaded()) return;
+  ensureNewsPointLayers(maplibre, map, onMapPointSelectRef);
+  const source = map.getSource(NEWS_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+  source?.setData(createNewsFeatureCollection(mapPoints));
+}
+
+function ensureNewsPointLayers(
+  maplibre: typeof maplibregl,
+  map: maplibregl.Map,
+  onMapPointSelectRef: MutableRef<((eventId: string) => void) | undefined>
+) {
+  if (!map.getSource(NEWS_SOURCE_ID)) {
+    map.addSource(NEWS_SOURCE_ID, {
+      type: "geojson",
+      data: createNewsFeatureCollection([]),
+      cluster: true,
+      clusterRadius: 44,
+      clusterMaxZoom: 6
+    });
+  }
+  if (!map.getLayer(NEWS_CLUSTER_LAYER_ID)) {
+    map.addLayer({
+      id: NEWS_CLUSTER_LAYER_ID,
+      type: "circle",
+      source: NEWS_SOURCE_ID,
+      filter: ["has", "point_count"],
+      paint: {
+        "circle-color": ["step", ["get", "point_count"], "#38bdf8", 5, "#22d3ee", 15, "#f59e0b"],
+        "circle-radius": ["step", ["get", "point_count"], 19, 5, 24, 15, 30],
+        "circle-stroke-color": "#07131f",
+        "circle-stroke-width": 2,
+        "circle-opacity": 0.95
+      }
+    });
+  }
+  if (!map.getLayer(NEWS_CLUSTER_COUNT_LAYER_ID)) {
+    map.addLayer({
+      id: NEWS_CLUSTER_COUNT_LAYER_ID,
+      type: "symbol",
+      source: NEWS_SOURCE_ID,
+      filter: ["has", "point_count"],
+      layout: {
+        "text-field": ["get", "point_count_abbreviated"],
+        "text-font": ["Open Sans Semibold"],
+        "text-size": 12
+      },
+      paint: {
+        "text-color": "#07131f"
+      }
+    });
+  }
+  if (!map.getLayer(NEWS_POINT_LAYER_ID)) {
+    map.addLayer({
+      id: NEWS_POINT_LAYER_ID,
+      type: "circle",
+      source: NEWS_SOURCE_ID,
+      filter: ["!", ["has", "point_count"]],
+      paint: {
+        "circle-color": [
+          "match",
+          ["get", "severity"],
+          "critical",
+          "#fb7185",
+          "high",
+          "#f59e0b",
+          "medium",
+          "#22d3ee",
+          "#67e8f9"
+        ],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 1, 6, 4, 10],
+        "circle-stroke-color": "#07131f",
+        "circle-stroke-width": 2,
+        "circle-opacity": 0.96
+      }
+    });
+    map.on("click", NEWS_POINT_LAYER_ID, (event) => {
+      const feature = event.features?.[0];
+      const eventId = typeof feature?.properties?.event_id === "string" ? feature.properties.event_id : "";
+      if (!eventId || !feature) return;
+      onMapPointSelectRef.current?.(eventId);
+      const coordinates = feature.geometry.type === "Point" ? feature.geometry.coordinates : null;
+      if (!Array.isArray(coordinates) || coordinates.length < 2) return;
+      new maplibre.Popup({
+        closeButton: false,
+        className: "stonks-map-popup",
+        maxWidth: "320px"
+      })
+        .setLngLat([Number(coordinates[0]), Number(coordinates[1])])
+        .setDOMContent(createNewsMapPointPopup(feature.properties))
+        .addTo(map);
+    });
+    map.on("mouseenter", NEWS_POINT_LAYER_ID, () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
+    map.on("mouseleave", NEWS_POINT_LAYER_ID, () => {
+      map.getCanvas().style.cursor = "";
+    });
+  }
+  if (wiredClusterMaps.has(map)) return;
+  wiredClusterMaps.add(map);
+  map.on("click", NEWS_CLUSTER_LAYER_ID, (event) => {
+    const feature = event.features?.[0];
+    const clusterId = feature?.properties?.cluster_id;
+    const source = map.getSource(NEWS_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+    if (typeof clusterId !== "number" || !source || !feature) return;
+    void source.getClusterExpansionZoom(clusterId).then((zoom) => {
+      const coordinates = feature.geometry.type === "Point" ? feature.geometry.coordinates : null;
+      if (!Array.isArray(coordinates) || coordinates.length < 2) return;
+      map.easeTo({ center: [Number(coordinates[0]), Number(coordinates[1])], zoom, duration: 450 });
+    });
+  });
+}
+
+function createNewsFeatureCollection(mapPoints: NewsMapPoint[]) {
+  return {
+    type: "FeatureCollection" as const,
+    features: mapPoints
+      .filter((point) => isValidLngLat(point.longitude, point.latitude))
+      .map((point) => ({
+        type: "Feature" as const,
+        geometry: {
+          type: "Point" as const,
+          coordinates: [point.longitude, point.latitude]
+        },
+        properties: {
+          point_id: point.point_id,
+          event_id: point.event_id,
+          title: point.title,
+          summary: point.summary,
+          area_label: point.area_label,
+          severity: point.severity,
+          urgency_score: point.urgency_score,
+          source_count: point.source_count,
+          source_published_at: point.source_published_at
+        }
+      }))
+  };
+}
+
+function isValidLngLat(longitude: number, latitude: number) {
+  return (
+    Number.isFinite(longitude) &&
+    Number.isFinite(latitude) &&
+    longitude >= -180 &&
+    longitude <= 180 &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    (Math.abs(longitude) > 0.0001 || Math.abs(latitude) > 0.0001)
+  );
+}
+
+function createNewsMapPointPopup(properties: maplibregl.MapGeoJSONFeature["properties"]) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "grid gap-1.5 p-3 text-left";
+
+  const area = document.createElement("div");
+  area.className = "text-[11px] font-semibold uppercase leading-4 text-accent";
+  area.textContent = safeProperty(properties, "area_label");
+  wrapper.appendChild(area);
+
+  const title = document.createElement("div");
+  title.className = "text-sm font-semibold leading-5 text-ink";
+  title.textContent = safeProperty(properties, "title");
+  wrapper.appendChild(title);
+
+  const summary = document.createElement("p");
+  summary.className = "text-xs leading-5 text-muted";
+  summary.textContent = safeProperty(properties, "summary");
+  wrapper.appendChild(summary);
+
+  const meta = document.createElement("div");
+  meta.className = "text-[11px] font-semibold uppercase leading-4 text-warning";
+  meta.textContent = `${safeProperty(properties, "severity")} · urgency ${safeProperty(properties, "urgency_score")}`;
+  wrapper.appendChild(meta);
+
+  return wrapper;
+}
+
+function safeProperty(properties: maplibregl.MapGeoJSONFeature["properties"], key: string) {
+  const value = properties?.[key];
+  if (typeof value === "number") return String(value);
+  if (typeof value !== "string") return "";
+  return value.replace(/[\u0000-\u001F]+/g, " ").slice(0, 320);
 }
 
 function createEventPopup(event: PublicEvent) {

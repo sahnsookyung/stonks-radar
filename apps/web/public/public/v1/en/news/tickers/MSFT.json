@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-07T11:08:47Z",
-  "stale_after": "2026-06-07T23:08:47Z",
-  "hard_expires_at": "2026-06-14T11:08:47Z",
+  "generated_at": "2026-06-09T19:51:21Z",
+  "stale_after": "2026-06-10T07:51:21Z",
+  "hard_expires_at": "2026-06-16T19:51:21Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_MSFT",
-  "content_hash": "sha256:a699cc543342be8fa9679eb6cc3fc5671ccd1c0d3e98eef6a7dccbd30d86fa9a",
+  "content_hash": "sha256:a53cf34608b8c806ebe6ccf9bc9c4a90051dbbc43232640b6fbcbb0f82f26978",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "MSFT",
     "name": "Microsoft Corporation",
-    "generated_label": "2026-06-07T11:08:47Z",
+    "generated_label": "2026-06-09T19:51:21Z",
     "summary": "No approved news events are currently linked to MSFT.",
     "events": []
   },

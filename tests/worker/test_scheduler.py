@@ -30,6 +30,7 @@ def _settings(**overrides):
         "news_max_documents_per_source_per_run": 100,
         "news_processing_batch_limit": 500,
         "news_page_read_batch_limit": 25,
+        "gdelt_doc_max_records": 250,
         "news_rss_enabled": True,
         "news_gdelt_enabled": False,
         "news_public_health_enabled": True,
@@ -109,6 +110,8 @@ def test_news_fetch_scheduler_creates_enabled_source_specs():
 
     assert {"federal_reserve", "who", "google_news_rss"}.issubset(keys)
     assert "gdelt" not in keys
+    assert "gdelt_events" not in keys
+    assert "gdelt_gkg" not in keys
     assert all(spec["job_type"] == "news.fetch_source" for spec in specs)
     assert all(spec["job_group"] == "news" for spec in specs)
     assert all("run_after" in spec for spec in specs)
@@ -123,6 +126,9 @@ def test_news_fetch_scheduler_applies_source_cadence_and_caps():
     assert source_poll_seconds(profiles["rocket_lab_ir"], settings) == 1800
     assert source_max_documents(profiles["who"], settings) == 20
     assert source_max_documents(profiles["google_news_rss"], settings) == 20
+    assert source_max_documents(profiles["gdelt"], _settings(news_max_documents_per_source_per_run=1000)) == 250
+    assert source_max_documents(profiles["gdelt_events"], _settings(news_max_documents_per_source_per_run=1000)) == 250
+    assert source_max_documents(profiles["gdelt_gkg"], _settings(news_max_documents_per_source_per_run=1000)) == 250
 
 
 def test_news_fetch_scheduler_respects_source_toggles():
@@ -140,7 +146,7 @@ def test_news_fetch_scheduler_respects_source_toggles():
     assert not any(key.startswith("google_news_") for key in keys)
     assert not any(key.startswith("yahoo_finance_") for key in keys)
     assert "who" not in keys
-    assert "gdelt" in keys
+    assert {"gdelt", "gdelt_events", "gdelt_gkg"}.issubset(keys)
 
 
 def test_news_pipeline_scheduler_creates_local_processing_specs():

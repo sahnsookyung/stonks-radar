@@ -88,6 +88,8 @@ export type NewsTrustTier =
   | "T6_BLOCKED";
 
 export type NewsMarketDirection = "bullish" | "bearish" | "mixed" | "unclear";
+export type BreakingMarketLabel = "breaking" | "developing" | "latest" | "stale" | "unmappable";
+export type NewsMapPointRelation = "event_location" | "chokepoint" | "affected_market" | "source_region";
 
 export type NewsRegionRelation =
   | "source_region"
@@ -152,6 +154,65 @@ export interface NewsEventListItem {
   topics: NewsTopicRef[];
   market_direction: NewsMarketDirection;
   source_links: NewsSourceRef[];
+}
+
+export interface NewsMapPoint {
+  point_id: string;
+  event_id: string;
+  title: string;
+  summary: string;
+  area_key: string;
+  area_label: string;
+  relation: NewsMapPointRelation;
+  latitude: number;
+  longitude: number;
+  severity: Severity;
+  urgency_score: number;
+  source_published_at: string;
+  observed_at: string;
+  source_count: number;
+  geo_confidence: number;
+  area_priority: number;
+  score_reason_codes: string[];
+}
+
+export interface BreakingMarketEvent {
+  event_id: string;
+  title: string;
+  summary: string;
+  source_url?: string;
+  source_published_at: string;
+  observed_at: string;
+  verified_at: string;
+  freshness_confidence: number;
+  urgency_score: number;
+  severity: Severity;
+  trust_tier: NewsTrustTier;
+  discovery_only: boolean;
+  review_state: "approved" | "reviewed" | "published";
+  citation_ids: string[];
+  retention_class: "metadata_only" | "summary_only" | "full_text_reviewed";
+  geo_points: NewsMapPoint[];
+  geo_confidence: number;
+  score_reason_codes: string[];
+  dedupe_key: string;
+  label: BreakingMarketLabel;
+  tickers: NewsTickerRef[];
+  regions: NewsRegionRef[];
+  topics: NewsTopicRef[];
+  source_count: number;
+}
+
+export interface BreakingMarketMapData {
+  events: BreakingMarketEvent[];
+  map_points: NewsMapPoint[];
+  shown_count: number;
+  total_count: number;
+  ranking_cutoff: number | null;
+  registry_version: number;
+  scoring_version: string;
+  thinning_version: string;
+  generated_at: string;
 }
 
 export interface NewsIndexSnapshotData {
@@ -223,6 +284,8 @@ export interface HomeSnapshotData {
     backend_dependency: "none_for_public_pages";
   };
   top_events: PublicEvent[];
+  breaking_market_events: BreakingMarketEvent[];
+  breaking_market_map: BreakingMarketMapData;
   macro_tiles: MetricTile[];
   alternative_signals: AlternativeSignalLane[];
   sector_tiles: SectorTile[];
@@ -384,6 +447,8 @@ export interface ScenarioBasketSummary {
 
 export interface MapEventsData {
   events: PublicEvent[];
+  breaking_market_events: BreakingMarketEvent[];
+  breaking_market_map: BreakingMarketMapData;
   filters: {
     countries_regions: string[];
     sectors: string[];

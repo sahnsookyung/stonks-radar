@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import inspect
 import asyncio
+import io
+import zipfile
 from types import SimpleNamespace
 from datetime import datetime, timezone
 
@@ -12,13 +14,19 @@ from frw_api.core.settings import Settings
 from frw_api.services.news.clusterer import cluster_documents
 from frw_api.services.news.email_alerts import _extract_links, email_webhook_signature
 from frw_api.services.news.entity_matcher import EntityProfile, match_entities
-from frw_api.services.news.ingestion import build_news_source_request, parse_news_response
+from frw_api.services.news.ingestion import (
+    _parse_gdelt_bulk_file,
+    _select_gdelt_update_file,
+    build_news_source_request,
+    parse_news_response,
+)
+from frw_api.services.news.geopolitical_registry import match_geo_points
 from frw_api.services.news.page_reader import detect_denial_reason, headers_for_fetch_profile, _headers_for_document, _provider_for_document
 from frw_api.services.news import ingestion, page_reader
 from frw_api.services.news.pipeline import news_entity_profiles
 from frw_api.services.news.region_classifier import classify_regions
 from frw_api.services.news.scoring import breaking_score, classify_provider_error
-from frw_api.services.news.snapshot_builder import _event_list_item, _public_source_url, _reviewed_events
+from frw_api.services.news.snapshot_builder import _breaking_market_projection, _event_list_item, _public_source_url, _reviewed_events
 from frw_api.services.news.source_registry import source_registry
 from frw_api.services.news.facts import public_summary_cited_facts_valid
 from frw_api.services.news.summary_builder import build_summary
@@ -131,6 +139,104 @@ def test_news_snapshot_event_freshness_uses_source_time_and_sanitizes_urls():
     assert item["source_published_at"] == "2026-05-01T00:00:00+00:00"
     assert item["observed_at"] == "2026-05-01T00:00:00+00:00"
     assert item["freshness"] == "stale"
+
+
+def test_breaking_market_projection_maps_fresh_hormuz_event():
+    generated = "2026-06-09T12:00:00+00:00"
+    projection = _breaking_market_projection(
+        [
+            _news_list_item_for_breaking(
+                "event-hormuz",
+                "Oil jumps as Strait of Hormuz shipping risk rises",
+                "Iran-linked tensions near the Strait of Hormuz lifted oil and shipping risk.",
+                "2026-06-09T11:50:00+00:00",
+                "2026-06-09T11:55:00+00:00",
+            )
+        ],
+        generated_label=generated,
+    )
+
+    assert projection["shown_count"] >= 1
+    assert projection["events"][0]["label"] == "breaking"
+    area_keys = {point["area_key"] for point in projection["map_points"]}
+    assert "HORMUZ" in area_keys
+    assert all(point["latitude"] != 0 and point["longitude"] != 0 for point in projection["map_points"])
+
+
+def test_breaking_market_projection_excludes_stale_future_and_unmappable_events():
+    generated = "2026-06-09T12:00:00+00:00"
+    projection = _breaking_market_projection(
+        [
+            _news_list_item_for_breaking(
+                "event-old",
+                "Old oil headline near Hormuz",
+                "Old shipping story near the Strait of Hormuz.",
+                "2026-06-08T11:00:00+00:00",
+                "2026-06-08T11:05:00+00:00",
+            ),
+            _news_list_item_for_breaking(
+                "event-future",
+                "Future Iran headline",
+                "Future-skewed Iran market headline.",
+                "2026-06-09T12:30:00+00:00",
+                "2026-06-09T12:30:00+00:00",
+            ),
+            _news_list_item_for_breaking(
+                "event-unmappable",
+                "Ticker-only update",
+                "A company announces an investor presentation.",
+                "2026-06-09T11:50:00+00:00",
+                "2026-06-09T11:55:00+00:00",
+            ),
+        ],
+        generated_label=generated,
+    )
+
+    assert projection["shown_count"] == 0
+    assert projection["events"] == []
+    assert projection["map_points"] == []
+
+
+def _news_list_item_for_breaking(
+    event_id: str,
+    title: str,
+    summary: str,
+    source_published_at: str,
+    observed_at: str,
+) -> dict:
+    return {
+        "id": event_id,
+        "title": title,
+        "summary": summary,
+        "event_type": "geopolitics",
+        "first_seen_at": observed_at,
+        "last_seen_at": observed_at,
+        "published_at": source_published_at,
+        "source_published_at": source_published_at,
+        "observed_at": observed_at,
+        "freshness": "fresh",
+        "severity": "high",
+        "confidence": 0.85,
+        "breaking_score": 82,
+        "trust_score": 75,
+        "source_count": 1,
+        "tickers": [],
+        "regions": [],
+        "topics": [{"key": "energy", "label": "Energy", "confidence": 0.9}],
+        "market_direction": "mixed",
+        "source_links": [
+            {
+                "label": "Test source",
+                "url": "https://example.com/story",
+                "source_key": "test_source",
+                "policy_version": 1,
+                "title": title,
+                "published_at": source_published_at,
+                "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
+                "is_primary": True,
+            }
+        ],
+    }
 
 
 def test_sec_page_reader_helpers_require_exact_sec_host():
@@ -339,6 +445,140 @@ def test_news_gdelt_parser_keeps_weak_signal_discovery_only():
     assert documents[0]["trust_tier"] == "T4_WEAK_SIGNAL"
     assert documents[0]["discovery_only"] is True
     assert documents[0]["published_at"].startswith("2026-05-28T09:00:00")
+
+
+def test_news_gdelt_update_file_parser_requires_expected_bulk_suffix_and_host():
+    selected = _select_gdelt_update_file(
+        "\n".join(
+            [
+                "123 abc http://data.gdeltproject.org/gdeltv2/20260609093000.export.CSV.zip",
+                "456 def http://evil.example/gdeltv2/20260609093000.gkg.csv.zip",
+            ]
+        ),
+        suffix=".export.CSV.zip",
+    )
+    rejected = _select_gdelt_update_file(
+        "456 def http://evil.example/gdeltv2/20260609093000.gkg.csv.zip",
+        suffix=".gkg.csv.zip",
+    )
+
+    assert selected and selected["timestamp"] == "20260609093000"
+    assert rejected is None
+
+
+def test_news_gdelt_event_file_parser_keeps_registry_matched_metadata_only_rows():
+    profile = source_registry()["gdelt_events"]
+    row = [""] * 61
+    row[0] = "12345"
+    row[1] = "20260609"
+    row[6] = "IRAN"
+    row[16] = "SHIPPING"
+    row[26] = "193"
+    row[29] = "4"
+    row[30] = "-7.0"
+    row[34] = "-3.5"
+    row[36] = "Tehran, Iran"
+    row[37] = "IR"
+    row[44] = "Persian Gulf"
+    row[45] = "IR"
+    row[51] = "4"
+    row[53] = "IR"
+    row[52] = "Strait of Hormuz, Iran"
+    row[57] = "56.25"
+    row[59] = "20260609093000"
+    row[60] = "https://example.com/hormuz-risk"
+
+    documents = _parse_gdelt_bulk_file(
+        profile,
+        _zip_rows([row]),
+        selected={
+            "url": "http://data.gdeltproject.org/gdeltv2/20260609093000.export.CSV.zip",
+            "timestamp": "20260609093000",
+        },
+        max_documents=5,
+        max_rows=10,
+        max_expanded_bytes=100_000,
+    )
+
+    assert documents[0]["title"].startswith("GDELT event 193")
+    assert documents[0]["discovery_only"] is True
+    assert documents[0]["gdelt_global_event_id"] == "12345"
+    assert documents[0]["published_at"] == "2026-06-09T09:30:00+00:00"
+    assert documents[0]["geo_points"][0]["area_key"] in {"IRN", "HORMUZ"}
+    assert documents[0]["dedupe_key"].startswith("news:")
+
+
+def test_news_gdelt_event_file_parser_rejects_private_source_urls():
+    profile = source_registry()["gdelt_events"]
+    row = [""] * 61
+    row[0] = "12345"
+    row[1] = "20260609"
+    row[6] = "IRAN"
+    row[16] = "SHIPPING"
+    row[26] = "193"
+    row[29] = "4"
+    row[52] = "Strait of Hormuz, Iran"
+    row[53] = "IR"
+    row[59] = "20260609093000"
+    row[60] = "http://127.0.0.1/hormuz-risk"
+
+    documents = _parse_gdelt_bulk_file(
+        profile,
+        _zip_rows([row]),
+        selected={
+            "url": "http://data.gdeltproject.org/gdeltv2/20260609093000.export.CSV.zip",
+            "timestamp": "20260609093000",
+        },
+        max_documents=5,
+        max_rows=10,
+        max_expanded_bytes=100_000,
+    )
+
+    assert documents == []
+
+
+def test_geopolitical_registry_alias_matching_does_not_match_substrings():
+    points = match_geo_points(texts=("Russia and Ukraine war escalation hits energy shipping risk",))
+    area_keys = {point["area_key"] for point in points}
+
+    assert "UKR" in area_keys
+    assert "GBR" not in area_keys
+
+
+def test_news_gdelt_gkg_file_parser_keeps_registry_matched_metadata_only_rows():
+    profile = source_registry()["gdelt_gkg"]
+    row = [""] * 16
+    row[0] = "20260609093000-1"
+    row[1] = "20260609093000"
+    row[3] = "example.com"
+    row[4] = "https://example.com/taiwan-strait"
+    row[7] = "TAX_FNCACT_SHIPPING;WB_133_INFORMATION_AND_COMMUNICATION_TECHNOLOGIES"
+    row[9] = "1#Taiwan Strait#TW#TW#23.7#121.0#TW;1#Taiwan#TW#TW#23.7#121.0#TW"
+
+    documents = _parse_gdelt_bulk_file(
+        profile,
+        _zip_rows([row]),
+        selected={
+            "url": "http://data.gdeltproject.org/gdeltv2/20260609093000.gkg.csv.zip",
+            "timestamp": "20260609093000",
+        },
+        max_documents=5,
+        max_rows=10,
+        max_expanded_bytes=100_000,
+    )
+
+    assert documents[0]["title"].startswith("GDELT GKG:")
+    assert documents[0]["discovery_only"] is True
+    assert documents[0]["gdelt_record_id"] == "20260609093000-1"
+    assert documents[0]["geo_points"][0]["area_key"] in {"TWN", "TAIWAN_STRAIT"}
+
+
+def _zip_rows(rows: list[list[str]]) -> bytes:
+    payload = "\n".join("\t".join(row) for row in rows).encode()
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("gdelt.csv", payload)
+    return buffer.getvalue()
 
 
 def test_official_html_parser_builds_metadata_documents():

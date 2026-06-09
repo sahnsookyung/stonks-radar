@@ -2,6 +2,11 @@ from __future__ import annotations
 
 import email.utils
 import hashlib
+import io
+import ipaddress
+import re
+import zipfile
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
@@ -15,6 +20,7 @@ from frw_api.adapters.base import AdapterResult
 from frw_api.core.settings import get_settings
 from frw_api.services.ingestion_pipeline import persist_adapter_result
 from frw_api.services.news.document_normalizer import normalize_document
+from frw_api.services.news.geopolitical_registry import match_geo_points
 from frw_api.services.news.page_reader import (
     detect_denial_reason,
     extract_html_documents,
@@ -32,9 +38,14 @@ from frw_api.services.provider_limits import (
     ProviderQuotaGuard,
     provider_error_from_response,
 )
+from frw_api.services.fetch_policy import is_blocked_ip
 from frw_api.services.safe_fetch import SafeFetchError, safe_fetch_bytes
 
 SHA256_PREFIX = "sha256:"
+GDELT_LASTUPDATE_URL = "http://data.gdeltproject.org/gdeltv2/lastupdate.txt"
+GDELT_DATA_HOST_ALLOWLIST = frozenset({"data.gdeltproject.org"})
+GDELT_EXPORT_SUFFIX = ".export.CSV.zip"
+GDELT_GKG_SUFFIX = ".gkg.csv.zip"
 
 
 class NewsIngestionError(ValueError):
@@ -116,6 +127,13 @@ async def fetch_news_source(
             "documents": 0,
             "persisted": {"documents": 0, "observations": 0, "releases": 0, "source_status": "unsupported"},
         }
+    if profile.fetch_kind in {"gdelt_event_file", "gdelt_gkg_file"}:
+        return await _fetch_gdelt_bulk_source(
+            db,
+            profile=profile,
+            max_documents=limit,
+            transport=transport,
+        )
 
     headers = {
         "Accept": "application/rss+xml, application/atom+xml, application/json;q=0.9, */*;q=0.2",
@@ -241,6 +259,12 @@ def build_news_source_request(
             },
             headers={"Accept": "application/json"},
         )
+    if profile.fetch_kind in {"gdelt_event_file", "gdelt_gkg_file"}:
+        return NewsSourceRequest(
+            url=GDELT_LASTUPDATE_URL,
+            params={},
+            headers={"Accept": "text/plain"},
+        )
     if profile.feed_url:
         headers = {"Accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.3"} if profile.fetch_kind == "html_index" else {}
         return NewsSourceRequest(url=profile.feed_url, params={}, headers=headers)
@@ -281,6 +305,264 @@ def parse_news_response(
             )
         ]
     return _parse_feed_xml(profile, body, max_documents=max_documents)
+
+
+async def _fetch_gdelt_bulk_source(
+    db: Session,
+    *,
+    profile: SourceProfile,
+    max_documents: int,
+    transport: httpx.AsyncBaseTransport | None,
+) -> dict[str, Any]:
+    settings = get_settings()
+    lastupdate = await _fetch_limited_provider_response(
+        provider_key=profile.rate_limit_provider_key,
+        endpoint_key=profile.rate_limit_endpoint_key,
+        db=db,
+        idempotency_key=f"gdelt-bulk:lastupdate:{profile.source_key}",
+        max_bytes=20_000,
+        timeout_seconds=settings.source_fetch_timeout_seconds,
+        headers={"Accept": "text/plain", "User-Agent": settings.sec_user_agent},
+        url=GDELT_LASTUPDATE_URL,
+        params=None,
+        transport=transport,
+        allow_http_hosts=GDELT_DATA_HOST_ALLOWLIST,
+    )
+    suffix = GDELT_EXPORT_SUFFIX if profile.fetch_kind == "gdelt_event_file" else GDELT_GKG_SUFFIX
+    selected = _select_gdelt_update_file(lastupdate.text, suffix=suffix)
+    if selected is None:
+        upsert_source_health(
+            db,
+            source_key=profile.source_key,
+            status="empty",
+            details={"reason": "gdelt_update_file_missing", "suffix": suffix},
+        )
+        return {
+            "source_key": profile.source_key,
+            "status": "empty",
+            "documents": 0,
+            "persisted": {"documents": 0, "observations": 0, "releases": 0, "source_status": "empty"},
+        }
+    archive = await _fetch_limited_provider_response(
+        provider_key=profile.rate_limit_provider_key,
+        endpoint_key=profile.rate_limit_endpoint_key,
+        db=db,
+        idempotency_key=f"gdelt-bulk:{profile.source_key}:{selected['url']}",
+        max_bytes=min(settings.source_fetch_max_bytes, settings.gdelt_bulk_max_compressed_bytes),
+        timeout_seconds=settings.source_fetch_timeout_seconds,
+        headers={"Accept": "application/zip,*/*;q=0.2", "User-Agent": settings.sec_user_agent},
+        url=selected["url"],
+        params=None,
+        transport=transport,
+        allow_http_hosts=GDELT_DATA_HOST_ALLOWLIST,
+    )
+    documents = _parse_gdelt_bulk_file(
+        profile,
+        archive.content,
+        selected=selected,
+        max_documents=max_documents,
+        max_rows=settings.gdelt_bulk_max_rows,
+        max_expanded_bytes=settings.gdelt_bulk_max_expanded_bytes,
+    )
+    adapter_result = AdapterResult(
+        source_key=profile.source_key,
+        object_key=f"news:{profile.source_key}:{selected['timestamp']}",
+        observations=[],
+        releases=[],
+        documents=documents,
+        unsupported=[] if documents else ["no_relevant_gdelt_bulk_rows"],
+    )
+    persisted = persist_adapter_result(db, adapter_result)
+    return {
+        "source_key": profile.source_key,
+        "status": "ready" if documents else "empty",
+        "documents": len(documents),
+        "persisted": persisted,
+        "trust_tier": profile.trust_tier,
+        "copyright_mode": profile.copyright_mode,
+        "gdelt_file": selected,
+    }
+
+
+def _select_gdelt_update_file(text: str, *, suffix: str) -> dict[str, str] | None:
+    for line in text.splitlines():
+        parts = line.strip().split()
+        if len(parts) != 3:
+            continue
+        size, md5, url = parts
+        if not url.endswith(suffix) or not _is_gdelt_data_url(url):
+            continue
+        timestamp = url.rsplit("/", 1)[-1].split(".", 1)[0]
+        return {"size": size, "md5": md5, "url": url, "timestamp": timestamp}
+    return None
+
+
+def _parse_gdelt_bulk_file(
+    profile: SourceProfile,
+    body: bytes,
+    *,
+    selected: dict[str, str],
+    max_documents: int,
+    max_rows: int,
+    max_expanded_bytes: int,
+) -> list[dict[str, Any]]:
+    rows = _iter_zipped_csv_rows(body, max_rows=max_rows, max_expanded_bytes=max_expanded_bytes)
+    if profile.fetch_kind == "gdelt_event_file":
+        return _parse_gdelt_event_rows(profile, rows, selected=selected, max_documents=max_documents)
+    return _parse_gdelt_gkg_rows(profile, rows, selected=selected, max_documents=max_documents)
+
+
+def _iter_zipped_csv_rows(
+    body: bytes, *, max_rows: int, max_expanded_bytes: int
+) -> Iterator[list[str]]:
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(body))
+    except zipfile.BadZipFile as exc:
+        raise NewsIngestionError("Malformed GDELT zip archive") from exc
+    infos = [info for info in archive.infolist() if not info.is_dir()]
+    if len(infos) != 1:
+        raise NewsIngestionError("GDELT zip archive must contain exactly one file")
+
+    def line_iter() -> Iterator[str]:
+        expanded = 0
+        count = 0
+        with archive.open(infos[0]) as stream:
+            for raw_line in stream:
+                expanded += len(raw_line)
+                if expanded > max_expanded_bytes:
+                    raise NewsIngestionError("GDELT expanded CSV exceeded configured limit")
+                count += 1
+                if count > max_rows:
+                    break
+                yield raw_line.decode("utf-8", errors="replace")
+
+    import csv
+
+    yield from csv.reader(line_iter(), delimiter="\t")
+
+
+def _parse_gdelt_event_rows(
+    profile: SourceProfile,
+    rows: Iterable[list[str]],
+    *,
+    selected: dict[str, str],
+    max_documents: int,
+) -> list[dict[str, Any]]:
+    documents: list[dict[str, Any]] = []
+    for row in rows:
+        if len(documents) >= max_documents:
+            break
+        if len(row) < 61:
+            continue
+        source_url = row[60].strip()
+        if not _is_public_http_url(source_url):
+            continue
+        place = _first_nonempty(row[52], row[44], row[36])
+        actor1 = row[6].strip()
+        actor2 = row[16].strip()
+        event_code = row[26].strip()
+        quad_class = row[29].strip()
+        goldstein = row[30].strip()
+        tone = row[34].strip()
+        source_country = _first_nonempty(row[53], row[45], row[37])
+        text_blob = " ".join(
+            part for part in (actor1, actor2, place, source_country, event_code, source_url) if part
+        )
+        if not _gdelt_bulk_relevant(text_blob, event_code=event_code, quad_class=quad_class):
+            continue
+        geo_points = match_geo_points(texts=(text_blob,))
+        if not geo_points:
+            continue
+        title = _gdelt_event_title(actor1, actor2, place, event_code)
+        published_at = _gdelt_file_datetime(_first_nonempty(row[59], selected["timestamp"], row[1]))
+        documents.append(
+            _normalized_document_dict(
+                profile,
+                {
+                    "title": title,
+                    "url": source_url,
+                    "canonical_url": source_url,
+                    "snippet": (
+                        f"GDELT event metadata: event {event_code}, quad class {quad_class}, "
+                        f"Goldstein {goldstein or 'n/a'}, tone {tone or 'n/a'}."
+                    ),
+                    "published_at": published_at,
+                    "source_region": source_country,
+                    "language": "en",
+                    "gdelt_file_url": selected["url"],
+                    "gdelt_file_timestamp": selected["timestamp"],
+                    "gdelt_global_event_id": row[0].strip(),
+                    "gdelt_event_code": event_code,
+                    "gdelt_quad_class": quad_class,
+                    "geo_points": geo_points,
+                    "dedupe_key": "news:"
+                    + hashlib.sha256(
+                        "|".join(
+                            [
+                                profile.source_key,
+                                row[0].strip(),
+                                source_url,
+                                selected["timestamp"],
+                            ]
+                        ).encode()
+                    ).hexdigest(),
+                },
+            )
+        )
+    return documents
+
+
+def _parse_gdelt_gkg_rows(
+    profile: SourceProfile,
+    rows: Iterable[list[str]],
+    *,
+    selected: dict[str, str],
+    max_documents: int,
+) -> list[dict[str, Any]]:
+    documents: list[dict[str, Any]] = []
+    for row in rows:
+        if len(documents) >= max_documents:
+            break
+        if len(row) < 16:
+            continue
+        record_id = row[0].strip()
+        source_domain = row[3].strip()
+        document_url = row[4].strip()
+        if not _is_public_http_url(document_url):
+            continue
+        themes = _gdelt_gkg_values(row[7] if len(row) > 7 else "")
+        locations = _gdelt_gkg_locations(row[9] if len(row) > 9 else "")
+        text_blob = " ".join([document_url, source_domain, " ".join(themes), " ".join(locations)])
+        if not _gdelt_bulk_relevant(text_blob):
+            continue
+        geo_points = match_geo_points(texts=(text_blob,))
+        if not geo_points:
+            continue
+        title = _gdelt_gkg_title(themes, locations, source_domain)
+        documents.append(
+            _normalized_document_dict(
+                profile,
+                {
+                    "title": title,
+                    "url": document_url,
+                    "canonical_url": document_url,
+                    "snippet": _gdelt_gkg_snippet(themes, locations),
+                    "published_at": _gdelt_file_datetime(_first_nonempty(row[1], selected["timestamp"])),
+                    "source_region": locations[0] if locations else None,
+                    "language": "en",
+                    "gdelt_file_url": selected["url"],
+                    "gdelt_file_timestamp": selected["timestamp"],
+                    "gdelt_record_id": record_id,
+                    "gdelt_source_domain": source_domain,
+                    "geo_points": geo_points,
+                    "dedupe_key": "news:"
+                    + hashlib.sha256(
+                        "|".join([profile.source_key, record_id, document_url]).encode()
+                    ).hexdigest(),
+                },
+            )
+        )
+    return documents
 
 
 def _parse_sec_submissions_json(  # NOSONAR - SEC recent-filings arrays are parsed in one aligned pass.
@@ -432,6 +714,25 @@ def _normalized_document_dict(profile: SourceProfile, payload: dict[str, Any]) -
             "source_region": payload.get("source_region") or (profile.region_coverage[0] if profile.region_coverage else None),
         }
     )
+    preserved_metadata = {
+        key: value
+        for key, value in payload.items()
+        if key
+        not in {
+            "title",
+            "url",
+            "canonical_url",
+            "snippet",
+            "summary",
+            "published_at",
+            "fetched_at",
+            "language",
+            "source_region",
+            "raw_hash",
+            "normalized_hash",
+            "dedupe_key",
+        }
+    }
     return {
         "title": normalized.title,
         "url": normalized.url,
@@ -453,7 +754,8 @@ def _normalized_document_dict(profile: SourceProfile, payload: dict[str, Any]) -
         "symbols": list(profile.symbols),
         "entity_type": profile.entity_type,
         "fetch_profile": profile.fetch_profile,
-        "dedupe_key": "news:"
+        "dedupe_key": str(payload.get("dedupe_key") or "")
+        or "news:"
         + hashlib.sha256(
             "|".join(
                 [
@@ -464,6 +766,7 @@ def _normalized_document_dict(profile: SourceProfile, payload: dict[str, Any]) -
                 ]
             ).encode()
         ).hexdigest(),
+        **preserved_metadata,
     }
 
 
@@ -479,6 +782,7 @@ async def _fetch_limited_provider_response(
     url: str,
     params: dict[str, str] | None,
     transport: httpx.AsyncBaseTransport | None,
+    allow_http_hosts: frozenset[str] | set[str] | None = None,
 ) -> httpx.Response:
     guard = ProviderQuotaGuard.default()
     reservation = guard.reserve(
@@ -497,6 +801,7 @@ async def _fetch_limited_provider_response(
             max_bytes=max_bytes,
             timeout_seconds=timeout_seconds,
             raise_for_status=False,
+            allow_http_hosts=allow_http_hosts,
         )
         response = fetched.response
         provider_error = provider_error_from_response(response, provider_key, endpoint_key)
@@ -574,6 +879,155 @@ def _response_url(response: httpx.Response, profile: SourceProfile) -> str:
 def _is_safe_http_url(value: str) -> bool:
     parsed = urlparse(value.strip())
     return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def _is_public_http_url(value: str) -> bool:
+    parsed = urlparse(value.strip())
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return False
+    try:
+        _ = parsed.port
+    except ValueError:
+        return False
+    host = parsed.hostname.strip()
+    if not host or any(char.isspace() for char in host):
+        return False
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return True
+    return not is_blocked_ip(str(ip))
+
+
+def _is_gdelt_data_url(value: str) -> bool:
+    parsed = urlparse(value.strip())
+    return (
+        parsed.scheme == "http"
+        and parsed.hostname == "data.gdeltproject.org"
+        and parsed.path.startswith("/gdeltv2/")
+    )
+
+
+def _first_nonempty(*values: Any) -> str:
+    for value in values:
+        clean = str(value or "").strip()
+        if clean:
+            return clean
+    return ""
+
+
+def _gdelt_event_title(actor1: str, actor2: str, place: str, event_code: str) -> str:
+    actors = " / ".join(part for part in (actor1.strip(), actor2.strip()) if part)
+    where = f" near {place.strip()}" if place.strip() else ""
+    if actors:
+        return f"GDELT event {event_code}: {actors}{where}"
+    return f"GDELT event {event_code}{where}".strip()
+
+
+def _gdelt_file_datetime(value: str) -> str | None:
+    clean = str(value or "").strip()
+    if not clean:
+        return None
+    for fmt in ("%Y%m%d%H%M%S", "%Y%m%dT%H%M%SZ", "%Y%m%d"):
+        try:
+            return datetime.strptime(clean, fmt).replace(tzinfo=timezone.utc).isoformat()
+        except ValueError:
+            continue
+    return None
+
+
+def _gdelt_gkg_values(value: str, *, limit: int = 8) -> list[str]:
+    result: list[str] = []
+    for raw in str(value or "").split(";"):
+        clean = raw.split(",", 1)[0].replace("_", " ").strip()
+        if clean and clean not in result:
+            result.append(clean)
+        if len(result) >= limit:
+            break
+    return result
+
+
+def _gdelt_gkg_locations(value: str, *, limit: int = 6) -> list[str]:
+    result: list[str] = []
+    for raw in str(value or "").split(";"):
+        parts = raw.split("#")
+        candidates = [part.strip() for part in parts[1:3] if part.strip()]
+        for candidate in candidates:
+            if candidate and candidate not in result:
+                result.append(candidate)
+        if len(result) >= limit:
+            break
+    return result
+
+
+def _gdelt_gkg_title(themes: list[str], locations: list[str], source_domain: str) -> str:
+    subject = themes[0] if themes else "global knowledge graph item"
+    where = f" in {locations[0]}" if locations else ""
+    source = f" via {source_domain}" if source_domain else ""
+    return f"GDELT GKG: {subject}{where}{source}"[:500]
+
+
+def _gdelt_gkg_snippet(themes: list[str], locations: list[str]) -> str:
+    parts = []
+    if themes:
+        parts.append("themes: " + ", ".join(themes[:5]))
+    if locations:
+        parts.append("locations: " + ", ".join(locations[:5]))
+    return "; ".join(parts)
+
+
+def _gdelt_bulk_relevant(
+    text: str, *, event_code: str = "", quad_class: str = ""
+) -> bool:
+    lower = text.replace("_", " ").replace("-", " ").lower()
+    if any(_gdelt_relevance_term_matches(lower, term) for term in _GDELT_RELEVANCE_TERMS):
+        return True
+    if quad_class in {"3", "4"} and event_code[:2] in _GDELT_SEVERE_EVENT_ROOTS:
+        return True
+    return False
+
+
+def _gdelt_relevance_term_matches(text: str, term: str) -> bool:
+    if " " in term:
+        return term in text
+    return re.search(rf"\b{re.escape(term)}\b", text) is not None
+
+
+_GDELT_RELEVANCE_TERMS = (
+    "attack",
+    "blockade",
+    "border",
+    "central bank",
+    "conflict",
+    "coup",
+    "crude",
+    "energy",
+    "export control",
+    "gas",
+    "geopolitical",
+    "hormuz",
+    "lng",
+    "military",
+    "missile",
+    "nuclear",
+    "oil",
+    "outbreak",
+    "pipeline",
+    "rate decision",
+    "red sea",
+    "refinery",
+    "sanction",
+    "semiconductor",
+    "shipping",
+    "south china sea",
+    "strait",
+    "supply chain",
+    "taiwan strait",
+    "tariff",
+    "trade war",
+    "war",
+)
+_GDELT_SEVERE_EVENT_ROOTS = frozenset({"13", "14", "16", "17", "18", "19", "20"})
 
 
 def _xml_text(element: ElementTree.Element, tag: str) -> str:

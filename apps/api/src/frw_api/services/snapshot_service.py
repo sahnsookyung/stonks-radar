@@ -337,6 +337,7 @@ def _apply_home_snapshot_data(
     localized_events = context.db_events.get(locale, [])
     if localized_events:
         snapshot["data"]["top_events"] = localized_events + snapshot["data"].get("top_events", [])
+    _apply_breaking_market_data(snapshot, locale, context)
     if context.db_calendar:
         snapshot["data"]["calendar_preview"] = context.db_calendar[:6]
     snapshot["data"]["generated_label"] = _iso(context.generated_at)
@@ -351,11 +352,36 @@ def _apply_home_snapshot_data(
 def _apply_map_snapshot_data(
     snapshot: dict[str, Any], locale: str, context: SnapshotTreeContext
 ) -> None:
-    localized_events = context.db_events.get(locale, [])
+    localized_events = [event for event in context.db_events.get(locale, []) if _valid_public_event_geo(event)]
+    _apply_breaking_market_data(snapshot, locale, context)
     if not localized_events:
         return
-    snapshot["data"]["events"] = localized_events + snapshot["data"].get("events", [])
+    snapshot["data"]["events"] = localized_events + [
+        event for event in snapshot["data"].get("events", []) if _valid_public_event_geo(event)
+    ]
     snapshot["data"]["filters"] = _map_filters(snapshot["data"]["events"])
+
+
+def _apply_breaking_market_data(snapshot: dict[str, Any], locale: str, context: SnapshotTreeContext) -> None:
+    news_data = context.db_news_by_locale.get(locale) or {}
+    breaking = news_data.get("breaking_market")
+    if not isinstance(breaking, dict):
+        return
+    snapshot["data"]["breaking_market_events"] = breaking.get("events", [])
+    snapshot["data"]["breaking_market_map"] = breaking
+
+
+def _valid_public_event_geo(event: dict[str, Any]) -> bool:
+    try:
+        latitude = float(event.get("latitude"))
+        longitude = float(event.get("longitude"))
+    except (TypeError, ValueError):
+        return False
+    if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+        return False
+    if abs(latitude) < 0.0001 and abs(longitude) < 0.0001:
+        return False
+    return bool(event.get("country_region_keys"))
 
 
 def _apply_news_collection_snapshot(

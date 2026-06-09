@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-07T11:08:47Z",
-  "stale_after": "2026-06-07T23:08:47Z",
-  "hard_expires_at": "2026-06-14T11:08:47Z",
+  "generated_at": "2026-06-09T19:51:21Z",
+  "stale_after": "2026-06-10T07:51:21Z",
+  "hard_expires_at": "2026-06-16T19:51:21Z",
   "object_type": "sector_page",
   "object_key": "oil-energy",
-  "content_hash": "sha256:78ca771c29322f9a882a6eef26f9d74dec8540af96f3beb70dc913a8dfcb094b",
+  "content_hash": "sha256:a312453c72446fd2b336c1a6168af903083864487db5249185cbe6abef5a2d68",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -171,9 +171,9 @@
         "title": "Energy supply-risk watch links shipping chokepoints, inventories, and inflation-sensitive markets",
         "summary": "Official energy data and reviewed geopolitical context are grouped as a supply-risk event affecting the US, Europe, China, Korea, Japan, and Brazil.",
         "event_type": "geopolitical_supply_risk",
-        "first_seen_at": "2026-06-05T11:08:47Z",
-        "last_seen_at": "2026-06-07T11:08:47Z",
-        "published_at": "2026-06-07T11:08:47Z",
+        "first_seen_at": "2026-06-07T19:51:21Z",
+        "last_seen_at": "2026-06-09T19:51:21Z",
+        "published_at": "2026-06-09T19:51:21Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.72,
@@ -244,7 +244,7 @@
             "source_key": "eia",
             "policy_version": 1,
             "title": "Weekly petroleum status report",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -254,7 +254,7 @@
             "source_key": "iea",
             "policy_version": 1,
             "title": "Oil market report",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           },
@@ -264,7 +264,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "Official energy-data context",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }
@@ -275,9 +275,9 @@
         "title": "China-origin export-control risk remains elevated for AI-chip supply chains",
         "summary": "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.",
         "event_type": "trade_policy",
-        "first_seen_at": "2026-06-05T11:08:47Z",
-        "last_seen_at": "2026-06-07T11:08:47Z",
-        "published_at": "2026-06-07T11:08:47Z",
+        "first_seen_at": "2026-06-07T19:51:21Z",
+        "last_seen_at": "2026-06-09T19:51:21Z",
+        "published_at": "2026-06-09T19:51:21Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.78,
@@ -374,7 +374,7 @@
             "source_key": "bis",
             "policy_version": 1,
             "title": "Bureau of Industry and Security export controls",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -384,7 +384,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "Issuer filings for affected companies",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           },
@@ -394,7 +394,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "Export Administration Regulations reference",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }
@@ -405,9 +405,9 @@
         "title": "Rocket Lab launch-window monitoring is linked to source evidence for RKLB",
         "summary": "Company and filing sources are grouped into a ticker-specific event for Rocket Lab launch-cadence monitoring.",
         "event_type": "company_update",
-        "first_seen_at": "2026-06-06T17:08:47Z",
-        "last_seen_at": "2026-06-07T11:08:47Z",
-        "published_at": "2026-06-07T11:08:47Z",
+        "first_seen_at": "2026-06-09T01:51:21Z",
+        "last_seen_at": "2026-06-09T19:51:21Z",
+        "published_at": "2026-06-09T19:51:21Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.8,
@@ -463,7 +463,7 @@
             "source_key": "rocket_lab_ir",
             "policy_version": 1,
             "title": "Rocket Lab updates",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -473,7 +473,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "Rocket Lab SEC filings",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           }
@@ -492,86 +492,198 @@
       {
         "key": "wti_crude",
         "label": "WTI crude oil futures",
-        "value": "90.54",
+        "value": "88.19",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "stale",
-        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-06-05T20:59:59Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-05T20:59:59Z",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-09T19:41:33Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-09T19:41:33Z",
         "coverage_status": "active",
-        "refresh_seconds": 43200,
+        "refresh_seconds": 900,
         "unit": "$",
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/CL%3DF?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-05T20:59:59Z",
-            "value": 90.54
+            "date": "2026-06-09T08:03:00Z",
+            "value": 89.76000213623047
+          },
+          {
+            "date": "2026-06-09T09:59:00Z",
+            "value": 89.16000366210938
+          },
+          {
+            "date": "2026-06-09T11:55:00Z",
+            "value": 89.66000366210938
+          },
+          {
+            "date": "2026-06-09T13:51:00Z",
+            "value": 87.91000366210938
+          },
+          {
+            "date": "2026-06-09T15:47:00Z",
+            "value": 87.51000213623047
+          },
+          {
+            "date": "2026-06-09T17:43:00Z",
+            "value": 88.30000305175781
+          },
+          {
+            "date": "2026-06-09T19:39:00Z",
+            "value": 88.20999908447266
+          },
+          {
+            "date": "2026-06-09T19:41:33Z",
+            "value": 88.19000244140625
           }
         ],
-        "refresh_delta": -2.5,
-        "refresh_delta_percent": -2.687016337059329
+        "refresh_delta": -3.1099999999999994,
+        "refresh_delta_percent": -3.406352683461117
       },
       {
         "key": "gold_futures",
         "label": "Gold futures",
-        "value": "4,365.3",
+        "value": "4,276",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "stale",
-        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-06-05T20:59:59Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-05T20:59:59Z",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-09T19:41:39Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-09T19:41:39Z",
         "coverage_status": "active",
-        "refresh_seconds": 43200,
+        "refresh_seconds": 900,
         "unit": "$",
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-05T20:59:59Z",
-            "value": 4365.3
+            "date": "2026-06-09T07:54:00Z",
+            "value": 4351.7001953125
+          },
+          {
+            "date": "2026-06-09T09:51:00Z",
+            "value": 4355.0
+          },
+          {
+            "date": "2026-06-09T11:48:00Z",
+            "value": 4364.0
+          },
+          {
+            "date": "2026-06-09T13:45:00Z",
+            "value": 4357.5
+          },
+          {
+            "date": "2026-06-09T15:42:00Z",
+            "value": 4304.0
+          },
+          {
+            "date": "2026-06-09T17:39:00Z",
+            "value": 4287.2998046875
+          },
+          {
+            "date": "2026-06-09T19:36:00Z",
+            "value": 4281.0
+          },
+          {
+            "date": "2026-06-09T19:41:39Z",
+            "value": 4276.0
           }
         ],
-        "refresh_delta": -139.69999999999982,
-        "refresh_delta_percent": -3.1009988901220824
+        "refresh_delta": -87.39999999999964,
+        "refresh_delta_percent": -2.0030251638630348
       },
       {
         "key": "silver_futures",
         "label": "Silver futures",
-        "value": "69.103",
+        "value": "65.23",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "stale",
-        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-06-05T20:59:55Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-05T20:59:55Z",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-09T19:41:34Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-09T19:41:34Z",
         "coverage_status": "active",
-        "refresh_seconds": 43200,
+        "refresh_seconds": 900,
         "unit": "$",
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/SI%3DF?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-05T20:59:55Z",
-            "value": 69.103
+            "date": "2026-06-09T08:07:00Z",
+            "value": 68.40499877929688
+          },
+          {
+            "date": "2026-06-09T10:05:00Z",
+            "value": 68.51000213623047
+          },
+          {
+            "date": "2026-06-09T12:05:00Z",
+            "value": 68.68000030517578
+          },
+          {
+            "date": "2026-06-09T13:58:00Z",
+            "value": 68.2249984741211
+          },
+          {
+            "date": "2026-06-09T15:51:00Z",
+            "value": 65.70999908447266
+          },
+          {
+            "date": "2026-06-09T17:44:00Z",
+            "value": 65.32499694824219
+          },
+          {
+            "date": "2026-06-09T19:37:00Z",
+            "value": 65.40499877929688
+          },
+          {
+            "date": "2026-06-09T19:41:34Z",
+            "value": 65.2300033569336
           }
         ],
-        "refresh_delta": -4.868000000000009,
-        "refresh_delta_percent": -6.580957402225208
+        "refresh_delta": -3.3549999999999898,
+        "refresh_delta_percent": -4.891740176423402
       },
       {
         "key": "copper_futures",
         "label": "Copper futures",
-        "value": "6.285",
+        "value": "6.334",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "stale",
-        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-06-05T20:59:57Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-05T20:59:57Z",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-09T19:41:02Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-09T19:41:02Z",
         "coverage_status": "active",
-        "refresh_seconds": 43200,
+        "refresh_seconds": 900,
         "unit": "$",
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/HG%3DF?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-05T20:59:57Z",
-            "value": 6.285
+            "date": "2026-06-09T08:04:00Z",
+            "value": 6.372000217437744
+          },
+          {
+            "date": "2026-06-09T10:01:00Z",
+            "value": 6.397500038146973
+          },
+          {
+            "date": "2026-06-09T11:59:00Z",
+            "value": 6.429999828338623
+          },
+          {
+            "date": "2026-06-09T13:54:00Z",
+            "value": 6.446000099182129
+          },
+          {
+            "date": "2026-06-09T15:49:00Z",
+            "value": 6.366499900817871
+          },
+          {
+            "date": "2026-06-09T17:44:00Z",
+            "value": 6.335000038146973
+          },
+          {
+            "date": "2026-06-09T19:41:00Z",
+            "value": 6.334499835968018
+          },
+          {
+            "date": "2026-06-09T19:41:02Z",
+            "value": 6.334499835968018
           }
         ],
-        "refresh_delta": -0.25,
-        "refresh_delta_percent": -3.825554705432287
+        "refresh_delta": -0.016000000000000014,
+        "refresh_delta_percent": -0.25196850393700815
       }
     ],
     "scenario_baskets": [

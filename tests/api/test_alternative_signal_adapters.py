@@ -23,7 +23,7 @@ def clear_settings_cache():
     get_settings.cache_clear()
 
 
-def _allow_url(url: str):
+def _allow_url(url: str, **_: object):
     return SimpleNamespace(allowed=True, reason="allowed", resolved_ips=["93.184.216.34"])
 
 

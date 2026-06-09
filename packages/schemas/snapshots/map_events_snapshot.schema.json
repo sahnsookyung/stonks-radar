@@ -8,9 +8,11 @@
         "object_type": { "const": "map_events" },
         "data": {
           "type": "object",
-          "required": ["events", "filters"],
+          "required": ["events", "breaking_market_events", "breaking_market_map", "filters"],
           "properties": {
             "events": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/event" } },
+            "breaking_market_events": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/breakingMarketEvent" } },
+            "breaking_market_map": { "$ref": "./_envelope.schema.json#/$defs/breakingMarketMapData" },
             "filters": { "type": "object" }
           },
           "additionalProperties": false

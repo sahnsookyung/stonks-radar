@@ -33,6 +33,18 @@ const homeSnapshot: SnapshotEnvelope<HomeSnapshotData> = {
       backend_dependency: "none_for_public_pages"
     },
     top_events: [],
+    breaking_market_events: [],
+    breaking_market_map: {
+      events: [],
+      map_points: [],
+      shown_count: 0,
+      total_count: 0,
+      ranking_cutoff: null,
+      registry_version: 1,
+      scoring_version: "test",
+      thinning_version: "test",
+      generated_at: "2026-06-07T00:00:00Z"
+    },
     macro_tiles: [
       yieldTile("us_2y", "US Treasury 2Y", "4.10", "2026-06-05"),
       yieldTile("us_3y", "US Treasury 3Y", "4.16", "2026-06-05"),

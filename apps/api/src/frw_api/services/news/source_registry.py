@@ -146,6 +146,38 @@ DEFAULT_NEWS_SOURCES: tuple[SourceProfile, ...] = (
         discovery_only=True,
     ),
     SourceProfile(
+        source_key="gdelt_events",
+        source_name="GDELT Event Files",
+        source_type="aggregator",
+        base_url="http://data.gdeltproject.org/gdeltv2/lastupdate.txt",
+        trust_tier="T4_WEAK_SIGNAL",
+        region_coverage=("GLOBAL",),
+        topic_coverage=("geopolitics", "energy", "supply_chain", "public_health"),
+        rate_limit_provider_key="gdelt",
+        rate_limit_endpoint_key="bulk_files",
+        copyright_mode="metadata_only",
+        enabled=True,
+        scheduled_fetch=True,
+        fetch_kind="gdelt_event_file",
+        discovery_only=True,
+    ),
+    SourceProfile(
+        source_key="gdelt_gkg",
+        source_name="GDELT Global Knowledge Graph Files",
+        source_type="aggregator",
+        base_url="http://data.gdeltproject.org/gdeltv2/lastupdate.txt",
+        trust_tier="T4_WEAK_SIGNAL",
+        region_coverage=("GLOBAL",),
+        topic_coverage=("geopolitics", "energy", "supply_chain", "public_health"),
+        rate_limit_provider_key="gdelt",
+        rate_limit_endpoint_key="bulk_files",
+        copyright_mode="metadata_only",
+        enabled=True,
+        scheduled_fetch=True,
+        fetch_kind="gdelt_gkg_file",
+        discovery_only=True,
+    ),
+    SourceProfile(
         source_key="google_news_rss",
         source_name="Google News RSS",
         source_type="rss_discovery",
@@ -224,7 +256,7 @@ def source_profile_public_dict(source: SourceProfile) -> dict[str, Any]:
 def _source_enabled(source: SourceProfile, settings: Settings) -> bool:
     if not source.enabled:
         return False
-    if source.source_key == "gdelt" and not settings.news_gdelt_enabled:
+    if source.source_key.startswith("gdelt") and not settings.news_gdelt_enabled:
         return False
     if source.rate_limit_provider_key in {"google_news_rss", "yahoo_finance_rss"} and not settings.news_rss_enabled:
         return False

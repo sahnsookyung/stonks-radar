@@ -17,6 +17,7 @@ export function MapPage() {
   });
   const [severity, setSeverity] = useState<Severity | "all">("all");
   const [sector, setSector] = useState("all");
+  const [selectedMapPointId, setSelectedMapPointId] = useState<string | null>(null);
 
   if (query.isLoading) return <LoadingState />;
   if (query.isError || !query.data) return <ErrorState error={query.error} />;
@@ -25,6 +26,9 @@ export function MapPage() {
     (event) =>
       (severity === "all" || event.severity === severity) &&
       (sector === "all" || event.sector_keys.includes(sector))
+  );
+  const mapPoints = (query.data.data.breaking_market_map?.map_points ?? []).filter(
+    (point) => severity === "all" || point.severity === severity
   );
 
   return (
@@ -68,6 +72,9 @@ export function MapPage() {
       </section>
       <EventMap
         events={events}
+        mapPoints={mapPoints}
+        selectedMapPointId={selectedMapPointId}
+        onMapPointSelect={setSelectedMapPointId}
         heightClass="h-[clamp(420px,60svh,640px)] md:h-[720px] xl:h-[calc(100vh-260px)]"
         loadStrategy="idle-visible"
       />

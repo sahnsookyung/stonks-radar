@@ -42,8 +42,29 @@ def test_blocks_multicast_ip():
     assert not decision.allowed
 
 
+def test_plain_http_requires_exact_allowlisted_host(monkeypatch):
+    monkeypatch.setattr(
+        "frw_api.services.fetch_policy.socket.getaddrinfo",
+        lambda *_args, **_kwargs: [(None, None, None, None, ("93.184.216.34", 80))],
+    )
+
+    blocked = evaluate_url("http://example.com/feed.csv")
+    allowed = evaluate_url(
+        "http://data.gdeltproject.org/gdeltv2/lastupdate.txt",
+        allow_http_hosts={"data.gdeltproject.org"},
+    )
+    disguised = evaluate_url(
+        "http://data.gdeltproject.org.evil.example/gdeltv2/lastupdate.txt",
+        allow_http_hosts={"data.gdeltproject.org"},
+    )
+
+    assert not blocked.allowed
+    assert allowed.allowed
+    assert not disguised.allowed
+
+
 def test_controlled_redirect_rechecks_target(monkeypatch):
-    def fake_evaluate(url: str):
+    def fake_evaluate(url: str, **_kwargs):
         if "private.local" in url:
             return type("Decision", (), {"allowed": False, "reason": "blocked private", "resolved_ips": ["10.0.0.1"]})()
         return type("Decision", (), {"allowed": True, "reason": "allowed", "resolved_ips": ["93.184.216.34"]})()
@@ -59,7 +80,7 @@ def test_controlled_redirect_rechecks_target(monkeypatch):
 
 
 def test_safe_fetch_blocks_private_peer_ip(monkeypatch):
-    def fake_evaluate(url: str):
+    def fake_evaluate(url: str, **_kwargs):
         return type("Decision", (), {"allowed": True, "reason": "allowed", "resolved_ips": ["93.184.216.34"]})()
 
     async def handler(request: httpx.Request) -> httpx.Response:
@@ -111,7 +132,7 @@ def test_safe_fetch_accepts_peername_tuple_extension():
 
 
 def test_safe_fetch_blocks_oversized_responses(monkeypatch):
-    def fake_evaluate(url: str):
+    def fake_evaluate(url: str, **_kwargs):
         return type("Decision", (), {"allowed": True, "reason": "allowed", "resolved_ips": ["93.184.216.34"]})()
 
     async def handler(request: httpx.Request) -> httpx.Response:
@@ -165,7 +186,7 @@ def test_peer_ip_introspection_handles_socket_and_transport_errors():
 
 
 def test_safe_fetch_materializes_decoded_response_without_double_decode(monkeypatch):
-    def fake_evaluate(url: str):
+    def fake_evaluate(url: str, **_kwargs):
         return type("Decision", (), {"allowed": True, "reason": "allowed", "resolved_ips": ["93.184.216.34"]})()
 
     async def handler(request: httpx.Request) -> httpx.Response:

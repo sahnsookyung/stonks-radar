@@ -742,6 +742,22 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
         public_display_allowed=False,
     ),
     _limit(
+        "gdelt",
+        "bulk_files",
+        (
+            _rule(
+                "request",
+                60,
+                6,
+                "15-minute public update files; use conservatively",
+                LABEL_6_REQUESTS_PER_MINUTE,
+            ),
+        ),
+        "http://data.gdeltproject.org/gdeltv2/lastupdate.txt",
+        notes="Metadata-only bulk Event/GKG files. The data host is HTTP-only in practice; fetches must stay on the explicit GDELT host allowlist.",
+        public_display_allowed=False,
+    ),
+    _limit(
         "google_news_rss",
         "search",
         (

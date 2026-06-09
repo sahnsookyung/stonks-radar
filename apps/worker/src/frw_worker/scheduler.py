@@ -164,7 +164,7 @@ def source_max_documents(source: SourceProfile, settings: Settings) -> int:
     }:
         cap = min(cap, 10)
     elif source.rate_limit_provider_key == "gdelt":
-        cap = min(cap, 50)
+        cap = min(cap, settings.gdelt_doc_max_records)
     return max(1, cap)
 
 

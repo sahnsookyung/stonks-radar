@@ -1,0 +1,281 @@
+{
+  "version": 1,
+  "scoring_version": "geo-priority-v1",
+  "thinning_version": "freshness-area-cap-v1",
+  "description": "Market-sensitive geopolitical countries, regions, and chokepoints for snapshot-first Breaking Market Watch projections.",
+  "areas": [
+    {
+      "key": "USA",
+      "kind": "country",
+      "name": "United States",
+      "aliases": ["united states", "usa", "u.s.", "washington", "pentagon", "federal reserve"],
+      "latitude": 39.8283,
+      "longitude": -98.5795,
+      "bounds": [-125.0, 24.0, -66.0, 49.5],
+      "base_market_weight": 100,
+      "market_themes": ["rates", "equities", "defense", "technology", "energy"]
+    },
+    {
+      "key": "CHN",
+      "kind": "country",
+      "name": "China",
+      "aliases": ["china", "beijing", "pla", "taiwan strait"],
+      "latitude": 35.8617,
+      "longitude": 104.1954,
+      "bounds": [73.0, 18.0, 135.0, 54.0],
+      "base_market_weight": 98,
+      "market_themes": ["trade", "semiconductors", "shipping", "commodities"]
+    },
+    {
+      "key": "TWN",
+      "kind": "country",
+      "name": "Taiwan",
+      "aliases": ["taiwan", "taipei", "tsmc", "taiwan strait"],
+      "latitude": 23.6978,
+      "longitude": 120.9605,
+      "bounds": [119.0, 21.5, 122.5, 25.5],
+      "base_market_weight": 100,
+      "market_themes": ["semiconductors", "shipping", "defense"]
+    },
+    {
+      "key": "KOR",
+      "kind": "country",
+      "name": "South Korea",
+      "aliases": ["south korea", "korea", "seoul", "semiconductor exports"],
+      "latitude": 35.9078,
+      "longitude": 127.7669,
+      "bounds": [124.0, 33.0, 131.0, 39.5],
+      "base_market_weight": 92,
+      "market_themes": ["semiconductors", "memory", "fx"]
+    },
+    {
+      "key": "JPN",
+      "kind": "country",
+      "name": "Japan",
+      "aliases": ["japan", "tokyo", "boj", "bank of japan"],
+      "latitude": 36.2048,
+      "longitude": 138.2529,
+      "bounds": [129.0, 30.0, 146.0, 46.5],
+      "base_market_weight": 90,
+      "market_themes": ["rates", "fx", "semiconductors"]
+    },
+    {
+      "key": "IRN",
+      "kind": "country",
+      "name": "Iran",
+      "aliases": ["iran", "tehran", "islamic revolutionary guard", "irgc"],
+      "latitude": 32.4279,
+      "longitude": 53.688,
+      "bounds": [44.0, 25.0, 64.5, 40.5],
+      "base_market_weight": 94,
+      "market_themes": ["energy", "shipping", "sanctions"]
+    },
+    {
+      "key": "ISR",
+      "kind": "country",
+      "name": "Israel",
+      "aliases": ["israel", "jerusalem", "tel aviv"],
+      "latitude": 31.0461,
+      "longitude": 34.8516,
+      "bounds": [34.0, 29.0, 36.0, 34.0],
+      "base_market_weight": 88,
+      "market_themes": ["defense", "energy", "technology"]
+    },
+    {
+      "key": "RUS",
+      "kind": "country",
+      "name": "Russia",
+      "aliases": ["russia", "moscow", "kremlin", "ukraine war"],
+      "latitude": 61.524,
+      "longitude": 105.3188,
+      "bounds": [19.0, 41.0, 180.0, 82.0],
+      "base_market_weight": 91,
+      "market_themes": ["energy", "commodities", "sanctions"]
+    },
+    {
+      "key": "UKR",
+      "kind": "country",
+      "name": "Ukraine",
+      "aliases": ["ukraine", "kyiv", "black sea"],
+      "latitude": 48.3794,
+      "longitude": 31.1656,
+      "bounds": [22.0, 44.0, 41.0, 53.0],
+      "base_market_weight": 90,
+      "market_themes": ["grain", "energy", "defense"]
+    },
+    {
+      "key": "SAU",
+      "kind": "country",
+      "name": "Saudi Arabia",
+      "aliases": ["saudi arabia", "riyadh", "aramco", "opec"],
+      "latitude": 23.8859,
+      "longitude": 45.0792,
+      "bounds": [34.5, 16.0, 56.0, 32.5],
+      "base_market_weight": 93,
+      "market_themes": ["energy", "opec", "shipping"]
+    },
+    {
+      "key": "ARE",
+      "kind": "country",
+      "name": "United Arab Emirates",
+      "aliases": ["united arab emirates", "uae", "abu dhabi", "dubai"],
+      "latitude": 23.4241,
+      "longitude": 53.8478,
+      "bounds": [51.0, 22.0, 57.0, 26.5],
+      "base_market_weight": 84,
+      "market_themes": ["energy", "shipping", "finance"]
+    },
+    {
+      "key": "QAT",
+      "kind": "country",
+      "name": "Qatar",
+      "aliases": ["qatar", "doha", "lng"],
+      "latitude": 25.3548,
+      "longitude": 51.1839,
+      "bounds": [50.5, 24.4, 52.0, 26.5],
+      "base_market_weight": 86,
+      "market_themes": ["lng", "energy", "shipping"]
+    },
+    {
+      "key": "IND",
+      "kind": "country",
+      "name": "India",
+      "aliases": ["india", "new delhi", "mumbai"],
+      "latitude": 20.5937,
+      "longitude": 78.9629,
+      "bounds": [68.0, 6.0, 98.0, 36.0],
+      "base_market_weight": 86,
+      "market_themes": ["equities", "energy demand", "technology"]
+    },
+    {
+      "key": "DEU",
+      "kind": "country",
+      "name": "Germany",
+      "aliases": ["germany", "berlin", "bundesbank"],
+      "latitude": 51.1657,
+      "longitude": 10.4515,
+      "bounds": [5.0, 47.0, 16.0, 55.5],
+      "base_market_weight": 84,
+      "market_themes": ["eurozone", "manufacturing", "rates"]
+    },
+    {
+      "key": "GBR",
+      "kind": "country",
+      "name": "United Kingdom",
+      "aliases": ["united kingdom", "uk", "london", "bank of england"],
+      "latitude": 55.3781,
+      "longitude": -3.436,
+      "bounds": [-9.0, 49.5, 2.0, 61.0],
+      "base_market_weight": 82,
+      "market_themes": ["rates", "fx", "energy"]
+    },
+    {
+      "key": "BRA",
+      "kind": "country",
+      "name": "Brazil",
+      "aliases": ["brazil", "brasilia", "petrobras"],
+      "latitude": -14.235,
+      "longitude": -51.9253,
+      "bounds": [-74.0, -34.0, -34.0, 6.0],
+      "base_market_weight": 80,
+      "market_themes": ["commodities", "oil", "fx"]
+    },
+    {
+      "key": "HORMUZ",
+      "kind": "chokepoint",
+      "name": "Strait of Hormuz",
+      "aliases": ["hormuz", "strait of hormuz", "persian gulf", "oman gulf"],
+      "latitude": 26.5667,
+      "longitude": 56.25,
+      "bounds": [55.0, 25.0, 57.5, 27.5],
+      "base_market_weight": 100,
+      "market_themes": ["oil", "lng", "shipping"]
+    },
+    {
+      "key": "RED_SEA",
+      "kind": "chokepoint",
+      "name": "Red Sea / Bab el-Mandeb",
+      "aliases": ["red sea", "bab el-mandeb", "houthi", "suez shipping"],
+      "latitude": 12.6,
+      "longitude": 43.35,
+      "bounds": [32.0, 11.0, 44.5, 30.0],
+      "base_market_weight": 96,
+      "market_themes": ["shipping", "oil", "freight"]
+    },
+    {
+      "key": "SUEZ",
+      "kind": "chokepoint",
+      "name": "Suez Canal",
+      "aliases": ["suez", "suez canal"],
+      "latitude": 30.5852,
+      "longitude": 32.2654,
+      "bounds": [31.8, 29.5, 32.8, 31.5],
+      "base_market_weight": 92,
+      "market_themes": ["shipping", "freight", "energy"]
+    },
+    {
+      "key": "PANAMA_CANAL",
+      "kind": "chokepoint",
+      "name": "Panama Canal",
+      "aliases": ["panama canal", "panama drought"],
+      "latitude": 9.08,
+      "longitude": -79.68,
+      "bounds": [-80.5, 8.5, -79.0, 9.6],
+      "base_market_weight": 86,
+      "market_themes": ["shipping", "freight", "commodities"]
+    },
+    {
+      "key": "TAIWAN_STRAIT",
+      "kind": "chokepoint",
+      "name": "Taiwan Strait",
+      "aliases": ["taiwan strait", "median line", "pla drills"],
+      "latitude": 24.0,
+      "longitude": 119.5,
+      "bounds": [117.0, 22.0, 122.0, 26.5],
+      "base_market_weight": 100,
+      "market_themes": ["semiconductors", "shipping", "defense"]
+    },
+    {
+      "key": "SOUTH_CHINA_SEA",
+      "kind": "chokepoint",
+      "name": "South China Sea",
+      "aliases": ["south china sea", "spratly", "paracel"],
+      "latitude": 12.0,
+      "longitude": 114.0,
+      "bounds": [105.0, 2.0, 122.0, 23.0],
+      "base_market_weight": 88,
+      "market_themes": ["shipping", "trade", "energy"]
+    },
+    {
+      "key": "BLACK_SEA",
+      "kind": "chokepoint",
+      "name": "Black Sea",
+      "aliases": ["black sea", "crimea", "odessa"],
+      "latitude": 43.4,
+      "longitude": 34.3,
+      "bounds": [27.0, 40.0, 42.5, 47.5],
+      "base_market_weight": 86,
+      "market_themes": ["grain", "energy", "shipping"]
+    }
+  ],
+  "query_packs": [
+    {
+      "key": "energy_chokepoints",
+      "cadence_seconds": 900,
+      "area_keys": ["HORMUZ", "RED_SEA", "SUEZ", "PANAMA_CANAL", "BLACK_SEA"],
+      "query": "(Hormuz OR \"Red Sea\" OR Suez OR \"Panama Canal\" OR \"Black Sea\") (oil OR LNG OR shipping OR freight OR markets)"
+    },
+    {
+      "key": "semiconductor_geopolitics",
+      "cadence_seconds": 900,
+      "area_keys": ["TWN", "TAIWAN_STRAIT", "CHN", "KOR", "JPN"],
+      "query": "(Taiwan OR TSMC OR \"Taiwan Strait\" OR \"export controls\" OR semiconductors) (market OR stocks OR supply OR sanctions)"
+    },
+    {
+      "key": "war_sanctions_macro",
+      "cadence_seconds": 900,
+      "area_keys": ["IRN", "ISR", "RUS", "UKR", "SAU", "ARE", "QAT"],
+      "query": "(Iran OR Israel OR Russia OR Ukraine OR OPEC OR sanctions) (oil OR gas OR markets OR shipping OR stocks)"
+    }
+  ]
+}

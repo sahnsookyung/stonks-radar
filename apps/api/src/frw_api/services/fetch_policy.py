@@ -31,21 +31,30 @@ class FetchPolicyDecision:
     resolved_ips: list[str]
 
 
-def evaluate_url(url: str) -> FetchPolicyDecision:
+def evaluate_url(
+    url: str, *, allow_http_hosts: set[str] | frozenset[str] | None = None
+) -> FetchPolicyDecision:
     parsed = urlparse(url)
-    preflight = _url_preflight_decision(parsed)
+    preflight = _url_preflight_decision(parsed, allow_http_hosts=allow_http_hosts)
     if preflight is not None:
         return preflight
     return _dns_policy_decision(parsed.hostname, parsed.port or _default_port(parsed.scheme))
 
 
-def _url_preflight_decision(parsed: ParseResult) -> FetchPolicyDecision | None:
+def _url_preflight_decision(
+    parsed: ParseResult, *, allow_http_hosts: set[str] | frozenset[str] | None = None
+) -> FetchPolicyDecision | None:
     if parsed.scheme not in ("http", "https"):
         return FetchPolicyDecision(False, "Only http and https URLs are allowed", [])
-    if parsed.scheme == "http" and not get_settings().source_fetch_allow_http:
-        return FetchPolicyDecision(False, "Plain HTTP source fetches are disabled", [])
     if parsed.hostname is None:
         return FetchPolicyDecision(False, "URL must include a hostname", [])
+    allowed_http_hosts = {host.lower() for host in (allow_http_hosts or set())}
+    if (
+        parsed.scheme == "http"
+        and not get_settings().source_fetch_allow_http
+        and parsed.hostname.lower() not in allowed_http_hosts
+    ):
+        return FetchPolicyDecision(False, "Plain HTTP source fetches are disabled", [])
     return None
 
 
@@ -75,8 +84,13 @@ def is_blocked_ip(value: str) -> bool:
     return any(ip in network for network in PRIVATE_NETWORKS)
 
 
-def resolve_redirect(base_url: str, location: str) -> FetchPolicyDecision:
-    return evaluate_url(urljoin(base_url, location))
+def resolve_redirect(
+    base_url: str,
+    location: str,
+    *,
+    allow_http_hosts: set[str] | frozenset[str] | None = None,
+) -> FetchPolicyDecision:
+    return evaluate_url(urljoin(base_url, location), allow_http_hosts=allow_http_hosts)
 
 
 def redirect_url(base_url: str, location: str) -> str:

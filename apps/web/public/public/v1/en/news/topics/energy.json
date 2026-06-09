@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-07T11:08:47Z",
-  "stale_after": "2026-06-07T23:08:47Z",
-  "hard_expires_at": "2026-06-14T11:08:47Z",
+  "generated_at": "2026-06-09T19:51:21Z",
+  "stale_after": "2026-06-10T07:51:21Z",
+  "hard_expires_at": "2026-06-16T19:51:21Z",
   "object_type": "news_topic",
   "object_key": "news_topic_energy",
-  "content_hash": "sha256:ec6b7cbbaf852772954ec44582bfdd4d835f4606c1dec3425ff35c7f9e636cb6",
+  "content_hash": "sha256:89c1c36e27953f67e27cb147db127f4dc32a9090cd240c0dadafa9b69e762ccd",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "energy",
     "label": "Energy",
-    "generated_label": "2026-06-07T11:08:47Z",
+    "generated_label": "2026-06-09T19:51:21Z",
     "topic_brief": "Energy includes 1 approved event cluster(s) built from source-linked public metadata.",
     "events": [
       {
@@ -121,9 +121,9 @@
         "title": "Energy supply-risk watch links shipping chokepoints, inventories, and inflation-sensitive markets",
         "summary": "Official energy data and reviewed geopolitical context are grouped as a supply-risk event affecting the US, Europe, China, Korea, Japan, and Brazil.",
         "event_type": "geopolitical_supply_risk",
-        "first_seen_at": "2026-06-05T11:08:47Z",
-        "last_seen_at": "2026-06-07T11:08:47Z",
-        "published_at": "2026-06-07T11:08:47Z",
+        "first_seen_at": "2026-06-07T19:51:21Z",
+        "last_seen_at": "2026-06-09T19:51:21Z",
+        "published_at": "2026-06-09T19:51:21Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.72,
@@ -194,7 +194,7 @@
             "source_key": "eia",
             "policy_version": 1,
             "title": "Weekly petroleum status report",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -204,7 +204,7 @@
             "source_key": "iea",
             "policy_version": 1,
             "title": "Oil market report",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           },
@@ -214,7 +214,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "Official energy-data context",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }

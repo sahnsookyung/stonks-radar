@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-07T11:08:47Z",
-  "stale_after": "2026-06-07T23:08:47Z",
-  "hard_expires_at": "2026-06-14T11:08:47Z",
+  "generated_at": "2026-06-09T19:51:21Z",
+  "stale_after": "2026-06-10T07:51:21Z",
+  "hard_expires_at": "2026-06-16T19:51:21Z",
   "object_type": "sector_page",
   "object_key": "big-tech",
-  "content_hash": "sha256:2b40b124a019bc2b602fbf6191b4a6e5433f87778cdaa0aaa429dc18966578a0",
+  "content_hash": "sha256:4bee6221ecbcbb486ac757ed30549a967b22c87eb475a66b95df697975da3960",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -302,8 +302,8 @@
         "symbol": "005930.KS",
         "title": "005930.KS: China-origin export-control risk remains elevated for AI-chip supply chains",
         "catalyst_type": "source_review",
-        "scheduled_at": "2026-06-07T11:08:47Z",
-        "scheduled_local_date": "2026-06-07",
+        "scheduled_at": "2026-06-09T19:51:21Z",
+        "scheduled_local_date": "2026-06-09",
         "timezone": "UTC",
         "source": "BIS",
         "source_url": "https://www.bis.gov/",
@@ -316,8 +316,8 @@
         "symbol": "NVDA",
         "title": "NVDA: China-origin export-control risk remains elevated for AI-chip supply chains",
         "catalyst_type": "source_review",
-        "scheduled_at": "2026-06-07T11:08:47Z",
-        "scheduled_local_date": "2026-06-07",
+        "scheduled_at": "2026-06-09T19:51:21Z",
+        "scheduled_local_date": "2026-06-09",
         "timezone": "UTC",
         "source": "BIS",
         "source_url": "https://www.bis.gov/",
@@ -331,9 +331,9 @@
         "title": "China-origin export-control risk remains elevated for AI-chip supply chains",
         "summary": "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.",
         "event_type": "trade_policy",
-        "first_seen_at": "2026-06-05T11:08:47Z",
-        "last_seen_at": "2026-06-07T11:08:47Z",
-        "published_at": "2026-06-07T11:08:47Z",
+        "first_seen_at": "2026-06-07T19:51:21Z",
+        "last_seen_at": "2026-06-09T19:51:21Z",
+        "published_at": "2026-06-09T19:51:21Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.78,
@@ -430,7 +430,7 @@
             "source_key": "bis",
             "policy_version": 1,
             "title": "Bureau of Industry and Security export controls",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -440,7 +440,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "Issuer filings for affected companies",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           },
@@ -450,7 +450,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "Export Administration Regulations reference",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }
@@ -461,9 +461,9 @@
         "title": "Central-bank decision calendar clusters FOMC, BoJ, BoK, ECB, and Brazil COPOM risk",
         "summary": "Official calendars are grouped into one policy-event watch so users can scan rate dates without leaving the app.",
         "event_type": "central_bank_calendar",
-        "first_seen_at": "2026-06-05T11:08:47Z",
-        "last_seen_at": "2026-06-07T11:08:47Z",
-        "published_at": "2026-06-07T11:08:47Z",
+        "first_seen_at": "2026-06-07T19:51:21Z",
+        "last_seen_at": "2026-06-09T19:51:21Z",
+        "published_at": "2026-06-09T19:51:21Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.86,
@@ -543,7 +543,7 @@
             "source_key": "federal_reserve",
             "policy_version": 1,
             "title": "FOMC calendars",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -553,7 +553,7 @@
             "source_key": "bank_of_korea",
             "policy_version": 1,
             "title": "Monetary policy schedule",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -563,7 +563,7 @@
             "source_key": "bank_of_japan",
             "policy_version": 1,
             "title": "Monetary policy meetings",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -573,7 +573,7 @@
             "source_key": "ecb",
             "policy_version": 1,
             "title": "Governing Council calendars",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -583,7 +583,7 @@
             "source_key": "bcb",
             "policy_version": 1,
             "title": "COPOM calendar",
-            "published_at": "2026-06-06T17:08:47Z",
+            "published_at": "2026-06-09T01:51:21Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           }
@@ -602,146 +602,146 @@
       {
         "key": "nasdaq_composite",
         "label": "Nasdaq Composite",
-        "value": "25,709.43",
+        "value": "25,599.6",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "stale",
-        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-06-05T21:15:59Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-05T21:15:59Z",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-09T19:51:37Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-09T19:51:37Z",
         "coverage_status": "active",
-        "refresh_seconds": 43200,
+        "refresh_seconds": 900,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EIXIC?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-05T15:06:00Z",
-            "value": 26284.896484375
+            "date": "2026-06-09T15:04:00Z",
+            "value": 25719.232421875
           },
           {
-            "date": "2026-06-05T15:54:00Z",
-            "value": 26205.677734375
+            "date": "2026-06-09T15:51:00Z",
+            "value": 25516.224609375
           },
           {
-            "date": "2026-06-05T16:42:00Z",
-            "value": 26028.31640625
+            "date": "2026-06-09T16:38:00Z",
+            "value": 25059.9375
           },
           {
-            "date": "2026-06-05T17:30:00Z",
-            "value": 26055.4296875
+            "date": "2026-06-09T17:25:00Z",
+            "value": 25351.26171875
           },
           {
-            "date": "2026-06-05T18:18:00Z",
-            "value": 25894.833984375
+            "date": "2026-06-09T18:12:00Z",
+            "value": 25494.6640625
           },
           {
-            "date": "2026-06-05T19:06:00Z",
-            "value": 25815.388671875
+            "date": "2026-06-09T18:59:00Z",
+            "value": 25663.21875
           },
           {
-            "date": "2026-06-05T19:54:00Z",
-            "value": 25805.70703125
+            "date": "2026-06-09T19:46:00Z",
+            "value": 25519.662109375
           },
           {
-            "date": "2026-06-05T20:00:00Z",
-            "value": 25709.431640625
+            "date": "2026-06-09T19:51:37Z",
+            "value": 25599.603515625
           }
         ],
-        "refresh_delta": -1121.5249999999978,
-        "refresh_delta_percent": -4.179966446966457
+        "refresh_delta": -330.0580000000009,
+        "refresh_delta_percent": -1.272897425350168
       },
       {
         "key": "nasdaq_100",
         "label": "Nasdaq 100",
-        "value": "28,957.6",
+        "value": "28,960.06",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "stale",
-        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-06-05T21:15:59Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-05T21:15:59Z",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-09T19:51:35Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-09T19:51:35Z",
         "coverage_status": "active",
-        "refresh_seconds": 43200,
+        "refresh_seconds": 900,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-05T15:06:00Z",
-            "value": 29715.025390625
+            "date": "2026-06-09T15:04:00Z",
+            "value": 29147.125
           },
           {
-            "date": "2026-06-05T15:54:00Z",
-            "value": 29619.1953125
+            "date": "2026-06-09T15:51:00Z",
+            "value": 28899.41796875
           },
           {
-            "date": "2026-06-05T16:42:00Z",
-            "value": 29384.974609375
+            "date": "2026-06-09T16:38:00Z",
+            "value": 28290.755859375
           },
           {
-            "date": "2026-06-05T17:30:00Z",
-            "value": 29402.46484375
+            "date": "2026-06-09T17:25:00Z",
+            "value": 28658.14453125
           },
           {
-            "date": "2026-06-05T18:18:00Z",
-            "value": 29224.76171875
+            "date": "2026-06-09T18:12:00Z",
+            "value": 28812.595703125
           },
           {
-            "date": "2026-06-05T19:06:00Z",
-            "value": 29146.81640625
+            "date": "2026-06-09T18:59:00Z",
+            "value": 29029.04296875
           },
           {
-            "date": "2026-06-05T19:54:00Z",
-            "value": 29084.375
+            "date": "2026-06-09T19:46:00Z",
+            "value": 28863.791015625
           },
           {
-            "date": "2026-06-05T20:00:00Z",
-            "value": 28957.599609375
+            "date": "2026-06-09T19:51:35Z",
+            "value": 28960.0546875
           }
         ],
-        "refresh_delta": -1450.2100000000028,
-        "refresh_delta_percent": -4.769202385834437
+        "refresh_delta": -454.20300000000134,
+        "refresh_delta_percent": -1.5441592985279498
       },
       {
         "key": "vix",
         "label": "VIX",
-        "value": "21.51",
+        "value": "20.01",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "stale",
-        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-06-05T20:15:01Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-05T20:15:01Z",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-09T19:36:31Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-09T19:36:31Z",
         "coverage_status": "active",
-        "refresh_seconds": 43200,
+        "refresh_seconds": 900,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-05T08:52:00Z",
-            "value": 15.710000038146973
+            "date": "2026-06-09T08:47:00Z",
+            "value": 18.09000015258789
           },
           {
-            "date": "2026-06-05T10:29:00Z",
-            "value": 15.649999618530273
+            "date": "2026-06-09T10:19:00Z",
+            "value": 18.139999389648438
           },
           {
-            "date": "2026-06-05T12:06:00Z",
-            "value": 15.75
+            "date": "2026-06-09T11:51:00Z",
+            "value": 18.010000228881836
           },
           {
-            "date": "2026-06-05T13:48:00Z",
-            "value": 16.399999618530273
+            "date": "2026-06-09T13:23:00Z",
+            "value": 18.049999237060547
           },
           {
-            "date": "2026-06-05T15:25:00Z",
-            "value": 16.6299991607666
+            "date": "2026-06-09T15:00:00Z",
+            "value": 18.829999923706055
           },
           {
-            "date": "2026-06-05T17:02:00Z",
-            "value": 18.770000457763672
+            "date": "2026-06-09T16:32:00Z",
+            "value": 21.6299991607666
           },
           {
-            "date": "2026-06-05T18:39:00Z",
-            "value": 19.299999237060547
+            "date": "2026-06-09T18:04:00Z",
+            "value": 20.389999389648438
           },
           {
-            "date": "2026-06-05T20:15:00Z",
-            "value": 21.510000228881836
+            "date": "2026-06-09T19:36:31Z",
+            "value": 20.010000228881836
           }
         ],
-        "refresh_delta": 6.110000000000001,
-        "refresh_delta_percent": 39.67532467532468
+        "refresh_delta": 1.0899999999999999,
+        "refresh_delta_percent": 5.761099365750527
       }
     ],
     "scenario_baskets": [

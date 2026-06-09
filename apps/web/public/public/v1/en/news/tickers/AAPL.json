@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-07T11:08:47Z",
-  "stale_after": "2026-06-07T23:08:47Z",
-  "hard_expires_at": "2026-06-14T11:08:47Z",
+  "generated_at": "2026-06-09T19:51:21Z",
+  "stale_after": "2026-06-10T07:51:21Z",
+  "hard_expires_at": "2026-06-16T19:51:21Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_AAPL",
-  "content_hash": "sha256:98e91c30951332ee5d55b538c11e676b8b2a3c08633c9f1a1527ff01edb5d6f6",
+  "content_hash": "sha256:d4f99f9e0aa5ba41dc2ad245a6d78d9c13f25278b6d9392b04eb7f627ed6ba03",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "AAPL",
     "name": "Apple Inc.",
-    "generated_label": "2026-06-07T11:08:47Z",
+    "generated_label": "2026-06-09T19:51:21Z",
     "summary": "No approved news events are currently linked to AAPL.",
     "events": []
   },

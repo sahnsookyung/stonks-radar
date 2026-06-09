@@ -54,6 +54,7 @@ DEFAULT_SHORT_TICKERS = "DJT,TSLA,NVDA"
 DEFAULT_NEWS_TICKERS = "DJT,TSLA,NVDA,RKLB,IONQ,RGTI,QBTS,QUANTINUUM,LUNR,ASTS,RDW,AMD,AAPL,MSFT,TLT,005930.KS"
 DEFAULT_TRUMP_CIKS = {"DJT": "0001849635"}
 TRACKED_ENTITY_REGISTRY_PATH = ROOT / "config" / "tracked_entities.json"
+GEOPOLITICAL_WATCH_REGISTRY_PATH = ROOT / "config" / "geopolitical_watch_registry.json"
 CUSIP_TICKER_OVERRIDES_PATH = ROOT / "config" / "cusip_ticker_overrides.json"
 TRACKED_ENTITY_WATCHLIST_PATH = ROOT / "apps" / "api" / "src" / "frw_api" / "services" / "news" / "ticker_watchlist.generated.json"
 FUND_PORTFOLIOS = {
@@ -119,6 +120,7 @@ _TREASURY_YIELD_CACHE: dict[str, Any] | None = None
 _GDELT_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
 _RSS_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
 _TRACKED_ENTITY_CACHE: list[dict[str, Any]] | None = None
+_GEOPOLITICAL_REGISTRY_CACHE: dict[str, Any] | None = None
 _SECTOR_SHORT_FACT_CACHE: dict[tuple[str, str], list[dict[str, Any]]] = {}
 _LAST_FRED_REQUEST_AT = 0.0
 _LAST_KRX_REQUEST_AT = 0.0
@@ -138,7 +140,7 @@ HTTP_PROVIDER_MIN_INTERVAL_SECONDS = {
     "twelve_data_quote": 10.2,
     "ishares_ewy": 1.0,
     "boj_timeseries": 0.5,
-    "gdelt_doc": 0.5,
+    "gdelt_doc": 6.0,
 }
 
 SECTORS = {
@@ -362,6 +364,8 @@ def build_snapshots() -> None:
         news_list_items = [_news_list_item(event) for event in news_events]
         news_list_items.sort(key=lambda event: (event["breaking_score"], event["last_seen_at"]), reverse=True)
         macro_tiles = _preserve_previous_active_macro_tiles(locale, _macro_tiles(locale, generated_at))
+        alternative_signals = _alternative_signals(locale, generated_at)
+        breaking_market_map = _breaking_market_projection_from_signals(alternative_signals, generated_at=generated_at)
         sector_tiles = [_sector_tile(key, locale, events) for key in SECTORS]
         scenario_summaries = [_scenario_summary(key, locale) for key in SCENARIOS]
 
@@ -392,8 +396,10 @@ def build_snapshots() -> None:
                         "backend_dependency": "none_for_public_pages",
                     },
                     "top_events": events,
+                    "breaking_market_events": breaking_market_map["events"],
+                    "breaking_market_map": breaking_market_map,
                     "macro_tiles": macro_tiles,
-                    "alternative_signals": _alternative_signals(locale, generated_at),
+                    "alternative_signals": alternative_signals,
                     "sector_tiles": sector_tiles,
                     "calendar_preview": calendar[:6],
                     "scenario_baskets": scenario_summaries,
@@ -415,6 +421,8 @@ def build_snapshots() -> None:
                 "events",
                 {
                     "events": events,
+                    "breaking_market_events": breaking_market_map["events"],
+                    "breaking_market_map": breaking_market_map,
                     "filters": {
                         "countries_regions": sorted({key for event in events for key in event["country_region_keys"]}),
                         "sectors": sorted({key for event in events for key in event["sector_keys"]}),
@@ -544,7 +552,7 @@ def build_snapshots() -> None:
 
 
 def _reset_runtime_caches() -> None:
-    global _RUNTIME_ENV, _MOF_JGB_CACHE, _TREASURY_YIELD_CACHE, _LAST_FRED_REQUEST_AT, _LAST_KRX_REQUEST_AT, _LAST_FINRA_REQUEST_AT, _CUSIP_TICKER_OVERRIDES_CACHE
+    global _RUNTIME_ENV, _MOF_JGB_CACHE, _TREASURY_YIELD_CACHE, _LAST_FRED_REQUEST_AT, _LAST_KRX_REQUEST_AT, _LAST_FINRA_REQUEST_AT, _CUSIP_TICKER_OVERRIDES_CACHE, _GEOPOLITICAL_REGISTRY_CACHE
     _RUNTIME_ENV = None
     _FRED_CACHE.clear()
     _MOF_JGB_CACHE = None
@@ -567,6 +575,7 @@ def _reset_runtime_caches() -> None:
     _TREASURY_YIELD_CACHE = None
     _GDELT_ARTICLE_CACHE.clear()
     _RSS_ARTICLE_CACHE.clear()
+    _GEOPOLITICAL_REGISTRY_CACHE = None
     _SECTOR_SHORT_FACT_CACHE.clear()
     _LAST_FRED_REQUEST_AT = 0.0
     _LAST_KRX_REQUEST_AT = 0.0
@@ -4330,6 +4339,420 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
             "items": trump_items,
         },
     ]
+
+
+def match_geo_points(
+    *,
+    texts: list[str],
+    region_keys: list[str] | None = None,
+    topic_keys: list[str] | None = None,
+    max_points: int = 4,
+) -> list[dict[str, Any]]:
+    normalized_text = " ".join(text.lower() for text in texts if text).strip()
+    explicit_region_keys = {str(key).upper() for key in (region_keys or []) if str(key).strip()}
+    topics = {str(key).lower() for key in (topic_keys or []) if str(key).strip()}
+    matches: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for area in _geopolitical_registry_payload()["areas"]:
+        score, reason_codes = _geo_area_score(area, normalized_text, explicit_region_keys, topics)
+        if score < 0.7 or area["key"] in seen:
+            continue
+        seen.add(area["key"])
+        matches.append(
+            {
+                "point_id": f"geo_{area['key'].lower()}",
+                "area_key": area["key"],
+                "area_label": area["name"],
+                "relation": "chokepoint" if area["kind"] == "chokepoint" else "event_location",
+                "latitude": area["latitude"],
+                "longitude": area["longitude"],
+                "geo_confidence": round(score, 3),
+                "market_themes": area["market_themes"],
+                "area_priority": area["base_market_weight"],
+                "score_reason_codes": reason_codes,
+            }
+        )
+    matches.sort(key=lambda item: (item["area_priority"], item["geo_confidence"], item["area_key"]), reverse=True)
+    return matches[:max_points]
+
+
+def registry_version() -> int:
+    return int(_geopolitical_registry_payload().get("version") or 1)
+
+
+def registry_scoring_version() -> str:
+    return str(_geopolitical_registry_payload().get("scoring_version") or "geo-priority-v1")
+
+
+def registry_thinning_version() -> str:
+    return str(_geopolitical_registry_payload().get("thinning_version") or "freshness-area-cap-v1")
+
+
+def _geopolitical_registry_payload() -> dict[str, Any]:
+    global _GEOPOLITICAL_REGISTRY_CACHE
+    if _GEOPOLITICAL_REGISTRY_CACHE is not None:
+        return _GEOPOLITICAL_REGISTRY_CACHE
+    try:
+        payload = json.loads(GEOPOLITICAL_WATCH_REGISTRY_PATH.read_text())
+    except (OSError, json.JSONDecodeError):
+        payload = {}
+    areas: list[dict[str, Any]] = []
+    raw_areas = payload.get("areas", []) if isinstance(payload, dict) else []
+    for raw in raw_areas:
+        if not isinstance(raw, dict):
+            continue
+        key = str(raw.get("key") or "").upper().strip()
+        name = str(raw.get("name") or "").strip()
+        aliases = [str(alias).lower().strip() for alias in raw.get("aliases", []) if str(alias).strip()]
+        try:
+            latitude = float(raw.get("latitude"))
+            longitude = float(raw.get("longitude"))
+            weight = int(raw.get("base_market_weight") or 50)
+        except (TypeError, ValueError):
+            continue
+        if not key or not name or not aliases:
+            continue
+        if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+            continue
+        if abs(latitude) < 0.0001 and abs(longitude) < 0.0001:
+            continue
+        areas.append(
+            {
+                "key": key,
+                "kind": "chokepoint" if raw.get("kind") == "chokepoint" else "country",
+                "name": name,
+                "aliases": aliases,
+                "latitude": latitude,
+                "longitude": longitude,
+                "base_market_weight": max(0, min(100, weight)),
+                "market_themes": [str(theme).strip() for theme in raw.get("market_themes", []) if str(theme).strip()],
+            }
+        )
+    _GEOPOLITICAL_REGISTRY_CACHE = {
+        "version": int(payload.get("version") or 1) if isinstance(payload, dict) else 1,
+        "scoring_version": str(payload.get("scoring_version") or "geo-priority-v1") if isinstance(payload, dict) else "geo-priority-v1",
+        "thinning_version": str(payload.get("thinning_version") or "freshness-area-cap-v1") if isinstance(payload, dict) else "freshness-area-cap-v1",
+        "areas": areas,
+    }
+    return _GEOPOLITICAL_REGISTRY_CACHE
+
+
+def _geo_area_score(area: dict[str, Any], text: str, region_keys: set[str], topics: set[str]) -> tuple[float, list[str]]:
+    score = 0.0
+    reason_codes: list[str] = []
+    if area["key"] in region_keys:
+        score += 0.85
+        reason_codes.append("explicit_region")
+    for alias in area["aliases"]:
+        if alias in text:
+            score += 0.82 if area["kind"] == "chokepoint" else 0.72
+            reason_codes.append("alias_match")
+            break
+    theme_hits = {theme for theme in area["market_themes"] if theme.lower() in topics or theme.lower() in text}
+    if theme_hits:
+        score += min(0.18, 0.06 * len(theme_hits))
+        reason_codes.append("market_theme")
+    if area["kind"] == "chokepoint" and any(term in text for term in ("shipping", "oil", "lng", "freight", "strait", "canal")):
+        score += 0.08
+        reason_codes.append("chokepoint_context")
+    return min(1.0, score), reason_codes
+
+
+def _breaking_market_projection_from_signals(lanes: list[dict[str, Any]], *, generated_at: datetime) -> dict[str, Any]:
+    events: list[dict[str, Any]] = []
+    for lane in lanes:
+        if lane.get("key") != "breaking_market_news":
+            continue
+        for item in lane.get("items", []):
+            event = _breaking_market_event_from_signal(item, generated_at=generated_at)
+            if event is not None:
+                events.append(event)
+    events.sort(
+        key=lambda event: (
+            event["urgency_score"],
+            event["freshness_confidence"],
+            event["geo_confidence"],
+            event["source_published_at"],
+        ),
+        reverse=True,
+    )
+    points = [point for event in events for point in event["geo_points"]]
+    points.sort(
+        key=lambda point: (
+            point["urgency_score"],
+            point["area_priority"],
+            point["geo_confidence"],
+            point["source_published_at"],
+            point["event_id"],
+        ),
+        reverse=True,
+    )
+    total_count = len(points)
+    capped_points = points[:250]
+    capped_events = _events_for_map_points(events, capped_points)
+    payload = _breaking_market_payload(
+        events=capped_events,
+        points=capped_points,
+        total_count=total_count,
+        generated_at=generated_at,
+    )
+    while _breaking_payload_size(payload) > 250_000 and payload["map_points"]:
+        payload["map_points"] = payload["map_points"][:-1]
+        payload["events"] = _events_for_map_points(events, payload["map_points"])
+        payload["shown_count"] = len(payload["map_points"])
+        payload["ranking_cutoff"] = _ranking_cutoff(payload["map_points"], total_count)
+    return payload
+
+
+def _breaking_market_event_from_signal(item: dict[str, Any], *, generated_at: datetime) -> dict[str, Any] | None:
+    source_published_at = _parse_snapshot_timestamp(str(item.get("updated_at") or ""))
+    if source_published_at is None:
+        return None
+    age = generated_at - source_published_at
+    if age < timedelta(0) or age > timedelta(hours=24):
+        return None
+    geo_matches = match_geo_points(
+        texts=[
+            str(item.get("label") or ""),
+            str(item.get("detail") or ""),
+            str(item.get("source") or ""),
+        ],
+        max_points=4,
+    )
+    if not geo_matches:
+        return None
+    severity = str(item.get("severity") or "medium")
+    if severity not in {"low", "medium", "high", "critical"}:
+        severity = "medium"
+    urgency_score = _signal_urgency_score(item, source_published_at=source_published_at, generated_at=generated_at)
+    observed_at = source_published_at
+    label = _seed_breaking_label(
+        urgency_score,
+        generated_at=generated_at,
+        source_published_at=source_published_at,
+        observed_at=observed_at,
+    )
+    if label == "stale":
+        return None
+    source_url = _safe_public_url(str(item.get("source_url") or ""))
+    event_seed = f"{item.get('key')}|{source_url}|{item.get('label')}"
+    event_id = f"seed_{hashlib.sha1(event_seed.encode()).hexdigest()[:14]}"
+    citation_id = hashlib.sha1(f"{item.get('source') or 'source'}|{source_url}".encode()).hexdigest()[:16] if source_url else event_id
+    source_published_iso = source_published_at.isoformat().replace("+00:00", "Z")
+    observed_iso = observed_at.isoformat().replace("+00:00", "Z")
+    title = _safe_display_text(str(item.get("label") or "Market watch headline"), 180)
+    summary = _safe_display_text(str(item.get("detail") or ""), 500)
+    score_reason_codes = sorted(
+        {
+            "seed_snapshot",
+            f"label_{label}",
+            *[code for point in geo_matches for code in point["score_reason_codes"]],
+        }
+    )
+    geo_confidence = max(point["geo_confidence"] for point in geo_matches)
+    event: dict[str, Any] = {
+        "event_id": event_id,
+        "title": title,
+        "summary": summary,
+        "source_published_at": source_published_iso,
+        "observed_at": observed_iso,
+        "verified_at": observed_iso,
+        "freshness_confidence": _seed_freshness_confidence(generated_at, source_published_at, observed_at),
+        "urgency_score": urgency_score,
+        "severity": severity,
+        "trust_tier": "T4_WEAK_SIGNAL",
+        "discovery_only": True,
+        "review_state": "reviewed",
+        "citation_ids": [citation_id],
+        "retention_class": "metadata_only",
+        "geo_points": [],
+        "geo_confidence": geo_confidence,
+        "score_reason_codes": score_reason_codes,
+        "dedupe_key": hashlib.sha256(f"{event_id}|{source_published_iso}|{citation_id}".encode()).hexdigest(),
+        "label": label,
+        "tickers": [],
+        "regions": [],
+        "topics": [],
+        "source_count": 1,
+    }
+    if source_url:
+        event["source_url"] = source_url
+    event_points: list[dict[str, Any]] = []
+    for point in geo_matches:
+        area_priority, priority_reason_codes = _area_priority(
+            point,
+            urgency_score=urgency_score,
+            severity=severity,
+            source_count=1,
+            label=label,
+        )
+        event_points.append(
+            {
+                "point_id": f"{point['point_id']}_{event_id.removeprefix('seed_')}",
+                "event_id": event_id,
+                "title": title,
+                "summary": summary,
+                "area_key": point["area_key"],
+                "area_label": point["area_label"],
+                "relation": point["relation"],
+                "latitude": point["latitude"],
+                "longitude": point["longitude"],
+                "severity": severity,
+                "urgency_score": urgency_score,
+                "source_published_at": source_published_iso,
+                "observed_at": observed_iso,
+                "source_count": 1,
+                "geo_confidence": point["geo_confidence"],
+                "area_priority": area_priority,
+                "score_reason_codes": sorted(set(point["score_reason_codes"] + score_reason_codes + priority_reason_codes)),
+            }
+        )
+    event["geo_points"] = event_points
+    return event
+
+
+def _area_priority(
+    point: dict[str, Any],
+    *,
+    urgency_score: int,
+    severity: str,
+    source_count: int,
+    label: str,
+) -> tuple[int, list[str]]:
+    priority = int(point.get("area_priority") or 0)
+    reason_codes = ["base_market_weight"]
+    if urgency_score >= 70:
+        priority += 14
+        reason_codes.append("urgent_event")
+    elif urgency_score >= 50:
+        priority += 8
+        reason_codes.append("elevated_event")
+    severity_boosts = {"critical": 16, "high": 12, "medium": 5, "low": 0}
+    severity_boost = severity_boosts.get(severity, 0)
+    if severity_boost:
+        priority += severity_boost
+        reason_codes.append("severity_boost")
+    source_boost = min(10, max(0, source_count - 1) * 3)
+    if source_boost:
+        priority += source_boost
+        reason_codes.append("source_velocity")
+    if label == "breaking":
+        priority += 10
+        reason_codes.append("fresh_breaking")
+    elif label == "developing":
+        priority += 5
+        reason_codes.append("developing_velocity")
+    if point.get("relation") == "chokepoint":
+        priority += 6
+        reason_codes.append("chokepoint_market_weight")
+    return max(0, min(100, priority)), reason_codes
+
+
+def _events_for_map_points(events: list[dict[str, Any]], points: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    point_ids_by_event: dict[str, set[str]] = {}
+    for point in points:
+        point_ids_by_event.setdefault(point["event_id"], set()).add(point["point_id"])
+    trimmed_events: list[dict[str, Any]] = []
+    for event in events:
+        allowed_point_ids = point_ids_by_event.get(event["event_id"])
+        if not allowed_point_ids:
+            continue
+        cloned = dict(event)
+        cloned["geo_points"] = [point for point in event["geo_points"] if point["point_id"] in allowed_point_ids]
+        trimmed_events.append(cloned)
+    return trimmed_events
+
+
+def _breaking_market_payload(
+    *,
+    events: list[dict[str, Any]],
+    points: list[dict[str, Any]],
+    total_count: int,
+    generated_at: datetime,
+) -> dict[str, Any]:
+    return {
+        "events": events,
+        "map_points": points,
+        "shown_count": len(points),
+        "total_count": total_count,
+        "ranking_cutoff": _ranking_cutoff(points, total_count),
+        "registry_version": registry_version(),
+        "scoring_version": registry_scoring_version(),
+        "thinning_version": registry_thinning_version(),
+        "generated_at": generated_at.isoformat().replace("+00:00", "Z"),
+    }
+
+
+def _ranking_cutoff(points: list[dict[str, Any]], total_count: int) -> int | None:
+    if not points or len(points) >= total_count:
+        return None
+    return int(points[-1]["urgency_score"])
+
+
+def _breaking_payload_size(payload: dict[str, Any]) -> int:
+    return len(json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode())
+
+
+def _signal_urgency_score(item: dict[str, Any], *, source_published_at: datetime, generated_at: datetime) -> int:
+    age_minutes = max(0, int((generated_at - source_published_at).total_seconds() // 60))
+    severity = str(item.get("severity") or "medium")
+    base = {"critical": 88, "high": 76, "medium": 62, "low": 48}.get(severity, 62)
+    recency_bonus = max(0, 18 - min(18, age_minutes // 10))
+    return max(0, min(100, base + recency_bonus))
+
+
+def _seed_breaking_label(
+    urgency_score: int,
+    *,
+    generated_at: datetime,
+    source_published_at: datetime,
+    observed_at: datetime,
+) -> str:
+    published_age = generated_at - source_published_at
+    observed_age = generated_at - observed_at
+    if published_age <= timedelta(hours=2) and observed_age <= timedelta(minutes=20) and urgency_score >= 70:
+        return "breaking"
+    if published_age <= timedelta(hours=8) or urgency_score >= 65:
+        return "developing"
+    if published_age <= timedelta(hours=24):
+        return "latest"
+    return "stale"
+
+
+def _seed_freshness_confidence(generated_at: datetime, source_published_at: datetime, observed_at: datetime) -> float:
+    published_age = max(0.0, (generated_at - source_published_at).total_seconds())
+    observed_age = max(0.0, (generated_at - observed_at).total_seconds())
+    max_age = timedelta(hours=24).total_seconds()
+    return round((max(0.0, 1.0 - published_age / max_age) * 0.72) + (max(0.0, 1.0 - observed_age / max_age) * 0.28), 3)
+
+
+def _parse_snapshot_timestamp(value: str) -> datetime | None:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _safe_public_url(value: str) -> str:
+    parsed = parse.urlparse(value.strip())
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return ""
+    try:
+        port = parsed.port
+    except ValueError:
+        return ""
+    host = parsed.hostname.lower()
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    netloc = f"{host}:{port}" if port else host
+    return parsed._replace(netloc=netloc, query="", fragment="").geturl()
+
+
+def _safe_display_text(value: str, max_length: int) -> str:
+    return re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F]+", " ", value).strip()[:max_length]
 
 
 def _entity_name(entity: dict[str, Any], locale: str) -> str:

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-07T11:08:47Z",
-  "stale_after": "2026-06-07T23:08:47Z",
-  "hard_expires_at": "2026-06-14T11:08:47Z",
+  "generated_at": "2026-06-09T19:51:21Z",
+  "stale_after": "2026-06-10T07:51:21Z",
+  "hard_expires_at": "2026-06-16T19:51:21Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_QBTS",
-  "content_hash": "sha256:26bc8a0b9b36fa2ebffa04487aee2db57a39e9167720aebb42222cf6de736e41",
+  "content_hash": "sha256:ebf9478d1c142f673b226b47463a65c3d3db181ca536150a8563baf3729068d5",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "QBTS",
     "name": "D-Wave Quantum Inc.",
-    "generated_label": "2026-06-07T11:08:47Z",
+    "generated_label": "2026-06-09T19:51:21Z",
     "summary": "No approved news events are currently linked to QBTS.",
     "events": []
   },

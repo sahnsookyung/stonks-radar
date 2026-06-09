@@ -31,6 +31,7 @@ async def safe_fetch_bytes(
     max_bytes: int | None = None,
     timeout_seconds: int | None = None,
     raise_for_status: bool = True,
+    allow_http_hosts: set[str] | frozenset[str] | None = None,
 ) -> SafeFetchResult:
     settings = get_settings()
     current_url = url
@@ -44,7 +45,7 @@ async def safe_fetch_bytes(
         transport=transport,
     ) as client:
         while True:
-            decision = evaluate_url(current_url)
+            decision = evaluate_url(current_url, allow_http_hosts=allow_http_hosts)
             if not decision.allowed:
                 raise SafeFetchError(decision.reason)
             all_resolved_ips.update(decision.resolved_ips)

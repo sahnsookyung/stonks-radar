@@ -2085,12 +2085,20 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
           {noResultGuidance ? <div className="mt-2 text-xs text-muted">{noResultGuidance}</div> : null}
           {searchError ? <div className="mt-2 text-xs text-danger">{searchError}</div> : null}
           {hasSearchResults && (
-            <div id={resultListId} className="mt-2 max-h-80 overflow-auto rounded-md border border-line bg-panelAlt" aria-label="Instrument search results" aria-live="polite">
+            <div
+              id={resultListId}
+              role="listbox"
+              className="mt-2 max-h-80 overflow-auto rounded-md border border-line bg-panelAlt"
+              aria-label="Instrument search results"
+              aria-live="polite"
+            >
               {searchResults.map((result, index) => (
                 <button
                   id={`${resultListId}-option-${index}`}
                   key={`${result.instrumentId}-${result.listingId}`}
                   type="button"
+                  role="option"
+                  aria-selected={index === activeResultIndex}
                   className={`block w-full border-b border-line px-3 py-3 text-left text-sm last:border-b-0 ${
                     index === activeResultIndex ? "bg-accentSoft text-ink" : "hover:bg-panel"
                   }`}

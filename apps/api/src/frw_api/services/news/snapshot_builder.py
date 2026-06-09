@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 from collections import Counter, defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable
 from urllib.parse import urlparse
 
@@ -10,9 +12,22 @@ from sqlalchemy import bindparam, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from frw_api.services.news.geopolitical_registry import (
+    match_geo_points,
+    registry_scoring_version,
+    registry_thinning_version,
+    registry_version,
+)
 from frw_api.services.news.taxonomy import TRUST_TIERS
 
 SAFE_EVENT_ID_RE = re.compile(r"^[A-Za-z0-9_.-]{1,120}$")
+BREAKING_MARKET_MAX_AGE = timedelta(hours=24)
+BREAKING_MARKET_BREAKING_AGE = timedelta(hours=2)
+BREAKING_MARKET_DEVELOPING_AGE = timedelta(hours=8)
+BREAKING_MARKET_OBSERVED_MAX_AGE = timedelta(minutes=20)
+BREAKING_MARKET_FUTURE_SKEW = timedelta(minutes=10)
+BREAKING_MARKET_MAX_POINTS = 250
+BREAKING_MARKET_MAX_JSON_BYTES = 250_000
 
 
 def news_symbol_key(symbol: str) -> str:
@@ -57,6 +72,7 @@ def build_reviewed_news_snapshots(db: Session, *, locale: str, generated_label: 
             "filters": _filters(list_items),
             "events": list_items,
         },
+        "breaking_market": _breaking_market_projection(list_items, generated_label=generated_label),
         "events": {
             event_id: _event_detail(by_id[event_id], list_items, locale=locale)
             for event_id in by_id
@@ -362,6 +378,303 @@ def _filters(items: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
     }
 
 
+def _breaking_market_projection(items: list[dict[str, Any]], *, generated_label: str) -> dict[str, Any]:
+    now = _parse_iso(generated_label) or datetime.now(timezone.utc)
+    events: list[dict[str, Any]] = []
+    for item in items:
+        event = _breaking_market_event(item, now)
+        if event is not None:
+            events.append(event)
+    events.sort(
+        key=lambda event: (
+            event["urgency_score"],
+            event["freshness_confidence"],
+            event["geo_confidence"],
+            event["source_published_at"],
+        ),
+        reverse=True,
+    )
+    points = [point for event in events for point in event["geo_points"]]
+    points.sort(
+        key=lambda point: (
+            point["urgency_score"],
+            point["area_priority"],
+            point["geo_confidence"],
+            point["source_published_at"],
+            point["event_id"],
+        ),
+        reverse=True,
+    )
+    total_count = len(points)
+    capped_points = points[:BREAKING_MARKET_MAX_POINTS]
+    capped_events = _events_for_points(events, capped_points)
+    payload = _breaking_payload(
+        events=capped_events,
+        points=capped_points,
+        total_count=total_count,
+        generated_label=generated_label,
+    )
+    while _payload_size(payload) > BREAKING_MARKET_MAX_JSON_BYTES and payload["map_points"]:
+        payload["map_points"] = payload["map_points"][:-1]
+        payload["events"] = _events_for_points(events, payload["map_points"])
+        payload["shown_count"] = len(payload["map_points"])
+        payload["ranking_cutoff"] = _ranking_cutoff(payload["map_points"], total_count)
+    return payload
+
+
+def _breaking_market_event(item: dict[str, Any], now: datetime) -> dict[str, Any] | None:
+    source_published_at = _parse_iso(str(item.get("source_published_at") or item.get("published_at") or ""))
+    observed_at = _parse_iso(str(item.get("observed_at") or item.get("last_seen_at") or ""))
+    if source_published_at is None or observed_at is None:
+        return None
+    if source_published_at - now > BREAKING_MARKET_FUTURE_SKEW or observed_at - now > BREAKING_MARKET_FUTURE_SKEW:
+        return None
+    age = now - source_published_at
+    if age < timedelta(0) or age > BREAKING_MARKET_MAX_AGE:
+        return None
+    label = _breaking_label(item, now, source_published_at, observed_at)
+    if label == "stale":
+        return None
+    geo_points = _breaking_geo_points(item)
+    if not geo_points:
+        return None
+    urgency_score = _clamp_int(item.get("breaking_score"))
+    trust_tier = _primary_trust_tier(item)
+    citation_ids = _citation_ids(item)
+    source_url = _primary_source_url(item)
+    event_id = str(item["id"])
+    geo_confidence = max(point["geo_confidence"] for point in geo_points)
+    score_reason_codes = sorted(
+        {
+            *[code for point in geo_points for code in point["score_reason_codes"]],
+            *_urgency_reason_codes(item, label),
+        }
+    )
+    source_published_iso = source_published_at.isoformat().replace("+00:00", "Z")
+    observed_iso = observed_at.isoformat().replace("+00:00", "Z")
+    severity = _severity(item.get("severity"))
+    event = {
+        "event_id": event_id,
+        "title": _safe_display_text(str(item.get("title") or "Untitled market event"), 180),
+        "summary": _safe_display_text(str(item.get("summary") or ""), 500),
+        "source_published_at": source_published_iso,
+        "observed_at": observed_iso,
+        "verified_at": observed_iso,
+        "freshness_confidence": _freshness_confidence(now, source_published_at, observed_at),
+        "urgency_score": urgency_score,
+        "severity": severity,
+        "trust_tier": trust_tier,
+        "discovery_only": trust_tier == "T4_WEAK_SIGNAL",
+        "review_state": "reviewed",
+        "citation_ids": citation_ids,
+        "retention_class": "metadata_only",
+        "geo_points": [],
+        "geo_confidence": geo_confidence,
+        "score_reason_codes": score_reason_codes,
+        "dedupe_key": hashlib.sha256(f"{event_id}|{source_published_iso}|{','.join(citation_ids)}".encode()).hexdigest(),
+        "label": label,
+        "tickers": item.get("tickers", []),
+        "regions": item.get("regions", []),
+        "topics": item.get("topics", []),
+        "source_count": int(item.get("source_count") or 0),
+    }
+    if source_url:
+        event["source_url"] = source_url
+    event_points: list[dict[str, Any]] = []
+    for point in geo_points:
+        area_priority, priority_reason_codes = _area_priority(
+            point,
+            urgency_score=urgency_score,
+            severity=severity,
+            source_count=event["source_count"],
+            label=label,
+        )
+        event_points.append(
+            {
+                "point_id": f"{point['point_id']}_{hashlib.sha1(event_id.encode()).hexdigest()[:8]}",
+                "event_id": event_id,
+                "title": event["title"],
+                "summary": event["summary"],
+                "area_key": point["area_key"],
+                "area_label": point["area_label"],
+                "relation": point["relation"],
+                "latitude": point["latitude"],
+                "longitude": point["longitude"],
+                "severity": event["severity"],
+                "urgency_score": urgency_score,
+                "source_published_at": source_published_iso,
+                "observed_at": observed_iso,
+                "source_count": event["source_count"],
+                "geo_confidence": point["geo_confidence"],
+                "area_priority": area_priority,
+                "score_reason_codes": sorted(set(point["score_reason_codes"] + score_reason_codes + priority_reason_codes)),
+            }
+        )
+    event["geo_points"] = event_points
+    return event
+
+
+def _breaking_geo_points(item: dict[str, Any]) -> list[dict[str, Any]]:
+    texts = [
+        str(item.get("title") or ""),
+        str(item.get("summary") or ""),
+        " ".join(str(region.get("name") or region.get("key") or "") for region in item.get("regions", [])),
+        " ".join(str(topic.get("label") or topic.get("key") or "") for topic in item.get("topics", [])),
+    ]
+    region_keys = [str(region.get("key") or "") for region in item.get("regions", []) if isinstance(region, dict)]
+    topic_keys = [str(topic.get("key") or "") for topic in item.get("topics", []) if isinstance(topic, dict)]
+    return match_geo_points(texts=texts, region_keys=region_keys, topic_keys=topic_keys)
+
+
+def _area_priority(
+    point: dict[str, Any],
+    *,
+    urgency_score: int,
+    severity: str,
+    source_count: int,
+    label: str,
+) -> tuple[int, list[str]]:
+    priority = int(point.get("area_priority") or 0)
+    reason_codes = ["base_market_weight"]
+    if urgency_score >= 70:
+        priority += 14
+        reason_codes.append("urgent_event")
+    elif urgency_score >= 50:
+        priority += 8
+        reason_codes.append("elevated_event")
+    severity_boosts = {"critical": 16, "high": 12, "medium": 5, "low": 0}
+    severity_boost = severity_boosts.get(severity, 0)
+    if severity_boost:
+        priority += severity_boost
+        reason_codes.append("severity_boost")
+    source_boost = min(10, max(0, source_count - 1) * 3)
+    if source_boost:
+        priority += source_boost
+        reason_codes.append("source_velocity")
+    if label == "breaking":
+        priority += 10
+        reason_codes.append("fresh_breaking")
+    elif label == "developing":
+        priority += 5
+        reason_codes.append("developing_velocity")
+    if point.get("relation") == "chokepoint":
+        priority += 6
+        reason_codes.append("chokepoint_market_weight")
+    return max(0, min(100, priority)), reason_codes
+
+
+def _breaking_label(item: dict[str, Any], now: datetime, source_published_at: datetime, observed_at: datetime) -> str:
+    urgency = _clamp_int(item.get("breaking_score"))
+    published_age = now - source_published_at
+    observed_age = now - observed_at
+    if published_age <= BREAKING_MARKET_BREAKING_AGE and observed_age <= BREAKING_MARKET_OBSERVED_MAX_AGE and urgency >= 70:
+        return "breaking"
+    if published_age <= BREAKING_MARKET_DEVELOPING_AGE or urgency >= 65:
+        return "developing"
+    if published_age <= BREAKING_MARKET_MAX_AGE:
+        return "latest"
+    return "stale"
+
+
+def _events_for_points(events: list[dict[str, Any]], points: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    point_ids_by_event: dict[str, set[str]] = {}
+    for point in points:
+        point_ids_by_event.setdefault(point["event_id"], set()).add(point["point_id"])
+    trimmed_events = []
+    for event in events:
+        allowed_point_ids = point_ids_by_event.get(event["event_id"])
+        if not allowed_point_ids:
+            continue
+        cloned = dict(event)
+        cloned["geo_points"] = [point for point in event["geo_points"] if point["point_id"] in allowed_point_ids]
+        trimmed_events.append(cloned)
+    return trimmed_events
+
+
+def _breaking_payload(
+    *,
+    events: list[dict[str, Any]],
+    points: list[dict[str, Any]],
+    total_count: int,
+    generated_label: str,
+) -> dict[str, Any]:
+    return {
+        "events": events,
+        "map_points": points,
+        "shown_count": len(points),
+        "total_count": total_count,
+        "ranking_cutoff": _ranking_cutoff(points, total_count),
+        "registry_version": registry_version(),
+        "scoring_version": registry_scoring_version(),
+        "thinning_version": registry_thinning_version(),
+        "generated_at": generated_label,
+    }
+
+
+def _ranking_cutoff(points: list[dict[str, Any]], total_count: int) -> int | None:
+    if not points or len(points) >= total_count:
+        return None
+    return int(points[-1]["urgency_score"])
+
+
+def _payload_size(payload: dict[str, Any]) -> int:
+    return len(json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode())
+
+
+def _freshness_confidence(now: datetime, source_published_at: datetime, observed_at: datetime) -> float:
+    published_age = max(0.0, (now - source_published_at).total_seconds())
+    observed_age = max(0.0, (now - observed_at).total_seconds())
+    published_score = max(0.0, 1.0 - published_age / BREAKING_MARKET_MAX_AGE.total_seconds())
+    observed_score = max(0.0, 1.0 - observed_age / max(1.0, BREAKING_MARKET_MAX_AGE.total_seconds()))
+    return round((published_score * 0.72) + (observed_score * 0.28), 3)
+
+
+def _primary_trust_tier(item: dict[str, Any]) -> str:
+    links = item.get("source_links", [])
+    if not isinstance(links, list) or not links:
+        return "T3_REVIEWED_PUBLIC_SOURCE"
+    tier = str((links[0] if isinstance(links[0], dict) else {}).get("trust_tier") or "T3_REVIEWED_PUBLIC_SOURCE")
+    return tier if tier in TRUST_TIERS else "T3_REVIEWED_PUBLIC_SOURCE"
+
+
+def _primary_source_url(item: dict[str, Any]) -> str:
+    links = item.get("source_links", [])
+    if not isinstance(links, list):
+        return ""
+    for link in links:
+        if isinstance(link, dict):
+            url = _public_source_url(str(link.get("url") or ""))
+            if url:
+                return url
+    return ""
+
+
+def _citation_ids(item: dict[str, Any]) -> list[str]:
+    ids: list[str] = []
+    for link in item.get("source_links", []):
+        if not isinstance(link, dict):
+            continue
+        source_key = str(link.get("source_key") or "source")[:80]
+        url = _public_source_url(str(link.get("url") or ""))
+        if not url:
+            continue
+        ids.append(hashlib.sha1(f"{source_key}|{url}".encode()).hexdigest()[:16])
+    return ids[:12]
+
+
+def _urgency_reason_codes(item: dict[str, Any], label: str) -> list[str]:
+    codes = [f"label_{label}"]
+    if _clamp_int(item.get("breaking_score")) >= 70:
+        codes.append("high_breaking_score")
+    if int(item.get("source_count") or 0) > 1:
+        codes.append("multi_source")
+    return codes
+
+
+def _safe_display_text(value: str, max_length: int) -> str:
+    return re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F]+", " ", value).strip()[:max_length]
+
+
 def _summary_list(item: dict[str, Any], key: str) -> list[str]:
     summary_json = item.get("summary_json") or {}
     values = summary_json.get(key) if isinstance(summary_json, dict) else None
@@ -457,9 +770,27 @@ def _region_name(key: str) -> str:
         "KOR": "Korea",
         "JPN": "Japan",
         "BRA": "Brazil",
+        "GBR": "United Kingdom",
+        "DEU": "Germany",
+        "TWN": "Taiwan",
+        "IRN": "Iran",
+        "ISR": "Israel",
+        "RUS": "Russia",
+        "UKR": "Ukraine",
+        "SAU": "Saudi Arabia",
+        "ARE": "United Arab Emirates",
+        "QAT": "Qatar",
+        "IND": "India",
         "EU": "Europe",
         "CHN": "China",
         "GLOBAL": "Global",
+        "HORMUZ": "Strait of Hormuz",
+        "RED_SEA": "Red Sea / Bab el-Mandeb",
+        "SUEZ": "Suez Canal",
+        "PANAMA_CANAL": "Panama Canal",
+        "TAIWAN_STRAIT": "Taiwan Strait",
+        "SOUTH_CHINA_SEA": "South China Sea",
+        "BLACK_SEA": "Black Sea",
     }.get(key, key)
 
 
