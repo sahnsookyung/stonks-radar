@@ -20,11 +20,12 @@ def can_publish_event(event: EventGateInput) -> tuple[bool, str]:
         "weak",
     }:
         return False, "GDELT-style discovery cannot publish high-confidence events alone"
-    if event.severity in ("medium", "high", "critical") and not (
-        event.has_en_summary and event.has_ko_summary
+    if (
+        event.severity in ("medium", "high", "critical")
+        and not (event.has_en_summary and event.has_ko_summary)
+        and not event.emergency_override
     ):
-        if not event.emergency_override:
-            return False, "Medium/high/critical events require EN/KO summaries"
+        return False, "Medium/high/critical events require EN/KO summaries"
     if event.severity == "low":
         return event.review_status in ("approved", "auto_official"), "Low event gate"
     if event.severity == "medium":

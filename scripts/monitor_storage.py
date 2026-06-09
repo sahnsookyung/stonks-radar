@@ -5,6 +5,14 @@ from pathlib import Path
 import os
 
 
+def _storage_severity(pct: float) -> str:
+    if pct >= 90:
+        return "critical"
+    if pct >= 70:
+        return "warning"
+    return "info"
+
+
 def main() -> None:
     usage = shutil.disk_usage(Path.cwd())
     pct = usage.used / usage.total * 100
@@ -36,7 +44,7 @@ def main() -> None:
                 ),
                 {
                     "status": status,
-                    "severity": "critical" if pct >= 90 else "warning" if pct >= 70 else "info",
+                    "severity": _storage_severity(pct),
                     "pct": pct,
                 },
             )

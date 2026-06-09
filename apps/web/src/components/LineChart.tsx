@@ -1,10 +1,10 @@
 export function LineChart({
   points,
   label
-}: {
+}: Readonly<{
   points: { date: string; value: number }[];
   label: string;
-}) {
+}>) {
   if (points.length < 2) return null;
 
   const values = points.map((point) => point.value);
@@ -22,7 +22,8 @@ export function LineChart({
     return [x, y] as const;
   });
   const linePath = coords.map(([x, y], index) => `${index === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
-  const areaPath = `${linePath} L${coords[coords.length - 1][0].toFixed(1)} ${height - padding} L${coords[0][0].toFixed(1)} ${height - padding} Z`;
+  const lastCoord = coords.at(-1) ?? coords[0];
+  const areaPath = `${linePath} L${lastCoord[0].toFixed(1)} ${height - padding} L${coords[0][0].toFixed(1)} ${height - padding} Z`;
 
   return (
     <svg

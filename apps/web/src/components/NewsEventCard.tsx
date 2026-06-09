@@ -7,11 +7,11 @@ export function NewsEventCard({
   event,
   locale,
   compact = false
-}: {
+}: Readonly<{
   event: NewsEventListItem;
   locale: "en" | "ko";
   compact?: boolean;
-}) {
+}>) {
   const primarySources = event.source_links.filter((source) => source.is_primary);
   const displayedSources = (primarySources.length ? primarySources : event.source_links)
     .filter((source) => safeSourceUrl(source.url))
@@ -65,17 +65,18 @@ export function NewsEventCard({
   );
 }
 
-export function NewsScoreBadge({ label, value }: { label: string; value: number }) {
-  const tone =
-    value >= 80
-      ? "border-danger/50 bg-danger/10 text-danger"
-      : value >= 60
-        ? "border-warning/50 bg-warning/10 text-warning"
-        : "border-line bg-panelAlt text-muted";
+export function NewsScoreBadge({ label, value }: Readonly<{ label: string; value: number }>) {
+  const tone = newsScoreTone(value);
   return <span className={`badge ${tone}`}>{label} {value}</span>;
 }
 
-export function SourcePill({ source }: { source: NewsSourceRef }) {
+function newsScoreTone(value: number) {
+  if (value >= 80) return "border-danger/50 bg-danger/10 text-danger";
+  if (value >= 60) return "border-warning/50 bg-warning/10 text-warning";
+  return "border-line bg-panelAlt text-muted";
+}
+
+export function SourcePill({ source }: Readonly<{ source: NewsSourceRef }>) {
   const href = safeSourceUrl(source.url);
   if (!href) return null;
   return (

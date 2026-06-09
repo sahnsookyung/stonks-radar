@@ -9,7 +9,7 @@ import {
   PieChart,
   Table2,
 } from "lucide-react";
-import type { FundPortfolioHolding, FundHoldingKind } from "@frw/shared-types";
+import type { FundPortfolioHolding, FundHoldingKind, FundPortfolioSnapshotData } from "@frw/shared-types";
 import type { ReactNode } from "react";
 import { EntityLink } from "../components/EntityLink";
 import { ErrorState, LoadingState } from "../components/LoadingState";
@@ -25,7 +25,15 @@ const filterLabels: Record<HoldingFilter, { en: string; ko: string }> = {
   all: { en: "All rows", ko: "전체" },
 };
 
-export function FundPortfolioPage() {
+function holdingsForFilter(data: FundPortfolioSnapshotData, filter: HoldingFilter) {
+  if (filter === "stocks") {
+    return data.holdings.filter((holding) => holding.holding_kind === "stock");
+  }
+  if (filter === "options") return data.option_holdings;
+  return data.holdings;
+}
+
+export function FundPortfolioPage() { // NOSONAR - page-level layout composes filing metrics, allocation, and holdings views.
   const locale = useLocale();
   const isKo = locale === "ko";
   const params = useParams({ strict: false }) as { fundKey?: string };
@@ -40,12 +48,7 @@ export function FundPortfolioPage() {
   if (query.isError || !query.data) return <ErrorState error={query.error} />;
 
   const data = query.data.data;
-  const holdings =
-    filter === "stocks"
-      ? data.holdings.filter((holding) => holding.holding_kind === "stock")
-      : filter === "options"
-        ? data.option_holdings
-        : data.holdings;
+  const holdings = holdingsForFilter(data, filter);
 
   return (
     <div className="grid min-w-0 gap-6">
@@ -113,9 +116,10 @@ export function FundPortfolioPage() {
               </a>
             ) : null}
           </div>
-          {data.top_equity_holdings.length ? (
+          {data.top_equity_holdings.length > 0 && (
             <AllocationGrid holdings={data.top_equity_holdings.slice(0, 14)} />
-          ) : (
+          )}
+          {data.top_equity_holdings.length === 0 && (
             <EmptyState
               text={
                 isKo
@@ -255,7 +259,7 @@ export function FundPortfolioPage() {
   );
 }
 
-function AllocationGrid({ holdings }: { holdings: FundPortfolioHolding[] }) {
+function AllocationGrid({ holdings }: Readonly<{ holdings: FundPortfolioHolding[] }>) {
   const total = holdings.reduce((sum, holding) => sum + holding.value_usd, 0);
   return (
     <div className="grid min-h-[360px] grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
@@ -290,10 +294,10 @@ function AllocationGrid({ holdings }: { holdings: FundPortfolioHolding[] }) {
 function HoldingCard({
   holding,
   locale,
-}: {
+}: Readonly<{
   holding: FundPortfolioHolding;
   locale: "en" | "ko";
-}) {
+}>) {
   const isKo = locale === "ko";
   return (
     <div className="grid gap-2 rounded-md border border-line bg-panelAlt p-3">
@@ -339,10 +343,10 @@ function HoldingCard({
 function TickerCell({
   holding,
   locale,
-}: {
+}: Readonly<{
   holding: FundPortfolioHolding;
   locale: "en" | "ko";
-}) {
+}>) {
   if (!holding.symbol) return <span>{holding.cusip}</span>;
   return (
     <EntityLink
@@ -365,7 +369,7 @@ function compactIssuerName(value: string) {
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div className="rounded-md border border-line bg-panelAlt p-3">
       <div className="text-xs font-semibold uppercase text-muted">{label}</div>
@@ -374,13 +378,13 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Badge({ children }: { children: ReactNode }) {
+function Badge({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <span className="badge border-line bg-panelAlt text-muted">{children}</span>
   );
 }
 
-function EmptyState({ text }: { text: string }) {
+function EmptyState({ text }: Readonly<{ text: string }>) {
   return (
     <div className="rounded-md border border-dashed border-line p-4 text-sm leading-6 text-muted">
       {text}

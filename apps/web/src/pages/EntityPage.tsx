@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
-import { Building2, ExternalLink, Newspaper } from "lucide-react";
+import { Building2, Newspaper } from "lucide-react";
 import { EntityLink } from "../components/EntityLink";
 import { NewsEventCard, SourcePill } from "../components/NewsEventCard";
-import { ErrorState, LoadingState } from "../components/LoadingState";
+import { LoadingState } from "../components/LoadingState";
 import { SnapshotBanner } from "../components/SnapshotBanner";
 import { useLocale } from "../lib/locale";
 import { snapshotQueries } from "../lib/snapshots";
@@ -65,9 +65,10 @@ export function EntityPage() {
               {isKo ? "관련 뉴스" : "Latest news"}
             </h2>
             <div className="mt-4 grid gap-3">
-              {data.latest_news.length ? (
+              {data.latest_news.length > 0 && (
                 data.latest_news.map((event) => <NewsEventCard key={event.id} event={event} locale={locale} compact />)
-              ) : (
+              )}
+              {data.latest_news.length === 0 && (
                 <EmptyState text={isKo ? "최근 승인 뉴스가 없습니다." : "No recent approved news."} />
               )}
             </div>
@@ -102,7 +103,7 @@ export function EntityPage() {
   );
 }
 
-function FallbackEntity({ entity, locale, error }: { entity: NonNullable<ReturnType<typeof resolveTrackedEntity>>; locale: "en" | "ko"; error: unknown }) {
+function FallbackEntity({ entity, locale, error }: Readonly<{ entity: NonNullable<ReturnType<typeof resolveTrackedEntity>>; locale: "en" | "ko"; error: unknown }>) {
   const isKo = locale === "ko";
   const related = relatedTrackedEntities(entity, 6).filter((item) => item.entityId !== entity.entityId);
   return (
@@ -118,7 +119,7 @@ function FallbackEntity({ entity, locale, error }: { entity: NonNullable<ReturnT
             ? "스냅샷을 아직 생성하지 못했습니다. 이 객체는 시세 페이지가 아니라 소스/뉴스 참조 페이지입니다."
             : "The reference snapshot is not generated yet. This is a source/news entity, not a quote page."}
         </p>
-        <p className="mt-2 text-xs leading-5 text-muted">{String(error ?? "")}</p>
+        <p className="mt-2 text-xs leading-5 text-muted">{error instanceof Error ? error.message : "Snapshot unavailable"}</p>
       </section>
       <section className="panel p-4">
         <h2 className="text-sm font-semibold">{isKo ? "관련 추적 항목" : "Related tracked items"}</h2>
@@ -130,6 +131,6 @@ function FallbackEntity({ entity, locale, error }: { entity: NonNullable<ReturnT
   );
 }
 
-function EmptyState({ text }: { text: string }) {
+function EmptyState({ text }: Readonly<{ text: string }>) {
   return <div className="rounded-md border border-dashed border-line p-4 text-sm leading-6 text-muted">{text}</div>;
 }

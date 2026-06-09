@@ -20,7 +20,7 @@ export function AdminLogin() {
 
   useEffect(() => {
     syncCsrfTokenFromCookie();
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(globalThis.window.location.search);
     const oauthError = params.get("oauth_error");
     if (oauthError) {
       setMessage(`Google sign-in did not complete: ${oauthError}`);
@@ -30,7 +30,7 @@ export function AdminLogin() {
       .catch(() => setGoogleConfig({ enabled: false, recommended: false, start_url: null, fallback_password_login: true, private_yahoo_admin_eligible: false, allowed_hint: null }));
   }, []);
 
-  async function submit(event: React.FormEvent) {
+  async function submit(event: { preventDefault(): void }) {
     event.preventDefault();
     setBusy(true);
     setMessage(null);
@@ -61,7 +61,7 @@ export function AdminLogin() {
       setMessage("Google admin sign-in is not configured.");
       return;
     }
-    window.location.href = `${startUrl}?redirect_to=${encodeURIComponent("/admin")}`;
+    globalThis.window.location.href = `${startUrl}?redirect_to=${encodeURIComponent("/admin")}`;
   }
 
   return (
@@ -103,7 +103,7 @@ export function AdminLogin() {
         <details className="mt-5 rounded-md border border-line p-4" open={!googleConfig?.enabled}>
           <summary className="cursor-pointer text-sm font-bold text-muted">Password / TOTP fallback</summary>
           <label className="mt-5 block text-sm font-semibold">
-            Email
+            <span>Email</span>
             <input
               className="input-control mt-2 h-11 w-full"
               autoComplete="email"
@@ -112,7 +112,7 @@ export function AdminLogin() {
             />
           </label>
           <label className="mt-4 block text-sm font-semibold">
-            Password
+            <span>Password</span>
             <input
               className="input-control mt-2 h-11 w-full"
               type="password"
@@ -122,7 +122,7 @@ export function AdminLogin() {
             />
           </label>
           <label className="mt-4 block text-sm font-semibold">
-            TOTP
+            <span>TOTP</span>
             <input
               className="input-control mt-2 h-11 w-full"
               inputMode="numeric"

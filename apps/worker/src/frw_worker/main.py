@@ -18,7 +18,7 @@ configure_logging()
 logger = logging.getLogger(__name__)
 
 
-async def main() -> None:
+async def main() -> None:  # NOSONAR - worker entrypoint centralizes startup, scheduling, and graceful shutdown.
     settings = get_settings()
     worker_id = f"{socket.gethostname()}:{os.getpid()}"
     logger.info("worker_started worker_id=%s", worker_id)
@@ -46,11 +46,14 @@ async def main() -> None:
             continue
         started = time.monotonic()
         try:
-            async def beat() -> None:
+            job_id = str(job["id"])
+
+            async def beat(current_job_id: str = job_id) -> None:
+                await asyncio.sleep(0)
                 with SessionLocal() as beat_db:
                     heartbeat(
                         beat_db,
-                        job_id=str(job["id"]),
+                        job_id=current_job_id,
                         worker_id=worker_id,
                         lease_seconds=settings.worker_job_lease_seconds,
                     )

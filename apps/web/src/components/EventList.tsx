@@ -2,7 +2,7 @@ import type { PublicEvent } from "@frw/shared-types";
 import { ExternalLink } from "lucide-react";
 import { FreshnessBadge, SeverityBadge, SourceBadge } from "./Badge";
 
-export function EventList({ events }: { events: PublicEvent[] }) {
+export function EventList({ events }: Readonly<{ events: PublicEvent[] }>) {
   return (
     <div className="grid gap-3">
       {events.map((event) => (

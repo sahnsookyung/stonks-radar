@@ -7,7 +7,7 @@ import sys
 from typing import Any
 
 _SENSITIVE_QUERY_PARAM_RE = re.compile(
-    r"([?&](?:api[_-]?key|apikey|access[_-]?token|token|client[_-]?secret|secret|password)=)[^&\s\"']+",
+    r"([?&](?:api[_-]?key|access[_-]?token|token|client[_-]?secret|secret|password)=)[^&\s\"']+",
     re.IGNORECASE,
 )
 

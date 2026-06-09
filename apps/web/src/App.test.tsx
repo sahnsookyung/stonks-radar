@@ -8,7 +8,7 @@ import "./i18n/config";
 describe("router", () => {
   it("renders the shell for a locale route", async () => {
     const queryClient = new QueryClient();
-    window.history.pushState({}, "", "/en/methodology");
+    globalThis.window.history.pushState({}, "", "/en/methodology");
     render(
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />

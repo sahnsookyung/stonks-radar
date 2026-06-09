@@ -5,6 +5,7 @@ import os
 import hashlib
 from datetime import date, datetime, timezone
 from pathlib import Path
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path as ApiPath, Query
 from fastapi.responses import JSONResponse
@@ -28,6 +29,11 @@ from frw_api.services.trump_disclosures import (
 router = APIRouter()
 ROOT = Path(__file__).resolve().parents[5]
 DEFAULT_PUBLISHED_ROOT = ROOT / "apps" / "web" / "public" / "public"
+DbSession = Annotated[Session, Depends(get_db)]
+MARKET_HISTORY_RESPONSES = {
+    400: {"description": "Invalid market-history request"},
+    503: {"description": "Approved historical market data is unavailable"},
+}
 
 
 @router.get("/health")
@@ -41,7 +47,7 @@ def health():
 
 
 @router.get("/status")
-def status(db: Session = Depends(get_db)):
+def status(db: DbSession):
     published_manifest = _published_manifest_status()
     db_snapshot_age = _scalar(
         db, "select extract(epoch from now() - max(generated_at))/60 from publication_snapshot", 0
@@ -104,49 +110,49 @@ def snapshot_manifest_proxy():
 
 @router.get("/trump-disclosures/summary")
 def trump_disclosures_summary(
-    limit: int = Query(default=50, ge=1, le=250),
-    db: Session = Depends(get_db),
+    db: DbSession,
+    limit: Annotated[int, Query(ge=1, le=250)] = 50,
 ):
     return disclosure_summary_response(db, limit=limit)
 
 
 @router.get("/filings")
 def filings(
-    person: str | None = Query(default=None, min_length=2, max_length=120),
-    ticker: str | None = Query(default=None, min_length=1, max_length=16),
-    source: str | None = Query(default=None, pattern="^(OGE|SEC|oge|sec)$"),
-    limit: int = Query(default=100, ge=1, le=250),
-    db: Session = Depends(get_db),
+    db: DbSession,
+    person: Annotated[str | None, Query(min_length=2, max_length=120)] = None,
+    ticker: Annotated[str | None, Query(min_length=1, max_length=16)] = None,
+    source: Annotated[str | None, Query(pattern="^(OGE|SEC|oge|sec)$")] = None,
+    limit: Annotated[int, Query(ge=1, le=250)] = 100,
 ):
     return filings_response(db, person=person, ticker=ticker, source=source, limit=limit)
 
 
 @router.get("/transactions")
 def transactions(
-    person: str | None = Query(default=None, min_length=2, max_length=120),
-    ticker: str | None = Query(default=None, min_length=1, max_length=16),
-    source: str | None = Query(default=None, pattern="^(OGE|SEC|oge|sec)$"),
-    limit: int = Query(default=100, ge=1, le=500),
-    db: Session = Depends(get_db),
+    db: DbSession,
+    person: Annotated[str | None, Query(min_length=2, max_length=120)] = None,
+    ticker: Annotated[str | None, Query(min_length=1, max_length=16)] = None,
+    source: Annotated[str | None, Query(pattern="^(OGE|SEC|oge|sec)$")] = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
 ):
     return transactions_response(db, person=person, ticker=ticker, source=source, limit=limit)
 
 
 @router.get("/entities/{ticker}/insiders")
 def entity_insiders(
-    ticker: str = ApiPath(pattern=r"^[A-Za-z0-9.\-]{1,16}$"),
-    limit: int = Query(default=100, ge=1, le=500),
-    db: Session = Depends(get_db),
+    db: DbSession,
+    ticker: Annotated[str, ApiPath(pattern=r"^[A-Za-z0-9.\-]{1,16}$")],
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
 ):
     return entity_insiders_response(db, ticker=ticker, limit=limit)
 
 
-@router.get("/market/history")
+@router.get("/market/history", responses=MARKET_HISTORY_RESPONSES)
 async def market_history(
-    symbols: str = Query(min_length=1, max_length=240),
-    start: date = Query(),
-    end: date = Query(),
-    db: Session = Depends(get_db),
+    db: DbSession,
+    symbols: Annotated[str, Query(min_length=1, max_length=240)],
+    start: Annotated[date, Query()],
+    end: Annotated[date, Query()],
 ):
     try:
         payload = await fetch_market_history(
@@ -165,7 +171,7 @@ async def market_history(
 
 
 @router.get("/search")
-def search(q: str = Query(min_length=2, max_length=80), db: Session = Depends(get_db)):
+def search(db: DbSession, q: Annotated[str, Query(min_length=2, max_length=80)]):
     rows = (
         db.execute(
             text(

@@ -15,16 +15,16 @@ const severityClass: Record<Severity, string> = {
   critical: "border-danger/40 bg-danger/10 text-danger"
 };
 
-export function FreshnessBadge({ value }: { value: Freshness }) {
+export function FreshnessBadge({ value }: Readonly<{ value: Freshness }>) {
   const { t } = useTranslation();
   return <span className={`badge whitespace-nowrap ${freshnessClass[value]}`}>{t(`freshnessStates.${value}`)}</span>;
 }
 
-export function SeverityBadge({ value }: { value: Severity }) {
+export function SeverityBadge({ value }: Readonly<{ value: Severity }>) {
   const { t } = useTranslation();
   return <span className={`badge whitespace-nowrap ${severityClass[value]}`}>{t(`severityStates.${value}`)}</span>;
 }
 
-export function SourceBadge({ label }: { label: string }) {
+export function SourceBadge({ label }: Readonly<{ label: string }>) {
   return <span className="badge whitespace-normal border-line bg-panelLift text-ink">{label}</span>;
 }

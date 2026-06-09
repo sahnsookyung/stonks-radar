@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
@@ -13,10 +13,11 @@ from frw_api.services.news.email_alerts import (
 )
 
 router = APIRouter()
+DbSession = Annotated[Session, Depends(get_db)]
 
 
 @router.post("/news/email-alerts")
-async def receive_news_email_alert(request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
+async def receive_news_email_alert(request: Request, db: DbSession) -> dict[str, Any]:
     body = await request.body()
     try:
         verify_email_webhook_signature(db, headers=dict(request.headers), body=body)

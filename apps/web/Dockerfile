@@ -4,7 +4,7 @@ RUN apk add --no-cache python3 tzdata
 COPY package.json package-lock*.json ./
 COPY apps/web/package.json apps/web/package.json
 COPY packages/shared-types/package.json packages/shared-types/package.json
-RUN npm install
+RUN npm ci --ignore-scripts
 COPY . .
 RUN npm run build
 

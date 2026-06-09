@@ -65,7 +65,7 @@ export function computePortfolioStats(
   return {
     observationCount: portfolioReturns.length,
     startDate: commonDates[0],
-    endDate: commonDates[commonDates.length - 1],
+    endDate: commonDates.at(-1) ?? commonDates[0],
     annualizedReturn,
     annualizedVolatility,
     sharpeRatio:
@@ -109,7 +109,9 @@ export function returnsByDate(points: PricePoint[]): Record<string, number> {
 function intersectSorted(groups: string[][]): string[] {
   if (groups.length === 0) return [];
   const [first, ...rest] = groups.map((group) => new Set(group));
-  return [...first].filter((date) => rest.every((group) => group.has(date))).sort();
+  return [...first]
+    .filter((date) => rest.every((group) => group.has(date)))
+    .sort((left, right) => left.localeCompare(right));
 }
 
 function mean(values: number[]) {

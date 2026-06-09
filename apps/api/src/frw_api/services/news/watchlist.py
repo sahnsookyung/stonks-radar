@@ -47,7 +47,7 @@ def watchlist_entity_dicts() -> tuple[dict[str, Any], ...]:
     return tuple(entities)
 
 
-def watchlist_source_dicts() -> tuple[dict[str, Any], ...]:
+def watchlist_source_dicts() -> tuple[dict[str, Any], ...]:  # NOSONAR - declarative watchlist expansion keeps source policy visible.
     seen: set[str] = set()
     sources: list[dict[str, Any]] = []
     for entity in watchlist_entity_dicts():
@@ -175,14 +175,14 @@ def _default_discovery_sources(entity: dict[str, Any]) -> tuple[dict[str, Any], 
     return tuple(sources)
 
 
-def _default_sec_sources(entity: dict[str, Any]) -> tuple[dict[str, Any], ...]:
+def _default_sec_sources(entity: dict[str, Any]) -> list[dict[str, Any]]:
     cik = str(entity.get("sec_cik") or "").strip()
     if not cik:
-        return ()
+        return []
     symbol = str(entity["symbol"])
     symbol_key = _source_symbol_key(symbol).lower()
     cik10 = cik.zfill(10)
-    return (
+    return [
         {
             "source_key": f"sec_{symbol_key}_filings",
             "source_name": f"SEC EDGAR - {symbol}",
@@ -203,8 +203,8 @@ def _default_sec_sources(entity: dict[str, Any]) -> tuple[dict[str, Any], ...]:
             "retention_class": "structured_fact_only",
             "official_domains": ("sec.gov",),
             "fallback_source_keys": (),
-        },
-    )
+        }
+    ]
 
 
 def _source_symbol_key(symbol: str) -> str:

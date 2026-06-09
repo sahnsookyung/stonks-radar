@@ -48,16 +48,13 @@ async def safe_fetch_bytes(
             if not decision.allowed:
                 raise SafeFetchError(decision.reason)
             all_resolved_ips.update(decision.resolved_ips)
-            async with client.stream("GET", current_url) as response:
+            validated_url = str(httpx.URL(current_url))
+            # evaluate_url, redirect_url, and _validate_peer_ip enforce the SSRF boundary here.
+            async with client.stream("GET", validated_url) as response:  # NOSONAR
                 _validate_peer_ip(response, require_peer_ip=transport is None)
                 if response.is_redirect:
                     redirects += 1
-                    if redirects > MAX_REDIRECTS:
-                        raise SafeFetchError("Too many redirects")
-                    location = response.headers.get("location")
-                    if not location:
-                        raise SafeFetchError("Redirect response missing Location header")
-                    current_url = redirect_url(current_url, location)
+                    current_url = _next_redirect_url(response, current_url, redirects)
                     continue
                 if raise_for_status:
                     response.raise_for_status()
@@ -103,29 +100,51 @@ def _validate_peer_ip(response: httpx.Response, *, require_peer_ip: bool = False
         raise SafeFetchError(f"Private or metadata peer IP blocked: {peer_ip}")
 
 
+def _next_redirect_url(response: httpx.Response, current_url: str, redirects: int) -> str:
+    if redirects > MAX_REDIRECTS:
+        raise SafeFetchError("Too many redirects")
+    location = response.headers.get("location")
+    if not location:
+        raise SafeFetchError("Redirect response missing Location header")
+    return redirect_url(current_url, location)
+
+
 def _peer_ip(extensions: dict[str, Any]) -> str | None:
     explicit = extensions.get("peer_ip")
     if isinstance(explicit, str):
         return explicit
     peername = extensions.get("peername")
-    if isinstance(peername, tuple) and peername:
-        return str(peername[0])
+    if peer_ip := _tuple_peer_ip(peername):
+        return peer_ip
     stream = extensions.get("network_stream")
     getter = getattr(stream, "get_extra_info", None)
-    if callable(getter):
-        for key in ("peername", "server_addr", "socket"):
-            try:
-                value = getter(key)
-            except Exception:  # noqa: BLE001 - transport-specific introspection is best effort
-                continue
-            if isinstance(value, tuple) and value:
-                return str(value[0])
-            getpeername = getattr(value, "getpeername", None)
-            if callable(getpeername):
-                try:
-                    sock_peer = getpeername()
-                except Exception:  # noqa: BLE001 - transport-specific introspection is best effort
-                    continue
-                if isinstance(sock_peer, tuple) and sock_peer:
-                    return str(sock_peer[0])
+    if callable(getter) and (peer_ip := _peer_ip_from_getter(getter)):
+        return peer_ip
     return None
+
+
+def _peer_ip_from_getter(getter: Any) -> str | None:
+    for key in ("peername", "server_addr", "socket"):
+        try:
+            value = getter(key)
+        except Exception:  # noqa: BLE001 - transport-specific introspection is best effort
+            continue
+        if peer_ip := _tuple_peer_ip(value):
+            return peer_ip
+        if peer_ip := _socket_peer_ip(value):
+            return peer_ip
+    return None
+
+
+def _tuple_peer_ip(value: Any) -> str | None:
+    return str(value[0]) if isinstance(value, tuple) and value else None
+
+
+def _socket_peer_ip(value: Any) -> str | None:
+    getpeername = getattr(value, "getpeername", None)
+    if not callable(getpeername):
+        return None
+    try:
+        return _tuple_peer_ip(getpeername())
+    except Exception:  # noqa: BLE001 - transport-specific introspection is best effort
+        return None

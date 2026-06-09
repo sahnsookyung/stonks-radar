@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass, field
 from typing import Any
 
 from sqlalchemy import text
@@ -44,24 +45,25 @@ def provider_is_available(db: Session, provider_key: str) -> bool:
     return True
 
 
-def record_usage(
-    db: Session,
-    *,
-    provider_key: str,
-    unit: str,
-    quantity: float,
-    estimated_cost_usd: float = 0,
-    job_id: str | None = None,
-    endpoint_key: str | None = None,
-    partition_key: str | None = None,
-    status: str = "succeeded",
-    error_class: str | None = None,
-    idempotency_key: str | None = None,
-    reserved_units: dict[str, float] | None = None,
-    actual_units: dict[str, float] | None = None,
-    retry_after_seconds: int | None = None,
-    details: dict[str, Any] | None = None,
-) -> None:
+@dataclass(frozen=True)
+class ProviderUsageRecord:
+    provider_key: str
+    unit: str
+    quantity: float
+    estimated_cost_usd: float = 0
+    job_id: str | None = None
+    endpoint_key: str | None = None
+    partition_key: str | None = None
+    status: str = "succeeded"
+    error_class: str | None = None
+    idempotency_key: str | None = None
+    reserved_units: dict[str, float] | None = None
+    actual_units: dict[str, float] | None = None
+    retry_after_seconds: int | None = None
+    details: dict[str, Any] = field(default_factory=dict)
+
+
+def record_usage(db: Session, usage: ProviderUsageRecord) -> None:
     db.execute(
         text(
             """
@@ -78,20 +80,20 @@ def record_usage(
             """
         ),
         {
-            "provider_key": provider_key,
-            "endpoint_key": endpoint_key,
-            "partition_key": partition_key,
-            "status": status,
-            "error_class": error_class,
-            "idempotency_key": idempotency_key,
-            "unit": unit,
-            "quantity": quantity,
-            "estimated_cost_usd": estimated_cost_usd,
-            "job_id": job_id,
-            "reserved_units": json.dumps(reserved_units or {}),
-            "actual_units": json.dumps(actual_units or {}),
-            "retry_after_seconds": retry_after_seconds,
-            "details": json.dumps(details or {}),
+            "provider_key": usage.provider_key,
+            "endpoint_key": usage.endpoint_key,
+            "partition_key": usage.partition_key,
+            "status": usage.status,
+            "error_class": usage.error_class,
+            "idempotency_key": usage.idempotency_key,
+            "unit": usage.unit,
+            "quantity": usage.quantity,
+            "estimated_cost_usd": usage.estimated_cost_usd,
+            "job_id": usage.job_id,
+            "reserved_units": json.dumps(usage.reserved_units or {}),
+            "actual_units": json.dumps(usage.actual_units or {}),
+            "retry_after_seconds": usage.retry_after_seconds,
+            "details": json.dumps(usage.details),
         },
     )
     db.execute(
@@ -109,9 +111,9 @@ def record_usage(
             """
         ),
         {
-            "provider_key": provider_key,
-            "quantity": quantity,
-            "estimated_cost_usd": estimated_cost_usd,
+            "provider_key": usage.provider_key,
+            "quantity": usage.quantity,
+            "estimated_cost_usd": usage.estimated_cost_usd,
         },
     )
 

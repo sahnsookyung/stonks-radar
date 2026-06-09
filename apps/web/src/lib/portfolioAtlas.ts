@@ -537,7 +537,7 @@ const QUALITY_MESSAGES: Record<QualityLevel, string> = {
   UNAVAILABLE: "The app cannot fully classify or price this instrument yet."
 };
 
-const ASSET_CLASS_VALUES: AssetClass[] = [
+const ASSET_CLASS_VALUES = new Set<AssetClass>([
   "Cash & Cash Equivalents",
   "Fixed Income",
   "Equity",
@@ -547,7 +547,7 @@ const ASSET_CLASS_VALUES: AssetClass[] = [
   "Derivatives / Leveraged Products",
   "Other Assets",
   "Liabilities"
-];
+]);
 
 const TOOLTIP_KEYS = {
   ticker: "ticker",
@@ -572,17 +572,17 @@ function normalizeSearchQuery(rawQuery: string): string {
     .normalize("NFKC")
     .toUpperCase()
     .replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, "-")
-    .replace(/[^\p{L}\p{N}.\-\/\s]/gu, " ")
+    .replace(/[^\p{L}\p{N}./\s-]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
 function normalizeSymbol(value: string): string {
-  return normalizeSearchQuery(value).replace(/\//g, "-").replace(/\s+/g, "");
+  return normalizeSearchQuery(value).replaceAll("/", "-").replace(/\s+/g, "");
 }
 
 function isLikelySymbolQuery(query: string): boolean {
-  return query.length > 0 && /^[\p{L}\p{N}.\-]+$/u.test(query);
+  return query.length > 0 && /^[\p{L}\p{N}.-]+$/u.test(query);
 }
 
 function primaryListingFor(instrument: Instrument): InstrumentListing {
@@ -670,14 +670,22 @@ function scoreTokenForQuery(tokenInfo: InstrumentSearchToken, normalized: string
   const includes = normalizedToken.includes(normalized) || compactToken.includes(querySymbol);
   const wordsMatch = normalized.split(" ").some((word) => word.length > 1 && normalizedToken.includes(word));
   const kind = tokenInfo.matchType;
-  const exactBase = kind === "SYMBOL" ? 1000 : kind === "LOCAL_CODE" ? 960 : ["ISIN", "FIGI", "CUSIP", "SEDOL", "RIC"].includes(kind) ? 940 : kind === "NAME" ? 700 : 640;
-  const prefixBase = kind === "SYMBOL" ? 800 : kind === "LOCAL_CODE" ? 760 : ["ISIN", "FIGI", "CUSIP", "SEDOL", "RIC"].includes(kind) ? 720 : kind === "NAME" ? 500 : 460;
-  const includeBase = kind === "SYMBOL" ? 550 : kind === "LOCAL_CODE" ? 520 : kind === "NAME" ? 350 : 320;
+  const exactBase = tokenBaseScore(kind, "exact");
+  const prefixBase = tokenBaseScore(kind, "prefix");
+  const includeBase = tokenBaseScore(kind, "include");
   if (exact) return { score: exactBase, matchedOn: `${kind}_EXACT` };
   if (prefix) return { score: prefixBase, matchedOn: `${kind}_PREFIX` };
   if (includes) return { score: includeBase, matchedOn: `${kind}_MATCH` };
   if (kind === "NAME" && wordsMatch) return { score: 125, matchedOn: "NAME_TOKEN" };
   return { score: 0, matchedOn: null };
+}
+
+function tokenBaseScore(kind: InstrumentSearchToken["matchType"], match: "exact" | "prefix" | "include") {
+  if (kind === "SYMBOL") return { exact: 1000, prefix: 800, include: 550 }[match];
+  if (kind === "LOCAL_CODE") return { exact: 960, prefix: 760, include: 520 }[match];
+  if (["ISIN", "FIGI", "CUSIP", "SEDOL", "RIC"].includes(kind)) return { exact: 940, prefix: 720, include: 320 }[match];
+  if (kind === "NAME") return { exact: 700, prefix: 500, include: 350 }[match];
+  return { exact: 640, prefix: 460, include: 320 }[match];
 }
 
 function setSearchCache(cacheKey: string, results: InstrumentSearchResult[]) {
@@ -717,7 +725,7 @@ function qualityFromRecord(instrument: Instrument): QualityLevel {
   return instrument.priceQuality;
 }
 
-export function searchInstruments(
+export function searchInstruments( // NOSONAR - weighted ranking keeps its scoring factors colocated for auditability.
   query: string,
   instruments: Instrument[],
   options: InstrumentSearchOptions = {}
@@ -814,8 +822,8 @@ export function searchInstruments(
       isStale: stale,
       qualityLevel,
       qualityMessage,
-      metadataCoverage: qualityLevel === "COMPLETE" ? "full" : qualityLevel === "UNAVAILABLE" ? "unavailable" : "partial",
-      priceCoverage: stale ? "stale" : instrument.priceQuality === "UNAVAILABLE" ? "unavailable" : "available",
+      metadataCoverage: metadataCoverageForQuality(qualityLevel),
+      priceCoverage: priceCoverageForInstrument(stale, instrument.priceQuality),
       calculationEligible: instrument.priceQuality !== "UNAVAILABLE",
       requiresUserPrice: instrument.priceQuality === "UNAVAILABLE",
       sourceProviders: instrument.sourceProviders ?? ["local_catalog"],
@@ -840,6 +848,18 @@ export function searchInstruments(
   return limited;
 }
 
+function metadataCoverageForQuality(qualityLevel: QualityLevel): InstrumentSearchResult["metadataCoverage"] {
+  if (qualityLevel === "COMPLETE") return "full";
+  if (qualityLevel === "UNAVAILABLE") return "unavailable";
+  return "partial";
+}
+
+function priceCoverageForInstrument(stale: boolean, priceQuality: QualityLevel): InstrumentSearchResult["priceCoverage"] {
+  if (stale) return "stale";
+  if (priceQuality === "UNAVAILABLE") return "unavailable";
+  return "available";
+}
+
 export function resolveInstrumentReference(reference: string, instruments: Instrument[]): Instrument | undefined {
   const normalized = normalizeSymbol(reference);
   if (!normalized) return undefined;
@@ -852,7 +872,7 @@ export function resolveInstrumentSearchResult(reference: string, instruments: In
 }
 
 export function instrumentFromSearchResult(result: InstrumentSearchResult): Instrument {
-  const assetClass = ASSET_CLASS_VALUES.includes(result.assetClass as AssetClass) ? (result.assetClass as AssetClass) : "Other Assets";
+  const assetClass = ASSET_CLASS_VALUES.has(result.assetClass as AssetClass) ? (result.assetClass as AssetClass) : "Other Assets";
   const symbol = result.displaySymbol.toUpperCase();
   const listingId = result.listingId || `${result.exchange}:${symbol}`;
   return {
@@ -863,7 +883,7 @@ export function instrumentFromSearchResult(result: InstrumentSearchResult): Inst
     instrumentType: result.instrumentType,
     isActive: result.isActive,
     assetClass,
-    subAssetClass: result.instrumentType === "etf" ? "ETF" : result.instrumentType === "stock" ? "Single Stocks" : "Source-backed",
+    subAssetClass: subAssetClassForSearchResult(result.instrumentType),
     country: result.country,
     domicileCountry: result.country,
     currency: result.currency,
@@ -871,7 +891,7 @@ export function instrumentFromSearchResult(result: InstrumentSearchResult): Inst
     industry: "Unclassified",
     theme: ["Source-backed listing"],
     expenseRatio: 0,
-    dataQualityScore: result.metadataCoverage === "full" ? 0.6 : result.metadataCoverage === "partial" ? 0.35 : 0.1,
+    dataQualityScore: metadataCoverageScore(result.metadataCoverage),
     currentPrice: 0,
     previousClose: 0,
     priceAsOf: result.sourceObservedAt ?? new Date().toISOString().slice(0, 10),
@@ -892,6 +912,18 @@ export function instrumentFromSearchResult(result: InstrumentSearchResult): Inst
   };
 }
 
+function subAssetClassForSearchResult(instrumentType: Instrument["instrumentType"]) {
+  if (instrumentType === "etf") return "ETF";
+  if (instrumentType === "stock") return "Single Stocks";
+  return "Source-backed";
+}
+
+function metadataCoverageScore(coverage: InstrumentSearchResult["metadataCoverage"]) {
+  if (coverage === "full") return 0.6;
+  if (coverage === "partial") return 0.35;
+  return 0.1;
+}
+
 export function instrumentReferenceKeys(instrument: Instrument): string[] {
   return [
     instrument.instrumentId,
@@ -903,29 +935,89 @@ export function instrumentReferenceKeys(instrument: Instrument): string[] {
 }
 
 export const demoInstruments: Instrument[] = [
-  instrument("AAPL", "Apple Inc.", "NASDAQ", "Equity", "Single Stocks", "US", "USD", "Information Technology", ["Big Tech", "AI infrastructure"], 195.4, 194.2, 0, false, undefined, {
+  instrument({
+    symbol: "AAPL",
+    name: "Apple Inc.",
+    exchange: "NASDAQ",
+    assetClass: "Equity",
+    subAssetClass: "Single Stocks",
+    country: "US",
+    currency: "USD",
+    sector: "Information Technology",
+    theme: ["Big Tech", "AI infrastructure"],
+    currentPrice: 195.4,
+    previousClose: 194.2,
+    expenseRatio: 0,
     aliases: ["Apple", "Apple Computer"],
     identifiers: [
       { type: "ISIN", value: "US0378331005" },
       { type: "FIGI", value: "BBG000B9XRY4" }
     ]
   }),
-  instrument("MSFT", "Microsoft Corp.", "NASDAQ", "Equity", "Single Stocks", "US", "USD", "Information Technology", ["Big Tech", "AI infrastructure"], 425.7, 421.3, 0, false, undefined, {
+  instrument({
+    symbol: "MSFT",
+    name: "Microsoft Corp.",
+    exchange: "NASDAQ",
+    assetClass: "Equity",
+    subAssetClass: "Single Stocks",
+    country: "US",
+    currency: "USD",
+    sector: "Information Technology",
+    theme: ["Big Tech", "AI infrastructure"],
+    currentPrice: 425.7,
+    previousClose: 421.3,
+    expenseRatio: 0,
     aliases: ["Microsoft"],
     identifiers: [
       { type: "ISIN", value: "US5949181045" },
       { type: "FIGI", value: "BBG000BPH459" }
     ]
   }),
-  instrument("NVDA", "NVIDIA Corporation", "NASDAQ", "Equity", "Single Stocks", "US", "USD", "Information Technology", ["AI infrastructure", "Semiconductors"], 1120.0, 1108.5, 0, false, undefined, {
+  instrument({
+    symbol: "NVDA",
+    name: "NVIDIA Corporation",
+    exchange: "NASDAQ",
+    assetClass: "Equity",
+    subAssetClass: "Single Stocks",
+    country: "US",
+    currency: "USD",
+    sector: "Information Technology",
+    theme: ["AI infrastructure", "Semiconductors"],
+    currentPrice: 1120,
+    previousClose: 1108.5,
+    expenseRatio: 0,
     aliases: ["Nvidia", "NVIDIA Corp"],
     identifiers: [{ type: "ISIN", value: "US67066G1040" }]
   }),
-  instrument("TSLA", "Tesla, Inc.", "NASDAQ", "Equity", "Single Stocks", "US", "USD", "Consumer Discretionary", ["EV", "Big Tech"], 180.2, 178.9, 0, false, undefined, {
+  instrument({
+    symbol: "TSLA",
+    name: "Tesla, Inc.",
+    exchange: "NASDAQ",
+    assetClass: "Equity",
+    subAssetClass: "Single Stocks",
+    country: "US",
+    currency: "USD",
+    sector: "Consumer Discretionary",
+    theme: ["EV", "Big Tech"],
+    currentPrice: 180.2,
+    previousClose: 178.9,
+    expenseRatio: 0,
     aliases: ["Tesla"],
     identifiers: [{ type: "ISIN", value: "US88160R1014" }]
   }),
-  instrument("005930.KS", "Samsung Electronics Co., Ltd.", "KRX", "Equity", "Single Stocks", "Korea", "KRW", "Information Technology", ["Semiconductors", "Korea"], 75_300, 74_800, 0, false, undefined, {
+  instrument({
+    symbol: "005930.KS",
+    name: "Samsung Electronics Co., Ltd.",
+    exchange: "KRX",
+    assetClass: "Equity",
+    subAssetClass: "Single Stocks",
+    country: "Korea",
+    currency: "KRW",
+    sector: "Information Technology",
+    theme: ["Semiconductors", "Korea"],
+    currentPrice: 75_300,
+    previousClose: 74_800,
+    expenseRatio: 0,
     aliases: ["Samsung Electronics", "삼성전자"],
     identifiers: [
       { type: "ISIN", value: "KR7005930003" },
@@ -945,26 +1037,97 @@ export const demoInstruments: Instrument[] = [
     ],
     primaryListingId: "KRX:005930"
   }),
-  instrument("VXUS", "Vanguard Total International Stock ETF", "NASDAQ", "Equity", "Developed ex-US Equity", "Global ex-US", "USD", "Multi-sector", ["Global diversification"], 62.1, 61.8, 0.0007, true, [
-    { symbol: "TSM", weight: 0.031 },
-    { symbol: "NOVO.B", weight: 0.019 },
-    { symbol: "ASML", weight: 0.016 },
-    { symbol: "NESN", weight: 0.015 }
-  ]),
-  instrument("TLT", "iShares 20+ Year Treasury Bond ETF", "NASDAQ", "Fixed Income", "Government Bonds", "US", "USD", "Government bonds", ["Duration hedge"], 92.4, 92.1, 0.0015, true, [
-    { symbol: "US912810TZ12", weight: 0.089 },
-    { symbol: "US912810UB25", weight: 0.082 },
-    { symbol: "US912810UC08", weight: 0.077 }
-  ]),
-  instrument("SGOV", "iShares 0-3 Month Treasury Bond ETF", "NYSE", "Cash & Cash Equivalents", "T-bills", "US", "USD", "Government bonds", ["Cash management"], 100.8, 100.79, 0.0009, true, [
-    { symbol: "USTBILL-1M", weight: 0.48 },
-    { symbol: "USTBILL-2M", weight: 0.32 },
-    { symbol: "USTBILL-3M", weight: 0.2 }
-  ]),
-  instrument("GLD", "SPDR Gold Shares", "NYSE", "Real Assets", "Gold", "US", "USD", "Commodities", ["Commodities"], 210.2, 209.1, 0.004, true, [
-    { symbol: "GOLD-BULLION", weight: 1 }
-  ]),
-  instrument("BTC-USD", "Bitcoin", "CRYPTO", "Crypto / Digital Assets", "Bitcoin", "Global", "USD", "Crypto", ["Crypto ecosystem"], 67_000, 66_500, 0)
+  instrument({
+    symbol: "VXUS",
+    name: "Vanguard Total International Stock ETF",
+    exchange: "NASDAQ",
+    assetClass: "Equity",
+    subAssetClass: "Developed ex-US Equity",
+    country: "Global ex-US",
+    currency: "USD",
+    sector: "Multi-sector",
+    theme: ["Global diversification"],
+    currentPrice: 62.1,
+    previousClose: 61.8,
+    expenseRatio: 0.0007,
+    fundFlag: true,
+    lookThroughHoldings: [
+      { symbol: "TSM", weight: 0.031 },
+      { symbol: "NOVO.B", weight: 0.019 },
+      { symbol: "ASML", weight: 0.016 },
+      { symbol: "NESN", weight: 0.015 }
+    ]
+  }),
+  instrument({
+    symbol: "TLT",
+    name: "iShares 20+ Year Treasury Bond ETF",
+    exchange: "NASDAQ",
+    assetClass: "Fixed Income",
+    subAssetClass: "Government Bonds",
+    country: "US",
+    currency: "USD",
+    sector: "Government bonds",
+    theme: ["Duration hedge"],
+    currentPrice: 92.4,
+    previousClose: 92.1,
+    expenseRatio: 0.0015,
+    fundFlag: true,
+    lookThroughHoldings: [
+      { symbol: "US912810TZ12", weight: 0.089 },
+      { symbol: "US912810UB25", weight: 0.082 },
+      { symbol: "US912810UC08", weight: 0.077 }
+    ]
+  }),
+  instrument({
+    symbol: "SGOV",
+    name: "iShares 0-3 Month Treasury Bond ETF",
+    exchange: "NYSE",
+    assetClass: "Cash & Cash Equivalents",
+    subAssetClass: "T-bills",
+    country: "US",
+    currency: "USD",
+    sector: "Government bonds",
+    theme: ["Cash management"],
+    currentPrice: 100.8,
+    previousClose: 100.79,
+    expenseRatio: 0.0009,
+    fundFlag: true,
+    lookThroughHoldings: [
+      { symbol: "USTBILL-1M", weight: 0.48 },
+      { symbol: "USTBILL-2M", weight: 0.32 },
+      { symbol: "USTBILL-3M", weight: 0.2 }
+    ]
+  }),
+  instrument({
+    symbol: "GLD",
+    name: "SPDR Gold Shares",
+    exchange: "NYSE",
+    assetClass: "Real Assets",
+    subAssetClass: "Gold",
+    country: "US",
+    currency: "USD",
+    sector: "Commodities",
+    theme: ["Commodities"],
+    currentPrice: 210.2,
+    previousClose: 209.1,
+    expenseRatio: 0.004,
+    fundFlag: true,
+    lookThroughHoldings: [{ symbol: "GOLD-BULLION", weight: 1 }]
+  }),
+  instrument({
+    symbol: "BTC-USD",
+    name: "Bitcoin",
+    exchange: "CRYPTO",
+    assetClass: "Crypto / Digital Assets",
+    subAssetClass: "Bitcoin",
+    country: "Global",
+    currency: "USD",
+    sector: "Crypto",
+    theme: ["Crypto ecosystem"],
+    currentPrice: 67_000,
+    previousClose: 66_500,
+    expenseRatio: 0
+  })
 ];
 
 export const defaultAssumptions: AssumptionSet = {
@@ -1288,14 +1451,17 @@ export function calculateThemeExposure(holdings: Holding[], instruments: Instrum
     }
   }
   return [...buckets.entries()]
-    .map(([key, row]) => ({
-      key,
-      label: key,
-      value: row.value,
-      weight: totalValue > 0 ? row.value / totalValue : 0,
-      topHoldings: [...new Set(row.top)].slice(0, 4),
-      quality: (key === "Unclassified" ? "PARTIAL" : "ESTIMATED") as QualityLevel
-    }))
+    .map(([key, row]) => {
+      const quality: QualityLevel = key === "Unclassified" ? "PARTIAL" : "ESTIMATED";
+      return {
+        key,
+        label: key,
+        value: row.value,
+        weight: totalValue > 0 ? row.value / totalValue : 0,
+        topHoldings: [...new Set(row.top)].slice(0, 4),
+        quality
+      };
+    })
     .sort((left, right) => right.value - left.value);
 }
 
@@ -1400,16 +1566,28 @@ export function calculateCAGR(beginningValue: number, endingValue: number, years
   return Math.pow(endingValue / beginningValue, 1 / years) - 1;
 }
 
-export function calculateModifiedDietzReturn(periods: { beginningValue: number; endingValue: number; externalCashFlow: number; cashFlowTiming?: "beginning" | "mid" | "end" }[]): number {
+type ModifiedDietzPeriod = {
+  beginningValue: number;
+  endingValue: number;
+  externalCashFlow: number;
+  cashFlowTiming?: "beginning" | "mid" | "end";
+};
+
+export function calculateModifiedDietzReturn(periods: ModifiedDietzPeriod[]): number {
   return periods.reduce((compound, period) => {
     if (period.beginningValue <= 0) return compound;
-    const timing = period.cashFlowTiming ?? "end";
-    const cashFlowWeight = timing === "beginning" ? 1 : timing === "mid" ? 0.5 : 0;
+    const cashFlowWeight = cashFlowTimingWeight(period.cashFlowTiming ?? "end");
     const denominator = period.beginningValue + period.externalCashFlow * cashFlowWeight;
     if (denominator <= 0) return compound;
     const subperiodReturn = (period.endingValue - period.beginningValue - period.externalCashFlow) / denominator;
     return compound * (1 + subperiodReturn);
   }, 1) - 1;
+}
+
+function cashFlowTimingWeight(timing: "beginning" | "mid" | "end") {
+  if (timing === "beginning") return 1;
+  if (timing === "mid") return 0.5;
+  return 0;
 }
 
 export function calculateTimeWeightedReturn(periods: { beginningValue: number; endingValue: number; externalCashFlow: number; cashFlowTiming?: "beginning" | "mid" | "end" }[]): number {
@@ -1453,7 +1631,6 @@ export function calculateMoneyWeightedReturn(cashFlows: { date: string; amount: 
       lowValue = value;
     } else {
       high = mid;
-      highValue = value;
     }
   }
   return (low + high) / 2;
@@ -1799,6 +1976,7 @@ export function runMonteCarlo(params: {
   terminalValues.sort((left, right) => left - right);
   const successCount = terminalValues.filter((value) => value >= goal.targetAmount).length;
   const shortfalls = terminalValues.filter((value) => value < goal.targetAmount).map((value) => goal.targetAmount - value);
+  const sortedBadDrawdowns = [...badDrawdowns].sort((left, right) => left - right);
   return {
     successProbability: successCount / pathCount,
     medianOutcome: percentile(terminalValues, 0.5),
@@ -1809,11 +1987,11 @@ export function runMonteCarlo(params: {
     shortfallProbability: shortfalls.length / pathCount,
     medianShortfallAmount: shortfalls.length ? percentile(shortfalls, 0.5) : 0,
     requiredMonthlyContribution: calculateRequiredMonthlyContribution(goal.targetAmount, months, analysis.portfolioValue, weightedAnnualReturn),
-    estimatedBadCaseDrawdown: percentile(badDrawdowns.sort((left, right) => left - right), 0.1),
+    estimatedBadCaseDrawdown: percentile(sortedBadDrawdowns, 0.1),
     pathCount,
     method: params.method ?? "normal",
     fanChart: [...checkpoints.entries()].map(([month, values]) => {
-      const sorted = values.sort((left, right) => left - right);
+      const sorted = [...values].sort((left, right) => left - right);
       return { month, p10: percentile(sorted, 0.1), median: percentile(sorted, 0.5), p90: percentile(sorted, 0.9) };
     }),
     dataQualityIssues: [
@@ -1859,10 +2037,16 @@ export function calculateDataFreshnessScore(instruments: Instrument[], asOf = ne
     if (instrumentItem.priceQuality === "USER_PROVIDED") return 0.75;
     const ageDays = Math.max(0, (asOf.getTime() - priceDate.getTime()) / MS_PER_DAY);
     const freshness = Math.max(0, 1 - ageDays / Math.max(1, staleAfterDays));
-    const qualityMultiplier = instrumentItem.priceQuality === "COMPLETE" ? 1 : instrumentItem.priceQuality === "PROXY" ? 0.7 : 0.55;
+    const qualityMultiplier = priceQualityFreshnessMultiplier(instrumentItem.priceQuality);
     return freshness * qualityMultiplier;
   });
   return Math.max(0, Math.min(1, mean(scores)));
+}
+
+function priceQualityFreshnessMultiplier(priceQuality: QualityLevel) {
+  if (priceQuality === "COMPLETE") return 1;
+  if (priceQuality === "PROXY") return 0.7;
+  return 0.55;
 }
 
 export function calculateHoldingCoverageRows(
@@ -1880,13 +2064,7 @@ export function calculateHoldingCoverageRows(
     const hasStoredDailyPrice =
       instrument?.priceCoverage === "available" &&
       Boolean(instrument.sourceProviders?.includes("stored_normalized_daily_bars"));
-    const dataMode = hasManualValuation
-      ? "USER_PROVIDED"
-      : hasStoredDailyPrice
-        ? "STORED_DAILY"
-        : portfolio.isDemo
-          ? "SAMPLE_STATIC"
-          : "STORED_DAILY";
+    const dataMode = holdingDataMode(hasManualValuation, hasStoredDailyPrice, portfolio.isDemo);
     return {
       holdingId: holding.holdingId,
       symbol: instrument ? primaryListingFor(instrument).symbol : holding.instrumentId,
@@ -1902,6 +2080,13 @@ export function calculateHoldingCoverageRows(
   });
 }
 
+function holdingDataMode(hasManualValuation: boolean, hasStoredDailyPrice: boolean, isDemo: boolean): HoldingCoverageRow["dataMode"] {
+  if (hasManualValuation) return "USER_PROVIDED";
+  if (hasStoredDailyPrice) return "STORED_DAILY";
+  if (isDemo) return "SAMPLE_STATIC";
+  return "STORED_DAILY";
+}
+
 export function calculatePortfolioCoverageSummary(rows: HoldingCoverageRow[]): PortfolioCoverageSummary {
   const weightByStatus = (status: HoldingCoverageRow["coverageStatus"]) =>
     rows.filter((row) => row.coverageStatus === status).reduce((sum, row) => sum + row.weight, 0);
@@ -1910,15 +2095,16 @@ export function calculatePortfolioCoverageSummary(rows: HoldingCoverageRow[]): P
   const proxyWeight = weightByStatus("proxy");
   const missingWeight = weightByStatus("missing");
   const manualWeight = weightByStatus("manual");
-  const validDates = rows.map((row) => row.priceAsOf).filter(Boolean).sort();
-  const qualityTier: CoverageQualityTier =
-    missingWeight > 0.1 || coveredWeight < 0.7
-      ? "INSUFFICIENT"
-      : staleWeight > 0.25 || proxyWeight > 0.4
-        ? "LOW"
-        : staleWeight > 0.05 || proxyWeight > 0.15
-          ? "MEDIUM"
-          : "HIGH";
+  const validDates = rows
+    .map((row) => row.priceAsOf)
+    .filter((date): date is string => Boolean(date))
+    .sort((left, right) => left.localeCompare(right));
+  const qualityTier = coverageQualityTier({
+    coveredWeight,
+    staleWeight,
+    proxyWeight,
+    missingWeight
+  });
   return {
     qualityTier,
     coveredWeight,
@@ -1927,11 +2113,18 @@ export function calculatePortfolioCoverageSummary(rows: HoldingCoverageRow[]): P
     missingWeight,
     manualWeight,
     oldestPriceAsOf: validDates[0] ?? null,
-    latestPriceAsOf: validDates[validDates.length - 1] ?? null,
+    latestPriceAsOf: validDates.at(-1) ?? null,
     basisLabel: "Daily close / delayed historical data",
     limitation:
       "Portfolio analytics use stored or user-entered daily close values. They are suitable for planning, not real-time execution or intraday trading decisions."
   };
+}
+
+function coverageQualityTier(input: Pick<PortfolioCoverageSummary, "coveredWeight" | "staleWeight" | "proxyWeight" | "missingWeight">): CoverageQualityTier {
+  if (input.missingWeight > 0.1 || input.coveredWeight < 0.7) return "INSUFFICIENT";
+  if (input.staleWeight > 0.25 || input.proxyWeight > 0.4) return "LOW";
+  if (input.staleWeight > 0.05 || input.proxyWeight > 0.15) return "MEDIUM";
+  return "HIGH";
 }
 
 export function calculatePortfolioMarketDataMode(rows: HoldingCoverageRow[], isDemo: boolean): PortfolioMarketDataMode {
@@ -2127,7 +2320,7 @@ export function validateHoldingsCsv(
   if (symbolIndex < 0) errors.push("Missing required column: symbol.");
   if (quantityIndex < 0 && valueIndex < 0) errors.push("CSV needs quantity or market_value.");
   if (errors.length) return { holdings: [], errors };
-  const holdings = lines.slice(1).map((line, index) => {
+  const holdings = lines.slice(1).map((line, index) => { // NOSONAR - CSV row validation keeps all row errors tied to one pass.
     const row = splitCsvLine(line);
     if (row.some((cell) => /^[=+\-@]/.test(cell.trim()))) {
       errors.push(`Row ${index + 2} contains a spreadsheet formula-like value and was rejected.`);
@@ -2137,7 +2330,7 @@ export function validateHoldingsCsv(
     const quantity = quantityIndex >= 0 ? Number(row[quantityIndex]) : 0;
     const manualPrice = priceIndex >= 0 ? Number(row[priceIndex]) : undefined;
     const manualMarketValue = valueIndex >= 0 ? Number(row[valueIndex]) : undefined;
-    const dateValue = (purchaseDateIndex >= 0 ? row[purchaseDateIndex] : tradeDateIndex >= 0 ? row[tradeDateIndex] : undefined)?.trim();
+    const dateValue = csvDateValue(row, purchaseDateIndex, tradeDateIndex);
     const dedupeKey = [symbol, row[quantityIndex]?.trim() ?? "", row[priceIndex]?.trim() ?? "", row[valueIndex]?.trim() ?? "", dateValue ?? ""].join("|");
     if (!symbol) errors.push(`Row ${index + 2} is missing a symbol.`);
     if (symbol && options.rejectUnknownSymbols && knownSymbols.size > 0 && !knownSymbols.has(normalizedSymbol)) {
@@ -2174,6 +2367,12 @@ export function validateHoldingsCsv(
   return errors.length ? { holdings: [], errors } : { holdings, errors };
 }
 
+function csvDateValue(row: string[], purchaseDateIndex: number, tradeDateIndex: number) {
+  if (purchaseDateIndex >= 0) return row[purchaseDateIndex]?.trim();
+  if (tradeDateIndex >= 0) return row[tradeDateIndex]?.trim();
+  return undefined;
+}
+
 export function isFeatureEnabled(
   gates: FeatureGate[],
   featureKey: string,
@@ -2199,28 +2398,58 @@ export function generatePortfolioHealthSummary(input: {
   largestAssetClass: string;
   largestAssetClassWeight: number;
 }): string {
-  const concentration = input.top5Concentration > 0.65 ? "concentrated" : input.top5Concentration > 0.45 ? "moderately concentrated" : "broadly diversified";
-  const drift = input.allocationDrift > 0.12 ? "materially off target" : input.allocationDrift > 0.05 ? "slightly off target" : "close to target";
+  const concentration = concentrationLabel(input.top5Concentration);
+  const drift = allocationDriftLabel(input.allocationDrift);
   return `Portfolio is ${concentration} and ${drift}. Largest asset class is ${input.largestAssetClass} at ${formatPercent(input.largestAssetClassWeight)}. Estimated annual fee drag is ${formatPercent(input.weightedExpenseRatio)} plus platform, FX, and tax-drag assumptions.`;
 }
 
-function instrument(
-  symbol: string,
-  name: string,
-  exchange: string,
-  assetClass: AssetClass,
-  subAssetClass: string,
-  country: string,
-  currency: string,
-  sector: string,
-  theme: string[],
-  currentPrice: number,
-  previousClose: number,
-  expenseRatio: number,
-  fundFlag = false,
-  lookThroughHoldings?: { symbol: string; weight: number }[],
-  options: Partial<Pick<Instrument, "aliases" | "identifiers" | "listings" | "primaryListingId" | "priceQuality" | "isActive">> = {}
-): Instrument {
+function concentrationLabel(top5Concentration: number) {
+  if (top5Concentration > 0.65) return "concentrated";
+  if (top5Concentration > 0.45) return "moderately concentrated";
+  return "broadly diversified";
+}
+
+function allocationDriftLabel(allocationDrift: number) {
+  if (allocationDrift > 0.12) return "materially off target";
+  if (allocationDrift > 0.05) return "slightly off target";
+  return "close to target";
+}
+
+interface SampleInstrumentInput extends Partial<Pick<Instrument, "aliases" | "identifiers" | "listings" | "primaryListingId" | "priceQuality" | "isActive">> {
+  symbol: string;
+  name: string;
+  exchange: string;
+  assetClass: AssetClass;
+  subAssetClass: string;
+  country: string;
+  currency: string;
+  sector: string;
+  theme: string[];
+  currentPrice: number;
+  previousClose: number;
+  expenseRatio: number;
+  fundFlag?: boolean;
+  lookThroughHoldings?: { symbol: string; weight: number }[];
+}
+
+function instrument(input: Readonly<SampleInstrumentInput>): Instrument {
+  const {
+    symbol,
+    name,
+    exchange,
+    assetClass,
+    subAssetClass,
+    country,
+    currency,
+    sector,
+    theme,
+    currentPrice,
+    previousClose,
+    expenseRatio,
+    fundFlag = false,
+    lookThroughHoldings
+  } = input;
+  const options = input;
   const primaryListing = options.listings?.find((listing) => listing.isPrimary) ?? options.listings?.[0];
   const listingId = primaryListing?.listingId ?? `${exchange}:${symbol}`;
   return {
@@ -2228,7 +2457,7 @@ function instrument(
     symbol,
     exchange,
     name,
-    instrumentType: fundFlag ? "etf" : assetClass === "Fixed Income" ? "bond" : assetClass === "Crypto / Digital Assets" ? "crypto" : "stock",
+    instrumentType: instrumentTypeForSeed(fundFlag, assetClass),
     assetClass,
     subAssetClass,
     country,
@@ -2262,6 +2491,13 @@ function instrument(
     isActive: options.isActive,
     lookThroughHoldings
   };
+}
+
+function instrumentTypeForSeed(fundFlag: boolean, assetClass: AssetClass): Instrument["instrumentType"] {
+  if (fundFlag) return "etf";
+  if (assetClass === "Fixed Income") return "bond";
+  if (assetClass === "Crypto / Digital Assets") return "crypto";
+  return "stock";
 }
 
 function holding(holdingId: string, instrumentId: string, quantity: number): Holding {
@@ -2409,8 +2645,7 @@ function splitCsvLine(line: string) {
   const cells: string[] = [];
   let cell = "";
   let quoted = false;
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index];
+  for (const char of line) {
     if (char === '"') {
       quoted = !quoted;
     } else if (char === "," && !quoted) {
@@ -2558,7 +2793,7 @@ function stableRollout(userId: string, featureKey: string) {
   let hash = 0;
   const input = `${userId}:${featureKey}`;
   for (let index = 0; index < input.length; index += 1) {
-    hash = (hash * 31 + input.charCodeAt(index)) % 10_000;
+    hash = (hash * 31 + (input.codePointAt(index) ?? 0)) % 10_000;
   }
   return hash / 100;
 }

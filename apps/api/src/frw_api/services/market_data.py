@@ -28,6 +28,7 @@ from frw_api.services.market_history_store import (
 
 SYMBOL_RE = re.compile(r"^[A-Z0-9][A-Z0-9.\-:]{0,19}$")
 TRADING_DAYS_PER_YEAR = 252
+US_MARKET_TIMEZONE = "America/New_York"
 
 
 class MarketDataError(Exception):
@@ -55,7 +56,7 @@ class HistoryPoint:
     low: float | None = None
     currency: str = "USD"
     exchange: str | None = None
-    timezone: str = "America/New_York"
+    timezone: str = US_MARKET_TIMEZONE
     provider_timestamp: str | None = None
     source_revision: str | None = None
 
@@ -73,13 +74,7 @@ async def fetch_market_history(
     public_only: bool = False,
 ) -> dict[str, Any]:
     settings = get_settings()
-    normalized = _normalize_symbols(symbols, settings.market_data_max_symbols)
-    if start > end:
-        raise MarketDataInputError("start date must be before end date")
-    if (end - start).days > settings.market_data_max_history_days:
-        raise MarketDataInputError(
-            f"date range exceeds {settings.market_data_max_history_days} days"
-        )
+    normalized = _validated_history_symbols(symbols, start, end, settings)
 
     display_mode = "public" if public_only else settings.resolved_market_data_display_mode
     display_allowlist = ",".join(sorted(settings.market_data_public_display_allowlist_values))
@@ -95,11 +90,7 @@ async def fetch_market_history(
         return payload
 
     provider_status = _provider_status()
-    provider_order = [
-        item
-        for item in _provider_order()
-        if item in {"twelve_data", "alpha_vantage", "fmp", "yahoo_admin"}
-    ]
+    provider_order = _market_history_provider_order()
     stored_payload = _stored_payload(
         db=db,
         symbols=normalized,
@@ -150,10 +141,7 @@ async def fetch_market_history(
         try:
             series = await _fetch_provider(provider, key, normalized, start, end, transport, db)
         except ProviderLimitError as exc:
-            detail = exc.error_class
-            if exc.retry_after_seconds is not None:
-                detail = f"{detail}; retry after {exc.retry_after_seconds}s"
-            failures.append(f"{provider}: {detail}")
+            failures.append(f"{provider}: {_provider_limit_detail(exc)}")
             continue
         except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
             failures.append(f"{provider}: {exc}")
@@ -214,18 +202,8 @@ async def refresh_market_history(
     db: Session | None = None,
 ) -> dict[str, Any]:
     settings = get_settings()
-    normalized = _normalize_symbols(symbols, settings.market_data_max_symbols)
-    if start > end:
-        raise MarketDataInputError("start date must be before end date")
-    if (end - start).days > settings.market_data_max_history_days:
-        raise MarketDataInputError(
-            f"date range exceeds {settings.market_data_max_history_days} days"
-        )
-    provider_order = [
-        item
-        for item in _provider_order()
-        if item in {"twelve_data", "alpha_vantage", "fmp", "yahoo_admin"}
-    ]
+    normalized = _validated_history_symbols(symbols, start, end, settings)
+    provider_order = _market_history_provider_order()
     failures: list[str] = []
     quota_failure: ProviderLimitError | None = None
     non_quota_failure_seen = False
@@ -238,37 +216,72 @@ async def refresh_market_history(
             series = await _fetch_provider(provider, key, normalized, start, end, transport, db)
         except ProviderLimitError as exc:
             quota_failure = quota_failure or exc
-            detail = exc.error_class
-            if exc.retry_after_seconds is not None:
-                detail = f"{detail}; retry after {exc.retry_after_seconds}s"
-            failures.append(f"{provider}: {detail}")
+            failures.append(f"{provider}: {_provider_limit_detail(exc)}")
             continue
         except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
             failures.append(f"{provider}: {exc}")
             non_quota_failure_seen = True
             continue
         if all(item["points"] for item in series):
-            storage = store_market_history_series(
+            return _store_refreshed_market_history(
                 db,
-                provider_key=provider,
+                provider=provider,
                 series=series,
-                requested_start=start,
-                requested_end=end,
+                normalized=normalized,
+                start=start,
+                end=end,
+                failures=failures,
             )
-            clear_market_data_cache()
-            return {
-                "status": "stored"
-                if storage.get("stored", 0)
-                else str(storage.get("quality_state") or "fetched_not_stored"),
-                "provider": provider,
-                "symbols": normalized,
-                "start": start.isoformat(),
-                "end": end.isoformat(),
-                "storage": storage,
-                "warnings": failures,
-            }
         failures.append(f"{provider}: one or more symbols returned no usable daily closes")
         non_quota_failure_seen = True
+    _raise_market_history_refresh_failure(
+        db,
+        normalized=normalized,
+        quota_failure=quota_failure,
+        non_quota_failure_seen=non_quota_failure_seen,
+        failures=failures,
+    )
+
+
+def _store_refreshed_market_history(
+    db: Session | None,
+    *,
+    provider: str,
+    series: list[dict[str, Any]],
+    normalized: list[str],
+    start: date,
+    end: date,
+    failures: list[str],
+) -> dict[str, Any]:
+    storage = store_market_history_series(
+        db,
+        provider_key=provider,
+        series=series,
+        requested_start=start,
+        requested_end=end,
+    )
+    clear_market_data_cache()
+    return {
+        "status": "stored"
+        if storage.get("stored", 0)
+        else str(storage.get("quality_state") or "fetched_not_stored"),
+        "provider": provider,
+        "symbols": normalized,
+        "start": start.isoformat(),
+        "end": end.isoformat(),
+        "storage": storage,
+        "warnings": failures,
+    }
+
+
+def _raise_market_history_refresh_failure(
+    db: Session | None,
+    *,
+    normalized: list[str],
+    quota_failure: ProviderLimitError | None,
+    non_quota_failure_seen: bool,
+    failures: list[str],
+) -> None:
     if quota_failure is not None and not non_quota_failure_seen:
         mark_market_history_refresh_failed(
             db,
@@ -276,10 +289,7 @@ async def refresh_market_history(
             provider_key=quota_failure.provider_key,
         )
         raise quota_failure
-    mark_market_history_refresh_failed(
-        db,
-        symbols=normalized,
-    )
+    mark_market_history_refresh_failed(db, symbols=normalized)
     raise MarketDataUnavailable(
         "No configured market-data provider returned usable historical closes",
         provider_status=_provider_status()
@@ -305,11 +315,34 @@ def _normalize_symbols(symbols: list[str], max_symbols: int) -> list[str]:
     return unique
 
 
+def _validated_history_symbols(symbols: list[str], start: date, end: date, settings: Any) -> list[str]:
+    normalized = _normalize_symbols(symbols, settings.market_data_max_symbols)
+    if start > end:
+        raise MarketDataInputError("start date must be before end date")
+    if (end - start).days > settings.market_data_max_history_days:
+        raise MarketDataInputError(f"date range exceeds {settings.market_data_max_history_days} days")
+    return normalized
+
+
 def _provider_order() -> list[str]:
     settings = get_settings()
     raw = settings.market_data_provider_order or settings.market_data_provider or ""
     values = [item.strip().lower() for item in raw.split(",") if item.strip()]
     return values or ["twelve_data", "alpha_vantage", "fmp"]
+
+
+def _market_history_provider_order() -> list[str]:
+    return [
+        item
+        for item in _provider_order()
+        if item in {"twelve_data", "alpha_vantage", "fmp", "yahoo_admin"}
+    ]
+
+
+def _provider_limit_detail(exc: ProviderLimitError) -> str:
+    if exc.retry_after_seconds is None:
+        return exc.error_class
+    return f"{exc.error_class}; retry after {exc.retry_after_seconds}s"
 
 
 def _api_key(provider: str) -> str | None:
@@ -484,7 +517,7 @@ def _license_limited_payload(
             "staleness_state": "license_limited",
             "calculation_eligible": False,
             "delayed_by_seconds": None,
-            "exchange_timezone": "America/New_York",
+            "exchange_timezone": US_MARKET_TIMEZONE,
             "delay_label": "license-limited",
             "is_same_day_valid": False,
             "is_public_display_allowed": False,
@@ -533,8 +566,8 @@ def _data_freshness(
         "staleness_state": staleness_state,
         "calculation_eligible": calculation_eligible,
         "delayed_by_seconds": _history_delayed_by_seconds(complete, requested_end),
-        "exchange_timezone": "America/New_York",
-        "delay_label": _delay_label(provider, display_mode, market_session_date),
+        "exchange_timezone": US_MARKET_TIMEZONE,
+        "delay_label": _delay_label(display_mode, market_session_date),
         "is_same_day_valid": False,
         "is_public_display_allowed": public_display_allowed,
         "staleness_reason": (
@@ -559,7 +592,7 @@ def _latest_market_session_date(series: list[dict[str, Any]]) -> str | None:
     return max(dates) if dates else None
 
 
-def _delay_label(provider: str, display_mode: str, market_session_date: str | None) -> str:
+def _delay_label(display_mode: str, market_session_date: str | None) -> str:
     if display_mode == "private":
         return f"daily historical/private-mode; latest session {market_session_date or 'pending'}"
     return (
@@ -843,10 +876,6 @@ async def _fetch_yahoo_admin(
     db: Session | None,
 ) -> list[HistoryPoint]:
     settings = get_settings()
-    period1 = int(datetime.combine(start, datetime_time.min, tzinfo=timezone.utc).timestamp())
-    period2 = int(
-        datetime.combine(end + timedelta(days=1), datetime_time.min, tzinfo=timezone.utc).timestamp()
-    )
     response = await provider_request(
         client,
         "GET",
@@ -856,62 +885,15 @@ async def _fetch_yahoo_admin(
         db=db,
         idempotency_key=_provider_call_idempotency_key("yahoo_admin", symbol, start, end),
         params={
-            "period1": period1,
-            "period2": period2,
+            "period1": _daily_epoch(start),
+            "period2": _daily_epoch(end + timedelta(days=1)),
             "interval": "1d",
             "events": "history",
             "includeAdjustedClose": "true",
         },
     )
-    payload = response.json()
-    chart = payload.get("chart") if isinstance(payload, dict) else None
-    if not isinstance(chart, dict) or chart.get("error"):
-        raise ValueError("Yahoo admin chart response did not include usable data")
-    results = chart.get("result")
-    if not isinstance(results, list) or not results:
-        raise ValueError("Yahoo admin chart returned no result rows")
-    result = results[0]
-    if not isinstance(result, dict):
-        raise ValueError("Yahoo admin chart returned malformed result")
-    timestamps = result.get("timestamp")
-    indicators = result.get("indicators")
-    if not isinstance(timestamps, list) or not isinstance(indicators, dict):
-        raise ValueError("Yahoo admin chart returned no daily timestamps")
-    quote_rows = indicators.get("quote")
-    quote = quote_rows[0] if isinstance(quote_rows, list) and quote_rows else {}
-    adj_rows = indicators.get("adjclose")
-    adjusted = adj_rows[0] if isinstance(adj_rows, list) and adj_rows else {}
-    if not isinstance(quote, dict):
-        raise ValueError("Yahoo admin chart returned no quote rows")
-    closes = quote.get("close") if isinstance(quote.get("close"), list) else []
-    opens = quote.get("open") if isinstance(quote.get("open"), list) else []
-    highs = quote.get("high") if isinstance(quote.get("high"), list) else []
-    lows = quote.get("low") if isinstance(quote.get("low"), list) else []
-    volumes = quote.get("volume") if isinstance(quote.get("volume"), list) else []
-    adjusted_closes = (
-        adjusted.get("adjclose")
-        if isinstance(adjusted, dict) and isinstance(adjusted.get("adjclose"), list)
-        else []
-    )
-    rows: list[dict[str, Any]] = []
-    for index, raw_timestamp in enumerate(timestamps):
-        try:
-            row_date = datetime.fromtimestamp(int(raw_timestamp), tz=timezone.utc).date()
-        except (TypeError, ValueError, OSError):
-            continue
-        if row_date < start or row_date > end:
-            continue
-        rows.append(
-            {
-                "date": row_date.isoformat(),
-                "open": opens[index] if index < len(opens) else None,
-                "high": highs[index] if index < len(highs) else None,
-                "low": lows[index] if index < len(lows) else None,
-                "close": closes[index] if index < len(closes) else None,
-                "volume": volumes[index] if index < len(volumes) else None,
-                "adjclose": adjusted_closes[index] if index < len(adjusted_closes) else None,
-            }
-        )
+    result = _yahoo_chart_result(response.json())
+    rows = _yahoo_chart_rows(result, start=start, end=end)
     return _points_from_rows(
         rows,
         date_field="date",
@@ -922,6 +904,89 @@ async def _fetch_yahoo_admin(
         low_field="low",
         source_revision=_response_source_revision(response),
     )
+
+
+def _daily_epoch(value: date) -> int:
+    return int(datetime.combine(value, datetime_time.min, tzinfo=timezone.utc).timestamp())
+
+
+def _yahoo_chart_result(payload: Any) -> dict[str, Any]:
+    chart = payload.get("chart") if isinstance(payload, dict) else None
+    if not isinstance(chart, dict) or chart.get("error"):
+        raise ValueError("Yahoo admin chart response did not include usable data")
+    results = chart.get("result")
+    if not isinstance(results, list) or not results:
+        raise ValueError("Yahoo admin chart returned no result rows")
+    result = results[0]
+    if not isinstance(result, dict):
+        raise ValueError("Yahoo admin chart returned malformed result")
+    return result
+
+
+def _yahoo_chart_rows(result: dict[str, Any], *, start: date, end: date) -> list[dict[str, Any]]:
+    timestamps, quote, adjusted = _yahoo_chart_series(result)
+    return [
+        row
+        for index, raw_timestamp in enumerate(timestamps)
+        if (row := _yahoo_row(index, raw_timestamp, quote=quote, adjusted=adjusted, start=start, end=end))
+        is not None
+    ]
+
+
+def _yahoo_chart_series(result: dict[str, Any]) -> tuple[list[Any], dict[str, list[Any]], dict[str, list[Any]]]:
+    timestamps = result.get("timestamp")
+    indicators = result.get("indicators")
+    if not isinstance(timestamps, list) or not isinstance(indicators, dict):
+        raise ValueError("Yahoo admin chart returned no daily timestamps")
+    quote = _first_dict(indicators.get("quote"))
+    if quote is None:
+        raise ValueError("Yahoo admin chart returned no quote rows")
+    return timestamps, _list_fields(quote), _list_fields(_first_dict(indicators.get("adjclose")) or {})
+
+
+def _first_dict(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, list) or not value:
+        return None
+    first = value[0]
+    return first if isinstance(first, dict) else None
+
+
+def _list_fields(value: dict[str, Any]) -> dict[str, list[Any]]:
+    return {key: item for key, item in value.items() if isinstance(item, list)}
+
+
+def _yahoo_row(
+    index: int,
+    raw_timestamp: Any,
+    *,
+    quote: dict[str, list[Any]],
+    adjusted: dict[str, list[Any]],
+    start: date,
+    end: date,
+) -> dict[str, Any] | None:
+    row_date = _yahoo_row_date(raw_timestamp)
+    if row_date is None or row_date < start or row_date > end:
+        return None
+    return {
+        "date": row_date.isoformat(),
+        "open": _indexed_value(quote.get("open", []), index),
+        "high": _indexed_value(quote.get("high", []), index),
+        "low": _indexed_value(quote.get("low", []), index),
+        "close": _indexed_value(quote.get("close", []), index),
+        "volume": _indexed_value(quote.get("volume", []), index),
+        "adjclose": _indexed_value(adjusted.get("adjclose", []), index),
+    }
+
+
+def _yahoo_row_date(raw_timestamp: Any) -> date | None:
+    try:
+        return datetime.fromtimestamp(int(raw_timestamp), tz=timezone.utc).date()
+    except (TypeError, ValueError, OSError):
+        return None
+
+
+def _indexed_value(values: list[Any], index: int) -> Any:
+    return values[index] if index < len(values) else None
 
 
 def _provider_call_idempotency_key(provider: str, symbol: str, start: date, end: date) -> str:
@@ -949,52 +1014,64 @@ def _points_from_rows(
 ) -> list[HistoryPoint]:
     points: list[HistoryPoint] = []
     for row in rows:
-        row_date = str(row.get(date_field, ""))[:10]
-        close_value = next(
-            (row.get(field) for field in close_fields if row.get(field) is not None), None
+        point = _history_point_from_row(
+            row,
+            date_field=date_field,
+            close_fields=close_fields,
+            adjusted_close_field=adjusted_close_field,
+            open_field=open_field,
+            high_field=high_field,
+            low_field=low_field,
+            source_revision=source_revision,
         )
-        if not row_date or close_value is None:
-            continue
-        try:
-            close = float(close_value)
-            volume = float(row["volume"]) if row.get("volume") not in (None, "") else None
-            adjusted_close = (
-                float(row[adjusted_close_field])
-                if adjusted_close_field and row.get(adjusted_close_field) not in (None, "")
-                else None
-            )
-            open_value = (
-                float(row[open_field])
-                if open_field and row.get(open_field) not in (None, "")
-                else None
-            )
-            high = (
-                float(row[high_field])
-                if high_field and row.get(high_field) not in (None, "")
-                else None
-            )
-            low = (
-                float(row[low_field])
-                if low_field and row.get(low_field) not in (None, "")
-                else None
-            )
-        except (TypeError, ValueError):
-            continue
-        if close > 0:
-            points.append(
-                HistoryPoint(
-                    date=row_date,
-                    close=close,
-                    volume=volume,
-                    adjusted_close=adjusted_close,
-                    open=open_value,
-                    high=high,
-                    low=low,
-                    source_revision=source_revision,
-                )
-            )
+        if point is not None:
+            points.append(point)
     points.sort(key=lambda item: item.date, reverse=descending)
     return points
+
+
+def _history_point_from_row(
+    row: dict[str, Any],
+    *,
+    date_field: str,
+    close_fields: tuple[str, ...],
+    adjusted_close_field: str | None,
+    open_field: str | None,
+    high_field: str | None,
+    low_field: str | None,
+    source_revision: str | None,
+) -> HistoryPoint | None:
+    row_date = str(row.get(date_field, ""))[:10]
+    close = _optional_float(_first_present(row, close_fields))
+    if not row_date or close is None or close <= 0:
+        return None
+    return HistoryPoint(
+        date=row_date,
+        close=close,
+        volume=_optional_float(row.get("volume")),
+        adjusted_close=_optional_field_float(row, adjusted_close_field),
+        open=_optional_field_float(row, open_field),
+        high=_optional_field_float(row, high_field),
+        low=_optional_field_float(row, low_field),
+        source_revision=source_revision,
+    )
+
+
+def _first_present(row: dict[str, Any], fields: tuple[str, ...]) -> Any:
+    return next((row.get(field) for field in fields if row.get(field) is not None), None)
+
+
+def _optional_field_float(row: dict[str, Any], field: str | None) -> float | None:
+    return _optional_float(row.get(field)) if field else None
+
+
+def _optional_float(value: Any) -> float | None:
+    if value in (None, ""):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _cache_get(cache_key: str, *, now: float) -> dict[str, Any] | None:

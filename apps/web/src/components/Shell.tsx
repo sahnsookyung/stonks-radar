@@ -34,7 +34,7 @@ const countryLinks = [
   ["EUROZONE", "Eurozone", "유로존"],
 ];
 
-export function Shell({ children }: { children: React.ReactNode }) {
+export function Shell({ children }: Readonly<{ children: React.ReactNode }>) {
   const locale = useLocale();
   const { t } = useTranslation();
   const pathname = useRouterState({
@@ -57,8 +57,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
       ? primaryNavRefs.current[activePrimaryNavKey]
       : null;
     if (!node) return;
-    if (window.matchMedia("(min-width: 1024px)").matches) return;
-    const prefersReducedMotion = window.matchMedia(
+    if (globalThis.window.matchMedia("(min-width: 1024px)").matches) return;
+    const prefersReducedMotion = globalThis.window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
     node.scrollIntoView({
@@ -315,7 +315,7 @@ function NavLink({
   navKey,
   registerRef,
   active = false,
-}: {
+}: Readonly<{
   to: string;
   params: Record<string, string>;
   icon: React.ReactElement;
@@ -323,7 +323,7 @@ function NavLink({
   navKey?: string;
   registerRef?: (key: string, element: HTMLAnchorElement | null) => void;
   active?: boolean;
-}) {
+}>) {
   return (
     <Link
       ref={(element) => {

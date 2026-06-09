@@ -30,6 +30,7 @@ KOREA_MARKET_DATA_SOURCES = (
 )
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 MAX_RETRY_DELAY_SECONDS = 3.0
+RESPONSE_NOT_JSON = "response was not JSON"
 
 
 @dataclass(frozen=True)
@@ -65,7 +66,7 @@ def _json_has(*keys: str) -> Callable[[httpx.Response], tuple[bool, str | None]]
         try:
             payload = response.json()
         except ValueError:
-            return False, "response was not JSON"
+            return False, RESPONSE_NOT_JSON
         current: Any = payload
         for key in keys:
             if not isinstance(current, dict):
@@ -112,7 +113,7 @@ def _data_go_kr_status(response: httpx.Response) -> tuple[bool, str | None]:
     try:
         payload = response.json()
     except ValueError:
-        return False, "response was not JSON"
+        return False, RESPONSE_NOT_JSON
     header = payload.get("response", {}).get("header") if isinstance(payload, dict) else None
     result_code = str((header or {}).get("resultCode") or "").strip()
     if result_code and result_code != "00":
@@ -128,7 +129,7 @@ def _finnhub_quote_status(response: httpx.Response) -> tuple[bool, str | None]:
     try:
         payload = response.json()
     except ValueError:
-        return False, "response was not JSON"
+        return False, RESPONSE_NOT_JSON
     if not isinstance(payload, dict):
         return False, "response was not an object"
     if payload.get("error"):
@@ -148,7 +149,7 @@ def _twelve_data_quote_status(response: httpx.Response) -> tuple[bool, str | Non
     try:
         payload = response.json()
     except ValueError:
-        return False, "response was not JSON"
+        return False, RESPONSE_NOT_JSON
     if not isinstance(payload, dict):
         return False, "response was not an object"
     if str(payload.get("status") or "").lower() == "error":
@@ -338,7 +339,7 @@ def _required_env_label(probe: SourceProbe) -> str | None:
     return None
 
 
-async def check(name: str, probe: SourceProbe) -> SourceHealthResult:
+async def check(name: str, probe: SourceProbe) -> SourceHealthResult:  # NOSONAR - source probe handles all response states in one health result.
     required_env = _selected_required_env(probe)
     if (probe.required_env or probe.required_env_any) and not required_env:
         required_label = _required_env_label(probe)

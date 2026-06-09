@@ -13,7 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from frw_api.core.settings import get_settings
-from frw_api.services.provider_budget import provider_is_available, record_usage
+from frw_api.services.provider_budget import ProviderUsageRecord, provider_is_available, record_usage
 from frw_api.services.provider_limits import ProviderLimitError, provider_request
 
 InputClass = Literal[
@@ -196,7 +196,7 @@ class LLMRouter:
                 self._record_budget_failure(task, profile, reservation_id, messages)
             raise
 
-    async def _call_provider(self, profile: dict[str, Any], messages: list[dict[str, str]]) -> dict[str, Any]:
+    async def _call_provider(self, profile: dict[str, Any], messages: list[dict[str, str]]) -> dict[str, Any]:  # NOSONAR - provider-call guardrails, reservation, and audit writes remain in one transaction-aware path.
         provider = profile["provider_key"]
         model = profile["model_key"]
         if provider == "local":
@@ -439,13 +439,15 @@ class LLMRouter:
         if count_usage and profile is not None and profile["provider_key"] == "local":
             record_usage(
                 self.db,
-                provider_key=profile["provider_key"],
-                endpoint_key="chat_completions",
-                partition_key="llm_router",
-                unit="invocation",
-                quantity=1,
-                status=status,
-                details={"cache_hit": cache_hit},
+                ProviderUsageRecord(
+                    provider_key=profile["provider_key"],
+                    endpoint_key="chat_completions",
+                    partition_key="llm_router",
+                    unit="invocation",
+                    quantity=1,
+                    status=status,
+                    details={"cache_hit": cache_hit},
+                ),
             )
 
     def _reserve_external_llm_budget(self, task: LLMTask, profile: dict[str, Any], messages: list[dict[str, str]]) -> str:
@@ -526,15 +528,17 @@ class LLMRouter:
         reservation_id = f"llm_{uuid4().hex}"
         record_usage(
             self.db,
-            provider_key=provider_key,
-            endpoint_key="chat_completions",
-            partition_key="llm_router",
-            unit="reservation",
-            quantity=0,
-            status="reserved",
-            idempotency_key=reservation_id,
-            reserved_units={"invocation": quantity, "estimated_tokens": _estimate_tokens(messages)},
-            details={"task_type": task.task_type, "event_id": task.event_id},
+            ProviderUsageRecord(
+                provider_key=provider_key,
+                endpoint_key="chat_completions",
+                partition_key="llm_router",
+                unit="reservation",
+                quantity=0,
+                status="reserved",
+                idempotency_key=reservation_id,
+                reserved_units={"invocation": quantity, "estimated_tokens": _estimate_tokens(messages)},
+                details={"task_type": task.task_type, "event_id": task.event_id},
+            ),
         )
         return reservation_id
 

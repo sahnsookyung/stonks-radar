@@ -3,7 +3,6 @@ import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ArrowRight,
-  BarChart3,
   Database,
   ExternalLink,
   FileSpreadsheet,
@@ -67,7 +66,7 @@ interface WatchedPerson {
   sec_ciks: string[];
 }
 
-export function FundsTrackerPage() {
+export function FundsTrackerPage() { // NOSONAR - combines two public-filing snapshots into one disclosure page.
   const locale = useLocale();
   const isKo = locale === "ko";
   const fundQuery = useQuery({
@@ -99,7 +98,7 @@ export function FundsTrackerPage() {
             {isKo ? "공개 펀드 및 공시 추적" : "Public funds and disclosure tracker"}
           </div>
           <h1 className="safe-text mt-3 text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
-            {isKo ? "Funds Tracker" : "Funds Tracker"}
+            Funds Tracker
           </h1>
           <p className="safe-text mt-3 max-w-5xl text-sm leading-6 text-muted md:text-base md:leading-7">
             {isKo
@@ -200,12 +199,12 @@ function LeopoldFundCard({
   locale,
   loading,
   error
-}: {
+}: Readonly<{
   data?: FundPortfolioSnapshotData;
   locale: Locale;
   loading: boolean;
   error: unknown;
-}) {
+}>) {
   const isKo = locale === "ko";
   return (
     <article className="panel min-w-0 p-5">
@@ -224,13 +223,13 @@ function LeopoldFundCard({
           <SourceBadge label={isKo ? "분기 지연" : "quarterly lag"} />
         </div>
       </div>
-      {loading ? <p className="mt-4 text-sm text-muted">{isKo ? "불러오는 중..." : "Loading..."}</p> : null}
-      {error ? (
+      {loading && <p className="mt-4 text-sm text-muted">{isKo ? "불러오는 중..." : "Loading..."}</p>}
+      {Boolean(error) && (
         <p className="safe-text mt-4 rounded-md border border-line bg-panelAlt p-3 text-sm leading-6 text-muted">
           {isKo ? "13F 스냅샷을 읽지 못했습니다." : "Could not load the 13F snapshot."}
         </p>
-      ) : null}
-      {data ? (
+      )}
+      {data && (
         <>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <Metric label={isKo ? "롱 주식 가치" : "Long equity value"} value={formatUsd(data.summary_metrics.long_equity_value_usd)} termKey="portfolio_value" />
@@ -254,7 +253,7 @@ function LeopoldFundCard({
             ))}
           </div>
         </>
-      ) : null}
+      )}
       <Link className="secondary-action mt-5 min-h-11 px-3 py-2" to="/$locale/funds/$fundKey" params={{ locale, fundKey: "situational-awareness" }}>
         {isKo ? "13F 상세 보기" : "Open 13F details"}
         <ArrowRight className="h-4 w-4" />
@@ -271,7 +270,7 @@ function TrumpDisclosureCard({
   ogeRangeCount,
   holdings,
   locale
-}: {
+}: Readonly<{
   disclosure?: DisclosureSummary;
   disclosureLoading: boolean;
   disclosureError: unknown;
@@ -279,7 +278,7 @@ function TrumpDisclosureCard({
   ogeRangeCount: number;
   holdings: DisclosedHolding[];
   locale: Locale;
-}) {
+}>) {
   const isKo = locale === "ko";
   return (
     <article className="panel min-w-0 border-warning/50 p-5">
@@ -303,12 +302,12 @@ function TrumpDisclosureCard({
           ? "정확 추적이 아니라 공개 파일링 기반 범위입니다. 행마다 원문을 확인해야 합니다."
           : "This is a range-based public-filing approximation, not exact tracking. Every row must be read with the source filing."}
       </p>
-      {disclosureLoading ? <p className="mt-4 text-sm text-muted">{isKo ? "불러오는 중..." : "Loading..."}</p> : null}
-      {disclosureError ? (
+      {disclosureLoading && <p className="mt-4 text-sm text-muted">{isKo ? "불러오는 중..." : "Loading..."}</p>}
+      {Boolean(disclosureError) && (
         <p className="safe-text mt-4 rounded-md border border-line bg-panelAlt p-3 text-sm leading-6 text-muted">
           {isKo ? "공시 API를 읽지 못했습니다. 상세 탭에서 스냅샷 대체 정보를 확인하세요." : "Could not load the disclosure API. The detail tab still shows static fallback context."}
         </p>
-      ) : null}
+      )}
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <Metric label={isKo ? "SEC 보유량 행" : "SEC holding rows"} value={String(secExactCount)} termKey="complete_data" />
         <Metric label={isKo ? "OGE 범위 행" : "OGE range rows"} value={String(ogeRangeCount)} termKey="estimated_data" />
@@ -329,11 +328,11 @@ function TrumpDisclosureCard({
             <div className="text-right text-sm font-semibold">{formatNumber(holding.shares)} sh</div>
           </SafeExternalAnchor>
         ))}
-        {!holdings.length ? (
+        {holdings.length === 0 && (
           <div className="rounded-md border border-dashed border-line p-4 text-sm leading-6 text-muted">
             {isKo ? "공개 보유량으로 집계할 SEC 거래 후 보유 행이 아직 없습니다." : "No SEC post-transaction holding rows are currently available for roll-up."}
           </div>
-        ) : null}
+        )}
       </div>
       <Link className="secondary-action mt-5 min-h-11 px-3 py-2" to="/$locale/trump-filings" params={{ locale }}>
         {isKo ? "원문 공시 행 보기" : "Open source-linked disclosures"}
@@ -343,7 +342,7 @@ function TrumpDisclosureCard({
   );
 }
 
-function Metric({ label, value, termKey }: { label: string; value: string; termKey?: string }) {
+function Metric({ label, value, termKey }: Readonly<{ label: string; value: string; termKey?: string }>) {
   return (
     <div className="rounded-md border border-line bg-panelAlt p-3">
       <div className="flex items-center gap-1 text-xs font-semibold uppercase text-muted">
@@ -355,7 +354,7 @@ function Metric({ label, value, termKey }: { label: string; value: string; termK
   );
 }
 
-function SafeExternalAnchor({ href, className, children }: { href: string; className: string; children: ReactNode }) {
+function SafeExternalAnchor({ href, className, children }: Readonly<{ href: string; className: string; children: ReactNode }>) {
   const safeHref = safeExternalHref(href);
   if (!safeHref) {
     return (
@@ -371,7 +370,7 @@ function SafeExternalAnchor({ href, className, children }: { href: string; class
   );
 }
 
-function LimitTile({ title, value, detail }: { title: string; value: string; detail: string }) {
+function LimitTile({ title, value, detail }: Readonly<{ title: string; value: string; detail: string }>) {
   return (
     <article className="min-w-0 rounded-md border border-line bg-panelAlt p-4">
       <div className="safe-text text-xs font-semibold uppercase leading-5 text-muted">{title}</div>

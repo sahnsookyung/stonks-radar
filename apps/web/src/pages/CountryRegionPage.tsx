@@ -10,7 +10,7 @@ import { SnapshotBanner } from "../components/SnapshotBanner";
 import { useLocale } from "../lib/locale";
 import { snapshotQueries } from "../lib/snapshots";
 
-export function CountryRegionPage({ type }: { type: "country" | "region" }) {
+export function CountryRegionPage({ type }: Readonly<{ type: "country" | "region" }>) {
   const locale = useLocale();
   const params = useParams({ strict: false }) as { objectKey?: string };
   const key = params.objectKey ?? "USA";

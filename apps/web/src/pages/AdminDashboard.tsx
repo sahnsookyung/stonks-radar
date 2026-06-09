@@ -279,7 +279,7 @@ export function AdminDashboard() {
             </Link>
           ))}
         </nav>
-        {section === "overview" || section === "usage" || section === "system-config" ? (
+        {(section === "overview" || section === "usage" || section === "system-config") && (
           <section className="grid gap-4 md:grid-cols-4">
             {Object.entries(query.data.metrics).map(([key, value]) => (
               <div key={key} className="panel p-4">
@@ -288,9 +288,9 @@ export function AdminDashboard() {
               </div>
             ))}
           </section>
-        ) : null}
+        )}
         {section === "feature-gates" ? <FeatureGateAdminPanel /> : null}
-        {section === "instruments" ? (
+        {section === "instruments" && (
           <InstrumentAdminPanel
             query={instrumentQuery}
             setQuery={setInstrumentQuery}
@@ -300,9 +300,9 @@ export function AdminDashboard() {
             updateReview={updateInstrumentReview}
             refreshIndex={refreshInstrumentIndex}
           />
-        ) : null}
+        )}
         {section === "users" || section === "usage" ? <UsageAdminPanel currentUser={query.data.user} /> : null}
-        {section === "jobs" || section === "queues" || section === "overview" ? (
+        {(section === "jobs" || section === "queues" || section === "overview") && (
           <section className="grid gap-4 lg:grid-cols-2">
           <div className="panel p-4">
             <div className="mb-3 flex items-center gap-2 font-semibold">
@@ -355,9 +355,9 @@ export function AdminDashboard() {
               )}
             </div>
           </div>
-        </section>
-        ) : null}
-        {section === "data-sources" || section === "overview" || section === "system-config" ? (
+          </section>
+        )}
+        {(section === "data-sources" || section === "overview" || section === "system-config") && (
           <section className="panel p-4">
           <div className="mb-3 flex items-center gap-2 font-semibold">
             <Database className="h-4 w-4" />
@@ -366,26 +366,13 @@ export function AdminDashboard() {
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <tbody className="divide-y divide-line">
-                {query.data.source_health.length === 0 ? (
-                  <tr>
-                    <td className="py-3 text-muted">No source health checks recorded.</td>
-                  </tr>
-                ) : (
-                  query.data.source_health.map((source) => (
-                    <tr key={source.source_key}>
-                      <td className="py-3 font-semibold">{source.source_key}</td>
-                      <td className="py-3">{source.status}</td>
-                      <td className="py-3">{source.status_code ?? "n/a"}</td>
-                      <td className="py-3">{source.response_ms == null ? "n/a" : `${source.response_ms} ms`}</td>
-                    </tr>
-                  ))
-                )}
+                <SourceHealthRows sources={query.data.source_health} />
               </tbody>
             </table>
           </div>
-        </section>
-        ) : null}
-        {section === "overview" ? (
+          </section>
+        )}
+        {section === "overview" && (
           <section className="grid gap-4 lg:grid-cols-2">
           <div className="panel p-4">
             <div className="mb-3 font-semibold">Fact review</div>
@@ -415,15 +402,15 @@ export function AdminDashboard() {
                     <div className="font-semibold">{event.event_key}</div>
                     <div className="text-muted">{event.severity} · {event.source_strength}</div>
                     <button onClick={() => reviewEvent(event.id, "approved", false)} className="secondary-action mt-2 mr-2 px-2 py-1 text-xs">Approve Private</button>
-                    <button onClick={() => reviewEvent(event.id, event.severity === "critical" ? "owner_approved" : event.severity === "high" ? "editor_approved" : "approved", true)} className="secondary-action mt-2 px-2 py-1 text-xs">Approve Public</button>
+                    <button onClick={() => reviewEvent(event.id, approvalDecisionForSeverity(event.severity), true)} className="secondary-action mt-2 px-2 py-1 text-xs">Approve Public</button>
                   </div>
                 ))
               )}
             </div>
           </div>
-        </section>
-        ) : null}
-        {section === "overview" || section === "jobs" || section === "queues" ? (
+          </section>
+        )}
+        {(section === "overview" || section === "jobs" || section === "queues") && (
           <section className="panel p-4">
           <div className="mb-3 flex items-center gap-2 font-semibold">
             <RefreshCw className="h-4 w-4" />
@@ -462,8 +449,8 @@ export function AdminDashboard() {
               </tbody>
             </table>
           </div>
-        </section>
-        ) : null}
+          </section>
+        )}
       </div>
     </main>
   );
@@ -499,6 +486,36 @@ function adminSectionTitle(section: AdminSection) {
   return adminSections.find(([key]) => key === section)?.[1] ?? "Overview";
 }
 
+function approvalDecisionForSeverity(severity: string) {
+  if (severity === "critical") return "owner_approved";
+  if (severity === "high") return "editor_approved";
+  return "approved";
+}
+
+function responseTimeLabel(responseMs: number | null) {
+  if (responseMs == null) return "n/a";
+  return `${responseMs} ms`;
+}
+
+function SourceHealthRows({ sources }: Readonly<{ sources: AdminDashboardPayload["source_health"] }>) {
+  if (sources.length === 0) {
+    return (
+      <tr>
+        <td className="py-3 text-muted">No source health checks recorded.</td>
+      </tr>
+    );
+  }
+
+  return sources.map((source) => (
+    <tr key={source.source_key}>
+      <td className="py-3 font-semibold">{source.source_key}</td>
+      <td className="py-3">{source.status}</td>
+      <td className="py-3">{source.status_code ?? "n/a"}</td>
+      <td className="py-3">{responseTimeLabel(source.response_ms)}</td>
+    </tr>
+  ));
+}
+
 function InstrumentAdminPanel({
   query,
   setQuery,
@@ -507,7 +524,7 @@ function InstrumentAdminPanel({
   loading,
   updateReview,
   refreshIndex
-}: {
+}: Readonly<{
   query: string;
   setQuery: (value: string) => void;
   search?: AdminInstrumentSearchPayload;
@@ -515,7 +532,7 @@ function InstrumentAdminPanel({
   loading: boolean;
   updateReview: (requestId: string, status: string) => void;
   refreshIndex: () => void;
-}) {
+}>) {
   return (
     <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
       <div className="panel p-4">
@@ -612,7 +629,7 @@ function FeatureGateAdminPanel() {
   );
 }
 
-function UsageAdminPanel({ currentUser }: { currentUser: { email: string; role: string } }) {
+function UsageAdminPanel({ currentUser }: Readonly<{ currentUser: { email: string; role: string } }>) {
   return (
     <section className="grid gap-4 lg:grid-cols-2">
       <div className="panel p-4">

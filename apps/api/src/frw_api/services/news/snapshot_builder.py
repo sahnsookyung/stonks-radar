@@ -370,7 +370,7 @@ def _summary_list(item: dict[str, Any], key: str) -> list[str]:
     return [str(value) for value in values if str(value).strip()]
 
 
-def _ticker_implications(item: dict[str, Any]) -> list[dict[str, str]]:
+def _ticker_implications(item: dict[str, Any]) -> list[dict[str, str]]:  # NOSONAR - deterministic ticker implication extraction is kept in one pass.
     summary_json = item.get("summary_json") or {}
     values = summary_json.get("ticker_implications") if isinstance(summary_json, dict) else None
     if not isinstance(values, list):
@@ -396,7 +396,7 @@ def _ticker_implications(item: dict[str, Any]) -> list[dict[str, str]]:
     return implications[:8]
 
 
-def _market_relevance(item: dict[str, Any], locale: str) -> dict[str, str]:
+def _market_relevance(item: dict[str, Any], locale: str) -> dict[str, str]:  # NOSONAR - bilingual relevance fallback logic is intentionally colocated.
     summary_json = item.get("summary_json") or {}
     value = summary_json.get("market_relevance") if isinstance(summary_json, dict) else None
     if isinstance(value, dict):

@@ -43,7 +43,7 @@ def _limit_for_request(request: Request) -> RateLimit | None:
         return RateLimit("instrument-review-request", settings.instrument_review_ip_rate_limit_per_minute)
     if path.startswith("/api/instruments"):
         return RateLimit("instrument-autocomplete", settings.instrument_autocomplete_ip_rate_limit_per_minute)
-    if path.startswith("/api/admin") or path.startswith("/api/auth"):
+    if path.startswith(("/api/admin", "/api/auth")):
         return RateLimit("admin", settings.admin_api_rate_limit_per_minute)
     if path.startswith("/api/public"):
         return RateLimit("public", settings.public_api_rate_limit_per_minute)

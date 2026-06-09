@@ -365,7 +365,7 @@ def market_history_gap_job_specs(
     )
 
 
-def schedule_due_jobs(
+def schedule_due_jobs(  # NOSONAR - scheduler conflict/rate-limit decisions are intentionally centralized.
     db: Session, *, now: datetime | None = None, settings: Settings | None = None
 ) -> list[str]:
     job_ids: list[str] = []
@@ -474,7 +474,7 @@ def _latest_market_data_versions(
             """
     ).bindparams(bindparam("symbols", expanding=True))
     rows = db.execute(stmt, {"symbols": tuple(symbols)}).mappings().all()
-    latest = {symbol: None for symbol in symbols}
+    latest = dict.fromkeys(symbols)
     for row in rows:
         latest[str(row["symbol"])] = row["latest_price_date"]
     return latest

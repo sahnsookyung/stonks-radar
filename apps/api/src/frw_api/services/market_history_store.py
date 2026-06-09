@@ -46,6 +46,20 @@ class ValidationResult:
 
 
 @dataclass(frozen=True)
+class StoredSymbolPayload:
+    series: dict[str, Any]
+    coverage: dict[str, Any]
+    policy_parts: list[str]
+    version_part: str
+    snapshot_ids: set[str]
+    quality_states: set[str]
+    fetched_times: list[datetime]
+    complete_date: str
+    calculation_manifest: list[dict[str, Any]]
+    unversioned_seen: bool
+
+
+@dataclass(frozen=True)
 class CalculationReadiness:
     ready: bool
     reason: str | None
@@ -79,6 +93,13 @@ class CalculationReadiness:
         }
 
 
+@dataclass(frozen=True)
+class HistoryCoverage:
+    missing_symbols: list[str]
+    missing_sessions: dict[str, list[str]]
+    required_fx_pairs: list[dict[str, str]]
+
+
 class MarketHistoryCalculationNotReady(ValueError):
     def __init__(self, readiness: CalculationReadiness) -> None:
         self.readiness = readiness
@@ -103,98 +124,142 @@ def market_history_calculation_readiness(
     normalized_symbols = list(dict.fromkeys(str(symbol).upper() for symbol in symbols if symbol))
     normalized_base_currency = (base_currency or "USD").upper()
     if stored is None:
-        return CalculationReadiness(
-            ready=False,
+        return _calculation_readiness(
+            stored=None,
             reason="missing_market_history",
-            snapshot_id=None,
-            coherence_status="missing",
-            snapshot_ids=[],
-            missing_symbols=normalized_symbols,
-            missing_sessions={},
-            required_fx_pairs=[],
-            fx_coverage_status="not_required",
             symbols=normalized_symbols,
-            start=start.isoformat(),
-            end=end.isoformat(),
+            start=start,
+            end=end,
             base_currency=normalized_base_currency,
+            coverage=HistoryCoverage(normalized_symbols, {}, []),
         )
 
     series_by_symbol = {
         str(item.get("symbol") or "").upper(): item for item in stored.series if item.get("symbol")
     }
     missing_symbols = [symbol for symbol in normalized_symbols if symbol not in series_by_symbol]
+    try:
+        coverage = _history_coverage(
+            symbols=normalized_symbols,
+            series_by_symbol=series_by_symbol,
+            missing_symbols=missing_symbols,
+            start=start,
+            end=end,
+            base_currency=normalized_base_currency,
+        )
+    except MarketCalendarCoverageError:
+        coverage = HistoryCoverage(missing_symbols, {}, [])
+        reason = "market_calendar_coverage_incomplete"
+    else:
+        reason = _calculation_readiness_reason(stored, coverage)
+
+    return _calculation_readiness(
+        stored=stored,
+        reason=reason,
+        symbols=normalized_symbols,
+        start=start,
+        end=end,
+        base_currency=normalized_base_currency,
+        coverage=coverage,
+    )
+
+
+def _history_coverage(
+    *,
+    symbols: list[str],
+    series_by_symbol: dict[str, dict[str, Any]],
+    missing_symbols: list[str],
+    start: date,
+    end: date,
+    base_currency: str,
+) -> HistoryCoverage:
     missing_sessions: dict[str, list[str]] = {}
     required_fx_pairs: list[dict[str, str]] = []
     seen_fx_pairs: set[tuple[str, str]] = set()
-    for symbol in normalized_symbols:
-        item = series_by_symbol.get(symbol)
-        points = item.get("points", []) if item else []
-        actual_dates = {
-            str(point.get("date"))[:10]
-            for point in points
-            if isinstance(point, dict) and point.get("date")
-        }
-        try:
-            expected_dates = [
-                session.isoformat() for session in expected_market_sessions(symbol, start, end)
-            ]
-        except MarketCalendarCoverageError:
-            return CalculationReadiness(
-                ready=False,
-                reason="market_calendar_coverage_incomplete",
-                snapshot_id=stored.snapshot_id,
-                coherence_status=stored.coherence_status,
-                snapshot_ids=stored.snapshot_ids,
-                missing_symbols=missing_symbols,
-                missing_sessions={},
-                required_fx_pairs=[],
-                fx_coverage_status="not_required",
-                symbols=normalized_symbols,
-                start=start.isoformat(),
-                end=end.isoformat(),
-                base_currency=normalized_base_currency,
-            )
-        missing = [session for session in expected_dates if session not in actual_dates]
+    for symbol in symbols:
+        points = _history_points_for_symbol(series_by_symbol, symbol)
+        missing = _missing_market_sessions(symbol, points, start, end)
         if missing:
             missing_sessions[symbol] = missing
-        for point in points:
-            if not isinstance(point, dict):
-                continue
-            currency = str(point.get("currency") or normalized_base_currency).upper()
-            if currency == normalized_base_currency:
-                continue
-            pair = (currency, normalized_base_currency)
-            if pair in seen_fx_pairs:
-                continue
-            seen_fx_pairs.add(pair)
-            required_fx_pairs.append({"from": currency, "to": normalized_base_currency})
+        required_fx_pairs.extend(_new_fx_pairs(points, base_currency, seen_fx_pairs))
+    return HistoryCoverage(missing_symbols, missing_sessions, required_fx_pairs)
 
-    fx_coverage_status = "unsupported_no_fx_snapshot_store" if required_fx_pairs else "not_required"
-    reason = None
+
+def _history_points_for_symbol(series_by_symbol: dict[str, dict[str, Any]], symbol: str) -> list[Any]:
+    item = series_by_symbol.get(symbol)
+    points = item.get("points", []) if item else []
+    return points if isinstance(points, list) else []
+
+
+def _missing_market_sessions(symbol: str, points: list[Any], start: date, end: date) -> list[str]:
+    actual_dates = {
+        str(point.get("date"))[:10]
+        for point in points
+        if isinstance(point, dict) and point.get("date")
+    }
+    expected_dates = [session.isoformat() for session in expected_market_sessions(symbol, start, end)]
+    return [session for session in expected_dates if session not in actual_dates]
+
+
+def _new_fx_pairs(
+    points: list[Any],
+    base_currency: str,
+    seen_fx_pairs: set[tuple[str, str]],
+) -> list[dict[str, str]]:
+    pairs: list[dict[str, str]] = []
+    for point in points:
+        if not isinstance(point, dict):
+            continue
+        currency = str(point.get("currency") or base_currency).upper()
+        pair = (currency, base_currency)
+        if currency == base_currency or pair in seen_fx_pairs:
+            continue
+        seen_fx_pairs.add(pair)
+        pairs.append({"from": currency, "to": base_currency})
+    return pairs
+
+
+def _calculation_readiness_reason(stored: StoredHistoryResult, coverage: HistoryCoverage) -> str | None:
     if stored.coherence_status not in {"single_snapshot", "current_snapshots"}:
-        reason = f"market_history_{stored.coherence_status}"
-    elif missing_symbols:
-        reason = "missing_market_history_symbols"
-    elif missing_sessions:
-        reason = "missing_market_sessions"
-    elif required_fx_pairs:
-        reason = "fx_coverage_unsupported"
+        return f"market_history_{stored.coherence_status}"
+    if coverage.missing_symbols:
+        return "missing_market_history_symbols"
+    if coverage.missing_sessions:
+        return "missing_market_sessions"
+    if coverage.required_fx_pairs:
+        return "fx_coverage_unsupported"
+    return None
 
+
+def _calculation_readiness(
+    *,
+    stored: StoredHistoryResult | None,
+    reason: str | None,
+    symbols: list[str],
+    start: date,
+    end: date,
+    base_currency: str,
+    coverage: HistoryCoverage,
+) -> CalculationReadiness:
     return CalculationReadiness(
         ready=reason is None,
         reason=reason,
-        snapshot_id=stored.snapshot_id,
-        coherence_status=stored.coherence_status,
-        snapshot_ids=stored.snapshot_ids,
-        missing_symbols=missing_symbols,
-        missing_sessions=missing_sessions,
-        required_fx_pairs=required_fx_pairs,
-        fx_coverage_status=fx_coverage_status,
-        symbols=normalized_symbols,
+        snapshot_id=stored.snapshot_id if stored else None,
+        coherence_status=stored.coherence_status if stored else "missing",
+        snapshot_ids=stored.snapshot_ids if stored else [],
+        missing_symbols=coverage.missing_symbols,
+        missing_sessions=coverage.missing_sessions,
+        required_fx_pairs=coverage.required_fx_pairs,
+        fx_coverage_status=_fx_coverage_status(coverage.required_fx_pairs),
+        symbols=symbols,
         start=start.isoformat(),
         end=end.isoformat(),
-        base_currency=normalized_base_currency,
+        base_currency=base_currency,
     )
+
+
+def _fx_coverage_status(required_fx_pairs: list[dict[str, str]]) -> str:
+    return "unsupported_no_fx_snapshot_store" if required_fx_pairs else "not_required"
 
 
 def require_calculation_ready_market_history(
@@ -305,35 +370,14 @@ def load_stored_market_history(
     except SQLAlchemyError:
         db.rollback()
         return None
-    provider_rank = {provider: index for index, provider in enumerate(provider_order)}
-    chosen: dict[tuple[str, date], dict[str, Any]] = {}
-    for row in rows:
-        row_dict = dict(row)
-        symbol = str(row_dict["symbol"])
-        provider = str(row_dict["provider_key"])
-        current_snapshot = current_snapshots.get(symbol)
-        if current_snapshot_table_authoritative:
-            if current_snapshot is None:
-                continue
-            if provider != str(current_snapshot["provider_key"]):
-                continue
-            if str(row_dict.get("market_data_snapshot_id") or "") != str(
-                current_snapshot["snapshot_id"]
-            ):
-                continue
-        policy = _policy_from_row(row.get("source_policy_json"))
-        if (
-            display_mode == "public"
-            and provider not in public_display_allowlist
-            and not bool(policy.get("raw_public_allowed"))
-        ):
-            continue
-        key = (str(row["symbol"]), row["price_date"])
-        existing = chosen.get(key)
-        if existing is None or _provider_rank(provider, provider_rank) < _provider_rank(
-            str(existing["provider_key"]), provider_rank
-        ):
-            chosen[key] = row_dict
+    chosen = _choose_stored_price_rows(
+        rows,
+        provider_order=provider_order,
+        current_snapshots=current_snapshots,
+        current_snapshot_table_authoritative=current_snapshot_table_authoritative,
+        display_mode=display_mode,
+        public_display_allowlist=public_display_allowlist,
+    )
 
     series: list[dict[str, Any]] = []
     coverage: list[dict[str, Any]] = []
@@ -346,101 +390,30 @@ def load_stored_market_history(
     calculation_manifest: list[dict[str, Any]] = []
     unversioned_seen = False
     for symbol in symbols:
-        symbol_rows = sorted(
-            [row for (row_symbol, _price_date), row in chosen.items() if row_symbol == symbol],
-            key=lambda item: item["price_date"],
-        )
-        if not symbol_rows:
+        symbol_payload = _stored_symbol_payload(symbol, chosen)
+        if symbol_payload is None:
             return None
-        points = [_stored_point(row) for row in symbol_rows]
-        providers = sorted({str(row["provider_key"]) for row in symbol_rows})
-        symbol_snapshot_ids = sorted(
-            {
-                str(row["market_data_snapshot_id"])
-                for row in symbol_rows
-                if row.get("market_data_snapshot_id")
-            }
-        )
-        snapshot_ids.update(symbol_snapshot_ids)
-        unversioned_seen = unversioned_seen or any(
-            not row.get("market_data_snapshot_id") for row in symbol_rows
-        )
-        quality_states.update(str(row.get("quality_state") or "valid") for row in symbol_rows)
-        first_date = str(symbol_rows[0]["price_date"])
-        latest_date = str(symbol_rows[-1]["price_date"])
-        latest_ingested_at = max(
-            str(row["ingested_at"]) for row in symbol_rows if row.get("ingested_at")
-        )
-        fetched_times.extend(
-            row["fetch_completed_at"] or row["ingested_at"]
-            for row in symbol_rows
-            if row.get("fetch_completed_at") or row.get("ingested_at")
-        )
-        complete_dates.append(latest_date)
-        calculation_manifest.extend(
-            {
-                "symbol": str(row["symbol"]),
-                "date": str(row["price_date"]),
-                "provider": str(row["provider_key"]),
-                "snapshot_id": str(row["market_data_snapshot_id"]) if row.get("market_data_snapshot_id") else None,
-                "candidate_id": int(row["snapshot_candidate_id"]) if row.get("snapshot_candidate_id") is not None else None,
-                "content_hash": str(row.get("source_hash") or row.get("snapshot_content_hash") or ""),
-            }
-            for row in symbol_rows
-        )
-        policy_json = [
-            _stable_json(_policy_from_row(row.get("source_policy_json"))) for row in symbol_rows
-        ]
-        policy_parts.extend(policy_json)
-        version_parts.append(
-            f"{symbol}:{latest_date}:{latest_ingested_at}:{','.join(providers)}:{','.join(symbol_snapshot_ids)}"
-        )
-        series.append(
-            {
-                "symbol": symbol,
-                "points": points,
-                "source": "stored_normalized_daily_bars",
-                "providers": providers,
-                "snapshot_ids": symbol_snapshot_ids,
-            }
-        )
-        coverage.append(
-            {
-                "symbol": symbol,
-                "point_count": len(points),
-                "first_date": first_date,
-                "latest_date": latest_date,
-                "providers": providers,
-                "snapshot_ids": symbol_snapshot_ids,
-                "latest_ingested_at": latest_ingested_at,
-                "status": "stored",
-                "quality_state": "valid",
-            }
-        )
+        series.append(symbol_payload.series)
+        coverage.append(symbol_payload.coverage)
+        policy_parts.extend(symbol_payload.policy_parts)
+        version_parts.append(symbol_payload.version_part)
+        snapshot_ids.update(symbol_payload.snapshot_ids)
+        quality_states.update(symbol_payload.quality_states)
+        fetched_times.extend(symbol_payload.fetched_times)
+        complete_dates.append(symbol_payload.complete_date)
+        calculation_manifest.extend(symbol_payload.calculation_manifest)
+        unversioned_seen = unversioned_seen or symbol_payload.unversioned_seen
 
     digest = _sha256("|".join(sorted(policy_parts)))
     data_version = _sha256("|".join(version_parts))[:16]
     sorted_snapshot_ids = sorted(snapshot_ids)
-    if (
-        current_snapshot_table_authoritative
-        and len(current_snapshots) >= len(symbols)
-        and len(sorted_snapshot_ids) >= 1
-        and not unversioned_seen
-    ):
-        coherence_status = "current_snapshots"
-    elif not sorted_snapshot_ids:
-        coherence_status = "unversioned"
-    elif len(sorted_snapshot_ids) == 1 and not unversioned_seen:
-        coherence_status = "single_snapshot"
-    else:
-        coherence_status = "mixed_snapshots"
-    warnings = []
-    if coherence_status == "mixed_snapshots":
-        warnings.append(
-            "Stored history spans multiple market data snapshots; downstream calculations should pin a single snapshot."
-        )
-    elif coherence_status == "unversioned":
-        warnings.append("Stored history contains legacy rows without market_data_snapshot_id.")
+    coherence_status = _stored_history_coherence_status(
+        current_snapshot_table_authoritative=current_snapshot_table_authoritative,
+        current_snapshot_count=len(current_snapshots),
+        requested_symbol_count=len(symbols),
+        sorted_snapshot_ids=sorted_snapshot_ids,
+        unversioned_seen=unversioned_seen,
+    )
     return StoredHistoryResult(
         provider="stored_normalized_daily_bars",
         series=series,
@@ -451,12 +424,174 @@ def load_stored_market_history(
         snapshot_ids=sorted_snapshot_ids,
         coherence_status=coherence_status,
         quality_state="valid" if quality_states <= {"valid"} else "mixed",
-        warnings=warnings,
+        warnings=_stored_history_warnings(coherence_status),
         fetched_at=max(fetched_times).isoformat() if fetched_times else None,
         source_observed_at=max(complete_dates) if complete_dates else None,
         complete_through=min(complete_dates) if complete_dates else None,
         calculation_manifest=calculation_manifest,
     )
+
+
+def _choose_stored_price_rows(
+    rows: Any,
+    *,
+    provider_order: list[str],
+    current_snapshots: dict[str, dict[str, Any]],
+    current_snapshot_table_authoritative: bool,
+    display_mode: str,
+    public_display_allowlist: set[str],
+) -> dict[tuple[str, date], dict[str, Any]]:
+    provider_rank = {provider: index for index, provider in enumerate(provider_order)}
+    chosen: dict[tuple[str, date], dict[str, Any]] = {}
+    for row in rows:
+        row_dict = dict(row)
+        provider = str(row_dict["provider_key"])
+        if not _stored_row_allowed(
+            row_dict,
+            provider=provider,
+            current_snapshots=current_snapshots,
+            current_snapshot_table_authoritative=current_snapshot_table_authoritative,
+            display_mode=display_mode,
+            public_display_allowlist=public_display_allowlist,
+        ):
+            continue
+        key = (str(row_dict["symbol"]), row_dict["price_date"])
+        existing = chosen.get(key)
+        if existing is None or _provider_rank(provider, provider_rank) < _provider_rank(str(existing["provider_key"]), provider_rank):
+            chosen[key] = row_dict
+    return chosen
+
+
+def _stored_row_allowed(
+    row: dict[str, Any],
+    *,
+    provider: str,
+    current_snapshots: dict[str, dict[str, Any]],
+    current_snapshot_table_authoritative: bool,
+    display_mode: str,
+    public_display_allowlist: set[str],
+) -> bool:
+    current_snapshot = current_snapshots.get(str(row["symbol"]))
+    if not _matches_current_snapshot(row, provider, current_snapshot, current_snapshot_table_authoritative):
+        return False
+    policy = _policy_from_row(row.get("source_policy_json"))
+    return display_mode != "public" or provider in public_display_allowlist or bool(policy.get("raw_public_allowed"))
+
+
+def _matches_current_snapshot(
+    row: dict[str, Any],
+    provider: str,
+    current_snapshot: dict[str, Any] | None,
+    authoritative: bool,
+) -> bool:
+    if not authoritative:
+        return True
+    if current_snapshot is None:
+        return False
+    return provider == str(current_snapshot["provider_key"]) and str(row.get("market_data_snapshot_id") or "") == str(current_snapshot["snapshot_id"])
+
+
+def _stored_symbol_payload(symbol: str, chosen: dict[tuple[str, date], dict[str, Any]]) -> StoredSymbolPayload | None:
+    symbol_rows = sorted(
+        [row for (row_symbol, _price_date), row in chosen.items() if row_symbol == symbol],
+        key=lambda item: item["price_date"],
+    )
+    if not symbol_rows:
+        return None
+    points = [_stored_point(row) for row in symbol_rows]
+    providers = sorted({str(row["provider_key"]) for row in symbol_rows})
+    symbol_snapshot_ids = _symbol_snapshot_ids(symbol_rows)
+    first_date = str(symbol_rows[0]["price_date"])
+    latest_date = str(symbol_rows[-1]["price_date"])
+    latest_ingested_at = _latest_ingested_at(symbol_rows)
+    return StoredSymbolPayload(
+        series={
+            "symbol": symbol,
+            "points": points,
+            "source": "stored_normalized_daily_bars",
+            "providers": providers,
+            "snapshot_ids": symbol_snapshot_ids,
+        },
+        coverage={
+            "symbol": symbol,
+            "point_count": len(points),
+            "first_date": first_date,
+            "latest_date": latest_date,
+            "providers": providers,
+            "snapshot_ids": symbol_snapshot_ids,
+            "latest_ingested_at": latest_ingested_at,
+            "status": "stored",
+            "quality_state": "valid",
+        },
+        policy_parts=_symbol_policy_parts(symbol_rows),
+        version_part=f"{symbol}:{latest_date}:{latest_ingested_at}:{','.join(providers)}:{','.join(symbol_snapshot_ids)}",
+        snapshot_ids=set(symbol_snapshot_ids),
+        quality_states=_symbol_quality_states(symbol_rows),
+        fetched_times=_symbol_fetched_times(symbol_rows),
+        complete_date=latest_date,
+        calculation_manifest=[_calculation_manifest_row(row) for row in symbol_rows],
+        unversioned_seen=any(not row.get("market_data_snapshot_id") for row in symbol_rows),
+    )
+
+
+def _latest_ingested_at(rows: list[dict[str, Any]]) -> str:
+    return max(str(row["ingested_at"]) for row in rows if row.get("ingested_at"))
+
+
+def _symbol_policy_parts(rows: list[dict[str, Any]]) -> list[str]:
+    return [_stable_json(_policy_from_row(row.get("source_policy_json"))) for row in rows]
+
+
+def _symbol_quality_states(rows: list[dict[str, Any]]) -> set[str]:
+    return {str(row.get("quality_state") or "valid") for row in rows}
+
+
+def _symbol_fetched_times(rows: list[dict[str, Any]]) -> list[datetime]:
+    return [
+        row["fetch_completed_at"] or row["ingested_at"]
+        for row in rows
+        if row.get("fetch_completed_at") or row.get("ingested_at")
+    ]
+
+
+def _symbol_snapshot_ids(rows: list[dict[str, Any]]) -> list[str]:
+    return sorted(str(row["market_data_snapshot_id"]) for row in rows if row.get("market_data_snapshot_id"))
+
+
+def _calculation_manifest_row(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "symbol": str(row["symbol"]),
+        "date": str(row["price_date"]),
+        "provider": str(row["provider_key"]),
+        "snapshot_id": str(row["market_data_snapshot_id"]) if row.get("market_data_snapshot_id") else None,
+        "candidate_id": int(row["snapshot_candidate_id"]) if row.get("snapshot_candidate_id") is not None else None,
+        "content_hash": str(row.get("source_hash") or row.get("snapshot_content_hash") or ""),
+    }
+
+
+def _stored_history_coherence_status(
+    *,
+    current_snapshot_table_authoritative: bool,
+    current_snapshot_count: int,
+    requested_symbol_count: int,
+    sorted_snapshot_ids: list[str],
+    unversioned_seen: bool,
+) -> str:
+    if current_snapshot_table_authoritative and current_snapshot_count >= requested_symbol_count and sorted_snapshot_ids and not unversioned_seen:
+        return "current_snapshots"
+    if not sorted_snapshot_ids:
+        return "unversioned"
+    if len(sorted_snapshot_ids) == 1 and not unversioned_seen:
+        return "single_snapshot"
+    return "mixed_snapshots"
+
+
+def _stored_history_warnings(coherence_status: str) -> list[str]:
+    if coherence_status == "mixed_snapshots":
+        return ["Stored history spans multiple market data snapshots; downstream calculations should pin a single snapshot."]
+    if coherence_status == "unversioned":
+        return ["Stored history contains legacy rows without market_data_snapshot_id."]
+    return []
 
 
 def _current_snapshot_rows(
@@ -526,7 +661,7 @@ def _current_snapshot_rows(
     return chosen
 
 
-def store_market_history_series(
+def store_market_history_series(  # NOSONAR - atomic market-history validation and promotion stay together.
     db: Session | None,
     *,
     provider_key: str,
@@ -729,9 +864,7 @@ def validate_market_history_batch(
     now = now or datetime.now(timezone.utc)
     issues: list[dict[str, Any]] = []
     expected_sessions: dict[str, list[str]] = {}
-    by_symbol: dict[str, list[dict[str, Any]]] = {}
-    for row in rows:
-        by_symbol.setdefault(str(row["symbol"]), []).append(row)
+    by_symbol = _rows_by_symbol(rows)
     if not rows:
         issues.append(
             _issue(
@@ -744,104 +877,16 @@ def validate_market_history_batch(
             )
         )
     for symbol, symbol_rows in by_symbol.items():
-        symbol_rows.sort(key=lambda item: item["price_date"])
-        seen_dates: set[date] = set()
-        duplicate_dates: set[date] = set()
-        currencies = {str(row.get("currency_code") or "") for row in symbol_rows}
-        exchanges = {str(row.get("exchange") or "") for row in symbol_rows if row.get("exchange")}
-        timezones = {str(row.get("timezone") or "") for row in symbol_rows if row.get("timezone")}
-        try:
-            expected = expected_market_sessions(symbol, requested_start, requested_end)
-        except MarketCalendarCoverageError as exc:
-            expected = []
-            issues.append(
-                _issue(
-                    symbol,
-                    None,
-                    None,
-                    "quarantine",
-                    "calendar_coverage_incomplete",
-                    str(exc),
-                    calendar=exc.calendar,
-                    year=exc.year,
-                )
-            )
-        expected_sessions[symbol] = [item.isoformat() for item in expected]
-        actual_dates = {row["price_date"] for row in symbol_rows}
-        for row in symbol_rows:
-            price_date = row["price_date"]
-            if price_date in seen_dates:
-                duplicate_dates.add(price_date)
-            seen_dates.add(price_date)
-            issues.extend(_row_validation_issues(row, now=now))
-        for duplicated in sorted(duplicate_dates):
-            issues.append(
-                _issue(
-                    symbol,
-                    duplicated,
-                    None,
-                    "quarantine",
-                    "duplicate_date",
-                    "duplicate provider bar date",
-                )
-            )
-        if len(currencies) > 1:
-            issues.append(
-                _issue(
-                    symbol,
-                    None,
-                    None,
-                    "quarantine",
-                    "currency_inconsistent",
-                    "multiple currencies in one batch",
-                )
-            )
-        if len(exchanges) > 1:
-            issues.append(
-                _issue(
-                    symbol,
-                    None,
-                    None,
-                    "suspect",
-                    "exchange_inconsistent",
-                    "multiple exchanges in one batch",
-                )
-            )
-        if len(timezones) > 1:
-            issues.append(
-                _issue(
-                    symbol,
-                    None,
-                    None,
-                    "suspect",
-                    "timezone_inconsistent",
-                    "multiple timezones in one batch",
-                )
-            )
-        missing = sorted(set(expected) - actual_dates)
-        if expected:
-            coverage_ratio = 1 - (len(missing) / len(expected))
-            if len(missing) > 2 and coverage_ratio < 0.60:
-                issues.append(
-                    _issue(
-                        symbol,
-                        None,
-                        None,
-                        "suspect",
-                        "expected_session_coverage_low",
-                        "provider batch is missing too many expected sessions",
-                        missing_dates=[item.isoformat() for item in missing[-10:]],
-                        coverage_ratio=round(coverage_ratio, 3),
-                    )
-                )
-        issues.extend(_day_over_day_issues(symbol, symbol_rows))
-    severities = {str(issue["severity"]) for issue in issues}
-    if "quarantine" in severities:
-        quality_state = "quarantined"
-    elif "suspect" in severities:
-        quality_state = "suspect"
-    else:
-        quality_state = "valid"
+        result = _validate_symbol_batch(
+            symbol,
+            symbol_rows,
+            requested_start=requested_start,
+            requested_end=requested_end,
+            now=now,
+        )
+        expected_sessions[symbol] = result["expected_sessions"]
+        issues.extend(result["issues"])
+    quality_state = _quality_state_from_issues(issues)
     return ValidationResult(
         quality_state=quality_state,
         promotable=quality_state == "valid",
@@ -860,14 +905,136 @@ def validate_market_history_batch(
     )
 
 
+def _rows_by_symbol(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    by_symbol: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        by_symbol.setdefault(str(row["symbol"]), []).append(row)
+    return by_symbol
+
+
+def _validate_symbol_batch(
+    symbol: str,
+    symbol_rows: list[dict[str, Any]],
+    *,
+    requested_start: date,
+    requested_end: date,
+    now: datetime,
+) -> dict[str, Any]:
+    symbol_rows.sort(key=lambda item: item["price_date"])
+    issues: list[dict[str, Any]] = []
+    expected, calendar_issue = _expected_sessions_for_symbol(symbol, requested_start, requested_end)
+    if calendar_issue is not None:
+        issues.append(calendar_issue)
+    actual_dates = {row["price_date"] for row in symbol_rows}
+    issues.extend(_duplicate_date_issues(symbol, symbol_rows))
+    issues.extend(_metadata_consistency_issues(symbol, symbol_rows))
+    issues.extend(_expected_session_coverage_issues(symbol, expected, actual_dates))
+    for row in symbol_rows:
+        issues.extend(_row_validation_issues(row, now=now))
+    issues.extend(_day_over_day_issues(symbol, symbol_rows))
+    return {
+        "expected_sessions": [item.isoformat() for item in expected],
+        "issues": issues,
+    }
+
+
+def _expected_sessions_for_symbol(
+    symbol: str, requested_start: date, requested_end: date
+) -> tuple[list[date], dict[str, Any] | None]:
+    try:
+        return expected_market_sessions(symbol, requested_start, requested_end), None
+    except MarketCalendarCoverageError as exc:
+        return [], _issue(
+            symbol,
+            None,
+            None,
+            "quarantine",
+            "calendar_coverage_incomplete",
+            str(exc),
+            calendar=exc.calendar,
+            year=exc.year,
+        )
+
+
+def _duplicate_date_issues(symbol: str, symbol_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    seen_dates: set[date] = set()
+    duplicate_dates: set[date] = set()
+    for row in symbol_rows:
+        price_date = row["price_date"]
+        if price_date in seen_dates:
+            duplicate_dates.add(price_date)
+        seen_dates.add(price_date)
+    return [
+        _issue(
+            symbol,
+            duplicated,
+            None,
+            "quarantine",
+            "duplicate_date",
+            "duplicate provider bar date",
+        )
+        for duplicated in sorted(duplicate_dates)
+    ]
+
+
+def _metadata_consistency_issues(
+    symbol: str, symbol_rows: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    currencies = {str(row.get("currency_code") or "") for row in symbol_rows}
+    exchanges = {str(row.get("exchange") or "") for row in symbol_rows if row.get("exchange")}
+    timezones = {str(row.get("timezone") or "") for row in symbol_rows if row.get("timezone")}
+    checks = [
+        (currencies, "quarantine", "currency_inconsistent", "multiple currencies in one batch"),
+        (exchanges, "suspect", "exchange_inconsistent", "multiple exchanges in one batch"),
+        (timezones, "suspect", "timezone_inconsistent", "multiple timezones in one batch"),
+    ]
+    return [
+        _issue(symbol, None, None, severity, code, message)
+        for values, severity, code, message in checks
+        if len(values) > 1
+    ]
+
+
+def _expected_session_coverage_issues(
+    symbol: str, expected: list[date], actual_dates: set[date]
+) -> list[dict[str, Any]]:
+    if not expected:
+        return []
+    missing = sorted(set(expected) - actual_dates)
+    coverage_ratio = 1 - (len(missing) / len(expected))
+    if len(missing) <= 2 or coverage_ratio >= 0.60:
+        return []
+    return [
+        _issue(
+            symbol,
+            None,
+            None,
+            "suspect",
+            "expected_session_coverage_low",
+            "provider batch is missing too many expected sessions",
+            missing_dates=[item.isoformat() for item in missing[-10:]],
+            coverage_ratio=round(coverage_ratio, 3),
+        )
+    ]
+
+
+def _quality_state_from_issues(issues: list[dict[str, Any]]) -> str:
+    severities = {str(issue["severity"]) for issue in issues}
+    if "quarantine" in severities:
+        return "quarantined"
+    if "suspect" in severities:
+        return "suspect"
+    return "valid"
+
+
 def expected_market_sessions(symbol: str, start: date, end: date) -> list[date]:
     calendar = _calendar_key(symbol)
     current = start
     sessions: list[date] = []
     while current <= end:
-        if calendar == "crypto":
-            sessions.append(current)
-        elif current.weekday() < 5 and current not in _market_holidays(calendar, current.year):
+        if calendar == "crypto" or (
+            current.weekday() < 5 and current not in _market_holidays(calendar, current.year)
+        ):
             sessions.append(current)
         current += timedelta(days=1)
     return sessions
@@ -876,12 +1043,28 @@ def expected_market_sessions(symbol: str, start: date, end: date) -> list[date]:
 def _row_validation_issues(row: dict[str, Any], *, now: datetime) -> list[dict[str, Any]]:
     symbol = str(row["symbol"])
     price_date = row["price_date"]
-    issues: list[dict[str, Any]] = []
     close = row.get("close")
     open_value = row.get("open")
     high = row.get("high")
     low = row.get("low")
     adjusted_close = row.get("adjusted_close")
+    issues: list[dict[str, Any]] = []
+    issues.extend(_positive_price_issues(symbol, price_date, open_value, high, low, close))
+    issues.extend(_ohlc_invariant_issues(symbol, price_date, open_value, high, low, close))
+    issues.extend(_adjusted_close_issues(symbol, price_date, adjusted_close, close))
+    issues.extend(_provider_timestamp_issues(symbol, price_date, row.get("provider_price_timestamp"), now))
+    return issues
+
+
+def _positive_price_issues(
+    symbol: str,
+    price_date: date,
+    open_value: Any,
+    high: Any,
+    low: Any,
+    close: Any,
+) -> list[dict[str, Any]]:
+    issues: list[dict[str, Any]] = []
     values = {"open": open_value, "high": high, "low": low, "close": close}
     for field, value in values.items():
         if value is not None and float(value) <= 0:
@@ -901,6 +1084,18 @@ def _row_validation_issues(row: dict[str, Any], *, now: datetime) -> list[dict[s
                 symbol, price_date, "close", "quarantine", "missing_close", "close must be positive"
             )
         )
+    return issues
+
+
+def _ohlc_invariant_issues(
+    symbol: str,
+    price_date: date,
+    open_value: Any,
+    high: Any,
+    low: Any,
+    close: Any,
+) -> list[dict[str, Any]]:
+    issues: list[dict[str, Any]] = []
     if high is not None and low is not None:
         if float(high) < float(low):
             issues.append(
@@ -931,65 +1126,76 @@ def _row_validation_issues(row: dict[str, Any], *, now: datetime) -> list[dict[s
                     "low is above open or close",
                 )
             )
-    if adjusted_close is not None and close:
-        if float(adjusted_close) <= 0:
-            issues.append(
-                _issue(
-                    symbol,
-                    price_date,
-                    "adjusted_close",
-                    "quarantine",
-                    "non_positive_adjusted_close",
-                    "adjusted close must be positive",
-                )
-            )
-        else:
-            ratio = float(adjusted_close) / float(close)
-            if ratio < 0.02 or ratio > 50:
-                issues.append(
-                    _issue(
-                        symbol,
-                        price_date,
-                        "adjusted_close",
-                        "suspect",
-                        "adjusted_raw_implausible",
-                        "adjusted/raw close ratio is implausible",
-                        ratio=round(ratio, 6),
-                    )
-                )
-    provider_timestamp = row.get("provider_price_timestamp")
-    if isinstance(provider_timestamp, datetime):
-        timestamp = (
-            provider_timestamp
-            if provider_timestamp.tzinfo
-            else provider_timestamp.replace(tzinfo=timezone.utc)
-        )
-        if timestamp > now + timedelta(days=1):
-            issues.append(
-                _issue(
-                    symbol,
-                    price_date,
-                    "provider_timestamp",
-                    "suspect",
-                    "provider_timestamp_future",
-                    "provider timestamp is too far in the future",
-                )
-            )
-        if timestamp.date() < price_date - timedelta(days=3):
-            issues.append(
-                _issue(
-                    symbol,
-                    price_date,
-                    "provider_timestamp",
-                    "suspect",
-                    "provider_timestamp_stale",
-                    "provider timestamp predates the price date",
-                )
-            )
     return issues
 
 
-def _day_over_day_issues(symbol: str, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _adjusted_close_issues(
+    symbol: str, price_date: date, adjusted_close: Any, close: Any
+) -> list[dict[str, Any]]:
+    if adjusted_close is None or not close:
+        return []
+    if float(adjusted_close) <= 0:
+        return [
+            _issue(
+                symbol,
+                price_date,
+                "adjusted_close",
+                "quarantine",
+                "non_positive_adjusted_close",
+                "adjusted close must be positive",
+            )
+        ]
+    ratio = float(adjusted_close) / float(close)
+    if ratio < 0.02 or ratio > 50:
+        return [
+            _issue(
+                symbol,
+                price_date,
+                "adjusted_close",
+                "suspect",
+                "adjusted_raw_implausible",
+                "adjusted/raw close ratio is implausible",
+                ratio=round(ratio, 6),
+            )
+        ]
+    return []
+
+
+def _provider_timestamp_issues(
+    symbol: str, price_date: date, provider_timestamp: Any, now: datetime
+) -> list[dict[str, Any]]:
+    if not isinstance(provider_timestamp, datetime):
+        return []
+    issues: list[dict[str, Any]] = []
+    timestamp = (
+        provider_timestamp if provider_timestamp.tzinfo else provider_timestamp.replace(tzinfo=timezone.utc)
+    )
+    if timestamp > now + timedelta(days=1):
+        issues.append(
+            _issue(
+                symbol,
+                price_date,
+                "provider_timestamp",
+                "suspect",
+                "provider_timestamp_future",
+                "provider timestamp is too far in the future",
+            )
+        )
+    if timestamp.date() < price_date - timedelta(days=3):
+        issues.append(
+            _issue(
+                symbol,
+                price_date,
+                "provider_timestamp",
+                "suspect",
+                "provider_timestamp_stale",
+                "provider timestamp predates the price date",
+            )
+        )
+    return issues
+
+
+def _day_over_day_issues(symbol: str, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:  # NOSONAR - validation branches report distinct data-quality issues.
     issues: list[dict[str, Any]] = []
     previous: dict[str, Any] | None = None
     for row in rows:
@@ -1048,9 +1254,9 @@ def _calendar_key(symbol: str) -> str:
     upper = symbol.upper()
     if upper.endswith("-USD") or upper.startswith(("BTC", "ETH")):
         return "crypto"
-    if upper.endswith(".KS") or upper.endswith(".KQ"):
+    if upper.endswith((".KS", ".KQ")):
         return "korea"
-    if upper.endswith(".T") or upper.endswith(".JP"):
+    if upper.endswith((".T", ".JP")):
         return "japan"
     return "us"
 
@@ -1198,10 +1404,10 @@ def _easter_sunday(year: int) -> date:
     h = (19 * a + b - d - g + 15) % 30
     i = c // 4
     k = c % 4
-    l = (32 + 2 * e + 2 * i - h - k) % 7
-    m = (a + 11 * h + 22 * l) // 451
-    month = (h + l - 7 * m + 114) // 31
-    day = ((h + l - 7 * m + 114) % 31) + 1
+    weekday_offset = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * weekday_offset) // 451
+    month = (h + weekday_offset - 7 * m + 114) // 31
+    day = ((h + weekday_offset - 7 * m + 114) % 31) + 1
     return date(year, month, day)
 
 

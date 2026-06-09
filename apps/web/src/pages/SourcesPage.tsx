@@ -292,7 +292,7 @@ export function SourcesPage() {
   );
 }
 
-function Principle({ icon, title, body }: { icon: ReactNode; title: string; body: string }) {
+function Principle({ icon, title, body }: Readonly<{ icon: ReactNode; title: string; body: string }>) {
   return (
     <article className="panel min-w-0 p-5">
       <div className="flex items-center gap-2 font-semibold text-accent">
@@ -310,12 +310,13 @@ function statusToFreshness(status: SourceItem["status"]) {
   return "watch";
 }
 
-function RiskBadge({ risk }: { risk: SourceItem["risk"] }) {
-  const className =
-    risk === "high"
-      ? "border-warning/50 bg-warning/10 text-warning"
-      : risk === "medium"
-        ? "border-accent/40 bg-accent/10 text-accent"
-        : "border-line bg-panelAlt text-muted";
+function RiskBadge({ risk }: Readonly<{ risk: SourceItem["risk"] }>) {
+  const className = riskBadgeClass(risk);
   return <span className={`badge whitespace-nowrap ${className}`}>risk: {risk}</span>;
+}
+
+function riskBadgeClass(risk: SourceItem["risk"]) {
+  if (risk === "high") return "border-warning/50 bg-warning/10 text-warning";
+  if (risk === "medium") return "border-accent/40 bg-accent/10 text-accent";
+  return "border-line bg-panelAlt text-muted";
 }

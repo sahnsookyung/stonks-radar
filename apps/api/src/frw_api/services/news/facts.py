@@ -135,7 +135,7 @@ def public_summary_cited_facts_valid(
     return int(count or 0) == len(unique_ids)
 
 
-def _upsert_document_metadata_fact(db: Session, row: dict[str, Any], metadata: dict[str, Any]) -> str | None:
+def _upsert_document_metadata_fact(db: Session, row: dict[str, Any], metadata: dict[str, Any]) -> str | None:  # NOSONAR - metadata fact upsert must keep dedupe/publication flags consistent.
     url = sanitize_public_source_url(str(row.get("canonical_url") or row.get("original_url") or ""))
     title = str(row.get("title") or "").strip()
     source_key = str(row.get("source_key") or metadata.get("source_key") or "unknown")

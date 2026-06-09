@@ -39,10 +39,13 @@ DISCLOSURE_LIMITATIONS = [
 SEC_TARGET_FORMS = {"3", "4", "5", "144", "SC 13D", "SC 13D/A", "SC 13G", "SC 13G/A"}
 OWNERSHIP_FORMS = {"3", "4", "5"}
 DEFAULT_SEC_TARGETS = {"DJT": "0001849635"}
-DEFAULT_OGE_NAMES = {"Trump, Donald J.", "Trump, Donald J"}
+DONALD_TRUMP_OGE_NAME = "Trump, Donald J"
+DEFAULT_OGE_NAMES = {"Trump, Donald J.", DONALD_TRUMP_OGE_NAME}
 PUBLIC_TRANSACTION_MIN_CONFIDENCE = Decimal("0.90")
 OGE_API_HOST = "https://extapps2.oge.gov"
 SEC_TICKER_MAP_URL = "https://www.sec.gov/files/company_tickers.json"
+JSON_MIME = "application/json"
+SHA256_PREFIX = "sha256:"
 
 FORM4_TRANSACTION_CODES = {
     "P": "purchase",
@@ -104,7 +107,7 @@ async def fetch_sec_ticker_map(
 ) -> dict[str, dict[str, str]]:
     settings = get_settings()
     headers = {
-        "Accept": "application/json",
+        "Accept": JSON_MIME,
         "Accept-Encoding": "gzip, deflate",
         "User-Agent": settings.sec_user_agent,
     }
@@ -142,7 +145,7 @@ async def fetch_sec_disclosure_filings(
 ) -> tuple[list[dict[str, Any]], list[str]]:
     settings = get_settings()
     headers = {
-        "Accept": "application/json",
+        "Accept": JSON_MIME,
         "Accept-Encoding": "gzip, deflate",
         "User-Agent": settings.sec_user_agent,
     }
@@ -160,7 +163,7 @@ async def fetch_sec_disclosure_filings(
                     endpoint_key="submissions",
                     idempotency_key=f"submissions:{padded}",
                 )
-            except Exception as exc:  # noqa: BLE001 - surface degraded source status, continue other CIKs
+            except Exception as exc:  # noqa: BLE001
                 warnings.append(f"SEC submissions unavailable for {label}: {exc}")
                 continue
             payload = response.json()
@@ -445,7 +448,7 @@ async def _fetch_oge_records(*, transport: httpx.AsyncBaseTransport | None) -> l
     page_size = settings.oge_disclosure_page_size
     max_records = settings.oge_disclosure_max_index_records
     records: list[dict[str, Any]] = []
-    headers = {"Accept": "application/json", "User-Agent": settings.sec_user_agent}
+    headers = {"Accept": JSON_MIME, "User-Agent": settings.sec_user_agent}
     async with httpx.AsyncClient(timeout=25, headers=headers, transport=transport) as client:
         start = 0
         while start < max_records:
@@ -497,7 +500,7 @@ async def _fetch_oge_records_from_search_page(*, transport: httpx.AsyncBaseTrans
         records.append(
             {
                 "type": f"<a href='{url}'>278 Transaction</a>",
-                "name": "Trump, Donald J",
+                "name": DONALD_TRUMP_OGE_NAME,
                 "agency": "White House Office",
                 "title": "President",
                 "level": "n/a",
@@ -524,149 +527,273 @@ def _extract_recent_sec_filings(
     acceptance_times = filings.get("acceptanceDateTime", [])
     primary_documents = filings.get("primaryDocument", [])
     issuer_name = str(payload.get("name") or label)
-    issuer_tickers = payload.get("tickers") or []
-    ticker = str(issuer_tickers[0]).upper() if issuer_tickers else (label.upper() if re.fullmatch(r"[A-Z.]{1,8}", label.upper()) else None)
+    ticker = _sec_payload_ticker(label, payload)
     rows: list[dict[str, Any]] = []
     for idx, accession in enumerate(accessions):
         form = str(_list_item(forms, idx) or "").upper()
         if form not in SEC_TARGET_FORMS:
             continue
-        accession_text = str(accession)
-        primary_document = str(_list_item(primary_documents, idx) or "")
-        source_url = _sec_filing_url(cik, accession_text, primary_document)
-        filed_at = _sec_acceptance_datetime(_list_item(acceptance_times, idx), _list_item(filing_dates, idx))
-        filing = {
-            "source": "SEC",
-            "form_type": form,
-            "filer_name": issuer_name,
-            "issuer_name": issuer_name,
-            "ticker": ticker,
-            "cik": str(cik).zfill(10),
-            "accession_number": accession_text,
-            "doc_date": _date_or_none(_list_item(report_dates, idx)) or _date_or_none(_list_item(filing_dates, idx)),
-            "filed_at": filed_at.isoformat() if filed_at else None,
-            "source_url": source_url,
-            "primary_document": primary_document,
-            "sha256": _sha256_text("SEC", accession_text, source_url),
-            "raw_metadata": {
-                "label": label,
-                "form": form,
-                "filing_date": _list_item(filing_dates, idx),
-                "report_date": _list_item(report_dates, idx),
-                "primary_document": primary_document,
-            },
-            "parse_status": "pending" if form not in OWNERSHIP_FORMS else "pending_xml",
-            "transactions": [],
-            "review_issues": [],
-        }
-        if form not in OWNERSHIP_FORMS:
-            filing["review_issues"].append(
-                {
-                    "issue_type": "sec_form_requires_manual_transaction_review",
-                    "raw_excerpt": f"{form} filings are source-linked but not reduced to trade rows automatically yet.",
-                }
-            )
+        filing = _recent_sec_filing_row(
+            label,
+            cik,
+            issuer_name,
+            ticker,
+            form=form,
+            accession=str(accession),
+            primary_document=str(_list_item(primary_documents, idx) or ""),
+            filing_date=_list_item(filing_dates, idx),
+            report_date=_list_item(report_dates, idx),
+            acceptance_time=_list_item(acceptance_times, idx),
+        )
         rows.append(filing)
         if len(rows) >= max_filings:
             break
     return rows
 
 
+def _sec_payload_ticker(label: str, payload: dict[str, Any]) -> str | None:
+    issuer_tickers = payload.get("tickers") or []
+    if issuer_tickers:
+        return str(issuer_tickers[0]).upper()
+    if re.fullmatch(r"[A-Z.]{1,8}", label.upper()):
+        return label.upper()
+    return None
+
+
+def _recent_sec_filing_row(
+    label: str,
+    cik: str,
+    issuer_name: str,
+    ticker: str | None,
+    *,
+    form: str,
+    accession: str,
+    primary_document: str,
+    filing_date: Any,
+    report_date: Any,
+    acceptance_time: Any,
+) -> dict[str, Any]:
+    source_url = _sec_filing_url(cik, accession, primary_document)
+    filed_at = _sec_acceptance_datetime(acceptance_time, filing_date)
+    filing = {
+        "source": "SEC",
+        "form_type": form,
+        "filer_name": issuer_name,
+        "issuer_name": issuer_name,
+        "ticker": ticker,
+        "cik": str(cik).zfill(10),
+        "accession_number": accession,
+        "doc_date": _date_or_none(report_date) or _date_or_none(filing_date),
+        "filed_at": filed_at.isoformat() if filed_at else None,
+        "source_url": source_url,
+        "primary_document": primary_document,
+        "sha256": _sha256_text("SEC", accession, source_url),
+        "raw_metadata": {
+            "label": label,
+            "form": form,
+            "filing_date": filing_date,
+            "report_date": report_date,
+            "primary_document": primary_document,
+        },
+        "parse_status": "pending" if form not in OWNERSHIP_FORMS else "pending_xml",
+        "transactions": [],
+        "review_issues": [],
+    }
+    if form not in OWNERSHIP_FORMS:
+        filing["review_issues"].append(
+            {
+                "issue_type": "sec_form_requires_manual_transaction_review",
+                "raw_excerpt": f"{form} filings are source-linked but not reduced to trade rows automatically yet.",
+            }
+        )
+    return filing
+
+
 def _parse_sec_ownership_xml(filing: dict[str, Any], body: bytes) -> None:
-    try:
-        root = ElementTree.fromstring(body)
-    except ElementTree.ParseError as exc:
-        if body.lstrip().lower().startswith((b"<!doctype html", b"<html")):
-            _parse_sec_ownership_html(filing, body)
-            return
-        filing["parse_status"] = "review_required"
-        filing["review_issues"].append({"issue_type": "sec_ownership_xml_parse_failed", "raw_excerpt": str(exc)})
+    root = _sec_ownership_xml_root(filing, body)
+    if root is None:
         return
     _strip_xml_namespaces(root)
     issuer_name = _xml_text(root, ".//issuer/issuerName") or filing.get("issuer_name")
     ticker = (_xml_text(root, ".//issuer/issuerTradingSymbol") or filing.get("ticker") or "").upper() or None
     issuer_cik = _xml_text(root, ".//issuer/issuerCik") or filing.get("cik")
-    owner_names = [
+    owner_names = _sec_xml_owner_names(root)
+    owner_name = owner_names[0] if owner_names else filing.get("filer_name")
+    transactions = _sec_xml_transactions(filing, root, owner_name, issuer_name, ticker, issuer_cik)
+    _finish_sec_ownership_parse(
+        filing,
+        issuer_name=issuer_name,
+        ticker=ticker,
+        cik=issuer_cik,
+        owner_names=owner_names,
+        transactions=transactions,
+        missing_issue_type="sec_ownership_xml_no_transactions",
+        missing_excerpt="No derivative or non-derivative transaction rows were found.",
+    )
+
+
+def _sec_ownership_xml_root(
+    filing: dict[str, Any], body: bytes
+) -> ElementTree.Element | None:
+    try:
+        return ElementTree.fromstring(body)
+    except ElementTree.ParseError as exc:
+        if body.lstrip().lower().startswith((b"<!doctype html", b"<html")):
+            _parse_sec_ownership_html(filing, body)
+            return None
+        filing["parse_status"] = "review_required"
+        filing["review_issues"].append(
+            {"issue_type": "sec_ownership_xml_parse_failed", "raw_excerpt": str(exc)}
+        )
+        return None
+
+
+def _sec_xml_owner_names(root: ElementTree.Element) -> list[str]:
+    return [
         name
-        for name in (_xml_text(owner, "./reportingOwnerId/rptOwnerName") for owner in root.findall(".//reportingOwner"))
+        for name in (
+            _xml_text(owner, "./reportingOwnerId/rptOwnerName")
+            for owner in root.findall(".//reportingOwner")
+        )
         if name
     ]
-    owner_name = owner_names[0] if owner_names else filing.get("filer_name")
-    filing["issuer_name"] = issuer_name
-    filing["ticker"] = ticker
-    filing["cik"] = issuer_cik
-    filing["raw_metadata"] = {
-        **filing.get("raw_metadata", {}),
-        "reporting_owners": owner_names,
-    }
+
+
+def _sec_xml_transactions(
+    filing: dict[str, Any],
+    root: ElementTree.Element,
+    owner_name: str | None,
+    issuer_name: str | None,
+    ticker: str | None,
+    issuer_cik: str | None,
+) -> list[dict[str, Any]]:
     transactions: list[dict[str, Any]] = []
     for table_name, path in (
         ("non_derivative", ".//nonDerivativeTransaction"),
         ("derivative", ".//derivativeTransaction"),
     ):
-        for row in root.findall(path):
-            transaction = _sec_transaction_from_xml_row(
-                filing,
-                row,
-                table_name=table_name,
-                owner_name=owner_name,
-                issuer_name=issuer_name,
-                ticker=ticker,
-                cik=issuer_cik,
+        transactions.extend(
+            transaction
+            for row in root.findall(path)
+            if (
+                transaction := _sec_transaction_from_xml_row(
+                    filing,
+                    row,
+                    table_name=table_name,
+                    owner_name=owner_name,
+                    issuer_name=issuer_name,
+                    ticker=ticker,
+                    cik=issuer_cik,
+                )
             )
-            if transaction:
-                transactions.append(transaction)
-    filing["transactions"] = transactions
-    filing["parse_status"] = "parsed" if transactions else "review_required"
-    if not transactions:
-        filing["review_issues"].append(
-            {
-                "issue_type": "sec_ownership_xml_no_transactions",
-                "raw_excerpt": "No derivative or non-derivative transaction rows were found.",
-            }
         )
+    return transactions
 
 
 def _parse_sec_ownership_html(filing: dict[str, Any], body: bytes) -> None:
     html = body.decode("utf-8", errors="ignore")
     parser = HTMLParser(html)
-    cik_links = [link.text(strip=True) for link in parser.css("a[href*='CIK=']") if link.text(strip=True)]
-    owner_name = cik_links[0] if cik_links else filing.get("filer_name")
-    issuer_name = cik_links[1] if len(cik_links) > 1 else filing.get("issuer_name")
-    ticker_match = re.search(r"\[\s*<span[^>]*>\s*([A-Z0-9.\-]{1,10})\s*</span>\s*\]", html, flags=re.I)
-    ticker = (ticker_match.group(1).upper() if ticker_match else filing.get("ticker")) or None
-    transactions: list[dict[str, Any]] = []
-    for table in parser.css("table"):
-        table_text = table.text(separator=" ", strip=True)
-        if "Table I - Non-Derivative" not in table_text and "Table II - Derivative" not in table_text:
-            continue
-        table_name = "derivative" if "Table II - Derivative" in table_text else "non_derivative"
-        for row in table.css("tbody tr"):
-            cells = [_clean_html_cell(cell.text(separator=" ", strip=True)) for cell in row.css("td")]
-            transaction = _sec_transaction_from_html_cells(
-                filing,
-                cells,
-                table_name=table_name,
-                owner_name=owner_name,
-                issuer_name=issuer_name,
-                ticker=ticker,
-            )
-            if transaction:
-                transactions.append(transaction)
-    filing["issuer_name"] = issuer_name
-    filing["ticker"] = ticker
+    owner_name, issuer_name = _sec_html_owner_and_issuer(parser, filing)
+    ticker = _sec_html_ticker(html, filing)
+    transactions = _sec_html_transactions(filing, parser, owner_name, issuer_name, ticker)
+    raw_excerpt = parser.body.text(separator=" ", strip=True)[:1000] if parser.body else html[:1000]
+    _finish_sec_ownership_parse(
+        filing,
+        issuer_name=issuer_name,
+        ticker=ticker,
+        cik=filing.get("cik"),
+        owner_names=[owner_name] if owner_name else [],
+        transactions=transactions,
+        missing_issue_type="sec_ownership_html_no_transactions",
+        missing_excerpt=raw_excerpt,
+    )
     filing["raw_metadata"] = {
         **filing.get("raw_metadata", {}),
         "reporting_owners": [owner_name] if owner_name else [],
         "sec_document_format": "html_transform",
+    }
+
+
+def _sec_html_owner_and_issuer(
+    parser: HTMLParser, filing: dict[str, Any]
+) -> tuple[str | None, str | None]:
+    cik_links = [link.text(strip=True) for link in parser.css("a[href*='CIK=']") if link.text(strip=True)]
+    owner_name = cik_links[0] if cik_links else filing.get("filer_name")
+    issuer_name = cik_links[1] if len(cik_links) > 1 else filing.get("issuer_name")
+    return owner_name, issuer_name
+
+
+def _sec_html_ticker(html: str, filing: dict[str, Any]) -> str | None:
+    ticker_match = re.search(
+        r"\[\s*<span[^>]*>\s*([A-Z0-9.\-]{1,10})\s*</span>\s*\]",
+        html,
+        flags=re.I,
+    )
+    return (ticker_match.group(1).upper() if ticker_match else filing.get("ticker")) or None
+
+
+def _sec_html_transactions(
+    filing: dict[str, Any],
+    parser: HTMLParser,
+    owner_name: str | None,
+    issuer_name: str | None,
+    ticker: str | None,
+) -> list[dict[str, Any]]:
+    transactions: list[dict[str, Any]] = []
+    for table in parser.css("table"):
+        table_name = _sec_html_table_name(table.text(separator=" ", strip=True))
+        if table_name is None:
+            continue
+        transactions.extend(
+            transaction
+            for row in table.css("tbody tr")
+            if (
+                transaction := _sec_transaction_from_html_cells(
+                    filing,
+                    [_clean_html_cell(cell.text(separator=" ", strip=True)) for cell in row.css("td")],
+                    table_name=table_name,
+                    owner_name=owner_name,
+                    issuer_name=issuer_name,
+                    ticker=ticker,
+                )
+            )
+        )
+    return transactions
+
+
+def _sec_html_table_name(table_text: str) -> str | None:
+    if "Table II - Derivative" in table_text:
+        return "derivative"
+    if "Table I - Non-Derivative" in table_text:
+        return "non_derivative"
+    return None
+
+
+def _finish_sec_ownership_parse(
+    filing: dict[str, Any],
+    *,
+    issuer_name: str | None,
+    ticker: str | None,
+    cik: str | None,
+    owner_names: list[str],
+    transactions: list[dict[str, Any]],
+    missing_issue_type: str,
+    missing_excerpt: str,
+) -> None:
+    filing["issuer_name"] = issuer_name
+    filing["ticker"] = ticker
+    filing["cik"] = cik
+    filing["raw_metadata"] = {
+        **filing.get("raw_metadata", {}),
+        "reporting_owners": owner_names,
     }
     filing["transactions"] = transactions
     filing["parse_status"] = "parsed" if transactions else "review_required"
     if not transactions:
         filing["review_issues"].append(
             {
-                "issue_type": "sec_ownership_html_no_transactions",
-                "raw_excerpt": parser.body.text(separator=" ", strip=True)[:1000] if parser.body else html[:1000],
+                "issue_type": missing_issue_type,
+                "raw_excerpt": missing_excerpt,
             }
         )
 
@@ -680,17 +807,10 @@ def _sec_transaction_from_html_cells(
     issuer_name: str | None,
     ticker: str | None,
 ) -> dict[str, Any] | None:
-    if table_name == "non_derivative":
-        if len(cells) < 10:
-            return None
-        asset, transaction_date_raw, _deemed, code_raw, _v, shares_raw, acquired_disposed, price_raw, post_raw, direct_indirect = cells[:10]
-    else:
-        if len(cells) < 14:
-            return None
-        asset, _conversion_price, transaction_date_raw, _deemed, code_raw, _v, shares_raw, acquired_disposed = cells[:8]
-        price_raw = None
-        post_raw = cells[13] if len(cells) > 13 else None
-        direct_indirect = cells[14] if len(cells) > 14 else None
+    parsed_cells = _sec_html_transaction_cells(table_name, cells)
+    if parsed_cells is None:
+        return None
+    asset, transaction_date_raw, code_raw, shares_raw, price_raw, post_raw, direct_indirect = parsed_cells
     transaction_date = _date_or_none(transaction_date_raw) or _us_date(transaction_date_raw)
     code_match = re.search(r"\b([A-Z])\b", code_raw or "")
     code = code_match.group(1) if code_match else ""
@@ -732,6 +852,22 @@ def _sec_transaction_from_html_cells(
             price,
         ),
     }
+
+
+def _sec_html_transaction_cells(
+    table_name: str, cells: list[str]
+) -> tuple[str, str, str, str, str | None, str | None, str | None] | None:
+    if table_name == "non_derivative":
+        if len(cells) < 10:
+            return None
+        asset, transaction_date_raw, _deemed, code_raw, _v, shares_raw, _acquired, price_raw, post_raw, direct_indirect = cells[:10]
+        return asset, transaction_date_raw, code_raw, shares_raw, price_raw, post_raw, direct_indirect
+    if len(cells) < 14:
+        return None
+    asset, _conversion_price, transaction_date_raw, _deemed, code_raw, _v, shares_raw, _acquired = cells[:8]
+    post_raw = cells[13]
+    direct_indirect = cells[14] if len(cells) > 14 else None
+    return asset, transaction_date_raw, code_raw, shares_raw, None, post_raw, direct_indirect
 
 
 def _sec_transaction_from_xml_row(
@@ -798,7 +934,7 @@ def _oge_filing_shell(record: dict[str, Any], pdf_url: str) -> dict[str, Any]:
     return {
         "source": "OGE",
         "form_type": "278-T",
-        "filer_name": str(record.get("name") or "Trump, Donald J"),
+        "filer_name": str(record.get("name") or DONALD_TRUMP_OGE_NAME),
         "issuer_name": None,
         "ticker": None,
         "cik": None,
@@ -871,33 +1007,68 @@ def _parse_oge_text_page(
     text_value = _normalize_pdf_text(page_text)
     rows: list[dict[str, Any]] = []
     for line in text_value.splitlines():
-        match = re.match(r"^\s*(\d{1,3})\s+(.+)$", line)
-        if not match:
+        numbered_line = _split_numbered_oge_line(line)
+        if numbered_line is None:
             continue
-        row_text = re.sub(r"\s+", " ", match.group(2)).strip()
+        row_number, line_text = numbered_line
+        row_text = " ".join(line_text.split())
         parsed = _oge_transaction_from_text(
             filing,
             row_text,
             page_number=page_number,
-            row_number=match.group(1),
+            row_number=row_number,
             ticker_map=ticker_map,
         )
         if parsed:
             rows.append(parsed)
     if rows:
         return rows
-    for match in re.finditer(r"(?:^|\n)\s*(\d{1,3})\s+(.+?)(?=(?:\n\s*\d{1,3}\s+)|\Z)", text_value, flags=re.S):
-        row_text = re.sub(r"\s+", " ", match.group(2)).strip()
+    for row_number, block_text in _oge_numbered_blocks(text_value):
+        row_text = re.sub(r"\s+", " ", block_text).strip()
         parsed = _oge_transaction_from_text(
             filing,
             row_text,
             page_number=page_number,
-            row_number=match.group(1),
+            row_number=row_number,
             ticker_map=ticker_map,
         )
         if parsed:
             rows.append(parsed)
     return rows
+
+
+def _oge_numbered_blocks(text_value: str) -> list[tuple[str, str]]:
+    blocks: list[tuple[str, str]] = []
+    current_number: str | None = None
+    current_lines: list[str] = []
+    for line in text_value.splitlines():
+        numbered_line = _split_numbered_oge_line(line)
+        if numbered_line is not None:
+            if current_number is not None:
+                blocks.append((current_number, " ".join(current_lines)))
+            current_number, line_text = numbered_line
+            current_lines = [line_text]
+        elif current_number is not None:
+            current_lines.append(line)
+    if current_number is not None:
+        blocks.append((current_number, " ".join(current_lines)))
+    return blocks
+
+
+def _split_numbered_oge_line(line: str) -> tuple[str, str] | None:
+    stripped = line.lstrip()
+    digits = ""
+    for char in stripped[:3]:
+        if not char.isdigit():
+            break
+        digits += char
+    if not digits:
+        return None
+    rest = stripped[len(digits) :]
+    if not rest or not rest[0].isspace():
+        return None
+    text_value = rest.strip()
+    return (digits, text_value) if text_value else None
 
 
 def _oge_transaction_from_text(
@@ -908,38 +1079,23 @@ def _oge_transaction_from_text(
     row_number: str,
     ticker_map: dict[str, dict[str, str]],
 ) -> dict[str, Any] | None:
-    date_match = re.search(r"\b\d{1,2}/\d{1,2}/\d{4}\b", row_text)
+    parsed_date = _oge_row_transaction_date(row_text)
+    if parsed_date is None:
+        return None
+    date_match, transaction_date = parsed_date
     amount_range = _parse_oge_amount_range(row_text)
-    if not date_match:
-        return None
-    transaction_date = _us_date(date_match.group(0))
-    if not transaction_date:
-        return None
-    window_start = max(0, date_match.start() - 260)
-    pre_date_window = row_text[window_start : date_match.start()]
-    transaction_match = re.search(r"\b(purchase|purcha?se|purch1se|purch[a-z0-9]*|sale|sold|exchange)\b", pre_date_window, flags=re.I)
-    if transaction_match:
-        transaction_type = transaction_match.group(1).lower()
-        asset_description = row_text[: window_start + transaction_match.start()].strip(" -")
-    else:
-        transaction_type = "reported"
-        asset_description = row_text[: date_match.start()].strip(" -")
+    transaction_type, asset_description = _oge_row_transaction_type_and_asset(row_text, date_match)
     if not asset_description or len(asset_description) < 3:
         return None
     ticker = _extract_ticker(asset_description)
     ticker_valid = ticker is not None and ticker in ticker_map
-    if transaction_type.startswith("purch"):
-        transaction_type = "purchase"
-    elif transaction_type == "sold":
-        transaction_type = "sale"
-    confidence = Decimal("0.90") if amount_range and transaction_type != "reported" and ticker_valid else Decimal("0.72")
-    if ticker and not ticker_valid:
-        confidence = Decimal("0.70")
+    transaction_type = _normalize_oge_transaction_type(transaction_type)
+    confidence = _oge_transaction_confidence(amount_range, transaction_type, ticker, ticker_valid)
     amount_min, amount_max = amount_range or (None, None)
     return {
         "source": "OGE",
         "person_name": "Donald J. Trump",
-        "owner_name": filing.get("filer_name") or "Trump, Donald J",
+        "owner_name": filing.get("filer_name") or DONALD_TRUMP_OGE_NAME,
         "issuer_name": ticker_map.get(ticker or "", {}).get("title") if ticker_valid else None,
         "ticker": ticker if ticker_valid else None,
         "cik": ticker_map.get(ticker or "", {}).get("cik") if ticker_valid else None,
@@ -969,6 +1125,53 @@ def _oge_transaction_from_text(
             amount_max,
         ),
     }
+
+
+def _oge_row_transaction_date(row_text: str) -> tuple[re.Match[str], date] | None:
+    date_match = re.search(r"\b\d{1,2}/\d{1,2}/\d{4}\b", row_text)
+    if not date_match:
+        return None
+    transaction_date = _us_date(date_match.group(0))
+    if not transaction_date:
+        return None
+    return date_match, transaction_date
+
+
+def _oge_row_transaction_type_and_asset(row_text: str, date_match: re.Match[str]) -> tuple[str, str]:
+    window_start = max(0, date_match.start() - 260)
+    pre_date_window = row_text[window_start : date_match.start()]
+    transaction_match = re.search(
+        r"\b(purch[a-z0-9]*|sale|sold|exchange)\b",
+        pre_date_window,
+        flags=re.I,
+    )
+    if transaction_match:
+        return (
+            transaction_match.group(1).lower(),
+            row_text[: window_start + transaction_match.start()].strip(" -"),
+        )
+    return "reported", row_text[: date_match.start()].strip(" -")
+
+
+def _normalize_oge_transaction_type(transaction_type: str) -> str:
+    if transaction_type.startswith("purch"):
+        return "purchase"
+    if transaction_type == "sold":
+        return "sale"
+    return transaction_type
+
+
+def _oge_transaction_confidence(
+    amount_range: tuple[Decimal | None, Decimal | None] | None,
+    transaction_type: str,
+    ticker: str | None,
+    ticker_valid: bool,
+) -> Decimal:
+    if ticker and not ticker_valid:
+        return Decimal("0.70")
+    if amount_range and transaction_type != "reported" and ticker_valid:
+        return Decimal("0.90")
+    return Decimal("0.72")
 
 
 def _upsert_source_filing(db: Session, filing: dict[str, Any]) -> int:
@@ -1101,23 +1304,47 @@ def _sec_filing_url(cik10: str, accession: str, primary_document: str) -> str:
 
 def _normalize_pdf_text(value: str) -> str:
     normalized = value.replace("\u00a0", " ")
-    normalized = re.sub(r"[•·]", " ", normalized)
-    return normalized
+    return normalized.replace("•", " ").replace("·", " ")
 
 
 def _clean_html_cell(value: str) -> str:
-    return re.sub(r"\s+", " ", value.replace("\xa0", " ")).strip()
+    return " ".join(value.replace("\xa0", " ").split())
 
 
 def _parse_oge_amount_range(value: str) -> tuple[int | None, int | None] | None:
-    over = re.search(r"over\s+\$?\s*([\d,. ]+)", value, flags=re.I)
-    if over:
-        return (_digits_to_int(over.group(1)), None)
     text_value = value.replace("O", "0").replace("o", "0")
-    match = re.search(r"[$S]\s*([S\d,. ]{3,})\s*[-–]\s*[$S]\s*([S\d,. ]{3,})", text_value, flags=re.I)
-    if not match:
+    over_index = text_value.casefold().find("over")
+    if over_index >= 0:
+        amount = _digits_to_int(text_value[over_index + len("over") :])
+        return (amount, None) if amount is not None else None
+    left, separator, right = text_value.replace("–", "-").rpartition("-")
+    if not separator:
         return None
-    return (_digits_to_int(match.group(1)), _digits_to_int(match.group(2)))
+    low = _digits_to_int(_trailing_currency_fragment(left))
+    high = _digits_to_int(_leading_currency_fragment(right))
+    if low is None or high is None:
+        return None
+    return (low, high)
+
+
+def _trailing_currency_fragment(value: str) -> str:
+    dollar_index = value.rfind("$")
+    ocr_dollar_index = value.rfind("S")
+    start = max(dollar_index, ocr_dollar_index)
+    return value[start + 1 :] if start >= 0 else value
+
+
+def _leading_currency_fragment(value: str) -> str:
+    stripped = value.strip()
+    if stripped.startswith(("$", "S")):
+        stripped = stripped[1:]
+    chars: list[str] = []
+    for char in stripped:
+        if char.isdigit() or char in {",", ".", " ", "S", "s", "O", "o"}:
+            chars.append(char)
+        elif chars:
+            break
+    return "".join(chars)
 
 
 def _digits_to_int(value: str) -> int | None:
@@ -1216,12 +1443,12 @@ def _decimal_or_none(value: Any) -> Decimal | None:
 
 
 def _sha256_bytes(value: bytes) -> str:
-    return "sha256:" + hashlib.sha256(value).hexdigest()
+    return SHA256_PREFIX + hashlib.sha256(value).hexdigest()
 
 
 def _sha256_text(*parts: Any) -> str:
     payload = "|".join("" if part is None else str(part) for part in parts)
-    return "sha256:" + hashlib.sha256(payload.encode()).hexdigest()
+    return SHA256_PREFIX + hashlib.sha256(payload.encode()).hexdigest()
 
 
 def _jsonable(value: Any) -> Any:

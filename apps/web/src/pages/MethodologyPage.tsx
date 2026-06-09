@@ -51,7 +51,7 @@ export function MethodologyPage() {
   );
 }
 
-function MethodCard({ title, body }: { title: string; body: string }) {
+function MethodCard({ title, body }: Readonly<{ title: string; body: string }>) {
   return (
     <div className="panel min-w-0 p-4">
       <h2 className="safe-text font-semibold">{title}</h2>

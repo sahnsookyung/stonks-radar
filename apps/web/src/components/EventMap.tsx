@@ -1,13 +1,15 @@
 import type { PublicEvent } from "@frw/shared-types";
 import type maplibregl from "maplibre-gl";
-import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-interface EventMapProps {
+type MutableRef<T> = { current: T };
+
+interface EventMapProps extends Readonly<{
   events: PublicEvent[];
   heightClass?: string;
   footer?: string;
   loadStrategy?: "visible" | "idle-visible" | "immediate";
-}
+}> {}
 
 type EventMapDebugWindow = Window & { __stonksRadarMap?: maplibregl.Map };
 
@@ -41,17 +43,17 @@ export function EventMap({
     const element = containerRef.current;
     let idleHandle: number | null = null;
     const load = () => {
-      if (loadStrategy === "idle-visible" && "requestIdleCallback" in window) {
-        idleHandle = window.requestIdleCallback(() => setShouldLoad(true), { timeout: 1200 });
+      if (loadStrategy === "idle-visible" && "requestIdleCallback" in globalThis.window) {
+        idleHandle = globalThis.window.requestIdleCallback(() => setShouldLoad(true), { timeout: 1200 });
         return;
       }
       if (loadStrategy === "idle-visible") {
-        idleHandle = window.setTimeout(() => setShouldLoad(true), 300);
+        idleHandle = globalThis.window.setTimeout(() => setShouldLoad(true), 300);
         return;
       }
       setShouldLoad(true);
     };
-    if (loadStrategy === "immediate" || !("IntersectionObserver" in window)) {
+    if (loadStrategy === "immediate" || !("IntersectionObserver" in globalThis.window)) {
       load();
       return () => {
         if (idleHandle !== null) cancelDeferredLoad(idleHandle);
@@ -172,7 +174,7 @@ export function EventMap({
         interactive: true
       });
       if (shouldExposeMapDebugHook()) {
-        (window as EventMapDebugWindow).__stonksRadarMap = mapRef.current;
+        (globalThis.window as EventMapDebugWindow).__stonksRadarMap = mapRef.current;
       }
       mapRef.current.on("load", () => {
         mapRef.current?.fitBounds(
@@ -191,7 +193,7 @@ export function EventMap({
     return () => {
       disposed = true;
       if (shouldExposeMapDebugHook()) {
-        delete (window as EventMapDebugWindow).__stonksRadarMap;
+        delete (globalThis.window as EventMapDebugWindow).__stonksRadarMap;
       }
       mapRef.current?.remove();
       mapRef.current = null;
@@ -209,24 +211,24 @@ export function EventMap({
     const element = containerRef.current;
     let frame = 0;
     const scheduleResize = () => {
-      window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => mapRef.current?.resize());
+      globalThis.window.cancelAnimationFrame(frame);
+      frame = globalThis.window.requestAnimationFrame(() => mapRef.current?.resize());
     };
-    const ResizeObserverCtor = window.ResizeObserver;
+    const ResizeObserverCtor = globalThis.window.ResizeObserver;
     if (typeof ResizeObserverCtor === "function") {
       const observer = new ResizeObserverCtor(scheduleResize);
       observer.observe(element);
       scheduleResize();
       return () => {
         observer.disconnect();
-        window.cancelAnimationFrame(frame);
+        globalThis.window.cancelAnimationFrame(frame);
       };
     }
-    window.addEventListener("resize", scheduleResize);
+    globalThis.window.addEventListener("resize", scheduleResize);
     scheduleResize();
     return () => {
-      window.removeEventListener("resize", scheduleResize);
-      window.cancelAnimationFrame(frame);
+      globalThis.window.removeEventListener("resize", scheduleResize);
+      globalThis.window.cancelAnimationFrame(frame);
     };
   }, [shouldLoad]);
 
@@ -246,11 +248,11 @@ export function EventMap({
           {hoveredCountry.name}
         </div>
       ) : null}
-      {!isReady ? (
+      {!isReady && (
         <div className="absolute inset-0 grid place-items-center bg-panelAlt text-center text-xs font-semibold uppercase text-muted">
           <span>{shouldLoad ? "Loading map" : "Map loads on view"}</span>
         </div>
-      ) : null}
+      )}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-panel/90 px-4 py-3 text-xs leading-5 text-muted sm:px-5">
         {footer}
       </div>
@@ -265,7 +267,7 @@ type HoveredCountry = {
 };
 
 function cancelDeferredLoad(handle: number) {
-  const cancelIdle = window.cancelIdleCallback;
+  const cancelIdle = globalThis.window.cancelIdleCallback;
   if (typeof cancelIdle === "function") {
     cancelIdle(handle);
     return;
@@ -276,7 +278,7 @@ function cancelDeferredLoad(handle: number) {
 function wireCountryHover(
   map: maplibregl.Map | null,
   setHoveredCountry: (country: HoveredCountry | null) => void,
-  hoveredCountryRef: MutableRefObject<string | null>
+  hoveredCountryRef: MutableRef<string | null>
 ) {
   if (!map) return;
 
@@ -344,7 +346,7 @@ function antimeridianSafeCountryFilter() {
 function syncMarkers(
   maplibre: typeof maplibregl,
   map: maplibregl.Map | null,
-  markerRefs: MutableRefObject<maplibregl.Marker[]>,
+  markerRefs: MutableRef<maplibregl.Marker[]>,
   events: PublicEvent[]
 ) {
   if (!map) return;

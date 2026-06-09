@@ -12,6 +12,14 @@ import { trackedTickers } from "../lib/trackedTickers";
 
 const shortLaneKeys = new Set(["highest_short_interest", "short_volume_monitor"]);
 
+function laneItemsForSymbol(symbol: string, shortLanes: AlternativeSignalLane[]) {
+  return shortLanes.flatMap((lane) =>
+    lane.items
+      .filter((item) => item.symbols?.map((itemSymbol) => itemSymbol.toUpperCase()).includes(symbol))
+      .map((item) => ({ lane, item }))
+  );
+}
+
 export function ShortsPage() {
   const locale = useLocale();
   const { t } = useTranslation();
@@ -31,9 +39,7 @@ export function ShortsPage() {
     .map((ticker) => ticker.symbol);
   const tickerRows = shortSymbols.map((symbol) => ({
     symbol,
-    items: shortLanes.flatMap((lane) =>
-      lane.items.filter((item) => item.symbols?.map((itemSymbol) => itemSymbol.toUpperCase()).includes(symbol)).map((item) => ({ lane, item }))
-    )
+    items: laneItemsForSymbol(symbol, shortLanes)
   }));
 
   return (
@@ -67,9 +73,10 @@ export function ShortsPage() {
               <SeverityBadge value="medium" />
             </div>
             <div className="mt-4 grid gap-2">
-              {row.items.length ? (
+              {row.items.length > 0 && (
                 row.items.map(({ lane, item }) => <SignalItem key={item.key} item={item} context={lane.title} />)
-              ) : (
+              )}
+              {row.items.length === 0 && (
                   <div className="safe-text min-h-11 rounded-md border border-line bg-panelAlt px-3 py-2 text-xs leading-5 text-muted">
                   {locale === "ko"
                     ? "이번 스냅샷에는 이 티커의 공식 공매도 행이 없습니다."
@@ -103,7 +110,7 @@ export function ShortsPage() {
   );
 }
 
-function LaneCard({ lane }: { lane?: AlternativeSignalLane }) {
+function LaneCard({ lane }: Readonly<{ lane?: AlternativeSignalLane }>) {
   if (!lane) return null;
   return (
     <article className="panel flex min-h-[260px] min-w-0 flex-col p-4 sm:min-h-[280px]">
@@ -124,7 +131,7 @@ function LaneCard({ lane }: { lane?: AlternativeSignalLane }) {
   );
 }
 
-function SignalItem({ item, context }: { item: AlternativeSignalItem; context: string }) {
+function SignalItem({ item, context }: Readonly<{ item: AlternativeSignalItem; context: string }>) {
   const content = (
     <>
       <div className="flex items-start justify-between gap-2">

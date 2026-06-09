@@ -49,7 +49,7 @@ export function SourceStatusPage() {
                 </p>
               </div>
               <FreshnessBadge
-                value={provider.status === "ready" ? "fresh" : provider.status === "missing_credentials" ? "unsupported" : "watch"}
+                value={providerFreshnessValue(provider.status)}
               />
             </div>
             {provider.warning ? <p className="safe-text mt-3 text-xs leading-5 text-muted">{provider.warning}</p> : null}
@@ -75,7 +75,7 @@ export function SourceStatusPage() {
                 <td className="px-3 py-3">{provider.mode}</td>
                 <td className="px-3 py-3">
                   <FreshnessBadge
-                    value={provider.status === "ready" ? "fresh" : provider.status === "missing_credentials" ? "unsupported" : "watch"}
+                    value={providerFreshnessValue(provider.status)}
                   />
                 </td>
                 <td className="px-3 py-3 text-muted">{provider.warning ?? ""}</td>
@@ -88,7 +88,13 @@ export function SourceStatusPage() {
   );
 }
 
-function StatusTile({ label, value }: { label: string; value: string }) {
+function providerFreshnessValue(status: string) {
+  if (status === "ready") return "fresh";
+  if (status === "missing_credentials") return "unsupported";
+  return "watch";
+}
+
+function StatusTile({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div className="panel min-w-0 p-4">
       <div className="text-xs uppercase text-muted">{label}</div>

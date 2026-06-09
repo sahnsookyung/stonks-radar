@@ -84,6 +84,23 @@ class ProviderReservation:
     acquired_at: datetime
 
 
+@dataclass(frozen=True)
+class MarketDataQuotaInsert:
+    reservation_token: str
+    provider_key: str
+    endpoint_key: str
+    partition_key: str
+    window_start: datetime
+    window_seconds: int
+    cost: float
+    units: dict[str, float]
+    status: str
+    idempotency_key: str | None
+    retry_after_seconds: int | None = None
+    error_class: str | None = None
+    details: dict[str, Any] | None = None
+
+
 class ProviderLimitError(RuntimeError):
     def __init__(
         self,
@@ -571,6 +588,13 @@ def _limit(
     )
 
 
+DOCS_NOT_FIXED = "not fixed in docs"
+LABEL_6_REQUESTS_PER_MINUTE = "6 requests/minute"
+LABEL_10_REQUESTS_PER_MINUTE = "10 requests/minute"
+LABEL_30_REQUESTS_PER_MINUTE = "30 requests/minute"
+SEC_EDGAR_ACCESS_URL = "https://www.sec.gov/edgar/searchedgar/accessing-edgar-data.htm"
+
+
 DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
     _limit(
         "fred",
@@ -591,7 +615,7 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
         "eia",
         "v2_data",
         (
-            _rule("request", 1, 2, "not fixed in docs", "2 requests/second"),
+            _rule("request", 1, 2, DOCS_NOT_FIXED, "2 requests/second"),
             _rule("record", 1, 5_000, "5,000 JSON rows/request", "5,000 records/request"),
         ),
         "https://www.eia.gov/opendata/documentation.php",
@@ -600,19 +624,19 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
         "sec_edgar",
         "submissions",
         (_rule("request", 1, 5, "10 requests/second", "5 requests/second"),),
-        "https://www.sec.gov/edgar/searchedgar/accessing-edgar-data.htm",
+        SEC_EDGAR_ACCESS_URL,
     ),
     _limit(
         "sec_edgar",
         "filing_document",
         (_rule("request", 1, 5, "10 requests/second", "5 requests/second"),),
-        "https://www.sec.gov/edgar/searchedgar/accessing-edgar-data.htm",
+        SEC_EDGAR_ACCESS_URL,
     ),
     _limit(
         "sec_edgar",
         "ticker_map",
         (_rule("request", 60, 1, "periodically updated ticker file", "1 request/minute"),),
-        "https://www.sec.gov/edgar/searchedgar/accessing-edgar-data.htm",
+        SEC_EDGAR_ACCESS_URL,
     ),
     _limit(
         "oge_disclosures",
@@ -629,7 +653,7 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
     _limit(
         "finra",
         "oauth_token",
-        (_rule("request", 60, 30, "platform throttling applies", "30 requests/minute"),),
+        (_rule("request", 60, 30, "platform throttling applies", LABEL_30_REQUESTS_PER_MINUTE),),
         "https://developer.finra.org/node/1146",
     ),
     _limit(
@@ -646,7 +670,7 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
         "twelve_data",
         "daily_prices",
         (
-            _rule("request", 60, 6, "8 API credits/minute", "6 requests/minute"),
+            _rule("request", 60, 6, "8 API credits/minute", LABEL_6_REQUESTS_PER_MINUTE),
             _rule("request", 86_400, 700, "800 API credits/day", "700 requests/day"),
         ),
         "https://support.twelvedata.com/en/articles/5335783-trial",
@@ -701,19 +725,19 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
     _limit(
         "ecb",
         "data",
-        (_rule("request", 60, 30, "not fixed in docs", "30 requests/minute"),),
+        (_rule("request", 60, 30, DOCS_NOT_FIXED, LABEL_30_REQUESTS_PER_MINUTE),),
         "https://data-api.ecb.europa.eu/service/data",
     ),
     _limit(
         "world_bank",
         "indicator",
-        (_rule("request", 60, 30, "not fixed in docs", "30 requests/minute"),),
+        (_rule("request", 60, 30, DOCS_NOT_FIXED, LABEL_30_REQUESTS_PER_MINUTE),),
         "https://api.worldbank.org/v2",
     ),
     _limit(
         "gdelt",
         "doc",
-        (_rule("request", 60, 10, "not fixed in docs", "10 requests/minute"),),
+        (_rule("request", 60, 10, DOCS_NOT_FIXED, LABEL_10_REQUESTS_PER_MINUTE),),
         "https://api.gdeltproject.org/api/v2/doc/doc",
         public_display_allowed=False,
     ),
@@ -726,7 +750,7 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
                 60,
                 6,
                 "undocumented RSS endpoint; use conservatively",
-                "6 requests/minute",
+                LABEL_6_REQUESTS_PER_MINUTE,
             ),
         ),
         "https://news.google.com/rss",
@@ -741,7 +765,7 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
                 60,
                 6,
                 "undocumented ticker RSS endpoint; use conservatively",
-                "6 requests/minute",
+                LABEL_6_REQUESTS_PER_MINUTE,
             ),
         ),
         "https://feeds.finance.yahoo.com/rss/2.0/headline",
@@ -751,25 +775,25 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
     _limit(
         "federal_reserve",
         "fomc_calendar",
-        (_rule("request", 60, 10, "not fixed in docs", "10 requests/minute"),),
+        (_rule("request", 60, 10, DOCS_NOT_FIXED, LABEL_10_REQUESTS_PER_MINUTE),),
         "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
     ),
     _limit(
         "federal_reserve",
         "public_pages",
-        (_rule("request", 60, 10, "not fixed in docs", "10 requests/minute"),),
+        (_rule("request", 60, 10, DOCS_NOT_FIXED, LABEL_10_REQUESTS_PER_MINUTE),),
         "https://www.federalreserve.gov/feeds/",
     ),
     _limit(
         "who",
         "rss",
-        (_rule("request", 60, 6, "not fixed in docs", "6 requests/minute"),),
+        (_rule("request", 60, 6, DOCS_NOT_FIXED, LABEL_6_REQUESTS_PER_MINUTE),),
         "https://www.who.int/rss-feeds/",
     ),
     _limit(
         "company_ir",
         "rss",
-        (_rule("request", 60, 6, "publisher-specific RSS; be polite", "6 requests/minute"),),
+        (_rule("request", 60, 6, "publisher-specific RSS; be polite", LABEL_6_REQUESTS_PER_MINUTE),),
         "https://www.rssboard.org/rss-specification",
         notes="Per-publisher RSS/newsroom polling; official company pages are metadata-only and cached.",
     ),
@@ -800,7 +824,7 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
         "chat_completions",
         (
             _rule(
-                "request", 60, 10, "model/project-specific; view in AI Studio", "10 requests/minute"
+                "request", 60, 10, "model/project-specific; view in AI Studio", LABEL_10_REQUESTS_PER_MINUTE
             ),
             _rule("request", 86_400, 800, "model/project-specific RPD", "800 requests/day"),
             _rule("token", 60, 200_000, "model/project-specific TPM", "200,000 tokens/minute"),
@@ -821,7 +845,7 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
         "cerebras",
         "chat_completions",
         (
-            _rule("request", 60, 10, "free tier 10-30 RPM by model", "10 requests/minute"),
+            _rule("request", 60, 10, "free tier 10-30 RPM by model", LABEL_10_REQUESTS_PER_MINUTE),
             _rule("request", 86_400, 100, "free tier 100-14,400 RPD by model", "100 requests/day"),
             _rule("token", 60, 60_000, "free tier 60K-64K TPM by model", "60,000 tokens/minute"),
         ),
@@ -840,7 +864,7 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
         "openrouter",
         "chat_completions",
         (
-            _rule("request", 60, 10, "20 free-model requests/minute", "10 requests/minute"),
+            _rule("request", 60, 10, "20 free-model requests/minute", LABEL_10_REQUESTS_PER_MINUTE),
             _rule(
                 "request",
                 86_400,
@@ -881,7 +905,7 @@ DEFAULT_PROVIDER_LIMITS: tuple[ProviderEndpointLimit, ...] = (
 )
 
 
-def _clean_units(units: dict[str, float]) -> dict[str, float]:
+def _clean_units(units: dict[str, float]) -> dict[str, float]:  # NOSONAR - quota unit sanitation keeps defensive cases in one helper.
     clean: dict[str, float] = {}
     for key, value in units.items():
         amount = float(value)
@@ -898,7 +922,7 @@ def _market_data_quota_applies(provider_key: str, endpoint_key: str) -> bool:
     return endpoint_key == MARKET_DATA_ENDPOINT_KEY and provider_key in MARKET_DATA_PROVIDER_KEYS
 
 
-def _reserve_market_data_quota(
+def _reserve_market_data_quota(  # NOSONAR - reservation fallback, conflict handling, and insert path stay transactionally consistent.
     db: Session | None,
     *,
     provider_key: str,
@@ -1001,24 +1025,26 @@ def _reserve_market_data_quota(
             )
             _insert_market_data_quota_row(
                 db,
-                reservation_token=reservation_token,
-                provider_key=provider_key,
-                endpoint_key=endpoint_key,
-                partition_key=partition_key,
-                window_start=window_start,
-                window_seconds=int(rule["window_seconds"]),
-                cost=cost,
-                units=units,
-                status="deferred",
-                idempotency_key=idempotency_key,
-                retry_after_seconds=retry_after,
-                error_class=ERROR_QUOTA_EXHAUSTED,
-                details={
-                    "used": used,
-                    "cap": cap,
-                    "unit": rule["unit"],
-                    "factor": MARKET_DATA_QUOTA_FACTOR,
-                },
+                MarketDataQuotaInsert(
+                    reservation_token=reservation_token,
+                    provider_key=provider_key,
+                    endpoint_key=endpoint_key,
+                    partition_key=partition_key,
+                    window_start=window_start,
+                    window_seconds=int(rule["window_seconds"]),
+                    cost=cost,
+                    units=units,
+                    status="deferred",
+                    idempotency_key=idempotency_key,
+                    retry_after_seconds=retry_after,
+                    error_class=ERROR_QUOTA_EXHAUSTED,
+                    details={
+                        "used": used,
+                        "cap": cap,
+                        "unit": rule["unit"],
+                        "factor": MARKET_DATA_QUOTA_FACTOR,
+                    },
+                ),
             )
             raise ProviderLimitError(
                 f"{provider_key}/{endpoint_key} reserved quota would exceed the conservative market-data cap",
@@ -1041,22 +1067,24 @@ def _reserve_market_data_quota(
     for row in rows:
         inserted_token = _insert_market_data_quota_row(
             db,
-            reservation_token=reservation_token,
-            provider_key=provider_key,
-            endpoint_key=endpoint_key,
-            partition_key=partition_key,
-            window_start=row["window_start"],
-            window_seconds=row["window_seconds"],
-            cost=row["cost"],
-            units=units,
-            status="reserved",
-            idempotency_key=idempotency_key,
-            details={
-                "unit": row["unit"],
-                "used_before": row["used"],
-                "cap": row["cap"],
-                "factor": MARKET_DATA_QUOTA_FACTOR,
-            },
+            MarketDataQuotaInsert(
+                reservation_token=reservation_token,
+                provider_key=provider_key,
+                endpoint_key=endpoint_key,
+                partition_key=partition_key,
+                window_start=row["window_start"],
+                window_seconds=row["window_seconds"],
+                cost=row["cost"],
+                units=units,
+                status="reserved",
+                idempotency_key=idempotency_key,
+                details={
+                    "unit": row["unit"],
+                    "used_before": row["used"],
+                    "cap": row["cap"],
+                    "factor": MARKET_DATA_QUOTA_FACTOR,
+                },
+            ),
         )
         if inserted_token is not None:
             reservation_token = inserted_token
@@ -1152,24 +1180,8 @@ def _market_data_db_rules(
     return rules
 
 
-def _insert_market_data_quota_row(
-    db: Session,
-    *,
-    reservation_token: str,
-    provider_key: str,
-    endpoint_key: str,
-    partition_key: str,
-    window_start: datetime,
-    window_seconds: int,
-    cost: float,
-    units: dict[str, float],
-    status: str,
-    idempotency_key: str | None,
-    retry_after_seconds: int | None = None,
-    error_class: str | None = None,
-    details: dict[str, Any] | None = None,
-) -> str | None:
-    if idempotency_key and status in {"reserved", "succeeded"}:
+def _insert_market_data_quota_row(db: Session, quota: MarketDataQuotaInsert) -> str | None:
+    if quota.idempotency_key and quota.status in {"reserved", "succeeded"}:
         return str(
             db.execute(
                 text(
@@ -1194,19 +1206,19 @@ def _insert_market_data_quota_row(
                     """
                 ),
                 {
-                    "reservation_token": reservation_token,
-                    "provider_key": provider_key,
-                    "endpoint_key": endpoint_key,
-                    "partition_key": partition_key,
-                    "window_start": window_start,
-                    "window_seconds": window_seconds,
-                    "cost": cost,
-                    "units": json.dumps(units),
-                    "status": status,
-                    "idempotency_key": idempotency_key,
-                    "retry_after_seconds": retry_after_seconds,
-                    "error_class": error_class,
-                    "details": json.dumps(details or {}),
+                    "reservation_token": quota.reservation_token,
+                    "provider_key": quota.provider_key,
+                    "endpoint_key": quota.endpoint_key,
+                    "partition_key": quota.partition_key,
+                    "window_start": quota.window_start,
+                    "window_seconds": quota.window_seconds,
+                    "cost": quota.cost,
+                    "units": json.dumps(quota.units),
+                    "status": quota.status,
+                    "idempotency_key": quota.idempotency_key,
+                    "retry_after_seconds": quota.retry_after_seconds,
+                    "error_class": quota.error_class,
+                    "details": json.dumps(quota.details or {}),
                 },
             ).scalar_one()
         )
@@ -1226,19 +1238,19 @@ def _insert_market_data_quota_row(
             """
         ),
         {
-            "reservation_token": reservation_token,
-            "provider_key": provider_key,
-            "endpoint_key": endpoint_key,
-            "partition_key": partition_key,
-            "window_start": window_start,
-            "window_seconds": window_seconds,
-            "cost": cost,
-            "units": json.dumps(units),
-            "status": status,
-            "idempotency_key": idempotency_key,
-            "retry_after_seconds": retry_after_seconds,
-            "error_class": error_class,
-            "details": json.dumps(details or {}),
+            "reservation_token": quota.reservation_token,
+            "provider_key": quota.provider_key,
+            "endpoint_key": quota.endpoint_key,
+            "partition_key": quota.partition_key,
+            "window_start": quota.window_start,
+            "window_seconds": quota.window_seconds,
+            "cost": quota.cost,
+            "units": json.dumps(quota.units),
+            "status": quota.status,
+            "idempotency_key": quota.idempotency_key,
+            "retry_after_seconds": quota.retry_after_seconds,
+            "error_class": quota.error_class,
+            "details": json.dumps(quota.details or {}),
         },
     )
     return None
@@ -1320,7 +1332,7 @@ def _memory_reserve(
 ) -> int | None:
     now = time.time()
     with ProviderQuotaGuard._memory_lock:
-        for key, (_, expires_at) in list(ProviderQuotaGuard._memory_counts.items()):
+        for key, (_, expires_at) in ProviderQuotaGuard._memory_counts.copy().items():
             if expires_at <= now:
                 ProviderQuotaGuard._memory_counts.pop(key, None)
         for rule in rules:

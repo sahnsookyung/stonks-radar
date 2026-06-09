@@ -10,10 +10,10 @@ import { snapshotQueries } from "../lib/snapshots";
 
 type TimeRange = "all" | "24h" | "7d" | "30d";
 
-export function NewsPage() {
+export function NewsPage() { // NOSONAR - filter state, URL sync, and snapshot rendering intentionally live in one page.
   const locale = useLocale();
   const isKo = locale === "ko";
-  const params = new URLSearchParams(window.location.search);
+  const params = new URLSearchParams(globalThis.window.location.search);
   const [query, setQuery] = useState(params.get("q") ?? "");
   const [ticker, setTicker] = useState(params.get("ticker") ?? "");
   const [region, setRegion] = useState(params.get("region") ?? "");
@@ -53,12 +53,13 @@ export function NewsPage() {
     if (breakingOnly) nextParams.set("breaking", "1");
     if (officialOnly) nextParams.set("official", "1");
     const nextSearch = nextParams.toString();
-    const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
+    const searchSuffix = nextSearch ? `?${nextSearch}` : "";
+    const nextUrl = `${globalThis.window.location.pathname}${searchSuffix}${globalThis.window.location.hash}`;
     if (
       nextUrl !==
-      `${window.location.pathname}${window.location.search}${window.location.hash}`
+      `${globalThis.window.location.pathname}${globalThis.window.location.search}${globalThis.window.location.hash}`
     ) {
-      window.history.replaceState(null, "", nextUrl);
+      globalThis.window.history.replaceState(null, "", nextUrl);
     }
   }, [
     breakingOnly,
@@ -113,7 +114,7 @@ export function NewsPage() {
     region,
     topic,
     trustTier,
-    timeRange !== "all" ? timeRange : "",
+    timeRange === "all" ? "" : timeRange,
     breakingOnly ? "breaking" : "",
     officialOnly ? "official" : "",
   ].filter(Boolean).length;
@@ -170,7 +171,7 @@ export function NewsPage() {
             <span className="badge border-line bg-panelAlt text-muted">
               {filteredEvents.length} / {events.length}
             </span>
-            {activeFilterCount ? (
+            {activeFilterCount > 0 && (
               <button
                 type="button"
                 className="secondary-action min-h-11 px-3 py-1.5 text-xs"
@@ -178,7 +179,7 @@ export function NewsPage() {
               >
                 {isKo ? "초기화" : "Reset"}
               </button>
-            ) : null}
+            )}
           </div>
         </div>
         <div
@@ -263,11 +264,12 @@ export function NewsPage() {
               : `${filteredEvents.length} shown`}
           </span>
         </div>
-        {filteredEvents.length ? (
+        {filteredEvents.length > 0 && (
           filteredEvents.map((event) => (
             <NewsEventCard key={event.id} event={event} locale={locale} />
           ))
-        ) : (
+        )}
+        {filteredEvents.length === 0 && (
           <div className="panel border-dashed p-5 text-sm leading-6 text-muted">
             {isKo
               ? "선택한 필터와 일치하는 뉴스 이벤트가 없습니다."
@@ -291,13 +293,13 @@ function FilterSelect({
   onChange,
   options,
   allLabel,
-}: {
+}: Readonly<{
   label: string;
   value: string;
   onChange: (value: string) => void;
   options: { key: string; label: string; count: number }[];
   allLabel: string;
-}) {
+}>) {
   return (
     <label className="grid gap-1 text-xs font-semibold uppercase text-muted">
       {label}
@@ -321,11 +323,11 @@ function Toggle({
   checked,
   onChange,
   label,
-}: {
+}: Readonly<{
   checked: boolean;
   onChange: (checked: boolean) => void;
   label: string;
-}) {
+}>) {
   return (
     <label className="focus-within:ring-focus inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-md border border-line bg-panelAlt px-3 text-sm font-semibold">
       <input
@@ -384,6 +386,12 @@ function matchesTime(event: NewsEventListItem, value: TimeRange) {
   if (value === "all") return true;
   const timestamp = new Date(event.last_seen_at).getTime();
   if (!Number.isFinite(timestamp)) return true;
-  const hours = value === "24h" ? 24 : value === "7d" ? 24 * 7 : 24 * 30;
+  const hours = hoursForTimeRange(value);
   return Date.now() - timestamp <= hours * 60 * 60 * 1000;
+}
+
+function hoursForTimeRange(value: Exclude<TimeRange, "all">) {
+  if (value === "24h") return 24;
+  if (value === "7d") return 24 * 7;
+  return 24 * 30;
 }

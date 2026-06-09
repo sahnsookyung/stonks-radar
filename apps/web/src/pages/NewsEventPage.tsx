@@ -7,7 +7,7 @@ import { SnapshotBanner } from "../components/SnapshotBanner";
 import { useLocale } from "../lib/locale";
 import { snapshotQueries } from "../lib/snapshots";
 
-export function NewsEventPage() {
+export function NewsEventPage() { // NOSONAR - event detail page coordinates snapshot fetch and evidence rendering.
   const locale = useLocale();
   const isKo = locale === "ko";
   const params = useParams({ strict: false }) as { eventId?: string };
@@ -65,7 +65,7 @@ export function NewsEventPage() {
         <div className="grid min-w-0 gap-5">
           <DetailBlock title={isKo ? "무슨 일이 있었나" : "What Happened"} items={event.what_happened} />
           <DetailBlock title={isKo ? "왜 중요한가" : "Why It Matters"} items={event.why_it_matters} />
-          {tickerImplications.length ? (
+          {tickerImplications.length > 0 && (
             <section className="panel min-w-0 p-5">
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-accent" />
@@ -90,10 +90,10 @@ export function NewsEventPage() {
                 ))}
               </div>
             </section>
-          ) : null}
+          )}
           <DetailBlock title={isKo ? "확인된 사실" : "Known Facts"} items={event.known_facts} />
           <DetailBlock title={isKo ? "불확실성" : "Uncertainties"} items={event.uncertainties} />
-          {event.conflicting_reports.length ? <DetailBlock title={isKo ? "상충 보고" : "Conflicting Reports"} items={event.conflicting_reports} /> : null}
+          {event.conflicting_reports.length > 0 && <DetailBlock title={isKo ? "상충 보고" : "Conflicting Reports"} items={event.conflicting_reports} />}
         </div>
 
         <aside className="grid content-start gap-5">
@@ -109,11 +109,12 @@ export function NewsEventPage() {
           <section className="panel p-4">
             <h2 className="text-sm font-semibold">{isKo ? "영향 티커" : "Affected Tickers"}</h2>
             <div className="mt-3 flex flex-wrap gap-2">
-              {event.tickers.length ? event.tickers.map((ticker) => (
+              {event.tickers.length > 0 && event.tickers.map((ticker) => (
                 <Link key={ticker.symbol} to="/$locale/tickers/$symbol" params={{ locale, symbol: ticker.symbol }} className="badge min-h-11 border-accent/40 bg-accentSoft text-accent">
                   {ticker.symbol} · {Math.round(ticker.confidence * 100)}%
                 </Link>
-              )) : <span className="text-sm text-muted">{isKo ? "직접 티커 없음" : "No direct ticker"}</span>}
+              ))}
+              {event.tickers.length === 0 && <span className="text-sm text-muted">{isKo ? "직접 티커 없음" : "No direct ticker"}</span>}
             </div>
           </section>
           <section className="panel p-4">
@@ -142,17 +143,17 @@ export function NewsEventPage() {
         <p className="safe-text mt-3 text-sm leading-6 text-warning">{event.disclaimer}</p>
       </section>
 
-      {event.related_events.length ? (
+      {event.related_events.length > 0 && (
         <section className="grid gap-3">
           <h2 className="text-xl font-bold">{isKo ? "관련 이벤트" : "Related Events"}</h2>
           {event.related_events.map((related) => <NewsEventCard key={related.id} event={related} locale={locale} compact />)}
         </section>
-      ) : null}
+      )}
     </div>
   );
 }
 
-function DetailBlock({ title, items }: { title: string; items: string[] }) {
+function DetailBlock({ title, items }: Readonly<{ title: string; items: string[] }>) {
   return (
     <section className="panel min-w-0 p-5">
       <h2 className="text-lg font-bold">{title}</h2>

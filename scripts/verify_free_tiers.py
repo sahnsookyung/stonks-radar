@@ -17,6 +17,7 @@ DEFAULT_PROVIDER_ENV_FILES = (
     ROOT / ".secrets" / "stonks-radar.production.env",
 )
 _LOADED_PROVIDER_ENV_FILES: list[str] | None = None
+KOREA_PUBLIC_DATA_ALIAS_DESCRIPTION = "Korea public-data portal alias for FSC/KRX-derived market data"
 
 PROVIDERS = {
     "FRED_API_KEY": "FRED non-realtime reference ingest",
@@ -32,9 +33,9 @@ PROVIDERS = {
     "KRX_AUTH_KEY": "KRX Open API alias for Korea index daily-trading ingest",
     "KRX_API_KEY": "KRX Open API alias for Korea index daily-trading ingest",
     "DATA_GO_KR_SERVICE_KEY": "Korea public-data portal key for FSC/KRX-derived market data",
-    "DATA_GO_KR_API_KEY": "Korea public-data portal alias for FSC/KRX-derived market data",
-    "PUBLIC_DATA_API_KEY": "Korea public-data portal alias for FSC/KRX-derived market data",
-    "KOREA_PUBLIC_DATA_API_KEY": "Korea public-data portal alias for FSC/KRX-derived market data",
+    "DATA_GO_KR_API_KEY": KOREA_PUBLIC_DATA_ALIAS_DESCRIPTION,
+    "PUBLIC_DATA_API_KEY": KOREA_PUBLIC_DATA_ALIAS_DESCRIPTION,
+    "KOREA_PUBLIC_DATA_API_KEY": KOREA_PUBLIC_DATA_ALIAS_DESCRIPTION,
     "FINRA_API_TOKEN": "FINRA bearer token for short interest/short volume ingest",
     "FINRA_API_CLIENT_ID": "FINRA OAuth client id for short interest/short volume ingest",
     "FINRA_API_CLIENT_SECRET": "FINRA OAuth client secret for short interest/short volume ingest",
@@ -204,99 +205,14 @@ def _oci_capacity() -> dict[str, Any]:
     warnings.extend(ad_warnings)
 
     instances: list[dict[str, Any]] = []
-    boot_volumes: list[dict[str, Any]] = []
     block_volumes: list[dict[str, Any]] = []
-
+    boot_volumes: list[dict[str, Any]] = []
     for compartment in compartments:
-        try:
-            payload = _run_oci(
-                [
-                    "compute",
-                    "instance",
-                    "list",
-                    "--compartment-id",
-                    compartment["id"],
-                    "--all",
-                ]
-            )
-            for item in payload.get("data", []):
-                if item.get("lifecycle-state") in TERMINAL_STATES:
-                    continue
-                shape_config = item.get("shape-config") or {}
-                instances.append(
-                    {
-                        "compartment": compartment["name"],
-                        "name": item.get("display-name"),
-                        "shape": item.get("shape"),
-                        "state": item.get("lifecycle-state"),
-                        "availability_domain": item.get("availability-domain"),
-                        "ocpus": shape_config.get("ocpus"),
-                        "memory_gb": shape_config.get("memory-in-gbs"),
-                    }
-                )
-        except (subprocess.CalledProcessError, json.JSONDecodeError) as exc:
-            warnings.append(f"instance_list_error:{compartment['name']}={type(exc).__name__}")
+        instances.extend(_oci_instances(compartment, warnings))
+        block_volumes.extend(_oci_block_volumes(compartment, warnings))
+        boot_volumes.extend(_oci_boot_volumes(compartment, availability_domains, warnings))
 
-        try:
-            payload = _run_oci(["bv", "volume", "list", "--compartment-id", compartment["id"], "--all"])
-            for item in payload.get("data", []):
-                if item.get("lifecycle-state") in TERMINAL_STATES:
-                    continue
-                block_volumes.append(
-                    {
-                        "compartment": compartment["name"],
-                        "name": item.get("display-name"),
-                        "state": item.get("lifecycle-state"),
-                        "size_gb": item.get("size-in-gbs"),
-                    }
-                )
-        except (subprocess.CalledProcessError, json.JSONDecodeError) as exc:
-            warnings.append(f"block_volume_list_error:{compartment['name']}={type(exc).__name__}")
-
-        for availability_domain in availability_domains:
-            try:
-                payload = _run_oci(
-                    [
-                        "bv",
-                        "boot-volume",
-                        "list",
-                        "--availability-domain",
-                        availability_domain,
-                        "--compartment-id",
-                        compartment["id"],
-                        "--all",
-                    ]
-                )
-                for item in payload.get("data", []):
-                    if item.get("lifecycle-state") in TERMINAL_STATES:
-                        continue
-                    boot_volumes.append(
-                        {
-                            "compartment": compartment["name"],
-                            "name": item.get("display-name"),
-                            "state": item.get("lifecycle-state"),
-                            "availability_domain": availability_domain,
-                            "size_gb": item.get("size-in-gbs"),
-                        }
-                    )
-            except (subprocess.CalledProcessError, json.JSONDecodeError) as exc:
-                warnings.append(
-                    f"boot_volume_list_error:{compartment['name']}:{availability_domain}={type(exc).__name__}"
-                )
-
-    a1_instances = [item for item in instances if item.get("shape") == "VM.Standard.A1.Flex"]
-    a1_ocpus = sum(float(item.get("ocpus") or 0) for item in a1_instances)
-    a1_memory = sum(float(item.get("memory_gb") or 0) for item in a1_instances)
-    boot_volume_gb = sum(int(item.get("size_gb") or 0) for item in boot_volumes)
-    block_volume_gb = sum(int(item.get("size_gb") or 0) for item in block_volumes)
-
-    remaining = {
-        "a1_ocpus": OCI_ALWAYS_FREE_LIMITS["a1_ocpus"] - a1_ocpus,
-        "a1_memory_gb": OCI_ALWAYS_FREE_LIMITS["a1_memory_gb"] - a1_memory,
-        "block_volume_total_gb": OCI_ALWAYS_FREE_LIMITS["block_volume_total_gb"]
-        - boot_volume_gb
-        - block_volume_gb,
-    }
+    capacity = _oci_capacity_usage(instances, boot_volumes, block_volumes)
     return {
         "configured": True,
         "region": region,
@@ -307,6 +223,120 @@ def _oci_capacity() -> dict[str, Any]:
         "boot_volumes": boot_volumes,
         "block_volumes": block_volumes,
         "limits": OCI_ALWAYS_FREE_LIMITS,
+        "used": capacity["used"],
+        "remaining": capacity["remaining"],
+        "within_always_free": capacity["within_always_free"],
+        "can_create_new_a1_instance": capacity["can_create_new_a1_instance"],
+        "warnings": warnings,
+    }
+
+
+def _oci_instances(compartment: dict[str, str], warnings: list[str]) -> list[dict[str, Any]]:
+    try:
+        payload = _run_oci(
+            [
+                "compute",
+                "instance",
+                "list",
+                "--compartment-id",
+                compartment["id"],
+                "--all",
+            ]
+        )
+    except (subprocess.CalledProcessError, json.JSONDecodeError) as exc:
+        warnings.append(f"instance_list_error:{compartment['name']}={type(exc).__name__}")
+        return []
+    return [
+        _oci_instance_row(compartment, item)
+        for item in payload.get("data", [])
+        if item.get("lifecycle-state") not in TERMINAL_STATES
+    ]
+
+
+def _oci_instance_row(compartment: dict[str, str], item: dict[str, Any]) -> dict[str, Any]:
+    shape_config = item.get("shape-config") or {}
+    return {
+        "compartment": compartment["name"],
+        "name": item.get("display-name"),
+        "shape": item.get("shape"),
+        "state": item.get("lifecycle-state"),
+        "availability_domain": item.get("availability-domain"),
+        "ocpus": shape_config.get("ocpus"),
+        "memory_gb": shape_config.get("memory-in-gbs"),
+    }
+
+
+def _oci_block_volumes(compartment: dict[str, str], warnings: list[str]) -> list[dict[str, Any]]:
+    try:
+        payload = _run_oci(["bv", "volume", "list", "--compartment-id", compartment["id"], "--all"])
+    except (subprocess.CalledProcessError, json.JSONDecodeError) as exc:
+        warnings.append(f"block_volume_list_error:{compartment['name']}={type(exc).__name__}")
+        return []
+    return [
+        {
+            "compartment": compartment["name"],
+            "name": item.get("display-name"),
+            "state": item.get("lifecycle-state"),
+            "size_gb": item.get("size-in-gbs"),
+        }
+        for item in payload.get("data", [])
+        if item.get("lifecycle-state") not in TERMINAL_STATES
+    ]
+
+
+def _oci_boot_volumes(
+    compartment: dict[str, str], availability_domains: list[str], warnings: list[str]
+) -> list[dict[str, Any]]:
+    boot_volumes: list[dict[str, Any]] = []
+    for availability_domain in availability_domains:
+        boot_volumes.extend(_oci_boot_volumes_for_ad(compartment, availability_domain, warnings))
+    return boot_volumes
+
+
+def _oci_boot_volumes_for_ad(
+    compartment: dict[str, str], availability_domain: str, warnings: list[str]
+) -> list[dict[str, Any]]:
+    try:
+        payload = _run_oci(
+            [
+                "bv",
+                "boot-volume",
+                "list",
+                "--availability-domain",
+                availability_domain,
+                "--compartment-id",
+                compartment["id"],
+                "--all",
+            ]
+        )
+    except (subprocess.CalledProcessError, json.JSONDecodeError) as exc:
+        warnings.append(f"boot_volume_list_error:{compartment['name']}:{availability_domain}={type(exc).__name__}")
+        return []
+    return [
+        {
+            "compartment": compartment["name"],
+            "name": item.get("display-name"),
+            "state": item.get("lifecycle-state"),
+            "availability_domain": availability_domain,
+            "size_gb": item.get("size-in-gbs"),
+        }
+        for item in payload.get("data", [])
+        if item.get("lifecycle-state") not in TERMINAL_STATES
+    ]
+
+
+def _oci_capacity_usage(
+    instances: list[dict[str, Any]],
+    boot_volumes: list[dict[str, Any]],
+    block_volumes: list[dict[str, Any]],
+) -> dict[str, Any]:
+    a1_instances = [item for item in instances if item.get("shape") == "VM.Standard.A1.Flex"]
+    a1_ocpus = sum(float(item.get("ocpus") or 0) for item in a1_instances)
+    a1_memory = sum(float(item.get("memory_gb") or 0) for item in a1_instances)
+    boot_volume_gb = sum(int(item.get("size_gb") or 0) for item in boot_volumes)
+    block_volume_gb = sum(int(item.get("size_gb") or 0) for item in block_volumes)
+    remaining = _oci_remaining_capacity(a1_ocpus, a1_memory, boot_volume_gb, block_volume_gb)
+    return {
         "used": {
             "a1_ocpus": a1_ocpus,
             "a1_memory_gb": a1_memory,
@@ -319,7 +349,18 @@ def _oci_capacity() -> dict[str, Any]:
         "can_create_new_a1_instance": remaining["a1_ocpus"] > 0
         and remaining["a1_memory_gb"] > 0
         and remaining["block_volume_total_gb"] >= 47,
-        "warnings": warnings,
+    }
+
+
+def _oci_remaining_capacity(
+    a1_ocpus: float, a1_memory: float, boot_volume_gb: int, block_volume_gb: int
+) -> dict[str, float]:
+    return {
+        "a1_ocpus": OCI_ALWAYS_FREE_LIMITS["a1_ocpus"] - a1_ocpus,
+        "a1_memory_gb": OCI_ALWAYS_FREE_LIMITS["a1_memory_gb"] - a1_memory,
+        "block_volume_total_gb": OCI_ALWAYS_FREE_LIMITS["block_volume_total_gb"]
+        - boot_volume_gb
+        - block_volume_gb,
     }
 
 
@@ -332,32 +373,48 @@ def _provider_status() -> dict[str, str]:
 
 def _coverage_status() -> dict[str, dict[str, Any]]:
     _load_provider_env_files()
-    coverage: dict[str, dict[str, Any]] = {}
-    for name, spec in PROVIDER_COVERAGE_GROUPS.items():
-        required_any = spec.get("required_any", ())
-        required_groups_any = spec.get("required_groups_any", ())
-        satisfied_by_any = [key for key in required_any if key == "ALWAYS_FREE_PUBLIC_HTTP" or os.getenv(key)]
-        satisfied_by_group = [
-            list(group) for group in required_groups_any if all(os.getenv(key) for key in group)
-        ]
-        configured = bool(satisfied_by_any or satisfied_by_group)
-        coverage[name] = {
-            "status": "configured" if configured else "missing",
-            "description": spec["description"],
-            "required_any": list(required_any),
-            "required_groups_any": [list(group) for group in required_groups_any],
-            "satisfied_by_any": satisfied_by_any,
-            "satisfied_by_group": satisfied_by_group,
-            "missing_any": [] if configured else [key for key in required_any if key != "ALWAYS_FREE_PUBLIC_HTTP" and not os.getenv(key)],
-            "missing_groups_any": []
-            if configured
-            else [
-                [key for key in group if not os.getenv(key)]
-                for group in required_groups_any
-                if not all(os.getenv(key) for key in group)
-            ],
-        }
-    return coverage
+    return {
+        name: _coverage_entry(spec)
+        for name, spec in PROVIDER_COVERAGE_GROUPS.items()
+    }
+
+
+def _coverage_entry(spec: dict[str, Any]) -> dict[str, Any]:
+    required_any = spec.get("required_any", ())
+    required_groups_any = spec.get("required_groups_any", ())
+    satisfied_by_any = _satisfied_any(required_any)
+    satisfied_by_group = _satisfied_groups(required_groups_any)
+    configured = bool(satisfied_by_any or satisfied_by_group)
+    return {
+        "status": "configured" if configured else "missing",
+        "description": spec["description"],
+        "required_any": list(required_any),
+        "required_groups_any": [list(group) for group in required_groups_any],
+        "satisfied_by_any": satisfied_by_any,
+        "satisfied_by_group": satisfied_by_group,
+        "missing_any": [] if configured else _missing_any(required_any),
+        "missing_groups_any": [] if configured else _missing_groups(required_groups_any),
+    }
+
+
+def _satisfied_any(required_any: tuple[str, ...]) -> list[str]:
+    return [key for key in required_any if key == "ALWAYS_FREE_PUBLIC_HTTP" or os.getenv(key)]
+
+
+def _satisfied_groups(required_groups_any: tuple[tuple[str, ...], ...]) -> list[list[str]]:
+    return [list(group) for group in required_groups_any if all(os.getenv(key) for key in group)]
+
+
+def _missing_any(required_any: tuple[str, ...]) -> list[str]:
+    return [key for key in required_any if key != "ALWAYS_FREE_PUBLIC_HTTP" and not os.getenv(key)]
+
+
+def _missing_groups(required_groups_any: tuple[tuple[str, ...], ...]) -> list[list[str]]:
+    return [
+        [key for key in group if not os.getenv(key)]
+        for group in required_groups_any
+        if not all(os.getenv(key) for key in group)
+    ]
 
 
 def _build_report(include_oci: bool) -> dict[str, Any]:

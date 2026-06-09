@@ -6,7 +6,7 @@ import { SnapshotBanner } from "../components/SnapshotBanner";
 import { useLocale } from "../lib/locale";
 import { snapshotQueries } from "../lib/snapshots";
 
-export function CalendarPage({ centralBanksOnly = false }: { centralBanksOnly?: boolean }) {
+export function CalendarPage({ centralBanksOnly = false }: Readonly<{ centralBanksOnly?: boolean }>) {
   const locale = useLocale();
   const query = useQuery({
     queryKey: ["snapshot", "calendar", locale],

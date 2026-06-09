@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SnapshotHardExpiredError, getSnapshot, isHardExpired, snapshotFreshness } from "./snapshots";
+import { SnapshotHardExpiredError, getManifest, getSnapshot, isHardExpired, snapshotFreshness } from "./snapshots";
 
 const activeEnvelope = {
   schema_version: "1.0.0",
@@ -59,5 +59,79 @@ describe("snapshot freshness helpers", () => {
     );
 
     await expect(getSnapshot("home", "en")).rejects.toBeInstanceOf(SnapshotHardExpiredError);
+  });
+
+  it("loads manifests and active snapshots from manifest object paths", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-04T00:30:00Z"));
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === "/public/latest/manifest.json") {
+        return new Response(
+          JSON.stringify({
+            current_version: 1,
+            generated_at: "2026-06-04T00:00:00Z",
+            locales: ["en"],
+            objects: { home: { en: "public/v1/en/home.json" } }
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      expect(url).toBe("/public/v1/en/home.json");
+      return new Response(JSON.stringify(activeEnvelope), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getManifest()).resolves.toMatchObject({ current_version: 1 });
+    await expect(getSnapshot("home", "en")).resolves.toMatchObject({ object_key: "home" });
+    expect(fetchMock).toHaveBeenCalledWith("/public/latest/manifest.json", {
+      headers: { Accept: "application/json" }
+    });
+  });
+
+  it("reports missing manifest entries and failed snapshot loads", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-04T00:30:00Z"));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url === "/public/latest/manifest.json") {
+          return new Response(
+            JSON.stringify({
+              current_version: 1,
+              generated_at: "2026-06-04T00:00:00Z",
+              locales: ["en"],
+              objects: { status: { en: "public/v1/en/status.json" } }
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        return new Response("missing", { status: 404 });
+      })
+    );
+
+    await expect(getSnapshot("home", "en")).rejects.toThrow("not in the manifest");
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url === "/public/latest/manifest.json") {
+          return new Response(
+            JSON.stringify({
+              current_version: 1,
+              generated_at: "2026-06-04T00:00:00Z",
+              locales: ["en"],
+              objects: { home: { en: "public/v1/en/home.json" } }
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        return new Response("missing", { status: 503 });
+      })
+    );
+
+    await expect(getSnapshot("home", "en")).rejects.toThrow("Failed to load /public/v1/en/home.json: 503");
   });
 });

@@ -45,14 +45,14 @@ export function sortMarketTiles(tiles: MetricTile[]) {
   );
 }
 
-export function MarketPulseTickerBar({ tiles }: { tiles: MetricTile[] }) {
+export function MarketPulseTickerBar({ tiles }: Readonly<{ tiles: MetricTile[] }>) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const locale = useLocale();
   const { t } = useTranslation();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const interval = window.setInterval(() => setNow(Date.now()), 60_000);
-    return () => window.clearInterval(interval);
+    const interval = globalThis.window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => globalThis.window.clearInterval(interval);
   }, []);
   const orderedTiles = useMemo(() => sortMarketTiles(tiles), [tiles]);
   const scroll = (direction: -1 | 1) => {
@@ -129,13 +129,13 @@ export function MarketPulseTickerBar({ tiles }: { tiles: MetricTile[] }) {
   );
 }
 
-export function MarketPulseBoard({ tiles }: { tiles: MetricTile[] }) {
+export function MarketPulseBoard({ tiles }: Readonly<{ tiles: MetricTile[] }>) {
   const locale = useLocale();
   const { t } = useTranslation();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const interval = window.setInterval(() => setNow(Date.now()), 60_000);
-    return () => window.clearInterval(interval);
+    const interval = globalThis.window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => globalThis.window.clearInterval(interval);
   }, []);
   const groups = groupMarketTiles(sortMarketTiles(tiles), locale);
 
@@ -191,11 +191,11 @@ function MarketPulseMiniTile({
   tile,
   locale,
   now,
-}: {
+}: Readonly<{
   tile: MetricTile;
   locale: "en" | "ko";
   now: number;
-}) {
+}>) {
   const delta = metricDelta(tile);
   const unavailable = isUnavailableTile(tile);
   const update = metricUpdate(tile, locale, now);
@@ -250,14 +250,40 @@ function MarketPulseCard({
   tile,
   locale,
   now,
-}: {
+}: Readonly<{
   tile: MetricTile;
   locale: "en" | "ko";
   now: number;
-}) {
+}>) {
   const unavailable = isUnavailableTile(tile);
   const delta = metricDelta(tile);
   const update = metricUpdate(tile, locale, now);
+  const unavailableBadge = unavailable ? (
+    <span className="rounded border border-warning/40 bg-warning/10 px-2 py-1 text-[11px] font-semibold uppercase leading-4 text-warning">
+      {marketLocaleText(locale, "gap", "공백")}
+    </span>
+  ) : null;
+  const overdueBadge = update.isOverdue ? (
+    <span className="rounded border border-warning/40 bg-warning/10 px-1.5 py-0.5 font-semibold text-warning">
+      {marketLocaleText(locale, "target missed", "목표 지연")}
+    </span>
+  ) : null;
+  const delayNote = unavailable ? (
+    <p className="safe-text mt-2 text-xs leading-5 text-muted">
+      {tile.delay_label}
+    </p>
+  ) : null;
+  const nextEvent = tile.next_event ? (
+    <div className="mt-auto flex items-start gap-2 pt-3 text-xs leading-5 text-muted">
+      <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+      <span className="min-w-0">
+        <span className="font-semibold text-ink">
+          {marketLocaleText(locale, "Next:", "다음:")}
+        </span>{" "}
+        {tile.next_event.title} · {tile.next_event.date}
+      </span>
+    </div>
+  ) : null;
   const body = (
     <>
       <div className="flex items-start justify-between gap-3">
@@ -275,11 +301,7 @@ function MarketPulseCard({
             <DeltaBadge delta={delta} />
           </div>
         </div>
-        {unavailable ? (
-          <span className="rounded border border-warning/40 bg-warning/10 px-2 py-1 text-[11px] font-semibold uppercase leading-4 text-warning">
-            {locale === "ko" ? "공백" : "gap"}
-          </span>
-        ) : null}
+        {unavailableBadge}
       </div>
       <div className="mt-3 h-24 shrink-0 sm:h-28">
         {tile.points && tile.points.length >= 2 ? (
@@ -296,28 +318,10 @@ function MarketPulseCard({
           {update.label}
         </span>
         {tile.refresh_seconds ? <span>{update.targetLabel}</span> : null}
-        {update.isOverdue ? (
-          <span className="rounded border border-warning/40 bg-warning/10 px-1.5 py-0.5 font-semibold text-warning">
-            {locale === "ko" ? "목표 지연" : "target missed"}
-          </span>
-        ) : null}
+        {overdueBadge}
       </div>
-      {unavailable ? (
-        <p className="safe-text mt-2 text-xs leading-5 text-muted">
-          {tile.delay_label}
-        </p>
-      ) : null}
-      {tile.next_event ? (
-        <div className="mt-auto flex items-start gap-2 pt-3 text-xs leading-5 text-muted">
-          <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
-          <span className="min-w-0">
-            <span className="font-semibold text-ink">
-              {locale === "ko" ? "다음:" : "Next:"}
-            </span>{" "}
-            {tile.next_event.title} · {tile.next_event.date}
-          </span>
-        </div>
-      ) : null}
+      {delayNote}
+      {nextEvent}
     </>
   );
   const className =
@@ -341,10 +345,10 @@ function MarketPulseCard({
 function DeltaBadge({
   delta,
   compact = false,
-}: {
+}: Readonly<{
   delta: number | null;
   compact?: boolean;
-}) {
+}>) {
   if (delta === null) {
     return null;
   }
@@ -373,10 +377,10 @@ function DeltaBadge({
 function TinySparkline({
   points,
   unavailable,
-}: {
+}: Readonly<{
   points: { date: string; value: number }[];
   unavailable: boolean;
-}) {
+}>) {
   if (points.length < 2) {
     return (
       <div
@@ -402,11 +406,7 @@ function TinySparkline({
         `${index === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`,
     )
     .join(" ");
-  const stroke = unavailable
-    ? "#93a3b7"
-    : values[values.length - 1] >= values[0]
-      ? "#55c58e"
-      : "#ff6b70";
+  const stroke = sparklineStroke(unavailable, values);
   return (
     <svg
       className="h-full w-full"
@@ -479,9 +479,15 @@ function marketRank(key: string) {
 function metricDelta(tile: MetricTile) {
   if (Number.isFinite(tile.refresh_delta)) return tile.refresh_delta as number;
   if (!tile.points || tile.points.length < 2) return null;
-  const previous = tile.points[tile.points.length - 2]?.value;
-  const current = tile.points[tile.points.length - 1]?.value;
-  if (!Number.isFinite(previous) || !Number.isFinite(current)) return null;
+  const previous = tile.points.at(-2)?.value;
+  const current = tile.points.at(-1)?.value;
+  if (
+    typeof previous !== "number" ||
+    typeof current !== "number" ||
+    !Number.isFinite(previous) ||
+    !Number.isFinite(current)
+  )
+    return null;
   return current - previous;
 }
 
@@ -504,6 +510,15 @@ function formatRefreshInterval(seconds: number, locale: "en" | "ko") {
     return locale === "ko" ? `${minutes}분마다` : `every ${minutes}m`;
   const hours = Math.round(minutes / 60);
   return locale === "ko" ? `${hours}시간마다` : `every ${hours}h`;
+}
+
+function marketLocaleText(locale: "en" | "ko", en: string, ko: string) {
+  return locale === "ko" ? ko : en;
+}
+
+function sparklineStroke(unavailable: boolean, values: number[]) {
+  if (unavailable) return "#93a3b7";
+  return (values.at(-1) ?? values[0]) >= values[0] ? "#55c58e" : "#ff6b70";
 }
 
 function isUnavailableTile(tile: MetricTile) {
@@ -537,16 +552,16 @@ function metricUpdate(tile: MetricTile, locale: "en" | "ko", now: number) {
   const label = formatMetricUpdateAge(elapsedMinutes, locale, marketClose);
   return {
     label,
-    targetLabel: marketClose
-      ? locale === "ko"
-        ? "공개 지연/장마감 기준"
-        : "public delayed / market close"
-      : refreshSeconds
-        ? formatRefreshInterval(refreshSeconds, locale)
-        : "",
+    targetLabel: metricTargetLabel(marketClose, refreshSeconds, locale),
     isOverdue,
     toneClass: isOverdue ? "text-warning" : "text-accent",
   };
+}
+
+function metricTargetLabel(marketClose: boolean, refreshSeconds: number | undefined, locale: "en" | "ko") {
+  if (marketClose) return marketLocaleText(locale, "public delayed / market close", "공개 지연/장마감 기준");
+  if (refreshSeconds) return formatRefreshInterval(refreshSeconds, locale);
+  return "";
 }
 
 function isMarketCloseObservation(tile: MetricTile) {
@@ -565,19 +580,12 @@ function formatMetricUpdateAge(
   locale: "en" | "ko",
   marketClose = false,
 ) {
-  const prefix = marketClose
-    ? locale === "ko"
-      ? "장마감 "
-      : "last close "
-    : "";
-  if (elapsedMinutes < 1)
+  const prefix = metricAgePrefix(marketClose, locale);
+  if (elapsedMinutes < 1) {
     return marketClose
-      ? locale === "ko"
-        ? "장마감 방금"
-        : "last close now"
-      : locale === "ko"
-        ? "방금 갱신"
-        : "Updated now";
+      ? marketLocaleText(locale, "last close now", "장마감 방금")
+      : marketLocaleText(locale, "Updated now", "방금 갱신");
+  }
   if (elapsedMinutes < 60)
     return locale === "ko"
       ? `${prefix}${elapsedMinutes}분 전`
@@ -591,4 +599,9 @@ function formatMetricUpdateAge(
   return locale === "ko"
     ? `${prefix}${elapsedDays}일 전`
     : `${prefix}${elapsedDays}d ago`;
+}
+
+function metricAgePrefix(marketClose: boolean, locale: "en" | "ko") {
+  if (!marketClose) return "";
+  return marketLocaleText(locale, "last close ", "장마감 ");
 }

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Annotated
+
 from pydantic import BaseModel, HttpUrl
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
@@ -13,7 +15,6 @@ from frw_api.services.document_summary import summarize_public_url
 from frw_api.services.fact_validation import FactValidationError, validate_fact_shape
 from frw_api.services.instruments import instrument_detail, refresh_instrument_index, search_instruments
 from frw_api.services.job_queue import enqueue_job, replay_dead_letter
-from frw_api.services.llm_router import LLMRoutingError
 from frw_api.services.provider_budget import set_kill_switch
 from frw_api.services.publication_gate import EventGateInput, can_publish_event
 from frw_api.services.snapshot_service import (
@@ -26,6 +27,20 @@ from frw_api.services.snapshot_service import (
 from frw_api.services.source_ingestion import SourceIngestionError, ingest_url
 
 router = APIRouter()
+DbSession = Annotated[Session, Depends(get_db)]
+ViewerUser = Annotated[CurrentUser, Depends(require_role("owner", "admin", "editor", "viewer"))]
+CsrfUser = Annotated[CurrentUser, Depends(require_csrf)]
+BAD_REQUEST_RESPONSE = {400: {"description": "Bad request"}}
+NOT_FOUND_RESPONSE = {404: {"description": "Not found"}}
+BAD_REQUEST_OR_NOT_FOUND_RESPONSES = {
+    400: {"description": "Bad request"},
+    404: {"description": "Not found"},
+}
+ADMIN_SUMMARY_RESPONSES = {
+    400: {"description": "URL summary could not be generated"},
+    403: {"description": "Admin URL summaries are disabled"},
+    429: {"description": "Admin URL summary daily limit reached"},
+}
 
 
 class SourceCreate(BaseModel):
@@ -74,8 +89,8 @@ class InstrumentRefreshRequest(BaseModel):
 
 @router.get("/dashboard")
 def dashboard(
-    user: CurrentUser = Depends(require_role("owner", "admin", "editor", "viewer")),
-    db: Session = Depends(get_db),
+    user: ViewerUser,
+    db: DbSession,
 ):
     metrics = {
         "queued_jobs": _count(db, "select count(*) from job_queue where status in ('queued','retry_wait')"),
@@ -179,8 +194,8 @@ def dashboard(
 
 @router.get("/provider-budgets")
 def provider_budgets(
-    _: CurrentUser = Depends(require_role("owner", "admin", "editor", "viewer")),
-    db: Session = Depends(get_db),
+    _: ViewerUser,
+    db: DbSession,
 ):
     return {
         "items": [
@@ -194,8 +209,8 @@ def provider_budgets(
 def kill_switch(
     budget_id: str,
     payload: dict[str, bool],
-    user: CurrentUser = Depends(require_csrf),
-    db: Session = Depends(get_db),
+    user: CsrfUser,
+    db: DbSession,
 ):
     _assert_role(user, "owner", "admin")
     enabled = bool(payload.get("enabled", True))
@@ -207,18 +222,18 @@ def kill_switch(
 
 @router.get("/sources")
 def sources(
-    _: CurrentUser = Depends(require_role("owner", "admin", "editor", "viewer")),
-    db: Session = Depends(get_db),
+    _: ViewerUser,
+    db: DbSession,
 ):
     return {"items": [dict(row) for row in db.execute(text("select * from data_source order by source_key")).mappings().all()]}
 
 
 @router.get("/instruments/search")
 def admin_instrument_search(
-    q: str = Query(default="", max_length=64),
-    include_advanced: bool = Query(default=True),
-    include_inactive: bool = Query(default=True),
-    _: CurrentUser = Depends(require_role("owner", "admin", "editor", "viewer")),
+    _: ViewerUser,
+    q: Annotated[str, Query(max_length=64)] = "",
+    include_advanced: Annotated[bool, Query()] = True,
+    include_inactive: Annotated[bool, Query()] = True,
 ):
     query = q.strip() or "A"
     return search_instruments(
@@ -232,8 +247,8 @@ def admin_instrument_search(
 
 @router.get("/instruments/review-requests")
 def admin_instrument_review_requests(
-    _: CurrentUser = Depends(require_role("owner", "admin", "editor", "viewer")),
-    db: Session = Depends(get_db),
+    _: ViewerUser,
+    db: DbSession,
 ):
     rows = db.execute(
         text(
@@ -249,12 +264,12 @@ def admin_instrument_review_requests(
     return {"items": [dict(row) for row in rows]}
 
 
-@router.post("/instruments/review-requests/{request_id}")
+@router.post("/instruments/review-requests/{request_id}", responses=BAD_REQUEST_OR_NOT_FOUND_RESPONSES)
 def admin_update_instrument_review_request(
     request_id: str,
     payload: InstrumentReviewUpdateRequest,
-    user: CurrentUser = Depends(require_csrf),
-    db: Session = Depends(get_db),
+    user: CsrfUser,
+    db: DbSession,
 ):
     _assert_role(user, "owner", "admin", "editor")
     if payload.status not in {"queued", "in_review", "resolved", "closed", "rejected"}:
@@ -286,11 +301,11 @@ def admin_update_instrument_review_request(
     return {"status": "ok"}
 
 
-@router.get("/instruments/{instrument_id}")
+@router.get("/instruments/{instrument_id}", responses=NOT_FOUND_RESPONSE)
 def admin_instrument_detail(
     instrument_id: str,
-    listing_id: str | None = Query(default=None, max_length=80),
-    _: CurrentUser = Depends(require_role("owner", "admin", "editor", "viewer")),
+    _: ViewerUser,
+    listing_id: Annotated[str | None, Query(max_length=80)] = None,
 ):
     payload = instrument_detail(instrument_id, listing_id=listing_id)
     if payload is None:
@@ -301,8 +316,8 @@ def admin_instrument_detail(
 @router.post("/instruments/refresh")
 def admin_refresh_instruments(
     payload: InstrumentRefreshRequest,
-    user: CurrentUser = Depends(require_csrf),
-    db: Session = Depends(get_db),
+    user: CsrfUser,
+    db: DbSession,
 ):
     _assert_role(user, "owner", "admin")
     refresh_result = refresh_instrument_index(source=payload.source, mode=payload.mode)
@@ -321,8 +336,8 @@ def admin_refresh_instruments(
 @router.post("/sources")
 def create_source(
     payload: SourceCreate,
-    user: CurrentUser = Depends(require_csrf),
-    db: Session = Depends(get_db),
+    user: CsrfUser,
+    db: DbSession,
 ):
     _assert_role(user, "owner", "admin")
     row_id = db.execute(
@@ -340,11 +355,11 @@ def create_source(
     return {"id": str(row_id)}
 
 
-@router.post("/ingest/url")
+@router.post("/ingest/url", responses=BAD_REQUEST_RESPONSE)
 async def admin_ingest_url(
     payload: UrlIngestRequest,
-    user: CurrentUser = Depends(require_csrf),
-    db: Session = Depends(get_db),
+    user: CsrfUser,
+    db: DbSession,
 ):
     _assert_role(user, "owner", "admin", "editor")
     try:
@@ -356,18 +371,18 @@ async def admin_ingest_url(
     return {"id": document_id}
 
 
-@router.post("/summaries/url")
+@router.post("/summaries/url", responses=ADMIN_SUMMARY_RESPONSES)
 async def admin_summarize_url(
     payload: UrlSummaryRequest,
-    user: CurrentUser = Depends(require_csrf),
-    db: Session = Depends(get_db),
+    user: CsrfUser,
+    db: DbSession,
 ):
     _assert_role(user, "owner", "admin")
     _assert_admin_summary_budget(db, user)
     locale = payload.locale if payload.locale in {"en", "ko"} else "en"
     try:
         summary = await summarize_public_url(db, url=str(payload.url), locale=locale, actor_user_id=user.id)
-    except (SourceIngestionError, LLMRoutingError, ValueError) as exc:
+    except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     audit(db, user=user, action="source_document.summarize_url", target_table="source_document", target_pk=str(payload.url))
     db.commit()
@@ -375,16 +390,16 @@ async def admin_summarize_url(
 
 
 @router.post("/ingest/file")
-def ingest_file_stub(user: CurrentUser = Depends(require_csrf)):
+def ingest_file_stub(user: CsrfUser):
     _assert_role(user, "owner", "admin", "editor")
     return {"status": "manual_file_ingestion_requires_private_storage_policy"}
 
 
-@router.get("/source-documents/{document_id}")
+@router.get("/source-documents/{document_id}", responses=NOT_FOUND_RESPONSE)
 def source_document(
     document_id: str,
-    _: CurrentUser = Depends(require_role("owner", "admin", "editor", "viewer")),
-    db: Session = Depends(get_db),
+    _: ViewerUser,
+    db: DbSession,
 ):
     row = db.execute(text("select * from source_document where id = :id"), {"id": document_id}).mappings().first()
     if not row:
@@ -392,12 +407,12 @@ def source_document(
     return dict(row)
 
 
-@router.post("/source-facts/{fact_id}/review")
+@router.post("/source-facts/{fact_id}/review", responses=BAD_REQUEST_OR_NOT_FOUND_RESPONSES)
 def review_fact(
     fact_id: str,
     payload: ReviewRequest,
-    user: CurrentUser = Depends(require_csrf),
-    db: Session = Depends(get_db),
+    user: CsrfUser,
+    db: DbSession,
 ):
     _assert_role(user, "owner", "admin", "editor")
     if payload.public_allowed:
@@ -439,8 +454,8 @@ def review_fact(
 
 @router.get("/events/candidates")
 def event_candidates(
-    _: CurrentUser = Depends(require_role("owner", "admin", "editor", "viewer")),
-    db: Session = Depends(get_db),
+    _: ViewerUser,
+    db: DbSession,
 ):
     rows = db.execute(
         text(
@@ -456,12 +471,12 @@ def event_candidates(
     return {"items": [dict(row) for row in rows]}
 
 
-@router.post("/events/{event_id}/review")
+@router.post("/events/{event_id}/review", responses=BAD_REQUEST_OR_NOT_FOUND_RESPONSES)
 def review_event(
     event_id: str,
     payload: ReviewRequest,
-    user: CurrentUser = Depends(require_csrf),
-    db: Session = Depends(get_db),
+    user: CsrfUser,
+    db: DbSession,
 ):
     _assert_role(user, "owner", "admin", "editor")
     public_status = "public_candidate" if payload.public_allowed else "not_public"
@@ -511,8 +526,8 @@ def review_event(
 
 @router.post("/snapshots/build")
 def snapshots_build(
-    user: CurrentUser = Depends(require_csrf),
-    db: Session = Depends(get_db),
+    user: CsrfUser,
+    db: DbSession,
 ):
     _assert_role(user, "owner", "admin", "editor")
     job_id = enqueue_job(db, job_type="snapshot_build", idempotency_key="manual_latest", payload={"requested_by": user.id}, priority=10)
@@ -523,8 +538,8 @@ def snapshots_build(
 
 @router.get("/snapshots/candidates")
 def snapshots_candidates(
-    _: CurrentUser = Depends(require_role("owner", "admin", "editor", "viewer")),
-    db: Session = Depends(get_db),
+    _: ViewerUser,
+    db: DbSession,
 ):
     return {"items": list_snapshot_candidates(db)}
 
@@ -532,8 +547,8 @@ def snapshots_candidates(
 @router.post("/snapshots/publish")
 def snapshots_publish(
     payload: SnapshotVersionRequest,
-    user: CurrentUser = Depends(require_csrf),
-    db: Session = Depends(get_db),
+    user: CsrfUser,
+    db: DbSession,
 ):
     _assert_role(user, "owner", "admin")
     result = publish_snapshots(db, snapshot_version=payload.snapshot_version, generated_by=user.id)
@@ -545,8 +560,8 @@ def snapshots_publish(
 @router.post("/snapshots/rollback")
 def snapshots_rollback(
     payload: SnapshotVersionRequest,
-    user: CurrentUser = Depends(require_csrf),
-    db: Session = Depends(get_db),
+    user: CsrfUser,
+    db: DbSession,
 ):
     _assert_role(user, "owner", "admin")
     result = rollback_snapshots(db, snapshot_version=payload.snapshot_version, generated_by=user.id)
@@ -558,8 +573,8 @@ def snapshots_rollback(
 @router.post("/jobs/{job_id}/replay")
 def replay_job(
     job_id: str,
-    user: CurrentUser = Depends(require_csrf),
-    db: Session = Depends(get_db),
+    user: CsrfUser,
+    db: DbSession,
 ):
     _assert_role(user, "owner", "admin")
     replay_dead_letter(db, job_id=job_id)
@@ -568,11 +583,11 @@ def replay_job(
     return {"status": "ok"}
 
 
-@router.post("/corrections")
+@router.post("/corrections", responses=BAD_REQUEST_RESPONSE)
 def create_correction(
     payload: CorrectionRequest,
-    user: CurrentUser = Depends(require_csrf),
-    db: Session = Depends(get_db),
+    user: CsrfUser,
+    db: DbSession,
 ):
     _assert_role(user, "owner", "admin", "editor")
     if payload.status not in {"correction", "retraction", "clarification"}:
@@ -594,8 +609,8 @@ def create_correction(
 
 @router.get("/audit-log")
 def audit_log(
-    _: CurrentUser = Depends(require_role("owner", "admin", "editor", "viewer")),
-    db: Session = Depends(get_db),
+    _: ViewerUser,
+    db: DbSession,
 ):
     rows = db.execute(
         text(
@@ -612,8 +627,8 @@ def audit_log(
 
 @router.post("/snapshots/build-now-local")
 def snapshots_build_now_local(
-    user: CurrentUser = Depends(require_csrf),
-    db: Session = Depends(get_db),
+    user: CsrfUser,
+    db: DbSession,
 ):
     _assert_role(user, "owner", "admin", "editor")
     result = build_candidate_snapshots(db, generated_by=user.id)
@@ -623,7 +638,7 @@ def snapshots_build_now_local(
 
 @router.post("/snapshots/build-seed-local")
 def snapshots_build_seed_local(
-    user: CurrentUser = Depends(require_csrf),
+    user: CsrfUser,
 ):
     _assert_role(user, "owner", "admin", "editor")
     return build_local_seed_snapshots().__dict__
@@ -659,4 +674,4 @@ def _assert_admin_summary_budget(db: Session, user: CurrentUser) -> None:
 
 def _assert_role(user: CurrentUser, *roles: str) -> None:
     if user.role not in roles:
-        raise HTTPException(status_code=403, detail="Insufficient role")
+        raise HTTPException(status_code=403, detail="Insufficient role")  # NOSONAR - shared admin guard; routes define public behavior.

@@ -1,7 +1,7 @@
 import type { CalendarItem } from "@frw/shared-types";
 import { FreshnessBadge, SourceBadge } from "./Badge";
 
-export function CalendarTable({ items }: { items: CalendarItem[] }) {
+export function CalendarTable({ items }: Readonly<{ items: CalendarItem[] }>) {
   return (
     <>
       <div className="grid gap-3 md:hidden">

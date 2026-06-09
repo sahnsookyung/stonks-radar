@@ -150,7 +150,7 @@ function calendarExpectationLabel(expectationType: string, locale: "en" | "ko") 
   return locale === "ko" ? "감시" : "watch";
 }
 
-function PriorityEvent({ event }: { event: PublicEvent }) {
+function PriorityEvent({ event }: Readonly<{ event: PublicEvent }>) {
   const { t } = useTranslation();
   return (
     <section className="panel-raised p-5">
@@ -168,7 +168,7 @@ function PriorityEvent({ event }: { event: PublicEvent }) {
   );
 }
 
-function DashboardSignalRadar({ lanes }: { lanes: AlternativeSignalLane[] }) {
+function DashboardSignalRadar({ lanes }: Readonly<{ lanes: AlternativeSignalLane[] }>) {
   const { t } = useTranslation();
   if (lanes.length === 0) return null;
   return (
@@ -191,7 +191,7 @@ function DashboardSignalRadar({ lanes }: { lanes: AlternativeSignalLane[] }) {
   );
 }
 
-function AlternativeSignalCard({ lane }: { lane: AlternativeSignalLane }) {
+function AlternativeSignalCard({ lane }: Readonly<{ lane: AlternativeSignalLane }>) {
   const { t } = useTranslation();
   const visibleItems = visibleAlternativeSignalItems(lane);
   return (

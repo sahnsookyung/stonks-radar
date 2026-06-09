@@ -1,7 +1,14 @@
 import gzip
 
 from frw_api.services.fetch_policy import evaluate_url
-from frw_api.services.safe_fetch import SafeFetchError, _validate_peer_ip, safe_fetch_bytes
+from frw_api.services.safe_fetch import (
+    MAX_REDIRECTS,
+    SafeFetchError,
+    _next_redirect_url,
+    _peer_ip,
+    _validate_peer_ip,
+    safe_fetch_bytes,
+)
 from frw_api.services.source_ingestion import SourceIngestionError, _mode_for_url, fetch_source_bytes
 
 import httpx
@@ -91,6 +98,70 @@ def test_safe_fetch_accepts_server_addr_peer_extension():
     )
 
     _validate_peer_ip(response, require_peer_ip=True)
+
+
+def test_safe_fetch_accepts_peername_tuple_extension():
+    response = httpx.Response(
+        200,
+        request=httpx.Request("GET", "https://example.com"),
+        extensions={"peername": ("93.184.216.34", 443)},
+    )
+
+    _validate_peer_ip(response, require_peer_ip=True)
+
+
+def test_safe_fetch_blocks_oversized_responses(monkeypatch):
+    def fake_evaluate(url: str):
+        return type("Decision", (), {"allowed": True, "reason": "allowed", "resolved_ips": ["93.184.216.34"]})()
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, request=request, content=b"too large")
+
+    monkeypatch.setattr("frw_api.services.safe_fetch.evaluate_url", fake_evaluate)
+
+    import asyncio
+
+    with pytest.raises(SafeFetchError, match="SOURCE_FETCH_MAX_BYTES"):
+        asyncio.run(
+            safe_fetch_bytes(
+                "https://example.com",
+                transport=httpx.MockTransport(handler),
+                max_bytes=3,
+            )
+        )
+
+
+def test_redirect_helper_rejects_loops_and_missing_location():
+    response = httpx.Response(302, request=httpx.Request("GET", "https://example.com"))
+
+    with pytest.raises(SafeFetchError, match="Too many redirects"):
+        _next_redirect_url(response, "https://example.com", MAX_REDIRECTS + 1)
+    with pytest.raises(SafeFetchError, match="missing Location"):
+        _next_redirect_url(response, "https://example.com", 1)
+
+
+def test_peer_ip_introspection_handles_socket_and_transport_errors():
+    class ExplodingGetter:
+        def getpeername(self):
+            raise OSError("socket closed")
+
+    class GetterStream:
+        def __init__(self, value):
+            self.value = value
+
+        def get_extra_info(self, key):
+            if key == "peername":
+                raise RuntimeError("transport changed")
+            if key == "socket":
+                return self.value
+            return None
+
+    class SocketLike:
+        def getpeername(self):
+            return ("93.184.216.34", 443)
+
+    assert _peer_ip({"network_stream": GetterStream(SocketLike())}) == "93.184.216.34"
+    assert _peer_ip({"network_stream": GetterStream(ExplodingGetter())}) is None
 
 
 def test_safe_fetch_materializes_decoded_response_without_double_decode(monkeypatch):

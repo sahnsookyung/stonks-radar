@@ -33,6 +33,8 @@ DEFAULT_TRUMP_CIKS = {
 }
 
 FINRA_CREDENTIALS_REQUIRED = "FINRA_API_TOKEN or FINRA_API_CLIENT_ID/FINRA_API_CLIENT_SECRET is required"
+JSON_MIME = "application/json"
+SHA256_PREFIX = "sha256:"
 
 _FINRA_SYMBOL_FIELDS = {
     "consolidatedShortInterest": "symbolCode",
@@ -233,13 +235,13 @@ async def _pentagon_pizza_payload(
             function_url,
             transport=transport,
             headers={
-                "Accept": "application/json",
+                "Accept": JSON_MIME,
                 "Authorization": f"Bearer {anon_key}",
-                "Content-Type": "application/json",
+                "Content-Type": JSON_MIME,
                 "User-Agent": settings.sec_user_agent,
             },
         )
-    except (SafeFetchError, httpx.HTTPError, ValueError):
+    except (httpx.HTTPError, ValueError):
         return None
     return payload if isinstance(payload, dict) else None
 
@@ -381,9 +383,9 @@ async def _get_finra_rows(
                 units={"request": 1, "record": request_limit, "byte": 3_000_000},
                 json=payload,
                 headers={
-                    "Accept": "application/json",
+                    "Accept": JSON_MIME,
                     "Authorization": f"Bearer {token}",
-                    "Content-Type": "application/json",
+                    "Content-Type": JSON_MIME,
                 },
             )
             rows.extend(_finra_rows(response.json()))
@@ -415,7 +417,7 @@ async def _finra_bearer_token(*, transport: httpx.AsyncBaseTransport | None) -> 
             settings.finra_oauth_token_url,
             provider_key="finra",
             endpoint_key="oauth_token",
-            headers={"Accept": "application/json", "Authorization": f"Basic {authorization}"},
+            headers={"Accept": JSON_MIME, "Authorization": f"Basic {authorization}"},
         )
         payload = response.json()
     token = str(payload.get("access_token") or "")
@@ -602,4 +604,4 @@ def _list_item(values: Any, idx: int) -> Any:
 
 def _stable_key(*parts: Any) -> str:
     payload = "|".join(str(part) for part in parts)
-    return "sha256:" + hashlib.sha256(payload.encode()).hexdigest()
+    return SHA256_PREFIX + hashlib.sha256(payload.encode()).hexdigest()

@@ -10,8 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from frw_api.db.session import SessionLocal
-from frw_api.services.snapshot_service import build_candidate_snapshots, publish_snapshots
+from frw_api.db.session import SessionLocal  # noqa: E402
+from frw_api.services.snapshot_service import build_candidate_snapshots, publish_snapshots  # noqa: E402
 
 
 def _generated_by_uuid(value: str) -> str | None:

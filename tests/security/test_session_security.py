@@ -5,7 +5,19 @@ from starlette.responses import Response
 import pytest
 from fastapi import HTTPException
 
-from frw_api.auth.security import CSRF_COOKIE, SESSION_COOKIE, create_session, hash_secret
+from frw_api.auth.security import (
+    CSRF_COOKIE,
+    SESSION_COOKIE,
+    CurrentUser,
+    create_session,
+    hash_password,
+    hash_secret,
+    random_totp_secret,
+    require_csrf,
+    require_role,
+    verify_password,
+    verify_totp,
+)
 from frw_api.core.settings import get_settings
 from frw_api.routers import auth as auth_router
 from frw_api.routers.auth import (
@@ -105,6 +117,59 @@ def test_oauth_session_exposes_short_lived_csrf_cookie_only_when_requested(monke
     assert "HttpOnly" not in csrf_cookie
     assert "Secure" in csrf_cookie
     assert "Max-Age=300" in csrf_cookie
+    get_settings.cache_clear()
+
+
+def test_password_hashing_uses_pepper_and_rejects_malformed_hashes(monkeypatch):
+    monkeypatch.setenv("PASSWORD_PEPPER", "pepper-one")
+    get_settings.cache_clear()
+
+    encoded = hash_password("correct horse battery staple")
+
+    assert encoded.startswith("pbkdf2_sha256$")
+    assert verify_password("correct horse battery staple", encoded) is True
+    assert verify_password("wrong password", encoded) is False
+    assert verify_password("correct horse battery staple", "not-a-valid-hash") is False
+    assert verify_password("correct horse battery staple", encoded.replace("pbkdf2_sha256", "plain", 1)) is False
+
+    monkeypatch.setenv("PASSWORD_PEPPER", "pepper-two")
+    get_settings.cache_clear()
+    assert verify_password("correct horse battery staple", encoded) is False
+    get_settings.cache_clear()
+
+
+def test_totp_accepts_current_window_and_rejects_bad_codes(monkeypatch):
+    secret = "JBSWY3DPEHPK3PXP"
+    monkeypatch.setattr("frw_api.auth.security.time.time", lambda: 60.0)
+
+    assert verify_totp(secret, "602 287") is True
+    assert verify_totp(secret, "602287", window=0) is True
+    assert verify_totp(secret, "not-6") is False
+    assert verify_totp(secret, "123456", window=0) is False
+    assert len(random_totp_secret()) == 32
+
+
+def test_csrf_and_role_dependencies_raise_precise_http_statuses(monkeypatch):
+    monkeypatch.setenv("SESSION_SECRET", "session-secret")
+    get_settings.cache_clear()
+    raw_csrf = "csrf-token"
+    user = CurrentUser(
+        id="user-id",
+        email="owner@example.com",
+        role="owner",
+        session_id="session-id",
+        csrf_token=hash_secret(raw_csrf),
+    )
+
+    assert require_csrf(user=user, csrf_token=raw_csrf) == user
+    with pytest.raises(HTTPException) as csrf_exc:
+        require_csrf(user=user, csrf_token="other-token")
+    assert csrf_exc.value.status_code == 403
+
+    assert require_role("owner")(user) == user
+    with pytest.raises(HTTPException) as role_exc:
+        require_role("admin")(user)
+    assert role_exc.value.status_code == 403
     get_settings.cache_clear()
 
 

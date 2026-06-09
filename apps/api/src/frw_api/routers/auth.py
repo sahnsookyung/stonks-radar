@@ -3,6 +3,7 @@ from __future__ import annotations
 import secrets
 from datetime import datetime, timedelta, timezone
 import json
+from typing import Annotated
 from urllib.parse import urlencode
 
 import httpx
@@ -13,6 +14,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from frw_api.auth.security import (
+    CurrentUser,
     clear_session,
     create_session,
     get_current_user,
@@ -29,6 +31,10 @@ router = APIRouter()
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo"
+ADMIN_ROOT_PATH = "/admin"
+ADMIN_LOGIN_PATH = "/admin/login"
+DbSession = Annotated[Session, Depends(get_db)]
+CurrentSessionUser = Annotated[CurrentUser, Depends(get_current_user)]
 
 
 class LoginRequest(BaseModel):
@@ -62,8 +68,8 @@ def google_config() -> GoogleAuthConfig:
 @router.get("/google/start")
 def google_start(
     response: Response,
-    redirect_to: str = Query(default="/admin", max_length=256),
-    db: Session = Depends(get_db),
+    db: DbSession,
+    redirect_to: Annotated[str, Query(max_length=256)] = ADMIN_ROOT_PATH,
 ):
     settings = get_settings()
     if not _google_oauth_configured():
@@ -112,13 +118,13 @@ def google_start(
 
 @router.get("/google/callback")
 def google_callback(
-    code: str | None = Query(default=None, max_length=4096),
-    state: str | None = Query(default=None, max_length=512),
-    error: str | None = Query(default=None, max_length=256),
-    db: Session = Depends(get_db),
+    db: DbSession,
+    code: Annotated[str | None, Query(max_length=4096)] = None,
+    state: Annotated[str | None, Query(max_length=512)] = None,
+    error: Annotated[str | None, Query(max_length=256)] = None,
 ):
     if error:
-        return RedirectResponse(f"/admin/login?{urlencode({'oauth_error': error})}")
+        return RedirectResponse(f"{ADMIN_LOGIN_PATH}?{urlencode({'oauth_error': error})}")
     if not code or not state:
         return Response("Missing Google OAuth callback parameters.", status_code=400)
     if not _google_oauth_configured():
@@ -147,7 +153,7 @@ def google_callback(
         return Response("Google account is not authorized for admin access.", status_code=403)
 
     user_row = _upsert_google_admin_user(db, email=email, subject=subject, profile=profile)
-    redirect_to = _safe_admin_redirect_path(str(state_row["redirect_to"] or "/admin"))
+    redirect_to = _safe_admin_redirect_path(str(state_row["redirect_to"] or ADMIN_ROOT_PATH))
     response = RedirectResponse(redirect_to, status_code=302)
     create_session(db, response, str(user_row["id"]), user_row["role"], expose_csrf_cookie=True)
     audit(
@@ -163,7 +169,7 @@ def google_callback(
 
 
 @router.post("/login")
-def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)):
+def login(payload: LoginRequest, response: Response, db: DbSession):
     row = (
         db.execute(
             text(
@@ -206,8 +212,8 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
 @router.post("/logout")
 def logout(
     response: Response,
-    user=Depends(get_current_user),
-    db: Session = Depends(get_db),
+    user: CurrentSessionUser,
+    db: DbSession,
 ):
     db.execute(text("delete from app_session where id = :id"), {"id": user.session_id})
     audit(db, user=user, action="auth.logout", target_table="app_session", target_pk=user.session_id)
@@ -217,7 +223,7 @@ def logout(
 
 
 @router.get("/me")
-def me(user=Depends(get_current_user)):
+def me(user: CurrentSessionUser):
     return {"id": user.id, "email": user.email, "role": user.role}
 
 
@@ -251,11 +257,11 @@ def _google_allowed_hint() -> str | None:
 
 
 def _safe_admin_redirect_path(value: str) -> str:
-    candidate = (value or "/admin").strip()
+    candidate = (value or ADMIN_ROOT_PATH).strip()
     if not candidate.startswith("/") or candidate.startswith("//"):
-        return "/admin"
-    if not (candidate == "/admin" or candidate.startswith("/admin/")):
-        return "/admin"
+        return ADMIN_ROOT_PATH
+    if not (candidate == ADMIN_ROOT_PATH or candidate.startswith(f"{ADMIN_ROOT_PATH}/")):
+        return ADMIN_ROOT_PATH
     return candidate
 
 
@@ -368,7 +374,7 @@ def _upsert_google_admin_user(
                   auth_provider, external_subject, last_login_at, auth_metadata
                 )
                 values (
-                  :email, :password_hash, :role, true, false,
+                  :email, :credential_hash, :role, true, false,
                   'google', :subject, now(), cast(:metadata as jsonb)
                 )
                 on conflict (email) do update set
@@ -387,7 +393,7 @@ def _upsert_google_admin_user(
             ),
             {
                 "email": email,
-                "password_hash": f"oauth:google:{hash_secret(subject)}",
+                "credential_hash": f"oauth:google:{hash_secret(subject)}",
                 "role": role,
                 "subject": subject,
                 "metadata": json.dumps(metadata),

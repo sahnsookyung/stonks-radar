@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlunparse
@@ -70,6 +71,12 @@ _GENERIC_LINK_TITLES = {
 }
 
 
+@dataclass(frozen=True)
+class PageReadOutcome:
+    read: int = 0
+    denied: int = 0
+
+
 def headers_for_fetch_profile(profile_name: str, default_user_agent: str) -> dict[str, str]:
     user_agent = default_user_agent
     if profile_name == "safari":
@@ -113,37 +120,16 @@ def extract_html_documents(
     for node in parser.css("a"):
         if len(documents) >= max_documents:
             break
-        title = _clean_anchor_text(_node_text(node))
-        href = str(node.attributes.get("href") or "").strip()
-        if len(title) < 8 or _generic_anchor_title(title) or not href:
-            continue
-        resolved = _clean_url(urljoin(url, href))
-        if not _is_safe_http_url(resolved) or resolved in seen_urls:
-            continue
-        if title.lower().startswith("read our announcement"):
-            title = _title_from_url(resolved)
-            if len(title) < 8:
-                continue
-        if urlparse(resolved).path.rstrip("/") == urlparse(url).path.rstrip("/"):
-            continue
-        parsed = urlparse(resolved)
-        if parsed.netloc.lower() != host and not _official_domain_match(parsed.netloc, profile.official_domains):
-            continue
-        if not _link_scope_matches(url, resolved):
-            continue
-        if not _looks_like_news_link(title, resolved):
-            continue
-        seen_urls.add(resolved)
-        documents.append(
-            {
-                "title": title[:500],
-                "url": resolved,
-                "canonical_url": resolved,
-                "snippet": page_title or title,
-                "published_at": None,
-                "source_region": profile.region_coverage[0] if profile.region_coverage else None,
-            }
+        document = _document_from_anchor(
+            profile,
+            node,
+            page_url=url,
+            page_host=host,
+            page_title=page_title,
+            seen_urls=seen_urls,
         )
+        if document is not None:
+            documents.append(document)
 
     if (
         not documents
@@ -163,6 +149,54 @@ def extract_html_documents(
             }
         )
     return documents[:max_documents]
+
+
+def _document_from_anchor(
+    profile: Any,
+    node: Any,
+    *,
+    page_url: str,
+    page_host: str,
+    page_title: str,
+    seen_urls: set[str],
+) -> dict[str, Any] | None:
+    title = _clean_anchor_text(_node_text(node))
+    href = str(node.attributes.get("href") or "").strip()
+    if len(title) < 8 or _generic_anchor_title(title) or not href:
+        return None
+    resolved = _clean_url(urljoin(page_url, href))
+    if not _anchor_url_allowed(profile, page_url, page_host, resolved, seen_urls):
+        return None
+    if title.lower().startswith("read our announcement"):
+        title = _title_from_url(resolved)
+        if len(title) < 8:
+            return None
+    if not _looks_like_news_link(title, resolved):
+        return None
+    seen_urls.add(resolved)
+    return {
+        "title": title[:500],
+        "url": resolved,
+        "canonical_url": resolved,
+        "snippet": page_title or title,
+        "published_at": None,
+        "source_region": profile.region_coverage[0] if profile.region_coverage else None,
+    }
+
+
+def _anchor_url_allowed(
+    profile: Any, page_url: str, page_host: str, resolved: str, seen_urls: set[str]
+) -> bool:
+    if not _is_safe_http_url(resolved) or resolved in seen_urls:
+        return False
+    if urlparse(resolved).path.rstrip("/") == urlparse(page_url).path.rstrip("/"):
+        return False
+    parsed = urlparse(resolved)
+    if parsed.netloc.lower() != page_host and not _official_domain_match(
+        parsed.netloc, profile.official_domains
+    ):
+        return False
+    return _link_scope_matches(page_url, resolved)
 
 
 async def read_news_pages(
@@ -193,208 +227,296 @@ async def read_news_pages(
     documents_denied = 0
     for row in rows:
         documents_seen += 1
-        url = str(row["canonical_url"] or row["original_url"] or "")
-        metadata = dict(row["metadata"] or {})
-        source_key = str(row["source_key"] or metadata.get("source_key") or "")
-        if not _is_safe_http_url(url):
-            continue
-        if _is_google_news_wrapper(url) or _is_discovery_metadata(metadata):
-            _merge_document_metadata(
-                db,
-                str(row["id"]),
-                metadata,
-                {
-                    "page_read_at": _now(),
-                    "page_read_status": "skipped",
-                    "page_skip_reason": "discovery_metadata",
-                },
-            )
-            _commit_progress(db)
-            continue
-        if not _url_authorized_for_source(url, source_key, metadata):
-            _merge_document_metadata(
-                db,
-                str(row["id"]),
-                metadata,
-                {
-                    "page_read_at": _now(),
-                    "page_read_status": "skipped",
-                    "page_skip_reason": "host_not_allowlisted",
-                },
-            )
-            _commit_progress(db)
-            continue
-        request_headers = _headers_for_document(url, metadata, settings.sec_user_agent)
-        provider_key, endpoint_key = _provider_for_document(source_key, metadata, url)
-        guard = ProviderQuotaGuard.default()
-        try:
-            reservation = guard.reserve(
-                provider_key=provider_key,
-                endpoint_key=endpoint_key,
-                db=db,
-                partition_key="news_page_reader",
-                idempotency_key=f"news-page-read:{row['id']}",
-            )
-        except ProviderLimitError as exc:
-            _merge_document_metadata(
-                db,
-                str(row["id"]),
-                metadata,
-                {
-                    "page_read_status": "quota_wait",
-                    "page_retry_after_seconds": exc.retry_after_seconds,
-                },
-            )
-            _commit_progress(db)
-            raise
-        try:
-            fetched = await safe_fetch_bytes(
-                url,
-                headers=request_headers,
-                transport=transport,
-                max_bytes=settings.source_fetch_max_bytes,
-                timeout_seconds=settings.source_fetch_timeout_seconds,
-                raise_for_status=False,
-            )
-            response = fetched.response
-            body = fetched.body.decode(response.encoding or "utf-8", errors="replace")[: settings.news_summary_input_max_chars]
-            provider_error = provider_error_from_response(response, provider_key, endpoint_key)
-            if provider_error is not None:
-                guard.finalize(
-                    reservation,
-                    status="failed",
-                    db=db,
-                    error_class=provider_error.error_class,
-                    status_code=response.status_code,
-                    retry_after_seconds=provider_error.retry_after_seconds,
-                )
-                if provider_error.quota_related:
-                    _merge_document_metadata(
-                        db,
-                        str(row["id"]),
-                        metadata,
-                        {
-                            "page_read_status": "quota_wait",
-                            "page_status_code": response.status_code,
-                            "page_retry_after_seconds": provider_error.retry_after_seconds,
-                        },
-                    )
-                    _commit_progress(db)
-                    raise provider_error
-                if provider_error.retryable:
-                    _merge_document_metadata(
-                        db,
-                        str(row["id"]),
-                        metadata,
-                        {
-                            "page_read_status": "retry_wait",
-                            "page_status_code": response.status_code,
-                            "page_retry_after_seconds": provider_error.retry_after_seconds,
-                            "page_error_class": provider_error.error_class,
-                        },
-                    )
-                    _commit_progress(db)
-                    raise provider_error
-                denial_reason = detect_denial_reason(
-                    response.status_code,
-                    response.headers.get("content-type", ""),
-                    body,
-                )
-                documents_denied += 1
-                _merge_document_metadata(
-                    db,
-                    str(row["id"]),
-                    metadata,
-                    {
-                        "page_read_at": _now(),
-                        "page_read_status": "denied" if denial_reason else "failed",
-                        "page_denial_reason": denial_reason,
-                        "page_status_code": response.status_code,
-                        "page_error_class": provider_error.error_class,
-                    },
-                )
-                _commit_progress(db)
-                continue
-        except ProviderLimitError:
-            raise
-        except SafeFetchError as exc:
-            guard.finalize(reservation, status="failed", db=db, error_class=ERROR_SCHEMA_CHANGED, details={"reason": str(exc)})
-            _merge_document_metadata(
-                db,
-                str(row["id"]),
-                metadata,
-                {
-                    "page_read_at": _now(),
-                    "page_read_status": "failed",
-                    "page_read_error": str(exc)[:240],
-                },
-            )
-            _commit_progress(db)
-            continue
-        except httpx.TimeoutException as exc:
-            guard.finalize(reservation, status="failed", db=db, error_class=ERROR_TIMEOUT, retry_after_seconds=30)
-            raise ProviderLimitError(
-                f"{provider_key}/{endpoint_key} timed out",
-                error_class=ERROR_TIMEOUT,
-                provider_key=provider_key,
-                endpoint_key=endpoint_key,
-                retry_after_seconds=30,
-            ) from exc
-        except httpx.TransportError as exc:
-            guard.finalize(reservation, status="failed", db=db, error_class=ERROR_UPSTREAM_5XX, retry_after_seconds=60)
-            raise ProviderLimitError(
-                f"{provider_key}/{endpoint_key} transport error",
-                error_class=ERROR_UPSTREAM_5XX,
-                provider_key=provider_key,
-                endpoint_key=endpoint_key,
-                retry_after_seconds=60,
-            ) from exc
-        else:
-            guard.finalize(reservation, status="succeeded", db=db, status_code=response.status_code)
-            try:
-                denial_reason = detect_denial_reason(
-                    response.status_code,
-                    response.headers.get("content-type", ""),
-                    body,
-                )
-                if denial_reason:
-                    documents_denied += 1
-                    _merge_document_metadata(
-                        db,
-                        str(row["id"]),
-                        metadata,
-                        {
-                            "page_read_at": _now(),
-                            "page_read_status": "denied",
-                            "page_denial_reason": denial_reason,
-                            "page_status_code": response.status_code,
-                        },
-                    )
-                    _commit_progress(db)
-                    continue
-                parser = HTMLParser(body)
-                documents_read += 1
-                _merge_document_metadata(
-                    db,
-                    str(row["id"]),
-                    metadata,
-                    {
-                        "page_read_at": _now(),
-                        "page_read_status": "read",
-                        "page_title": _node_text(parser.css_first("title"))[:500],
-                        "page_excerpt": _first_paragraph(parser)[:1000],
-                        "page_status_code": response.status_code,
-                    },
-                )
-                _commit_progress(db)
-            except Exception:
-                _commit_progress(db)
-                raise
+        outcome = await _read_news_page_row(db, row, settings, transport)
+        documents_read += outcome.read
+        documents_denied += outcome.denied
     return {
         "documents_seen": documents_seen,
         "documents_read": documents_read,
         "documents_denied": documents_denied,
     }
+
+
+async def _read_news_page_row(
+    db: Session,
+    row: Any,
+    settings: Any,
+    transport: httpx.AsyncBaseTransport | None,
+) -> PageReadOutcome:
+    url = str(row["canonical_url"] or row["original_url"] or "")
+    metadata = dict(row["metadata"] or {})
+    source_key = str(row["source_key"] or metadata.get("source_key") or "")
+    if not _is_safe_http_url(url):
+        return PageReadOutcome()
+    if _mark_page_read_skip_if_needed(db, row, url, metadata, source_key):
+        return PageReadOutcome()
+    provider_key, endpoint_key = _provider_for_document(source_key, metadata, url)
+    guard = ProviderQuotaGuard.default()
+    reservation = _reserve_page_read(db, row, metadata, guard, provider_key, endpoint_key)
+    try:
+        response, body = await _fetch_page_body(
+            url,
+            metadata,
+            settings,
+            transport,
+        )
+        provider_error = provider_error_from_response(response, provider_key, endpoint_key)
+        if provider_error is not None:
+            guard.finalize(
+                reservation,
+                status="failed",
+                db=db,
+                error_class=provider_error.error_class,
+                status_code=response.status_code,
+                retry_after_seconds=provider_error.retry_after_seconds,
+            )
+            return _handle_provider_page_error(db, row, metadata, response, body, provider_error)
+    except ProviderLimitError:
+        raise
+    except SafeFetchError as exc:
+        guard.finalize(
+            reservation,
+            status="failed",
+            db=db,
+            error_class=ERROR_SCHEMA_CHANGED,
+            details={"reason": str(exc)},
+        )
+        _mark_page_read_failed(db, row, metadata, str(exc))
+        return PageReadOutcome()
+    except httpx.TimeoutException as exc:
+        guard.finalize(reservation, status="failed", db=db, error_class=ERROR_TIMEOUT, retry_after_seconds=30)
+        raise ProviderLimitError(
+            f"{provider_key}/{endpoint_key} timed out",
+            error_class=ERROR_TIMEOUT,
+            provider_key=provider_key,
+            endpoint_key=endpoint_key,
+            retry_after_seconds=30,
+        ) from exc
+    except httpx.TransportError as exc:
+        guard.finalize(
+            reservation,
+            status="failed",
+            db=db,
+            error_class=ERROR_UPSTREAM_5XX,
+            retry_after_seconds=60,
+        )
+        raise ProviderLimitError(
+            f"{provider_key}/{endpoint_key} transport error",
+            error_class=ERROR_UPSTREAM_5XX,
+            provider_key=provider_key,
+            endpoint_key=endpoint_key,
+            retry_after_seconds=60,
+        ) from exc
+    guard.finalize(reservation, status="succeeded", db=db, status_code=response.status_code)
+    return _mark_page_read_result(db, row, metadata, response, body)
+
+
+def _mark_page_read_skip_if_needed(
+    db: Session, row: Any, url: str, metadata: dict[str, Any], source_key: str
+) -> bool:
+    if _is_google_news_wrapper(url) or _is_discovery_metadata(metadata):
+        _mark_page_read_skipped(db, row, metadata, "discovery_metadata")
+        return True
+    if not _url_authorized_for_source(url, source_key, metadata):
+        _mark_page_read_skipped(db, row, metadata, "host_not_allowlisted")
+        return True
+    return False
+
+
+def _reserve_page_read(
+    db: Session,
+    row: Any,
+    metadata: dict[str, Any],
+    guard: ProviderQuotaGuard,
+    provider_key: str,
+    endpoint_key: str,
+) -> Any:
+    try:
+        return guard.reserve(
+            provider_key=provider_key,
+            endpoint_key=endpoint_key,
+            db=db,
+            partition_key="news_page_reader",
+            idempotency_key=f"news-page-read:{row['id']}",
+        )
+    except ProviderLimitError as exc:
+        _merge_document_metadata(
+            db,
+            str(row["id"]),
+            metadata,
+            {
+                "page_read_status": "quota_wait",
+                "page_retry_after_seconds": exc.retry_after_seconds,
+            },
+        )
+        _commit_progress(db)
+        raise
+
+
+async def _fetch_page_body(
+    url: str,
+    metadata: dict[str, Any],
+    settings: Any,
+    transport: httpx.AsyncBaseTransport | None,
+) -> tuple[httpx.Response, str]:
+    fetched = await safe_fetch_bytes(
+        url,
+        headers=_headers_for_document(url, metadata, settings.sec_user_agent),
+        transport=transport,
+        max_bytes=settings.source_fetch_max_bytes,
+        timeout_seconds=settings.source_fetch_timeout_seconds,
+        raise_for_status=False,
+    )
+    response = fetched.response
+    body = fetched.body.decode(response.encoding or "utf-8", errors="replace")[
+        : settings.news_summary_input_max_chars
+    ]
+    return response, body
+
+
+def _handle_provider_page_error(
+    db: Session,
+    row: Any,
+    metadata: dict[str, Any],
+    response: httpx.Response,
+    body: str,
+    provider_error: ProviderLimitError,
+) -> PageReadOutcome:
+    if provider_error.quota_related:
+        _merge_document_metadata(
+            db,
+            str(row["id"]),
+            metadata,
+            {
+                "page_read_status": "quota_wait",
+                "page_status_code": response.status_code,
+                "page_retry_after_seconds": provider_error.retry_after_seconds,
+            },
+        )
+        _commit_progress(db)
+        raise provider_error
+    if provider_error.retryable:
+        _merge_document_metadata(
+            db,
+            str(row["id"]),
+            metadata,
+            {
+                "page_read_status": "retry_wait",
+                "page_status_code": response.status_code,
+                "page_retry_after_seconds": provider_error.retry_after_seconds,
+                "page_error_class": provider_error.error_class,
+            },
+        )
+        _commit_progress(db)
+        raise provider_error
+    denial_reason = detect_denial_reason(
+        response.status_code,
+        response.headers.get("content-type", ""),
+        body,
+    )
+    _merge_document_metadata(
+        db,
+        str(row["id"]),
+        metadata,
+        {
+            "page_read_at": _now(),
+            "page_read_status": "denied" if denial_reason else "failed",
+            "page_denial_reason": denial_reason,
+            "page_status_code": response.status_code,
+            "page_error_class": provider_error.error_class,
+        },
+    )
+    _commit_progress(db)
+    return PageReadOutcome(denied=1)
+
+
+def _mark_page_read_result(
+    db: Session,
+    row: Any,
+    metadata: dict[str, Any],
+    response: httpx.Response,
+    body: str,
+) -> PageReadOutcome:
+    try:
+        denial_reason = detect_denial_reason(
+            response.status_code,
+            response.headers.get("content-type", ""),
+            body,
+        )
+        if denial_reason:
+            _mark_page_read_denied(db, row, metadata, response, denial_reason)
+            return PageReadOutcome(denied=1)
+        _mark_page_read_success(db, row, metadata, response, body)
+        return PageReadOutcome(read=1)
+    except Exception:
+        _commit_progress(db)
+        raise
+
+
+def _mark_page_read_skipped(
+    db: Session, row: Any, metadata: dict[str, Any], reason: str
+) -> None:
+    _merge_document_metadata(
+        db,
+        str(row["id"]),
+        metadata,
+        {
+            "page_read_at": _now(),
+            "page_read_status": "skipped",
+            "page_skip_reason": reason,
+        },
+    )
+    _commit_progress(db)
+
+
+def _mark_page_read_failed(db: Session, row: Any, metadata: dict[str, Any], error: str) -> None:
+    _merge_document_metadata(
+        db,
+        str(row["id"]),
+        metadata,
+        {
+            "page_read_at": _now(),
+            "page_read_status": "failed",
+            "page_read_error": error[:240],
+        },
+    )
+    _commit_progress(db)
+
+
+def _mark_page_read_denied(
+    db: Session, row: Any, metadata: dict[str, Any], response: httpx.Response, denial_reason: str
+) -> None:
+    _merge_document_metadata(
+        db,
+        str(row["id"]),
+        metadata,
+        {
+            "page_read_at": _now(),
+            "page_read_status": "denied",
+            "page_denial_reason": denial_reason,
+            "page_status_code": response.status_code,
+        },
+    )
+    _commit_progress(db)
+
+
+def _mark_page_read_success(
+    db: Session, row: Any, metadata: dict[str, Any], response: httpx.Response, body: str
+) -> None:
+    parser = HTMLParser(body)
+    _merge_document_metadata(
+        db,
+        str(row["id"]),
+        metadata,
+        {
+            "page_read_at": _now(),
+            "page_read_status": "read",
+            "page_title": _node_text(parser.css_first("title"))[:500],
+            "page_excerpt": _first_paragraph(parser)[:1000],
+            "page_status_code": response.status_code,
+        },
+    )
+    _commit_progress(db)
 
 
 def _merge_document_metadata(db: Session, document_id: str, metadata: dict[str, Any], patch: dict[str, Any]) -> None:
@@ -499,27 +621,36 @@ def _host_matches_domain(host: str, domain: str) -> bool:
 def _url_authorized_for_source(url: str, source_key: str, metadata: dict[str, Any]) -> bool:
     if source_key == "company_email_alert" and not metadata.get("manual_page_read_allowed"):
         return False
-    parsed = urlparse(url)
-    host = parsed.netloc.lower().split(":", 1)[0]
+    host = _url_host(url)
     if not host:
         return False
-    profile = source_registry().get(source_key)
-    allowed_domains = set()
-    if profile:
-        allowed_domains.update(domain.lower() for domain in profile.official_domains)
-        base_host = urlparse(profile.base_url).netloc.lower().split(":", 1)[0]
-        if base_host:
-            allowed_domains.add(base_host)
-        feed_host = urlparse(profile.feed_url or "").netloc.lower().split(":", 1)[0]
-        if feed_host:
-            allowed_domains.add(feed_host)
-    raw_allowed = metadata.get("page_read_allowed_domains") or []
-    if isinstance(raw_allowed, str):
-        raw_allowed = [part.strip() for part in raw_allowed.split(",")]
-    allowed_domains.update(str(value).lower() for value in raw_allowed)
+    allowed_domains = _source_allowed_domains(source_key)
+    allowed_domains.update(_metadata_allowed_domains(metadata))
     if not allowed_domains:
         return False
     return any(host == domain or host.endswith(f".{domain}") for domain in allowed_domains if domain)
+
+
+def _url_host(url: str) -> str:
+    return urlparse(url).netloc.lower().split(":", 1)[0]
+
+
+def _source_allowed_domains(source_key: str) -> set[str]:
+    profile = source_registry().get(source_key)
+    if not profile:
+        return set()
+    allowed_domains = {domain.lower() for domain in profile.official_domains}
+    for raw_url in (profile.base_url, profile.feed_url or ""):
+        if host := _url_host(raw_url):
+            allowed_domains.add(host)
+    return allowed_domains
+
+
+def _metadata_allowed_domains(metadata: dict[str, Any]) -> set[str]:
+    raw_allowed = metadata.get("page_read_allowed_domains") or []
+    if isinstance(raw_allowed, str):
+        raw_allowed = [part.strip() for part in raw_allowed.split(",")]
+    return {str(value).lower() for value in raw_allowed}
 
 
 def _is_discovery_metadata(metadata: dict[str, Any]) -> bool:

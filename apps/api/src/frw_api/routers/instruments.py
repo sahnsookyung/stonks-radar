@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
@@ -13,6 +13,9 @@ from frw_api.services.instruments import instrument_detail, resolve_instrument, 
 from frw_api.services.rate_limit import _client_identity
 
 router = APIRouter()
+DbSession = Annotated[Session, Depends(get_db)]
+BAD_REQUEST_RESPONSE = {400: {"description": "Bad request"}}
+NOT_FOUND_RESPONSE = {404: {"description": "Not found"}}
 
 
 class InstrumentResolveRequest(BaseModel):
@@ -30,16 +33,16 @@ class InstrumentReviewCreateRequest(BaseModel):
     optional_notes: str | None = Field(default=None, max_length=500)
 
 
-@router.get("/search")
+@router.get("/search", responses=BAD_REQUEST_RESPONSE)
 def search(
-    q: str = Query(min_length=1, max_length=64),
-    limit: int = Query(default=10, ge=1, le=25),
-    country: str | None = Query(default=None, min_length=2, max_length=64),
-    exchange: str | None = Query(default=None, min_length=2, max_length=32),
-    asset_class: str | None = Query(default=None, max_length=64),
-    instrument_type: str | None = Query(default=None, max_length=64),
-    include_advanced: bool = Query(default=False),
-    include_inactive: bool = Query(default=False),
+    q: Annotated[str, Query(min_length=1, max_length=64)],
+    limit: Annotated[int, Query(ge=1, le=25)] = 10,
+    country: Annotated[str | None, Query(min_length=2, max_length=64)] = None,
+    exchange: Annotated[str | None, Query(min_length=2, max_length=32)] = None,
+    asset_class: Annotated[str | None, Query(max_length=64)] = None,
+    instrument_type: Annotated[str | None, Query(max_length=64)] = None,
+    include_advanced: Annotated[bool, Query()] = False,
+    include_inactive: Annotated[bool, Query()] = False,
     context: Literal["HOLDING_ENTRY", "TAX_LOT", "BUILDER", "IMPORT_RECONCILIATION", "CSV_IMPORT"] = "HOLDING_ENTRY",
 ):
     try:
@@ -70,8 +73,8 @@ def resolve(payload: InstrumentResolveRequest):
     )
 
 
-@router.get("/{instrument_id}")
-def detail(instrument_id: str, listing_id: str | None = Query(default=None, max_length=80)):
+@router.get("/{instrument_id}", responses=NOT_FOUND_RESPONSE)
+def detail(instrument_id: str, listing_id: Annotated[str | None, Query(max_length=80)] = None):
     payload = instrument_detail(instrument_id, listing_id=listing_id)
     if payload is None:
         raise HTTPException(status_code=404, detail="Instrument not found")
@@ -82,7 +85,7 @@ def detail(instrument_id: str, listing_id: str | None = Query(default=None, max_
 def create_review_request(
     payload: InstrumentReviewCreateRequest,
     request: Request,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ):
     peer = _client_identity(request)
     ip_hash = hashlib.sha256(peer.encode()).hexdigest()

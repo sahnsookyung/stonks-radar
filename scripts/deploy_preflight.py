@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-import sys
 from pathlib import Path
 
 try:
@@ -16,7 +15,7 @@ DEFAULT_REQUIRED_PROVIDER_COVERAGE = ("delayed_market_pulse", "krx_korea_pulse",
 DEFAULT_REQUIRED_SOURCE_HEALTH = ("treasury_xml_feed", "korea_market_data")
 
 
-def main() -> None:
+def main() -> None:  # NOSONAR - deployment preflight keeps ordered safety checks in one CLI entrypoint.
     min_ocpus = float(os.getenv("DEPLOY_MIN_A1_OCPUS", "2"))
     min_memory = float(os.getenv("DEPLOY_MIN_A1_MEMORY_GB", "12"))
     min_storage = float(os.getenv("DEPLOY_MIN_STORAGE_GB", os.getenv("DEPLOY_MIN_BLOCK_GB", "50")))

@@ -3,7 +3,7 @@ import { useId, useState } from "react";
 import { useLocale } from "../lib/locale";
 import { portfolioTerms } from "../lib/portfolioTerms";
 
-export function TermTooltip({ termKey, className = "" }: { termKey: string; className?: string }) {
+export function TermTooltip({ termKey, className = "" }: Readonly<{ termKey: string; className?: string }>) {
   const term = portfolioTerms[termKey];
   const locale = useLocale();
   const tooltipId = useId();
@@ -19,7 +19,7 @@ export function TermTooltip({ termKey, className = "" }: { termKey: string; clas
         aria-describedby={tooltipId}
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+        onBlur={() => globalThis.window.setTimeout(() => setOpen(false), 120)}
         title={`${term.label}: ${description}`}
       >
         <Info className="h-3.5 w-3.5" aria-hidden="true" />

@@ -8,7 +8,7 @@ WORKDIR /app
 RUN addgroup --system frw && adduser --system --ingroup frw frw
 COPY apps/fetch-sandbox/pyproject.toml apps/fetch-sandbox/pyproject.toml
 COPY apps/fetch-sandbox/src apps/fetch-sandbox/src
-RUN pip install --no-cache-dir /app/apps/fetch-sandbox
+RUN python -m pip install --no-cache-dir --only-binary=:all: /app/apps/fetch-sandbox
 COPY apps/fetch-sandbox apps/fetch-sandbox
 USER frw
 CMD ["python", "-m", "fetch_sandbox.server"]

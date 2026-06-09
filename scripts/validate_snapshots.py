@@ -51,7 +51,7 @@ REQUIRED_ENVELOPE_FIELDS = {
 }
 
 
-def main() -> None:
+def main() -> None:  # NOSONAR - CLI validator keeps checks in one readable command path.
     public_root = _public_root()
     require_fresh = _truthy(os.getenv("STONKS_REQUIRE_FRESH_SNAPSHOTS"))
     min_hard_expiry_hours = float(os.getenv("STONKS_SNAPSHOT_MIN_HARD_EXPIRY_HOURS", "12"))

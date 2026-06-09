@@ -20,7 +20,24 @@ export function normalizeTickerSymbol(value: string | undefined): string {
 }
 
 export function routeKeyForSymbol(value: string | undefined): string {
-  return normalizeTickerSymbol(value).replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  return asciiRouteKey(normalizeTickerSymbol(value));
+}
+
+function asciiRouteKey(value: string): string {
+  let routeKey = "";
+  for (const char of value) {
+    if (isUpperAsciiAlphaNumeric(char)) {
+      routeKey += char;
+    } else if (routeKey.length > 0 && !routeKey.endsWith("_")) {
+      routeKey += "_";
+    }
+  }
+  return routeKey.endsWith("_") ? routeKey.slice(0, -1) : routeKey;
+}
+
+function isUpperAsciiAlphaNumeric(char: string): boolean {
+  const code = char.codePointAt(0) ?? 0;
+  return (code >= 48 && code <= 57) || (code >= 65 && code <= 90);
 }
 
 export function resolveTrackedEntity(value: string | undefined): TrackedEntity | undefined {

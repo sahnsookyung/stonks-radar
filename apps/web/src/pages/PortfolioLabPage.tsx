@@ -38,6 +38,7 @@ import {
   type AssumptionSet,
   type ExposureRow,
   type Instrument,
+  type Holding,
   type AssetClass,
   type Portfolio,
   type TaxLotImpact,
@@ -259,8 +260,41 @@ type PortfolioEditorControls = PortfolioBuildControls & {
   setAssumptions?: Dispatch<SetStateAction<AssumptionSet>>;
 };
 
-export function PortfolioLabPage() {
-  const locale = useLocale();
+function localeText(locale: "en" | "ko", en: string, ko: string) {
+  return locale === "ko" ? ko : en;
+}
+
+function monteCarloPathCountForSection(section: PortfolioSection) {
+  if (section === "monte-carlo") return 5000;
+  if (section === "dashboard" || section === "overview") return 1000;
+  return 0;
+}
+
+function defaultQuantityForNewHolding(manual: AddHoldingPayload["manual"], instrument?: Instrument) {
+  if (manual) return manual.quantity;
+  if (!instrument) return 1;
+  if (instrument.instrumentType === "crypto") return 0.05;
+  if (instrument.currentPrice >= 500) return 1;
+  if (instrument.currentPrice > 0) return 10;
+  return 1;
+}
+
+function importedHoldingForPortfolio(
+  holding: Holding,
+  portfolioId: string,
+  instrumentsCatalog: Instrument[]
+): Holding {
+  const resolved = resolveInstrumentSearchResult(holding.instrumentId, instrumentsCatalog);
+  return {
+    ...holding,
+    portfolioId,
+    instrumentId: resolved?.instrumentId ?? holding.instrumentId,
+    ...(resolved?.listingId ? { listingId: resolved.listingId } : {}),
+    ...(resolved?.currency ? { currency: resolved.currency } : {})
+  };
+}
+
+export function PortfolioLabPage() { // NOSONAR - route-level state orchestration is split into helpers but remains a single page owner.
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const section = sectionFromPath(pathname);
   const workspacePortfolioId = portfolioIdFromPath(pathname) ?? "demo-growth-income";
@@ -287,7 +321,7 @@ export function PortfolioLabPage() {
   );
   const analysis = useMemo(() => analyzePortfolio(portfolio, calculationInstruments, assumptions), [portfolio, assumptions, calculationInstruments]);
   const shouldRunBacktest = section === "backtest";
-  const monteCarloPathCount = section === "monte-carlo" ? 5000 : section === "dashboard" || section === "overview" ? 1000 : 0;
+  const monteCarloPathCount = monteCarloPathCountForSection(section);
   const backtest = useMemo<ReturnType<typeof runBacktest> | null>(
     () => {
       if (!shouldRunBacktest) return null;
@@ -355,7 +389,7 @@ export function PortfolioLabPage() {
           email: payload.email,
           role: payload.role ?? "admin"
         });
-      } catch (_error) {
+      } catch {
         if (!controller.signal.aborted) {
           setAdminAuthState({ status: "signed_out" });
         }
@@ -401,7 +435,7 @@ export function PortfolioLabPage() {
         if (!controller.signal.aborted) {
           setMarketHistoryCoverage(mergeMarketHistoryCoverage(payloads, symbols));
         }
-      } catch (error) {
+      } catch {
         if (controller.signal.aborted) return;
         setMarketHistoryCoverage({
           status: "error",
@@ -496,17 +530,7 @@ export function PortfolioLabPage() {
     }
     setPortfolio((current) => {
       if (currentHoldingAlreadyExists(current, canonicalInstrumentId, listingId)) return current;
-      const quantity = manual
-        ? manual.quantity
-        : effectiveInstrument?.instrumentType === "crypto"
-          ? 0.05
-          : effectiveInstrument
-            ? effectiveInstrument.currentPrice >= 500
-              ? 1
-              : effectiveInstrument.currentPrice > 0
-                ? 10
-                : 1
-            : 1;
+      const quantity = defaultQuantityForNewHolding(manual, effectiveInstrument);
       const normalizedHoldingId = toSafeId(`${canonicalInstrumentId}`);
       return {
         ...clearSourceLinkedRecords(current),
@@ -624,20 +648,7 @@ export function PortfolioLabPage() {
     if (!result.errors.length && result.holdings.length) {
       setPortfolio((current) => ({
         ...clearSourceLinkedRecords(current),
-        holdings: result.holdings.map((holding) => ({
-          ...holding,
-          portfolioId: current.portfolioId,
-          ...(() => {
-            const resolved = resolveInstrumentSearchResult(holding.instrumentId, instrumentsCatalog);
-            return resolved
-              ? {
-                  instrumentId: resolved.instrumentId,
-                  listingId: resolved.listingId,
-                  currency: resolved.currency
-                }
-              : { instrumentId: holding.instrumentId };
-          })()
-        }))
+        holdings: result.holdings.map((holding) => importedHoldingForPortfolio(holding, current.portfolioId, instrumentsCatalog))
       }));
     }
   }
@@ -827,9 +838,9 @@ function marketHistorySymbolsForPortfolio(portfolio: Portfolio, instruments: Ins
       instrument.listings?.find((item) => item.isPrimary) ??
       instrument.listings?.[0];
     const symbol = (listing?.symbol ?? instrument.symbol ?? "").trim().toUpperCase();
-    if (symbol && /^[A-Z0-9.\-]{1,24}$/.test(symbol)) symbols.push(symbol);
+    if (symbol && /^[A-Z0-9.-]{1,24}$/.test(symbol)) symbols.push(symbol);
   }
-  return Array.from(new Set(symbols)).sort();
+  return Array.from(new Set(symbols)).sort((left, right) => left.localeCompare(right));
 }
 
 function rollingThreeYearHistoryWindow() {
@@ -875,7 +886,7 @@ function emptyMarketHistoryCoverage(symbols: string[]): MarketHistoryCoverageSta
   };
 }
 
-function mergeMarketHistoryCoverage(
+function mergeMarketHistoryCoverage( // NOSONAR - folds provider coverage payloads while preserving stable public contract fields.
   payloads: MarketHistoryCoverageResponse[],
   requestedSymbols: string[]
 ): MarketHistoryCoverageState {
@@ -925,19 +936,8 @@ function mergeMarketHistoryCoverage(
   }
   const coveredSymbols = requestedSymbols.filter((symbol) => covered.has(symbol));
   const missingSymbols = requestedSymbols.filter((symbol) => !covered.has(symbol));
-  const status: MarketHistoryCoverageStatus = licenseLimited
-    ? "limited"
-    : missingSymbols.length === 0 && calculationEligible
-      ? "ready"
-      : coveredSymbols.length
-        ? "partial"
-        : "limited";
-  const message =
-    status === "ready"
-      ? "Stored public 3-year daily snapshots are available for all resolved holdings."
-      : status === "partial"
-        ? "Some holdings have stored public daily bars; missing symbols remain queued or unavailable."
-        : "No approved public daily-history snapshot is available yet for one or more holdings.";
+  const status = marketHistoryCoverageStatus(licenseLimited, missingSymbols.length, coveredSymbols.length, calculationEligible);
+  const message = marketHistoryCoverageMessage(status);
   return {
     status,
     requestedSymbols,
@@ -954,6 +954,24 @@ function mergeMarketHistoryCoverage(
     message,
     warnings: Array.from(new Set(warnings)).slice(0, 4)
   };
+}
+
+function marketHistoryCoverageStatus(
+  licenseLimited: boolean,
+  missingSymbolCount: number,
+  coveredSymbolCount: number,
+  calculationEligible: boolean
+): MarketHistoryCoverageStatus {
+  if (licenseLimited) return "limited";
+  if (missingSymbolCount === 0 && calculationEligible) return "ready";
+  if (coveredSymbolCount > 0) return "partial";
+  return "limited";
+}
+
+function marketHistoryCoverageMessage(status: MarketHistoryCoverageStatus) {
+  if (status === "ready") return "Stored public 3-year daily snapshots are available for all resolved holdings.";
+  if (status === "partial") return "Some holdings have stored public daily bars; missing symbols remain queued or unavailable.";
+  return "No approved public daily-history snapshot is available yet for one or more holdings.";
 }
 
 function latestMarketHistoryPoint(
@@ -979,10 +997,7 @@ function applyStoredMarketHistoryPrices(instruments: Instrument[], coverage: Mar
       .map((value) => String(value).toUpperCase());
     const price = candidateSymbols.map((symbol) => coverage.latestPricesBySymbol[symbol]).find(Boolean);
     if (!price) return instrument;
-    const quality: Instrument["priceQuality"] =
-      calculationEligible && price.calculationEligible && price.stalenessState !== "stale_fallback"
-        ? "COMPLETE"
-        : "STALE";
+    const quality = storedHistoryPriceQuality(Boolean(calculationEligible), Boolean(price.calculationEligible), price.stalenessState ?? undefined);
     const primaryListing = primaryListingForInstrumentLike(instrument);
     return {
       ...instrument,
@@ -999,6 +1014,15 @@ function applyStoredMarketHistoryPrices(instruments: Instrument[], coverage: Mar
       currency: price.currency ?? instrument.currency ?? primaryListing.currency
     };
   });
+}
+
+function storedHistoryPriceQuality(
+  coverageCalculationEligible: boolean,
+  priceCalculationEligible: boolean,
+  stalenessState?: string
+): Instrument["priceQuality"] {
+  if (coverageCalculationEligible && priceCalculationEligible && stalenessState !== "stale_fallback") return "COMPLETE";
+  return "STALE";
 }
 
 function primaryListingForInstrumentLike(instrument: Instrument) {
@@ -1023,7 +1047,7 @@ function maxIsoDate(left: string | null | undefined, right: string | null | unde
   return right > left ? right : left;
 }
 
-function PortfolioHeader({ portfolio, section }: { portfolio: Portfolio; section: PortfolioSection }) {
+function PortfolioHeader({ portfolio, section }: Readonly<{ portfolio: Portfolio; section: PortfolioSection }>) {
   const locale = useLocale();
   return (
     <section className="panel grid gap-5 p-4 md:grid-cols-[1.5fr_1fr] md:p-5">
@@ -1050,7 +1074,7 @@ function PortfolioHeader({ portfolio, section }: { portfolio: Portfolio; section
   );
 }
 
-function PortfolioNav({ active, portfolioId }: { active: PortfolioSection; portfolioId: string }) {
+function PortfolioNav({ active, portfolioId }: Readonly<{ active: PortfolioSection; portfolioId: string }>) {
   const locale = useLocale();
   const navigate = useNavigate();
   const primary = [
@@ -1114,22 +1138,32 @@ function PortfolioCoverageBanner({
   analysis,
   marketHistoryCoverage,
   adminAuthState
-}: {
+}: Readonly<{
   analysis: ReturnType<typeof analyzePortfolio>;
   marketHistoryCoverage: MarketHistoryCoverageState;
   adminAuthState: AdminAuthState;
-}) {
+}>) {
   const locale = useLocale();
   const summary = analysis.coverageSummary;
   const isBackendLimited = ["limited", "error"].includes(marketHistoryCoverage.status);
-  const toneClass =
-    isBackendLimited
-      ? "border-warning/50 bg-warning/10 text-warning"
-      : summary.qualityTier === "HIGH" && marketHistoryCoverage.status === "ready"
-      ? "border-success/40 bg-success/10 text-success"
-      : summary.qualityTier === "MEDIUM"
-        ? "border-line bg-panelAlt text-muted"
-        : "border-warning/50 bg-warning/10 text-warning";
+  const toneClass = coverageBannerToneClass(isBackendLimited, summary.qualityTier, marketHistoryCoverage.status);
+  const missingSymbolsLine = symbolListLine("Missing approved history", marketHistoryCoverage.missingSymbols, 10);
+  const queuedSymbolsLine = symbolListLine("Refresh queue", marketHistoryCoverage.queuedSymbols, 8);
+  let adminModeContent: ReactNode;
+  if (adminAuthState.status === "signed_in") {
+    adminModeContent = (
+      <div className="grid grid-cols-2 gap-2 lg:min-w-[320px]">
+        <StatusPill label="Admin" value={adminAuthState.email} />
+        <StatusPill label="Role" value={adminAuthState.role} />
+      </div>
+    );
+  } else {
+    adminModeContent = (
+      <Link className="secondary-action justify-center" to="/admin/login">
+        {localeText(locale, "Sign in for private mode", "관리자 로그인")}
+      </Link>
+    );
+  }
   return (
     <section className={`rounded-md border p-4 ${toneClass}`}>
       <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
@@ -1158,16 +1192,14 @@ function PortfolioCoverageBanner({
             <span className="rounded border border-current/30 px-2 py-1">{marketHistoryCoverage.status.replaceAll("_", " ")}</span>
           </div>
           <p className="safe-text mt-2 text-sm leading-6">{marketHistoryCoverage.message}</p>
-          {marketHistoryCoverage.missingSymbols.length ? (
+          {missingSymbolsLine ? (
             <p className="safe-text mt-1 text-xs leading-5 opacity-90">
-              Missing approved history: {marketHistoryCoverage.missingSymbols.slice(0, 10).join(", ")}
-              {marketHistoryCoverage.missingSymbols.length > 10 ? ` +${marketHistoryCoverage.missingSymbols.length - 10} more` : ""}.
+              {missingSymbolsLine}.
             </p>
           ) : null}
-          {marketHistoryCoverage.queuedSymbols.length ? (
+          {queuedSymbolsLine ? (
             <p className="safe-text mt-1 text-xs leading-5 opacity-90">
-              Refresh queue: {marketHistoryCoverage.queuedSymbols.slice(0, 8).join(", ")}
-              {marketHistoryCoverage.queuedSymbols.length > 8 ? ` +${marketHistoryCoverage.queuedSymbols.length - 8} more` : ""} will be retried by the scheduled after-close jobs when quota permits.
+              {queuedSymbolsLine} will be retried by the scheduled after-close jobs when quota permits.
             </p>
           ) : null}
           {marketHistoryCoverage.warnings.length ? (
@@ -1201,19 +1233,23 @@ function PortfolioCoverageBanner({
             Public calculations use stored approved snapshots only. Google admin sign-in can unlock a private Yahoo queue for personal analysis, but those rows stay excluded from public snapshots and must be labeled private/admin-only.
           </p>
         </div>
-        {adminAuthState.status === "signed_in" ? (
-          <div className="grid grid-cols-2 gap-2 lg:min-w-[320px]">
-            <StatusPill label="Admin" value={adminAuthState.email} />
-            <StatusPill label="Role" value={adminAuthState.role} />
-          </div>
-        ) : (
-          <Link className="secondary-action justify-center" to="/admin/login">
-            {locale === "ko" ? "관리자 로그인" : "Sign in for private mode"}
-          </Link>
-        )}
+        {adminModeContent}
       </div>
     </section>
   );
+}
+
+function coverageBannerToneClass(isBackendLimited: boolean, qualityTier: string, status: MarketHistoryCoverageStatus) {
+  if (isBackendLimited) return "border-warning/50 bg-warning/10 text-warning";
+  if (qualityTier === "HIGH" && status === "ready") return "border-success/40 bg-success/10 text-success";
+  if (qualityTier === "MEDIUM") return "border-line bg-panelAlt text-muted";
+  return "border-warning/50 bg-warning/10 text-warning";
+}
+
+function symbolListLine(label: string, symbols: string[], visibleCount: number) {
+  if (!symbols.length) return "";
+  const suffix = symbols.length > visibleCount ? ` +${symbols.length - visibleCount} more` : "";
+  return `${label}: ${symbols.slice(0, visibleCount).join(", ")}${suffix}`;
 }
 
 function EditablePortfolioWorkspace({
@@ -1273,12 +1309,12 @@ function DashboardSection({
   analysis,
   monteCarlo,
   rebalancePlan
-}: {
+}: Readonly<{
   portfolio: Portfolio;
   analysis: ReturnType<typeof analyzePortfolio>;
   monteCarlo: ReturnType<typeof runMonteCarlo>;
   rebalancePlan: ReturnType<typeof generateContributionRebalancePlan>;
-}) {
+}>) {
   const nextContribution = rebalancePlan.cashContributionPlan[0];
   return (
     <section className="grid gap-4">
@@ -1341,12 +1377,12 @@ function OnboardingSection({
   setCsvText,
   csvErrors,
   importCsv
-}: {
+}: Readonly<{
   csvText: string;
   setCsvText: (value: string) => void;
   csvErrors: string[];
   importCsv: () => void;
-}) {
+}>) {
   return (
     <section className="grid gap-4 lg:grid-cols-3">
       <StepCard number="1" title="Create or import" body="Start with manual holdings or paste a CSV. CSV import validates required columns, numeric fields, and spreadsheet-formula injection." />
@@ -1369,7 +1405,7 @@ function OnboardingSection({
   );
 }
 
-function PortfoliosSection({ portfolio, analysis }: { portfolio: Portfolio; analysis: ReturnType<typeof analyzePortfolio> }) {
+function PortfoliosSection({ portfolio, analysis }: Readonly<{ portfolio: Portfolio; analysis: ReturnType<typeof analyzePortfolio> }>) {
   const locale = useLocale();
   return (
     <section className="grid gap-4 lg:grid-cols-[1fr_0.8fr]">
@@ -1500,7 +1536,7 @@ function BuilderSection({
             <NumberField label="Target amount" termKey="portfolio_value" value={portfolio.goal.targetAmount} onChange={(value) => updateGoal("targetAmount", value)} />
             <NumberField label="Monthly contribution" termKey="rebalancing" value={portfolio.goal.monthlyContribution} onChange={(value) => updateGoal("monthlyContribution", value)} />
             <label className="mt-4 block text-sm font-semibold">
-              Target date
+              <span>Target date</span>
               <input className="input-control mt-2 w-full" type="date" value={portfolio.goal.targetDate} onChange={(event) => updateGoal("targetDate", event.target.value)} />
             </label>
           </div>
@@ -1541,11 +1577,11 @@ function TargetAllocationPanel({
   portfolio,
   analysis,
   updateTarget
-}: {
+}: Readonly<{
   portfolio: Portfolio;
   analysis: ReturnType<typeof analyzePortfolio>;
   updateTarget: (assetClass: string, value: number) => void;
-}) {
+}>) {
   return (
     <div className="panel p-4">
       <SectionTitle icon={<PieChart />} title="Target allocation" termKey="target_allocation" />
@@ -1598,7 +1634,7 @@ function TargetAllocationPanel({
   );
 }
 
-function PortfolioEditorPanel({
+function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manual-entry UI state for one panel.
   portfolio,
   analysis,
   assumptions,
@@ -1661,11 +1697,11 @@ function PortfolioEditorPanel({
       return;
     }
     setIsSearching(true);
-    const timeout = window.setTimeout(() => {
+    const timeout = globalThis.window.setTimeout(() => {
       setDebouncedSearchTerm(trimmedQuery);
       setIsSearching(false);
     }, 175);
-    return () => window.clearTimeout(timeout);
+    return () => globalThis.window.clearTimeout(timeout);
   }, [trimmedQuery]);
 
   useEffect(() => {
@@ -1848,6 +1884,7 @@ function PortfolioEditorPanel({
     if (!canRequestReview) return;
     requestInstrumentReview(trimmedQuery);
   };
+  const shouldShowGoalAssumptions = Boolean(updateGoal || setAssumptions);
 
   useEffect(() => {
     if (!searchTerm) resetManualDraft();
@@ -1865,7 +1902,7 @@ function PortfolioEditorPanel({
       <p className="safe-text mt-2 text-sm leading-6 text-muted">
         Change quantities, cash, or add sample instruments and the exposure views update immediately in this workspace.
       </p>
-      {updateGoal || setAssumptions ? (
+      {shouldShowGoalAssumptions && (
         <details className="mt-4 rounded-md border border-line bg-panelAlt p-3" open>
           <summary className="cursor-pointer text-sm font-bold text-ink">Goal and assumptions</summary>
           <div className="mt-3 grid gap-2">
@@ -1886,7 +1923,7 @@ function PortfolioEditorPanel({
             </div>
           </div>
         </details>
-      ) : null}
+      )}
       <label className="mt-4 block text-sm font-semibold">
         <MetricLabel label="Cash balance" termKey="portfolio_value" />
         <input
@@ -1921,7 +1958,7 @@ function PortfolioEditorPanel({
               </div>
               <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_1fr_120px] sm:items-end">
                 <label className="block text-xs font-semibold uppercase tracking-wide text-muted">
-                  Quantity
+                  <span>Quantity</span>
                   <input
                     className="input-control mt-2 w-full"
                     aria-label={`${symbol} quantity`}
@@ -1933,7 +1970,7 @@ function PortfolioEditorPanel({
                   />
                 </label>
                 <label className="block text-xs font-semibold uppercase tracking-wide text-muted">
-                  Manual price
+                  <span>Manual price</span>
                   <input
                     className="input-control mt-2 w-full"
                     aria-label={`${symbol} manual price`}
@@ -1946,7 +1983,7 @@ function PortfolioEditorPanel({
                   />
                 </label>
                 <label className="block text-xs font-semibold uppercase tracking-wide text-muted">
-                  Market value
+                  <span>Market value</span>
                   <input
                     className="input-control mt-2 w-full"
                     aria-label={`${symbol} manual market value`}
@@ -2047,15 +2084,13 @@ function PortfolioEditorPanel({
           ) : null}
           {noResultGuidance ? <div className="mt-2 text-xs text-muted">{noResultGuidance}</div> : null}
           {searchError ? <div className="mt-2 text-xs text-danger">{searchError}</div> : null}
-          {hasSearchResults ? (
-            <div id={resultListId} className="mt-2 max-h-80 overflow-auto rounded-md border border-line bg-panelAlt" role="listbox" aria-label="Instrument search results" aria-live="polite">
+          {hasSearchResults && (
+            <div id={resultListId} className="mt-2 max-h-80 overflow-auto rounded-md border border-line bg-panelAlt" aria-label="Instrument search results" aria-live="polite">
               {searchResults.map((result, index) => (
                 <button
                   id={`${resultListId}-option-${index}`}
                   key={`${result.instrumentId}-${result.listingId}`}
                   type="button"
-                  role="option"
-                  aria-selected={index === activeResultIndex}
                   className={`block w-full border-b border-line px-3 py-3 text-left text-sm last:border-b-0 ${
                     index === activeResultIndex ? "bg-accentSoft text-ink" : "hover:bg-panel"
                   }`}
@@ -2066,7 +2101,7 @@ function PortfolioEditorPanel({
                   <div className="safe-text text-sm font-bold">
                     {result.displaySymbol}
                     {result.isStale ? <InlineBadge label="Stale price" termKey="stale_data" tone="warning" /> : null}
-                    {!result.isActive ? <InlineBadge label="Inactive" termKey="inactive_security" tone="danger" /> : null}
+                    {result.isActive ? null : <InlineBadge label="Inactive" termKey="inactive_security" tone="danger" />}
                     {result.isAdvancedInstrument ? <InlineBadge label="Advanced" termKey="advanced_instrument" tone="muted" /> : null}
                     {result.requiresUserPrice ? <InlineBadge label="Needs price" termKey="data_quality" tone="warning" /> : null}
                   </div>
@@ -2090,7 +2125,7 @@ function PortfolioEditorPanel({
                   ) : null}
                   {result.qualityLevel === "PARTIAL" || result.qualityLevel === "ESTIMATED" ? (
                     <p className="mt-1 text-xs text-warning">
-                      <TermTooltip termKey={result.qualityLevel === "PARTIAL" ? "partial_data" : "estimated_data"} />
+                      <TermTooltip termKey={qualityTooltipKey(result.qualityLevel)} />
                       <span className="ml-1">Some metadata is incomplete.</span>
                     </p>
                   ) : null}
@@ -2102,7 +2137,7 @@ function PortfolioEditorPanel({
                 </button>
               ))}
             </div>
-          ) : null}
+          )}
           {hasHeldSearchResults && !hasSearchResults ? (
             <div className="mt-2 rounded-md border border-line bg-panel p-3 text-xs leading-5 text-muted">
               <div className="font-semibold text-ink">Already in this workspace</div>
@@ -2111,7 +2146,7 @@ function PortfolioEditorPanel({
               </div>
             </div>
           ) : null}
-          {shouldShowNoResults ? (
+          {shouldShowNoResults && (
             <div className="mt-2">
               <div className="text-xs text-muted">No matching instrument found.</div>
               <div className="mt-2 rounded-md border border-line bg-panel p-3 text-xs leading-5 text-muted">
@@ -2140,30 +2175,20 @@ function PortfolioEditorPanel({
                 ) : null}
               </div>
             </div>
-          ) : null}
-          {canAddManual ? (
+          )}
+          {canAddManual && (
             <div className="mt-2 rounded-md border border-dashed border-line bg-panel p-3">
               <p id={manualHelpId} className="safe-text text-xs text-muted">
                 No sample match. Add a manual holding only when you know the listing, currency, quantity, and either price or market value.
               </p>
-              {!hasManualDraft ? (
-                <button
-                  type="button"
-                  className="secondary-action mt-2 justify-center"
-                  onClick={openManualForm}
-                  disabled={isManualCandidateAlreadyHeld}
-                >
-                  <Plus className="h-4 w-4" />
-                  Add manual holding
-                </button>
-              ) : (
+              {hasManualDraft && (
                 <div className="mt-3 grid gap-2" aria-describedby={manualHelpId}>
                   <div className="grid gap-2 sm:grid-cols-2">
                     <ManualTextField label="Symbol / code" required value={manualDraft.symbolOrCode} onChange={(value) => setManualDraft((current) => (current ? { ...current, symbolOrCode: value } : current))} />
                     <ManualTextField label="Instrument name" required value={manualDraft.name} onChange={(value) => setManualDraft((current) => (current ? { ...current, name: value } : current))} />
                     <ManualTextField label="Currency" required value={manualDraft.currency} maxLength={3} pattern="[A-Za-z]{3}" onChange={(value) => setManualDraft((current) => (current ? { ...current, currency: value.toUpperCase() } : current))} />
                     <label className="block text-xs font-semibold">
-                      Asset class*
+                      <span>Asset class*</span>
                       <select
                         className="input-control mt-1 w-full"
                         required
@@ -2180,7 +2205,7 @@ function PortfolioEditorPanel({
                       </select>
                     </label>
                     <label className="block text-xs font-semibold">
-                      Instrument type
+                      <span>Instrument type</span>
                       <select
                         className="input-control mt-1 w-full"
                         value={manualDraft.instrumentType}
@@ -2226,8 +2251,19 @@ function PortfolioEditorPanel({
                   </div>
                 </div>
               )}
+              {!hasManualDraft && (
+                <button
+                  type="button"
+                  className="secondary-action mt-2 justify-center"
+                  onClick={openManualForm}
+                  disabled={isManualCandidateAlreadyHeld}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add manual holding
+                </button>
+              )}
             </div>
-          ) : null}
+          )}
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
           <button
@@ -2253,7 +2289,7 @@ function PortfolioEditorPanel({
   );
 }
 
-function InstrumentMetaChip({ label, termKey }: { label: string; termKey: string }) {
+function InstrumentMetaChip({ label, termKey }: Readonly<{ label: string; termKey: string }>) {
   return (
     <span className="inline-flex items-center gap-1 rounded border border-line bg-paper px-2 py-1 text-xs text-muted">
       {label}
@@ -2262,8 +2298,14 @@ function InstrumentMetaChip({ label, termKey }: { label: string; termKey: string
   );
 }
 
-function InlineBadge({ label, termKey, tone }: { label: string; termKey: string; tone: "warning" | "danger" | "muted" }) {
-  const toneClass = tone === "warning" ? "text-warning" : tone === "danger" ? "text-danger" : "text-muted";
+function qualityTooltipKey(qualityLevel: string) {
+  if (qualityLevel === "PARTIAL") return "partial_data";
+  if (qualityLevel === "ESTIMATED") return "estimated_data";
+  return "data_quality";
+}
+
+function InlineBadge({ label, termKey, tone }: Readonly<{ label: string; termKey: string; tone: "warning" | "danger" | "muted" }>) {
+  const toneClass = inlineBadgeToneClass(tone);
   return (
     <span className={`ml-2 inline-flex items-center gap-1 text-xs ${toneClass}`}>
       {label}
@@ -2272,7 +2314,13 @@ function InlineBadge({ label, termKey, tone }: { label: string; termKey: string;
   );
 }
 
-function BacktestSection({ result }: { result: ReturnType<typeof runBacktest> }) {
+function inlineBadgeToneClass(tone: "warning" | "danger" | "muted") {
+  if (tone === "warning") return "text-warning";
+  if (tone === "danger") return "text-danger";
+  return "text-muted";
+}
+
+function BacktestSection({ result }: Readonly<{ result: ReturnType<typeof runBacktest> }>) {
   return (
     <section className="grid gap-4">
       <div className="grid gap-3 md:grid-cols-4">
@@ -2300,11 +2348,11 @@ function MonteCarloSection({
   result,
   portfolio,
   updateGoal
-}: {
+}: Readonly<{
   result: ReturnType<typeof runMonteCarlo>;
   portfolio: Portfolio;
   updateGoal: <K extends keyof Portfolio["goal"]>(key: K, value: Portfolio["goal"][K]) => void;
-}) {
+}>) {
   return (
     <section className="grid gap-4 xl:grid-cols-[0.75fr_1.25fr]">
       <div className="panel p-4">
@@ -2328,7 +2376,7 @@ function MonteCarloSection({
   );
 }
 
-function RebalanceSection({ plan, analysis }: { plan: ReturnType<typeof generateContributionRebalancePlan>; analysis: ReturnType<typeof analyzePortfolio> }) {
+function RebalanceSection({ plan, analysis }: Readonly<{ plan: ReturnType<typeof generateContributionRebalancePlan>; analysis: ReturnType<typeof analyzePortfolio> }>) {
   return (
     <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
       <div className="panel p-4">
@@ -2358,11 +2406,11 @@ function FeesSection({
   analysis,
   assumptions,
   setAssumptions
-}: {
+}: Readonly<{
   analysis: ReturnType<typeof analyzePortfolio>;
   assumptions: AssumptionSet;
   setAssumptions: Dispatch<SetStateAction<AssumptionSet>>;
-}) {
+}>) {
   const parts = [
     ["Fund expense ratios", analysis.weightedExpenseRatio],
     ["Platform fees", assumptions.platformFeeRate],
@@ -2398,7 +2446,7 @@ function FeesSection({
   );
 }
 
-function TaxLotsSection({ portfolio, taxImpact }: { portfolio: Portfolio; taxImpact: TaxLotImpact }) {
+function TaxLotsSection({ portfolio, taxImpact }: Readonly<{ portfolio: Portfolio; taxImpact: TaxLotImpact }>) {
   return (
     <section className="grid gap-4">
       <div className="signal-warning p-4 text-sm font-semibold leading-6">
@@ -2426,7 +2474,7 @@ function HoldingsSection({
   portfolio,
   analysis,
   instrumentCatalog
-}: { portfolio: Portfolio; analysis: ReturnType<typeof analyzePortfolio>; instrumentCatalog: Instrument[] }) {
+}: Readonly<{ portfolio: Portfolio; analysis: ReturnType<typeof analyzePortfolio>; instrumentCatalog: Instrument[] }>) {
   return (
     <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
       <TablePanel title="Holdings table" termKey="asset_allocation">
@@ -2459,13 +2507,13 @@ function TransactionsSection({
   setCsvText,
   csvErrors,
   importCsv
-}: {
+}: Readonly<{
   portfolio: Portfolio;
   csvText: string;
   setCsvText: (value: string) => void;
   csvErrors: string[];
   importCsv: () => void;
-}) {
+}>) {
   return (
     <section className="grid gap-4 xl:grid-cols-[1fr_0.8fr]">
       <TablePanel title="Transactions table" termKey="money_weighted_return">
@@ -2487,11 +2535,11 @@ function SettingsSection({
   section,
   assumptions,
   setAssumptions
-}: {
+}: Readonly<{
   section: PortfolioSection;
   assumptions: AssumptionSet;
   setAssumptions: Dispatch<SetStateAction<AssumptionSet>>;
-}) {
+}>) {
   const locale = useLocale();
   const links = [
     ["settings-profile", "Profile", `/${locale}/settings/profile`],
@@ -2579,7 +2627,7 @@ function DataSourceCards() {
   );
 }
 
-function DataQualityPanel({ issues }: { issues: ReturnType<typeof analyzePortfolio>["dataQualityIssues"] }) {
+function DataQualityPanel({ issues }: Readonly<{ issues: ReturnType<typeof analyzePortfolio>["dataQualityIssues"] }>) {
   return (
     <section className="panel p-4">
       <SectionTitle icon={<DatabaseZap />} title="Data-quality ledger" termKey="data_quality" />
@@ -2598,7 +2646,7 @@ function DataQualityPanel({ issues }: { issues: ReturnType<typeof analyzePortfol
   );
 }
 
-function PortfolioCoverageLedger({ analysis }: { analysis: ReturnType<typeof analyzePortfolio> }) {
+function PortfolioCoverageLedger({ analysis }: Readonly<{ analysis: ReturnType<typeof analyzePortfolio> }>) {
   return (
     <section className="panel p-4">
       <SectionTitle icon={<DatabaseZap />} title="Calculation provenance" termKey="data_quality" />
@@ -2628,7 +2676,7 @@ function PortfolioCoverageLedger({ analysis }: { analysis: ReturnType<typeof ana
   );
 }
 
-function ExposureTable({ title, termKey, rows }: { title: string; termKey: string; rows: ExposureRow[] }) {
+function ExposureTable({ title, termKey, rows }: Readonly<{ title: string; termKey: string; rows: ExposureRow[] }>) {
   return (
     <div className="panel p-4">
       <SectionTitle icon={<BarChart3 />} title={title} termKey={termKey} />
@@ -2650,7 +2698,7 @@ function ExposureTable({ title, termKey, rows }: { title: string; termKey: strin
   );
 }
 
-function FundOverlapPanel({ rows }: { rows: ReturnType<typeof calculateFundOverlap> }) {
+function FundOverlapPanel({ rows }: Readonly<{ rows: ReturnType<typeof calculateFundOverlap> }>) {
   return (
     <div className="panel p-4">
       <SectionTitle icon={<Layers3 />} title="Fund overlap" termKey="fund_overlap" />
@@ -2678,7 +2726,7 @@ function FundOverlapPanel({ rows }: { rows: ReturnType<typeof calculateFundOverl
   );
 }
 
-function ExposureMap({ rows }: { rows: ExposureRow[] }) {
+function ExposureMap({ rows }: Readonly<{ rows: ExposureRow[] }>) {
   return (
     <div className="mt-4 grid min-h-[300px] content-end rounded-md border border-line bg-[radial-gradient(circle_at_20%_20%,rgba(103,216,239,0.18),transparent_28%),linear-gradient(135deg,#0b1420,#111c28)] p-4">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
@@ -2697,7 +2745,7 @@ function ExposureMap({ rows }: { rows: ExposureRow[] }) {
   );
 }
 
-function SunburstLike({ rows }: { rows: ExposureRow[] }) {
+function SunburstLike({ rows }: Readonly<{ rows: ExposureRow[] }>) {
   return (
     <div className="mt-4 grid min-h-[300px] grid-cols-2 gap-2 md:grid-cols-3">
       {rows.map((row, index) => (
@@ -2716,7 +2764,7 @@ function SunburstLike({ rows }: { rows: ExposureRow[] }) {
   );
 }
 
-function RiskConstellation({ rows }: { rows: ExposureRow[] }) {
+function RiskConstellation({ rows }: Readonly<{ rows: ExposureRow[] }>) {
   const topRows = rows.slice(0, 8);
   const maxWeight = Math.max(...topRows.map((row) => row.weight), 0.01);
   return (
@@ -2727,8 +2775,9 @@ function RiskConstellation({ rows }: { rows: ExposureRow[] }) {
       </p>
       <div className="mt-4 grid gap-3">
         {topRows.map((row) => {
-          const riskLabel = row.weight >= 0.2 ? "High concentration" : row.weight >= 0.1 ? "Medium concentration" : "Lower concentration";
-          const tone = row.weight >= 0.2 ? "text-danger" : row.weight >= 0.1 ? "text-warning" : "text-accent";
+          const riskLabel = concentrationRiskLabel(row.weight);
+          const tone = concentrationRiskTone(row.weight);
+          const barTone = concentrationRiskBarTone(row.weight);
           return (
             <div key={row.key} className="rounded-md border border-line bg-panelAlt p-3">
               <div className="flex items-start justify-between gap-3">
@@ -2742,7 +2791,7 @@ function RiskConstellation({ rows }: { rows: ExposureRow[] }) {
                 </div>
               </div>
               <div className="mt-3 h-2 rounded bg-paper">
-                <div className={`h-2 rounded ${row.weight >= 0.2 ? "bg-danger" : row.weight >= 0.1 ? "bg-warning" : "bg-accent"}`} style={{ width: `${Math.max(4, (row.weight / maxWeight) * 100)}%` }} />
+                <div className={`h-2 rounded ${barTone}`} style={{ width: `${Math.max(4, (row.weight / maxWeight) * 100)}%` }} />
               </div>
               <div className="safe-text mt-2 text-xs text-muted">{row.topHoldings.join(" / ")} · {row.quality}</div>
             </div>
@@ -2753,7 +2802,25 @@ function RiskConstellation({ rows }: { rows: ExposureRow[] }) {
   );
 }
 
-function FanChart({ rows, targetAmount }: { rows: { month: number; p10: number; median: number; p90: number }[]; targetAmount: number }) {
+function concentrationRiskLabel(weight: number) {
+  if (weight >= 0.2) return "High concentration";
+  if (weight >= 0.1) return "Medium concentration";
+  return "Lower concentration";
+}
+
+function concentrationRiskTone(weight: number) {
+  if (weight >= 0.2) return "text-danger";
+  if (weight >= 0.1) return "text-warning";
+  return "text-accent";
+}
+
+function concentrationRiskBarTone(weight: number) {
+  if (weight >= 0.2) return "bg-danger";
+  if (weight >= 0.1) return "bg-warning";
+  return "bg-accent";
+}
+
+function FanChart({ rows, targetAmount }: Readonly<{ rows: { month: number; p10: number; median: number; p90: number }[]; targetAmount: number }>) {
   const max = Math.max(targetAmount, ...rows.map((row) => row.p90), 1);
   return (
     <div className="mt-4 grid gap-2">
@@ -2771,7 +2838,7 @@ function FanChart({ rows, targetAmount }: { rows: { month: number; p10: number; 
   );
 }
 
-function LineBars({ rows }: { rows: { label: string; value: number }[] }) {
+function LineBars({ rows }: Readonly<{ rows: { label: string; value: number }[] }>) {
   const max = Math.max(...rows.map((row) => row.value), 1);
   return (
     <div className="mt-4 flex h-72 items-end gap-1 overflow-hidden rounded-md border border-line bg-panelAlt p-3" aria-label="Backtest equity curve">
@@ -2782,7 +2849,7 @@ function LineBars({ rows }: { rows: { label: string; value: number }[] }) {
   );
 }
 
-function Compass({ rows }: { rows: ReturnType<typeof analyzePortfolio>["currentTargetRows"] }) {
+function Compass({ rows }: Readonly<{ rows: ReturnType<typeof analyzePortfolio>["currentTargetRows"] }>) {
   return (
     <div className="mt-4 grid gap-3">
       {rows.map((row) => (
@@ -2808,15 +2875,15 @@ function CockpitCard({
   value,
   detail,
   tone = "normal"
-}: {
+}: Readonly<{
   icon: ReactNode;
   title: string;
   termKey: string;
   value: string;
   detail: string;
   tone?: "normal" | "watch" | "risk";
-}) {
-  const toneClass = tone === "risk" ? "text-danger" : tone === "watch" ? "text-warning" : "text-accent";
+}>) {
+  const toneClass = featureMetricToneClass(tone);
   return (
     <div className="panel min-w-0 p-4">
       <div className={`flex items-center gap-2 text-sm font-semibold ${toneClass}`}>
@@ -2829,7 +2896,13 @@ function CockpitCard({
   );
 }
 
-function MetricCard({ title, termKey, value }: { title: string; termKey: string; value: string }) {
+function featureMetricToneClass(tone: "normal" | "watch" | "risk") {
+  if (tone === "risk") return "text-danger";
+  if (tone === "watch") return "text-warning";
+  return "text-accent";
+}
+
+function MetricCard({ title, termKey, value }: Readonly<{ title: string; termKey: string; value: string }>) {
   return (
     <div className="rounded-md border border-line bg-panelAlt p-3">
       <div className="text-xs font-semibold uppercase tracking-wide text-muted"><MetricLabel label={title} termKey={termKey} /></div>
@@ -2838,7 +2911,7 @@ function MetricCard({ title, termKey, value }: { title: string; termKey: string;
   );
 }
 
-function SectionTitle({ icon, title, termKey }: { icon: ReactNode; title: string; termKey: string }) {
+function SectionTitle({ icon, title, termKey }: Readonly<{ icon: ReactNode; title: string; termKey: string }>) {
   return (
     <div className="flex items-center gap-2 text-lg font-bold">
       <IconWrap>{icon}</IconWrap>
@@ -2847,7 +2920,7 @@ function SectionTitle({ icon, title, termKey }: { icon: ReactNode; title: string
   );
 }
 
-function MetricLabel({ label, termKey }: { label: string; termKey: string }) {
+function MetricLabel({ label, termKey }: Readonly<{ label: string; termKey: string }>) {
   return (
     <span className="inline-flex min-w-0 items-center gap-1.5">
       <span className="safe-text">{label}</span>
@@ -2856,11 +2929,11 @@ function MetricLabel({ label, termKey }: { label: string; termKey: string }) {
   );
 }
 
-function IconWrap({ children }: { children: ReactNode }) {
+function IconWrap({ children }: Readonly<{ children: ReactNode }>) {
   return <span className="[&>svg]:h-4 [&>svg]:w-4">{children}</span>;
 }
 
-function StatusPill({ label, value }: { label: string; value: string }) {
+function StatusPill({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div className="rounded-md border border-line bg-panelAlt p-3">
       <div className="text-xs font-semibold uppercase tracking-wide text-muted">
@@ -2883,7 +2956,7 @@ function statusPillTermKey(label: string) {
   return "data_quality";
 }
 
-function StepCard({ number, title, body }: { number: string; title: string; body: string }) {
+function StepCard({ number, title, body }: Readonly<{ number: string; title: string; body: string }>) {
   return (
     <div className="panel p-4">
       <div className="grid h-9 w-9 place-items-center rounded-md bg-accent text-sm font-bold text-paper">{number}</div>
@@ -2893,7 +2966,7 @@ function StepCard({ number, title, body }: { number: string; title: string; body
   );
 }
 
-function NumberField({ label, termKey, value, onChange }: { label: string; termKey: string; value: number; onChange: (value: number) => void }) {
+function NumberField({ label, termKey, value, onChange }: Readonly<{ label: string; termKey: string; value: number; onChange: (value: number) => void }>) {
   return (
     <label className="mt-4 block text-sm font-semibold">
       <MetricLabel label={label} termKey={termKey} />
@@ -2902,7 +2975,7 @@ function NumberField({ label, termKey, value, onChange }: { label: string; termK
   );
 }
 
-function PercentField({ label, termKey, value, onChange }: { label: string; termKey: string; value: number; onChange: (value: number) => void }) {
+function PercentField({ label, termKey, value, onChange }: Readonly<{ label: string; termKey: string; value: number; onChange: (value: number) => void }>) {
   return (
     <label className="mt-4 block text-sm font-semibold">
       <MetricLabel label={label} termKey={termKey} />
@@ -2918,14 +2991,14 @@ function ManualTextField({
   required = false,
   maxLength = MANUAL_TEXT_MAX_LENGTH,
   pattern
-}: {
+}: Readonly<{
   label: string;
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
   maxLength?: number;
   pattern?: string;
-}) {
+}>) {
   const id = useId();
   const invalid = required && !value.trim();
   return (
@@ -2952,17 +3025,17 @@ function ManualNumberField({
   required = false,
   min,
   max
-}: {
+}: Readonly<{
   label: string;
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
   min: number;
   max: number;
-}) {
+}>) {
   const id = useId();
-  const numeric = value.trim() ? Number(value) : NaN;
-  const invalid = required ? !Number.isFinite(numeric) || numeric < min || numeric > max : value.trim() ? !Number.isFinite(numeric) || numeric < min || numeric > max : false;
+  const numeric = value.trim() ? Number(value) : Number.NaN;
+  const invalid = manualNumberInvalid(value, numeric, required, min, max);
   return (
     <label className="block text-xs font-semibold" htmlFor={id}>
       {label}{required ? "*" : ""}
@@ -2981,7 +3054,13 @@ function ManualNumberField({
   );
 }
 
-function TablePanel({ title, termKey, children }: { title: string; termKey: string; children: ReactNode }) {
+function manualNumberInvalid(value: string, numeric: number, required: boolean, min: number, max: number) {
+  const hasInput = value.trim().length > 0;
+  if (!required && !hasInput) return false;
+  return !Number.isFinite(numeric) || numeric < min || numeric > max;
+}
+
+function TablePanel({ title, termKey, children }: Readonly<{ title: string; termKey: string; children: ReactNode }>) {
   return (
     <div className="panel min-w-0 p-4">
       <SectionTitle icon={<FileSpreadsheet />} title={title} termKey={termKey} />
@@ -2992,11 +3071,11 @@ function TablePanel({ title, termKey, children }: { title: string; termKey: stri
   );
 }
 
-function TableRow({ cells }: { cells: ReactNode[] }) {
+function TableRow({ cells }: Readonly<{ cells: ReactNode[] }>) {
   return (
     <div className="grid gap-3 px-3 py-3 text-sm even:bg-panelAlt/50" style={{ gridTemplateColumns: `repeat(${cells.length}, minmax(120px, 1fr))` }}>
       {cells.map((cell, index) => (
-        <div key={index} className="safe-text min-w-0">
+        <div key={typeof cell === "string" || typeof cell === "number" ? `${index}-${cell}` : index} className="safe-text min-w-0">
           {cell}
         </div>
       ))}
@@ -3004,7 +3083,7 @@ function TableRow({ cells }: { cells: ReactNode[] }) {
   );
 }
 
-function SideLinks({ active, links }: { active: PortfolioSection; links: readonly (readonly [PortfolioSection, string, string])[] }) {
+function SideLinks({ active, links }: Readonly<{ active: PortfolioSection; links: readonly (readonly [PortfolioSection, string, string])[] }>) {
   const navigate = useNavigate();
   return (
     <nav className="panel grid content-start gap-2 p-3" aria-label="Subsection navigation">
@@ -3026,7 +3105,7 @@ function SideLinks({ active, links }: { active: PortfolioSection; links: readonl
 }
 
 function normalizedInstrumentId(value: string) {
-  return value.trim().toUpperCase().replace(/[^A-Z0-9.\-]/g, "-").replace(/-+/g, "-");
+  return value.trim().toUpperCase().replace(/[^A-Z0-9.-]/g, "-").replace(/-+/g, "-");
 }
 
 function toSafeId(value: string) {
@@ -3068,9 +3147,9 @@ function canPersistWorkspace(portfolioId: string) {
 
 function loadPortfolioWorkspace(portfolioId: string): StoredPortfolioWorkspace | null {
   if (!canPersistWorkspace(portfolioId)) return null;
-  if (typeof window === "undefined") return null;
+  if (globalThis.window === undefined) return null;
   try {
-    const raw = window.localStorage.getItem(workspaceStorageKey(portfolioId));
+    const raw = globalThis.window.localStorage.getItem(workspaceStorageKey(portfolioId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StoredPortfolioWorkspace>;
     if (parsed.version !== PORTFOLIO_WORKSPACE_STORAGE_VERSION || !parsed.portfolio) return null;
@@ -3088,9 +3167,9 @@ function loadPortfolioWorkspace(portfolioId: string): StoredPortfolioWorkspace |
 
 function savePortfolioWorkspace(portfolioId: string, workspace: Omit<StoredPortfolioWorkspace, "version">) {
   if (!canPersistWorkspace(portfolioId)) return;
-  if (typeof window === "undefined") return;
+  if (globalThis.window === undefined) return;
   try {
-    window.localStorage.setItem(
+    globalThis.window.localStorage.setItem(
       workspaceStorageKey(portfolioId),
       JSON.stringify({ version: PORTFOLIO_WORKSPACE_STORAGE_VERSION, ...workspace })
     );
@@ -3142,7 +3221,7 @@ function validateManualDraft(draft: ManualHoldingDraft): string[] {
 
 function portfolioIdFromPath(pathname: string): string | null {
   const path = pathname.replace(/^\/(en|ko)(?=\/|$)/, "") || "/";
-  const match = path.match(/^\/portfolios\/([^/]+)/);
+  const match = /^\/portfolios\/([^/]+)/.exec(path);
   if (!match) return null;
   try {
     return decodeURIComponent(match[1]);

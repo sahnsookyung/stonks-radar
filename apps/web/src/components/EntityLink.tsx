@@ -7,12 +7,12 @@ export function EntityLink({
   locale,
   className = "badge min-h-11 border-accent/40 bg-accentSoft text-accent hover:border-accent",
   children
-}: {
+}: Readonly<{
   value: string | TrackedEntity;
   locale: "en" | "ko";
   className?: string;
   children?: ReactNode;
-}) {
+}>) {
   const entity = typeof value === "string" ? resolveTrackedEntity(value) : value;
   if (!entity || entity.routeKind === "unsupported") {
     return (

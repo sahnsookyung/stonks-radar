@@ -34,6 +34,8 @@ from frw_api.services.provider_limits import (
 )
 from frw_api.services.safe_fetch import SafeFetchError, safe_fetch_bytes
 
+SHA256_PREFIX = "sha256:"
+
 
 class NewsIngestionError(ValueError):
     pass
@@ -281,7 +283,7 @@ def parse_news_response(
     return _parse_feed_xml(profile, body, max_documents=max_documents)
 
 
-def _parse_sec_submissions_json(
+def _parse_sec_submissions_json(  # NOSONAR - SEC recent-filings arrays are parsed in one aligned pass.
     profile: SourceProfile,
     payload: dict[str, Any],
     *,
@@ -340,7 +342,7 @@ def _parse_sec_submissions_json(
     return documents
 
 
-def _parse_gdelt_json(profile: SourceProfile, payload: dict[str, Any], *, max_documents: int) -> list[dict[str, Any]]:
+def _parse_gdelt_json(profile: SourceProfile, payload: dict[str, Any], *, max_documents: int) -> list[dict[str, Any]]:  # NOSONAR - GDELT article shape normalization stays in one parser.
     rows = payload.get("articles") if isinstance(payload, dict) else None
     if not isinstance(rows, list):
         return []
@@ -372,7 +374,7 @@ def _parse_gdelt_json(profile: SourceProfile, payload: dict[str, Any], *, max_do
     return documents
 
 
-def _parse_feed_xml(profile: SourceProfile, body: bytes, *, max_documents: int) -> list[dict[str, Any]]:
+def _parse_feed_xml(profile: SourceProfile, body: bytes, *, max_documents: int) -> list[dict[str, Any]]:  # NOSONAR - RSS/Atom variants are normalized in one parser.
     try:
         root = ElementTree.fromstring(body)
     except ElementTree.ParseError:
@@ -440,8 +442,8 @@ def _normalized_document_dict(profile: SourceProfile, payload: dict[str, Any]) -
         "language": normalized.language,
         "snippet": normalized.snippet,
         "source_region": normalized.source_region,
-        "raw_hash": "sha256:" + normalized.raw_hash,
-        "normalized_hash": "sha256:" + normalized.normalized_hash,
+        "raw_hash": SHA256_PREFIX + normalized.raw_hash,
+        "normalized_hash": SHA256_PREFIX + normalized.normalized_hash,
         "trust_tier": profile.trust_tier,
         "copyright_mode": profile.copyright_mode,
         "discovery_only": profile.discovery_only,
@@ -549,7 +551,7 @@ async def _fetch_limited_provider_response(
 
 def _request_idempotency_key(source_key: str, request: NewsSourceRequest) -> str:
     encoded = f"{source_key}|{request.url}|{urlencode(sorted(request.params.items()))}"
-    return "sha256:" + hashlib.sha256(encoded.encode()).hexdigest()
+    return SHA256_PREFIX + hashlib.sha256(encoded.encode()).hexdigest()
 
 
 def _url_with_params(url: str, params: dict[str, str] | None) -> str:

@@ -30,7 +30,7 @@ const JAPAN_TERMS = [
   ["japan_10y", "10Y", 10]
 ] as const;
 
-export function YieldCurvesPage() {
+export function YieldCurvesPage() { // NOSONAR - compact page component coordinates tabs, freshness, and chart panels.
   const locale = useLocale();
   const query = useQuery({
     queryKey: ["snapshot", "home", locale, "yield-curves"],
@@ -134,7 +134,7 @@ function buildCurve(
   return points;
 }
 
-function CurvePanel({ title, detail, points }: { title: string; detail: string; points: CurvePoint[] }) {
+function CurvePanel({ title, detail, points }: Readonly<{ title: string; detail: string; points: CurvePoint[] }>) {
   const latest = latestDate(points);
   return (
     <section className="panel min-w-0 overflow-hidden p-4 md:p-5">
@@ -176,7 +176,7 @@ function CurvePanel({ title, detail, points }: { title: string; detail: string; 
   );
 }
 
-function YieldCurveChart({ points }: { points: CurvePoint[] }) {
+function YieldCurveChart({ points }: Readonly<{ points: CurvePoint[] }>) {
   const values = points.map((point) => point.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -225,7 +225,7 @@ function YieldCurveChart({ points }: { points: CurvePoint[] }) {
   );
 }
 
-function SpreadPanel({ title, points, longLabel, shortLabel }: { title: string; points: CurvePoint[]; longLabel: string; shortLabel: string }) {
+function SpreadPanel({ title, points, longLabel, shortLabel }: Readonly<{ title: string; points: CurvePoint[]; longLabel: string; shortLabel: string }>) {
   const longPoint = points.find((point) => point.label === longLabel);
   const shortPoint = points.find((point) => point.label === shortLabel);
   const spread = longPoint && shortPoint ? longPoint.value - shortPoint.value : null;
@@ -234,23 +234,31 @@ function SpreadPanel({ title, points, longLabel, shortLabel }: { title: string; 
     <section className="panel p-4">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-base font-semibold">{title}</h2>
-        {spread == null ? null : inverted ? <TrendingDown className="h-5 w-5 text-warning" /> : <TrendingUp className="h-5 w-5 text-success" />}
+        <SpreadIcon spread={spread} inverted={inverted} />
       </div>
       <div className={`mt-3 text-3xl font-bold ${inverted ? "text-warning" : "text-success"}`}>
         {spread == null ? "n/a" : `${(spread * 100).toFixed(0)} bp`}
       </div>
       <p className="safe-text mt-2 text-sm leading-6 text-muted">
-        {spread == null
-          ? "Spread cannot be computed until both curve points are present."
-          : inverted
-            ? "Curve is inverted at this spread."
-            : "Curve is positively sloped at this spread."}
+        {spreadDescription(spread, inverted)}
       </p>
     </section>
   );
 }
 
-function StatusPill({ label, value }: { label: string; value: string }) {
+function SpreadIcon({ spread, inverted }: Readonly<{ spread: number | null; inverted: boolean }>) {
+  if (spread == null) return null;
+  if (inverted) return <TrendingDown className="h-5 w-5 text-warning" />;
+  return <TrendingUp className="h-5 w-5 text-success" />;
+}
+
+function spreadDescription(spread: number | null, inverted: boolean) {
+  if (spread == null) return "Spread cannot be computed until both curve points are present.";
+  if (inverted) return "Curve is inverted at this spread.";
+  return "Curve is positively sloped at this spread.";
+}
+
+function StatusPill({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div className="rounded-md border border-line bg-panelAlt px-3 py-2">
       <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</div>
@@ -260,12 +268,18 @@ function StatusPill({ label, value }: { label: string; value: string }) {
 }
 
 function parseMetricValue(value: string) {
-  const normalized = value.replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
+  const normalized = /-?\d+(?:\.\d+)?/.exec(value.replaceAll(",", ""));
   if (!normalized) return null;
   const parsed = Number(normalized[0]);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
 function latestDate(points: CurvePoint[]) {
-  return points.map((point) => point.updatedAt?.slice(0, 10)).filter(Boolean).sort().at(-1) ?? null;
+  return (
+    points
+      .map((point) => point.updatedAt?.slice(0, 10))
+      .filter((date): date is string => Boolean(date))
+      .sort((left, right) => left.localeCompare(right))
+      .at(-1) ?? null
+  );
 }

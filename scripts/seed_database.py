@@ -227,7 +227,7 @@ FACT_TYPES: list[tuple[str, str, str, dict[str, Any], list[str], bool]] = [
 ]
 
 
-def main() -> None:
+def main() -> None:  # NOSONAR - seed command keeps ordered bootstrap operations in one CLI entrypoint.
     engine = create_engine(DATABASE_URL, future=True)
     with engine.begin() as conn:
         for source in DATA_SOURCES:

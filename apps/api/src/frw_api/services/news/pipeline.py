@@ -74,13 +74,7 @@ def cluster_news_documents(db: Session, *, limit: int = 500) -> dict[str, int]:
     rows = _classified_news_documents(db, limit=limit)
     if not rows:
         return {"documents_seen": 0, "clusters_upserted": 0, "links_upserted": 0}
-    documents = []
-    rows_by_index: dict[str, dict[str, Any]] = {}
-    for index, row in enumerate(rows):
-        document = _document_payload(row)
-        document["_row_index"] = str(index)
-        documents.append(document)
-        rows_by_index[str(index)] = row
+    documents, rows_by_index = _documents_for_clustering(rows)
     clusters = cluster_documents(documents)
     cluster_count = 0
     link_count = 0
@@ -88,87 +82,129 @@ def cluster_news_documents(db: Session, *, limit: int = 500) -> dict[str, int]:
         cluster_rows = [rows_by_index[str(document["_row_index"])] for document in cluster["documents"]]
         if not cluster_rows:
             continue
-        first = cluster_rows[0]
-        metadata_rows = [dict(row["metadata"] or {}) for row in cluster_rows]
-        trust_tiers = [str(metadata.get("trust_tier") or "T3_REVIEWED_PUBLIC_SOURCE") for metadata in metadata_rows]
-        event_topics = _dedupe_metadata_items(metadata_rows, "news_topics", "key")
-        event_regions = _dedupe_metadata_items(metadata_rows, "news_regions", "key", "relation")
-        event_entities = _dedupe_metadata_items(metadata_rows, "news_entities", "symbol", "relationship")
-        cluster_id = str(cluster["id"])
-        score = trust_score(trust_tiers)
-        confidence = min(0.9, max(0.35, score / 100))
-        b_score = breaking_score(
-            recency_score=75,
-            source_trust_score=score,
-            source_velocity_score=min(100, len(cluster_rows) * 20),
-            novelty_score=55,
-            affected_entity_importance_score=70 if event_entities else 35,
-            topic_severity_score=70 if event_topics else 35,
-            cross_region_impact_score=70 if len({item.get("key") for item in event_regions}) > 1 else 30,
-        )
+        event = _cluster_event_payload(cluster, cluster_rows)
+        _upsert_news_event_cluster(db, event)
+        cluster_count += 1
+        link_count += _upsert_cluster_document_links(db, event, cluster_rows)
+        _upsert_event_entities(db, event["id"], event["entities"])
+        _upsert_event_regions(db, event["id"], event["regions"])
+        _upsert_event_topics(db, event["id"], event["topics"])
+    return {"documents_seen": len(rows), "clusters_upserted": cluster_count, "links_upserted": link_count}
+
+
+def _documents_for_clustering(
+    rows: list[dict[str, Any]]
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]]]:
+    documents = []
+    rows_by_index: dict[str, dict[str, Any]] = {}
+    for index, row in enumerate(rows):
+        document = _document_payload(row)
+        document["_row_index"] = str(index)
+        documents.append(document)
+        rows_by_index[str(index)] = row
+    return documents, rows_by_index
+
+
+def _cluster_event_payload(cluster: dict[str, Any], cluster_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    first = cluster_rows[0]
+    metadata_rows = [dict(row["metadata"] or {}) for row in cluster_rows]
+    trust_tiers = [
+        str(metadata.get("trust_tier") or "T3_REVIEWED_PUBLIC_SOURCE")
+        for metadata in metadata_rows
+    ]
+    event_topics = _dedupe_metadata_items(metadata_rows, "news_topics", "key")
+    event_regions = _dedupe_metadata_items(metadata_rows, "news_regions", "key", "relation")
+    event_entities = _dedupe_metadata_items(metadata_rows, "news_entities", "symbol", "relationship")
+    score = trust_score(trust_tiers)
+    confidence = min(0.9, max(0.35, score / 100))
+    return {
+        "id": str(cluster["id"]),
+        "canonical_title": str(first["title"] or "Untitled news event")[:500],
+        "event_type": _event_type(event_topics),
+        "first_seen_at": cluster["first_seen_at"] or _now(),
+        "last_seen_at": cluster["last_seen_at"] or _now(),
+        "published_at": cluster["last_seen_at"] or cluster["first_seen_at"] or _now(),
+        "primary_region": event_regions[0].get("key") if event_regions else None,
+        "severity": _severity(event_topics),
+        "confidence": confidence,
+        "breaking_score": _cluster_breaking_score(score, cluster_rows, event_entities, event_regions, event_topics),
+        "trust_score": score,
+        "novelty_score": 55,
+        "source_count": len(cluster_rows),
+        "entities": event_entities,
+        "regions": event_regions,
+        "topics": event_topics,
+    }
+
+
+def _cluster_breaking_score(
+    source_trust_score: int,
+    cluster_rows: list[dict[str, Any]],
+    event_entities: list[dict[str, Any]],
+    event_regions: list[dict[str, Any]],
+    event_topics: list[dict[str, Any]],
+) -> int:
+    return breaking_score(
+        recency_score=75,
+        source_trust_score=source_trust_score,
+        source_velocity_score=min(100, len(cluster_rows) * 20),
+        novelty_score=55,
+        affected_entity_importance_score=70 if event_entities else 35,
+        topic_severity_score=70 if event_topics else 35,
+        cross_region_impact_score=70 if len({item.get("key") for item in event_regions}) > 1 else 30,
+    )
+
+
+def _upsert_news_event_cluster(db: Session, event: dict[str, Any]) -> None:
+    db.execute(
+        text(
+            """
+            insert into news_event_cluster(
+              id, canonical_title, event_type, first_seen_at, last_seen_at, published_at,
+              primary_region, severity, confidence, breaking_score, trust_score, novelty_score,
+              source_count, review_state, status
+            )
+            values (
+              :id, :canonical_title, :event_type, :first_seen_at, :last_seen_at, :published_at,
+              :primary_region, :severity, :confidence, :breaking_score, :trust_score, :novelty_score,
+              :source_count, 'candidate', 'active'
+            )
+            on conflict (id) do update
+            set canonical_title = excluded.canonical_title,
+                last_seen_at = excluded.last_seen_at,
+                confidence = excluded.confidence,
+                breaking_score = excluded.breaking_score,
+                trust_score = excluded.trust_score,
+                source_count = excluded.source_count,
+                updated_at = now()
+            """
+        ),
+        event,
+    )
+
+
+def _upsert_cluster_document_links(
+    db: Session, event: dict[str, Any], cluster_rows: list[dict[str, Any]]
+) -> int:
+    for row in cluster_rows:
         db.execute(
             text(
                 """
-                insert into news_event_cluster(
-                  id, canonical_title, event_type, first_seen_at, last_seen_at, published_at,
-                  primary_region, severity, confidence, breaking_score, trust_score, novelty_score,
-                  source_count, review_state, status
-                )
-                values (
-                  :id, :canonical_title, :event_type, :first_seen_at, :last_seen_at, :published_at,
-                  :primary_region, :severity, :confidence, :breaking_score, :trust_score, :novelty_score,
-                  :source_count, 'candidate', 'active'
-                )
-                on conflict (id) do update
-                set canonical_title = excluded.canonical_title,
-                    last_seen_at = excluded.last_seen_at,
-                    confidence = excluded.confidence,
-                    breaking_score = excluded.breaking_score,
-                    trust_score = excluded.trust_score,
-                    source_count = excluded.source_count,
-                    updated_at = now()
+                insert into news_event_document(event_id, document_id, relationship, confidence, is_primary_source)
+                values (:event_id, :document_id, 'supporting_source', :confidence, :is_primary)
+                on conflict (event_id, document_id) do update
+                set confidence = excluded.confidence,
+                    is_primary_source = excluded.is_primary_source
                 """
             ),
             {
-                "id": cluster_id,
-                "canonical_title": str(first["title"] or "Untitled news event")[:500],
-                "event_type": _event_type(event_topics),
-                "first_seen_at": cluster["first_seen_at"] or _now(),
-                "last_seen_at": cluster["last_seen_at"] or _now(),
-                "published_at": cluster["last_seen_at"] or cluster["first_seen_at"] or _now(),
-                "primary_region": event_regions[0].get("key") if event_regions else None,
-                "severity": _severity(event_topics),
-                "confidence": confidence,
-                "breaking_score": b_score,
-                "trust_score": score,
-                "novelty_score": 55,
-                "source_count": len(cluster_rows),
+                "event_id": event["id"],
+                "document_id": row["id"],
+                "confidence": event["confidence"],
+                "is_primary": _is_primary_source(row["metadata"]),
             },
         )
-        cluster_count += 1
-        for row in cluster_rows:
-            db.execute(
-                text(
-                    """
-                    insert into news_event_document(event_id, document_id, relationship, confidence, is_primary_source)
-                    values (:event_id, :document_id, 'supporting_source', :confidence, :is_primary)
-                    on conflict (event_id, document_id) do update
-                    set confidence = excluded.confidence,
-                        is_primary_source = excluded.is_primary_source
-                    """
-                ),
-                {
-                    "event_id": cluster_id,
-                    "document_id": row["id"],
-                    "confidence": confidence,
-                    "is_primary": _is_primary_source(row["metadata"]),
-                },
-            )
-            link_count += 1
-        _upsert_event_entities(db, cluster_id, event_entities)
-        _upsert_event_regions(db, cluster_id, event_regions)
-        _upsert_event_topics(db, cluster_id, event_topics)
-    return {"documents_seen": len(rows), "clusters_upserted": cluster_count, "links_upserted": link_count}
+    return len(cluster_rows)
 
 
 def score_news_events(db: Session) -> dict[str, int]:
@@ -251,7 +287,7 @@ def auto_review_trusted_news_events(db: Session) -> dict[str, int]:
 
 
 def _news_documents(db: Session, *, limit: int, require_unclassified: bool) -> list[dict[str, Any]]:
-    source_keys = tuple(source_registry().keys())
+    source_keys = source_registry()
     rows = db.execute(
         text(
             """
@@ -271,7 +307,7 @@ def _news_documents(db: Session, *, limit: int, require_unclassified: bool) -> l
 
 
 def _classified_news_documents(db: Session, *, limit: int) -> list[dict[str, Any]]:
-    source_keys = tuple(source_registry().keys())
+    source_keys = source_registry()
     rows = db.execute(
         text(
             """

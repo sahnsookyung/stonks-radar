@@ -46,7 +46,7 @@ SCHEMA_DIR = ROOT / "packages" / "schemas" / "snapshots"
 LOCAL_ARTIFACTS = Path(os.getenv("SNAPSHOT_ARTIFACT_DIR", str(ROOT / "artifacts" / "snapshots")))
 CANDIDATE_ROOT = LOCAL_ARTIFACTS / "candidates"
 PUBLISHED_ROOT = Path(os.getenv("PUBLISHED_SNAPSHOT_DIR", str(WEB_PUBLIC)))
-_NUMBER_RE = re.compile(r"-?\d+(?:,\d{3})*(?:\.\d+)?|-?\d+(?:\.\d+)?")
+_NUMBER_RE = re.compile(r"-?\d[\d,]*(?:\.\d+)?")
 PROHIBITED_PUBLIC_FIELDS = {
     "raw_html",
     "private_note",
@@ -56,6 +56,23 @@ PROHIBITED_PUBLIC_FIELDS = {
     "secret",
     "api_key",
 }
+MANIFEST_FILENAME = "manifest.json"
+JSON_FILE_GLOB = "*.json"
+SHA256_PREFIX = "sha256:"
+PUBLIC_LATEST_MANIFEST_KEY = f"public/latest/{MANIFEST_FILENAME}"
+LATEST_MANIFEST_PATH = Path("latest") / MANIFEST_FILENAME
+
+
+@dataclass
+class SnapshotTreeContext:
+    version: int
+    generated_at: datetime
+    corrections: list[dict[str, Any]]
+    db_events: dict[str, list[dict[str, Any]]]
+    db_calendar: list[dict[str, Any]]
+    previous_macro_tiles: dict[str, dict[str, dict[str, Any]]]
+    db_news_by_locale: dict[str, dict[str, Any]]
+    news_event_templates: dict[str, dict[str, Any]]
 
 
 @dataclass(frozen=True)
@@ -70,7 +87,7 @@ def build_local_seed_snapshots() -> SnapshotBuildResult:
     from scripts.build_seed_snapshots import build_snapshots
 
     build_snapshots()
-    return SnapshotBuildResult(files=[str(path) for path in WEB_PUBLIC.rglob("*.json")], uploaded=False, destination=str(WEB_PUBLIC), snapshot_version=1)
+    return SnapshotBuildResult(files=[str(path) for path in WEB_PUBLIC.rglob(JSON_FILE_GLOB)], uploaded=False, destination=str(WEB_PUBLIC), snapshot_version=1)
 
 
 def build_candidate_snapshots(db: Session, *, generated_by: str | None = None) -> SnapshotBuildResult:
@@ -87,7 +104,7 @@ def build_candidate_snapshots(db: Session, *, generated_by: str | None = None) -
     candidate_public_root.mkdir(parents=True, exist_ok=True)
 
     files, manifest = _build_snapshot_tree(db, candidate_public_root, version, generated_at, seed_public_root=seed_public_root)
-    _record_manifest(db, manifest, candidate_public_root / "latest" / "manifest.json", version, "candidate", generated_by)
+    _record_manifest(db, manifest, candidate_public_root / LATEST_MANIFEST_PATH, version, "candidate", generated_by)
     _record_publication_rows(db, files, candidate_public_root, generated_by, "candidate")
     return SnapshotBuildResult(
         files=[str(path) for path in files],
@@ -133,7 +150,7 @@ def publish_snapshots(
     candidate_root = CANDIDATE_ROOT / f"v{snapshot_version}" / "public"
     if not candidate_root.exists():
         raise ValueError(f"Snapshot candidate files for v{snapshot_version} are missing")
-    files = sorted(candidate_root.rglob("*.json"))
+    files = sorted(candidate_root.rglob(JSON_FILE_GLOB))
     for file_path in files:
         _validate_snapshot_file(file_path)
     _publish_files_locally(files, candidate_root)
@@ -174,15 +191,15 @@ def rollback_snapshots(db: Session, *, snapshot_version: int, generated_by: str 
     source_root = CANDIDATE_ROOT / f"v{snapshot_version}" / "public"
     if not source_root.exists():
         raise ValueError(f"Snapshot files for v{snapshot_version} are missing")
-    manifest_file = source_root / "latest" / "manifest.json"
+    manifest_file = source_root / LATEST_MANIFEST_PATH
     if not manifest_file.exists():
         raise ValueError(f"Snapshot manifest for v{snapshot_version} is missing")
-    files = sorted(source_root.rglob("*.json"))
+    files = sorted(source_root.rglob(JSON_FILE_GLOB))
     for file_path in files:
         _validate_snapshot_file(file_path)
     _publish_files_locally(files, source_root)
     uploaded = False
-    destination = str(PUBLISHED_ROOT / "latest" / "manifest.json")
+    destination = str(PUBLISHED_ROOT / LATEST_MANIFEST_PATH)
     db.execute(text("update publication_manifest set publication_status = 'rolled_back' where publication_status = 'published'"))
     db.execute(text("update publication_snapshot set publication_status = 'rolled_back' where publication_status = 'published'"))
     db.execute(
@@ -204,109 +221,208 @@ def _build_snapshot_tree(
     *,
     seed_public_root: Path = WEB_PUBLIC,
 ) -> tuple[list[Path], dict[str, Any]]:
-    seed_manifest = json.loads((seed_public_root / "latest" / "manifest.json").read_text())
-    manifest = {
+    seed_manifest = json.loads((seed_public_root / LATEST_MANIFEST_PATH).read_text())
+    manifest: dict[str, Any] = {
         "current_version": version,
         "generated_at": _iso(generated_at),
         "locales": seed_manifest["locales"],
         "objects": {},
     }
     files: list[Path] = []
-    corrections = _corrections(db)
-    db_events = _public_events(db)
-    db_calendar = _calendar_items(db)
-    previous_macro_tiles = _published_home_macro_tiles()
-    db_news_by_locale = {
-        locale: build_reviewed_news_snapshots(db, locale=locale, generated_label=_iso(generated_at))
-        for locale in seed_manifest["locales"]
-    }
-    news_event_templates: dict[str, dict[str, Any]] = {}
+    context = _snapshot_tree_context(db, version, generated_at, seed_manifest["locales"])
     for object_key, locale_paths in seed_manifest["objects"].items():
         for locale, source_path in locale_paths.items():
-            seed_path = seed_public_root / source_path.removeprefix("public/")
-            snapshot = json.loads(seed_path.read_text())
-            snapshot["snapshot_version"] = version
-            snapshot["generated_at"] = _iso(generated_at)
-            snapshot["stale_after"] = _iso(generated_at + timedelta(hours=12))
-            snapshot["hard_expires_at"] = _iso(generated_at + timedelta(days=7))
-            snapshot["corrections"] = corrections
-            if snapshot["object_type"] == "home":
-                localized_events = db_events.get(locale, [])
-                if localized_events:
-                    snapshot["data"]["top_events"] = localized_events + snapshot["data"].get("top_events", [])
-                if db_calendar:
-                    snapshot["data"]["calendar_preview"] = db_calendar[:6]
-                snapshot["data"]["generated_label"] = _iso(generated_at)
-                snapshot["data"]["snapshot_health"]["age_minutes"] = 0
-                snapshot["data"]["snapshot_health"]["stale_after"] = snapshot["stale_after"]
-                _apply_refresh_deltas(snapshot["data"].get("macro_tiles", []), previous_macro_tiles.get(locale, {}))
-            elif snapshot["object_type"] == "map_events":
-                localized_events = db_events.get(locale, [])
-                if localized_events:
-                    snapshot["data"]["events"] = localized_events + snapshot["data"].get("events", [])
-                    snapshot["data"]["filters"] = _map_filters(snapshot["data"]["events"])
-            elif snapshot["object_type"] == "calendar_upcoming" and db_calendar:
-                snapshot["data"]["items"] = db_calendar
-                snapshot["data"]["central_banks"] = [item for item in db_calendar if "bank" in item["release_type"]]
-            elif snapshot["object_type"] == "source_status":
-                seed_status = snapshot.get("data") if isinstance(snapshot.get("data"), dict) else None
-                snapshot["data"] = _source_status_data(db, seed_status=seed_status)
-            elif snapshot["object_type"] == "correction_log":
-                snapshot["data"]["entries"] = corrections
-            elif snapshot["object_type"] == "news_index" and db_news_by_locale.get(locale):
-                snapshot["data"] = db_news_by_locale[locale]["index"]
-            elif snapshot["object_type"] == "news_ticker" and db_news_by_locale.get(locale):
-                key = object_key.removeprefix("news_ticker_")
-                snapshot["data"] = db_news_by_locale[locale].get("tickers", {}).get(key, snapshot["data"])
-            elif snapshot["object_type"] == "news_region" and db_news_by_locale.get(locale):
-                key = object_key.removeprefix("news_region_")
-                snapshot["data"] = db_news_by_locale[locale].get("regions", {}).get(key, snapshot["data"])
-            elif snapshot["object_type"] == "news_topic" and db_news_by_locale.get(locale):
-                key = object_key.removeprefix("news_topic_")
-                snapshot["data"] = db_news_by_locale[locale].get("topics", {}).get(key, snapshot["data"])
-            if snapshot["object_type"] == "news_event" and locale not in news_event_templates:
-                news_event_templates[locale] = json.loads(json.dumps(snapshot))
-            snapshot["content_hash"] = _payload_hash(snapshot["data"])
-            rel = Path(f"v{version}") / locale / Path(source_path).relative_to(f"public/v{seed_manifest['current_version']}/{locale}")
-            target = output_root / rel
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False) + "\n")
-            _validate_snapshot_file(target)
-            manifest["objects"].setdefault(object_key, {})[locale] = f"public/{rel.as_posix()}"
-            files.append(target)
-    for locale, news_data in db_news_by_locale.items():
-        if not news_data or locale not in news_event_templates:
-            continue
-        for event_id, event_data in news_data.get("events", {}).items():
-            object_key = f"news_event_{event_id}"
-            if locale in manifest["objects"].get(object_key, {}):
-                continue
-            snapshot = json.loads(json.dumps(news_event_templates[locale]))
-            snapshot["object_key"] = object_key
-            snapshot["snapshot_version"] = version
-            snapshot["generated_at"] = _iso(generated_at)
-            snapshot["stale_after"] = _iso(generated_at + timedelta(hours=12))
-            snapshot["hard_expires_at"] = _iso(generated_at + timedelta(days=7))
-            snapshot["corrections"] = corrections
-            snapshot["data"] = event_data
-            snapshot["content_hash"] = _payload_hash(snapshot["data"])
-            rel = Path(f"v{version}") / locale / "news" / "events" / f"{event_id}.json"
-            target = output_root / rel
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False) + "\n")
-            _validate_snapshot_file(target)
-            manifest["objects"].setdefault(object_key, {})[locale] = f"public/{rel.as_posix()}"
-            files.append(target)
+            snapshot = _seed_snapshot(seed_public_root, source_path, context)
+            _apply_runtime_snapshot_data(db, snapshot, object_key, locale, context)
+            _write_snapshot(
+                output_root,
+                snapshot,
+                manifest,
+                files,
+                object_key=object_key,
+                locale=locale,
+                rel=_versioned_snapshot_path(version, locale, source_path, seed_manifest),
+            )
+    _write_news_event_snapshots(output_root, manifest, files, context)
     latest = output_root / "latest"
     latest.mkdir(parents=True, exist_ok=True)
-    manifest_path = latest / "manifest.json"
+    manifest_path = output_root / LATEST_MANIFEST_PATH
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
     files.append(manifest_path)
     return files, manifest
 
 
+def _snapshot_tree_context(
+    db: Session, version: int, generated_at: datetime, locales: list[str]
+) -> SnapshotTreeContext:
+    return SnapshotTreeContext(
+        version=version,
+        generated_at=generated_at,
+        corrections=_corrections(db),
+        db_events=_public_events(db),
+        db_calendar=_calendar_items(db),
+        previous_macro_tiles=_published_home_macro_tiles(),
+        db_news_by_locale={
+            locale: build_reviewed_news_snapshots(db, locale=locale, generated_label=_iso(generated_at))
+            for locale in locales
+        },
+        news_event_templates={},
+    )
+
+
+def _seed_snapshot(seed_public_root: Path, source_path: str, context: SnapshotTreeContext) -> dict[str, Any]:
+    seed_path = seed_public_root / source_path.removeprefix("public/")
+    snapshot = json.loads(seed_path.read_text())
+    snapshot["snapshot_version"] = context.version
+    snapshot["generated_at"] = _iso(context.generated_at)
+    snapshot["stale_after"] = _iso(context.generated_at + timedelta(hours=12))
+    snapshot["hard_expires_at"] = _iso(context.generated_at + timedelta(days=7))
+    snapshot["corrections"] = context.corrections
+    return snapshot
+
+
+def _apply_runtime_snapshot_data(
+    db: Session,
+    snapshot: dict[str, Any],
+    object_key: str,
+    locale: str,
+    context: SnapshotTreeContext,
+) -> None:
+    object_type = snapshot["object_type"]
+    if object_type == "home":
+        _apply_home_snapshot_data(snapshot, locale, context)
+    elif object_type == "map_events":
+        _apply_map_snapshot_data(snapshot, locale, context)
+    elif object_type == "calendar_upcoming":
+        _apply_calendar_snapshot_data(snapshot, context)
+    elif object_type == "source_status":
+        seed_status = snapshot.get("data") if isinstance(snapshot.get("data"), dict) else None
+        snapshot["data"] = _source_status_data(db, seed_status=seed_status)
+    elif object_type == "correction_log":
+        snapshot["data"]["entries"] = context.corrections
+    else:
+        _apply_news_snapshot_data(snapshot, object_key, object_type, locale, context)
+
+
+def _apply_calendar_snapshot_data(snapshot: dict[str, Any], context: SnapshotTreeContext) -> None:
+    if not context.db_calendar:
+        return
+    snapshot["data"]["items"] = context.db_calendar
+    snapshot["data"]["central_banks"] = [
+        item for item in context.db_calendar if "bank" in item["release_type"]
+    ]
+
+
+def _apply_news_snapshot_data(
+    snapshot: dict[str, Any],
+    object_key: str,
+    object_type: str,
+    locale: str,
+    context: SnapshotTreeContext,
+) -> None:
+    news_data = context.db_news_by_locale.get(locale)
+    if object_type == "news_event" and locale not in context.news_event_templates:
+        context.news_event_templates[locale] = json.loads(json.dumps(snapshot))
+    if not news_data:
+        return
+    if object_type == "news_index":
+        snapshot["data"] = news_data["index"]
+    elif object_type in {"news_ticker", "news_region", "news_topic"}:
+        _apply_news_collection_snapshot(snapshot, object_key, object_type, news_data)
+
+
+def _apply_home_snapshot_data(
+    snapshot: dict[str, Any], locale: str, context: SnapshotTreeContext
+) -> None:
+    localized_events = context.db_events.get(locale, [])
+    if localized_events:
+        snapshot["data"]["top_events"] = localized_events + snapshot["data"].get("top_events", [])
+    if context.db_calendar:
+        snapshot["data"]["calendar_preview"] = context.db_calendar[:6]
+    snapshot["data"]["generated_label"] = _iso(context.generated_at)
+    snapshot["data"]["snapshot_health"]["age_minutes"] = 0
+    snapshot["data"]["snapshot_health"]["stale_after"] = snapshot["stale_after"]
+    _apply_refresh_deltas(
+        snapshot["data"].get("macro_tiles", []),
+        context.previous_macro_tiles.get(locale, {}),
+    )
+
+
+def _apply_map_snapshot_data(
+    snapshot: dict[str, Any], locale: str, context: SnapshotTreeContext
+) -> None:
+    localized_events = context.db_events.get(locale, [])
+    if not localized_events:
+        return
+    snapshot["data"]["events"] = localized_events + snapshot["data"].get("events", [])
+    snapshot["data"]["filters"] = _map_filters(snapshot["data"]["events"])
+
+
+def _apply_news_collection_snapshot(
+    snapshot: dict[str, Any], object_key: str, object_type: str, news_data: dict[str, Any]
+) -> None:
+    collection_key = object_type.removeprefix("news_") + "s"
+    key = object_key.removeprefix(f"{object_type}_")
+    snapshot["data"] = news_data.get(collection_key, {}).get(key, snapshot["data"])
+
+
+def _versioned_snapshot_path(
+    version: int, locale: str, source_path: str, seed_manifest: dict[str, Any]
+) -> Path:
+    seed_relative = Path(source_path).relative_to(
+        f"public/v{seed_manifest['current_version']}/{locale}"
+    )
+    return Path(f"v{version}") / locale / seed_relative
+
+
+def _write_snapshot(
+    output_root: Path,
+    snapshot: dict[str, Any],
+    manifest: dict[str, Any],
+    files: list[Path],
+    *,
+    object_key: str,
+    locale: str,
+    rel: Path,
+) -> None:
+    snapshot["content_hash"] = _payload_hash(snapshot["data"])
+    target = output_root / rel
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False) + "\n")
+    _validate_snapshot_file(target)
+    manifest["objects"].setdefault(object_key, {})[locale] = f"public/{rel.as_posix()}"
+    files.append(target)
+
+
+def _write_news_event_snapshots(
+    output_root: Path,
+    manifest: dict[str, Any],
+    files: list[Path],
+    context: SnapshotTreeContext,
+) -> None:
+    for locale, news_data in context.db_news_by_locale.items():
+        if not news_data or locale not in context.news_event_templates:
+            continue
+        for event_id, event_data in news_data.get("events", {}).items():
+            object_key = f"news_event_{event_id}"
+            if locale in manifest["objects"].get(object_key, {}):
+                continue
+            snapshot = json.loads(json.dumps(context.news_event_templates[locale]))
+            snapshot["object_key"] = object_key
+            snapshot["data"] = event_data
+            _write_snapshot(
+                output_root,
+                snapshot,
+                manifest,
+                files,
+                object_key=object_key,
+                locale=locale,
+                rel=Path(f"v{context.version}") / locale / "news" / "events" / f"{event_id}.json",
+            )
+
+
 def _published_home_macro_tiles() -> dict[str, dict[str, dict[str, Any]]]:
-    manifest_path = PUBLISHED_ROOT / "latest" / "manifest.json"
+    manifest_path = PUBLISHED_ROOT / LATEST_MANIFEST_PATH
     if not manifest_path.exists():
         return {}
     try:
@@ -467,52 +583,11 @@ def _calendar_items(db: Session) -> list[dict[str, Any]]:
 
 
 def _source_status_data(db: Session, *, seed_status: dict[str, Any] | None = None) -> dict[str, Any]:
-    providers_by_key = {
-        row["provider_key"]: {
-            "provider_key": row["provider_key"],
-            "provider_type": row["provider_type"],
-            "status": "kill_switch" if row["kill_switch_enabled"] else "ready",
-            "mode": row["routing_mode"],
-            "last_verified_at": _iso(row["last_verified_at"]) if row["last_verified_at"] else None,
-            "warning": _provider_warning(row),
-        }
-        for row in db.execute(
-            text(
-                """
-                select provider_key, provider_type, routing_mode, kill_switch_enabled,
-                       current_period_usage, hard_limit, last_verified_at
-                from provider_budget
-                order by provider_key
-                """
-            )
-        ).mappings().all()
-    }
+    providers_by_key = _provider_status_rows(db)
     for provider in (seed_status or {}).get("providers", []):
-        if not isinstance(provider, dict) or not isinstance(provider.get("provider_key"), str):
-            continue
-        key = provider["provider_key"]
-        existing = providers_by_key.get(key)
-        if existing is None:
-            providers_by_key[key] = {
-                "provider_key": key,
-                "provider_type": provider.get("provider_type", "unknown"),
-                "status": provider.get("status", "ready"),
-                "mode": provider.get("mode", "FREE_ONLY"),
-                "last_verified_at": provider.get("last_verified_at"),
-                "warning": provider.get("warning"),
-            }
-            continue
-        if provider.get("status") and provider.get("status") != "ready":
-            existing["status"] = provider["status"]
-        if provider.get("warning") and not existing.get("warning"):
-            existing["warning"] = provider["warning"]
-        if provider.get("provider_type") and existing.get("provider_type") in {None, "market_data"}:
-            existing["provider_type"] = provider["provider_type"]
+        _merge_seed_provider_status(providers_by_key, provider)
     providers = sorted(providers_by_key.values(), key=lambda provider: provider["provider_key"])
-    operations = {
-        row["status_key"]: row["status_value"]
-        for row in db.execute(text("select status_key, status_value from operation_status")).mappings().all()
-    }
+    operations = _operation_status_rows(db)
     return {
         "snapshot_age_minutes": 0,
         "degraded_mode": any(value in {"critical_warning", "degraded_read_only", "failed"} for value in operations.values()),
@@ -524,6 +599,66 @@ def _source_status_data(db: Session, *, seed_status: dict[str, Any] | None = Non
             "backup_status": operations.get("backup", "local_encrypted_backups_not_configured"),
             "restore_drill_at": operations.get("restore_drill_at"),
         },
+    }
+
+
+def _provider_status_rows(db: Session) -> dict[str, dict[str, Any]]:
+    rows = db.execute(
+        text(
+            """
+            select provider_key, provider_type, routing_mode, kill_switch_enabled,
+                   current_period_usage, hard_limit, last_verified_at
+            from provider_budget
+            order by provider_key
+            """
+        )
+    ).mappings().all()
+    return {
+        row["provider_key"]: {
+            "provider_key": row["provider_key"],
+            "provider_type": row["provider_type"],
+            "status": "kill_switch" if row["kill_switch_enabled"] else "ready",
+            "mode": row["routing_mode"],
+            "last_verified_at": _iso(row["last_verified_at"]) if row["last_verified_at"] else None,
+            "warning": _provider_warning(row),
+        }
+        for row in rows
+    }
+
+
+def _merge_seed_provider_status(
+    providers_by_key: dict[str, dict[str, Any]], provider: Any
+) -> None:
+    if not isinstance(provider, dict) or not isinstance(provider.get("provider_key"), str):
+        return
+    key = provider["provider_key"]
+    existing = providers_by_key.get(key)
+    if existing is None:
+        providers_by_key[key] = _seed_provider_status(provider)
+        return
+    if provider.get("status") and provider.get("status") != "ready":
+        existing["status"] = provider["status"]
+    if provider.get("warning") and not existing.get("warning"):
+        existing["warning"] = provider["warning"]
+    if provider.get("provider_type") and existing.get("provider_type") in {None, "market_data"}:
+        existing["provider_type"] = provider["provider_type"]
+
+
+def _seed_provider_status(provider: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "provider_key": provider["provider_key"],
+        "provider_type": provider.get("provider_type", "unknown"),
+        "status": provider.get("status", "ready"),
+        "mode": provider.get("mode", "FREE_ONLY"),
+        "last_verified_at": provider.get("last_verified_at"),
+        "warning": provider.get("warning"),
+    }
+
+
+def _operation_status_rows(db: Session) -> dict[str, str]:
+    return {
+        row["status_key"]: row["status_value"]
+        for row in db.execute(text("select status_key, status_value from operation_status")).mappings().all()
     }
 
 
@@ -610,7 +745,7 @@ def _record_manifest(
               byte_size, generated_at, publication_status, generated_by
             )
             values (
-              :snapshot_version, cast(:manifest_json as jsonb), 'public/latest/manifest.json',
+              :snapshot_version, cast(:manifest_json as jsonb), :storage_object_key,
               :content_hash, :byte_size, :generated_at, :publication_status, :generated_by
             )
             on conflict (snapshot_version) do update
@@ -625,6 +760,7 @@ def _record_manifest(
         {
             "snapshot_version": version,
             "manifest_json": json.dumps(manifest),
+            "storage_object_key": PUBLIC_LATEST_MANIFEST_KEY,
             "content_hash": _content_hash(manifest_path),
             "byte_size": manifest_path.stat().st_size,
             "generated_at": manifest["generated_at"],
@@ -642,7 +778,7 @@ def _record_publication_rows(
     status: str,
 ) -> None:
     for file_path in files:
-        if file_path.name == "manifest.json":
+        if file_path.name == MANIFEST_FILENAME:
             continue
         data: dict[str, Any] = json.loads(file_path.read_text())
         db.execute(
@@ -685,7 +821,7 @@ def _record_publication_rows(
 
 def _publish_files_locally(files: list[Path], root: Path) -> None:
     PUBLISHED_ROOT.mkdir(parents=True, exist_ok=True)
-    for file_path in sorted(files, key=lambda path: path.name == "manifest.json"):
+    for file_path in sorted(files, key=lambda path: path.name == MANIFEST_FILENAME):
         rel = file_path.relative_to(root).as_posix()
         _copy_file_atomic(file_path, PUBLISHED_ROOT / rel)
 
@@ -698,7 +834,7 @@ def _copy_file_atomic(source: Path, destination: Path) -> None:
 
 
 def _validate_snapshot_file(file_path: Path) -> None:
-    if file_path.name == "manifest.json":
+    if file_path.name == MANIFEST_FILENAME:
         return
     data = json.loads(file_path.read_text())
     schema_name = {
@@ -740,7 +876,7 @@ def _assert_no_public_raw_private(value: Any) -> None:
 
 def _snapshot_schema_registry() -> Registry:
     resources = []
-    for path in SCHEMA_DIR.glob("*.json"):
+    for path in SCHEMA_DIR.glob(JSON_FILE_GLOB):
         schema = json.loads(path.read_text())
         resources.append((path.resolve().as_uri(), Resource.from_contents(schema, default_specification=DRAFT202012)))
     return Registry().with_resources(resources)
@@ -798,8 +934,8 @@ def _iso(value: Any) -> str:
 
 
 def _payload_hash(payload: Any) -> str:
-    return "sha256:" + hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str).encode()).hexdigest()
+    return SHA256_PREFIX + hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str).encode()).hexdigest()
 
 
 def _content_hash(file_path: Path) -> str:
-    return "sha256:" + hashlib.sha256(file_path.read_bytes()).hexdigest()
+    return SHA256_PREFIX + hashlib.sha256(file_path.read_bytes()).hexdigest()

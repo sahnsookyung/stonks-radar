@@ -1,6 +1,6 @@
 import { SnapshotHardExpiredError } from "../lib/snapshots";
 
-export function LoadingState({ label = "Loading snapshot" }: { label?: string }) {
+export function LoadingState({ label = "Loading snapshot" }: Readonly<{ label?: string }>) {
   return (
     <div className="grid min-h-[70vh] place-items-center rounded-md border border-dashed border-line bg-panel text-sm text-muted">
       {label}
@@ -8,7 +8,7 @@ export function LoadingState({ label = "Loading snapshot" }: { label?: string })
   );
 }
 
-export function ErrorState({ error }: { error: unknown }) {
+export function ErrorState({ error }: Readonly<{ error: unknown }>) {
   if (error instanceof SnapshotHardExpiredError) {
     return <SnapshotExpiredState error={error} />;
   }
@@ -19,8 +19,8 @@ export function ErrorState({ error }: { error: unknown }) {
   );
 }
 
-export function SnapshotExpiredState({ error }: { error: SnapshotHardExpiredError }) {
-  const isKo = typeof window !== "undefined" && window.location.pathname.startsWith("/ko");
+export function SnapshotExpiredState({ error }: Readonly<{ error: SnapshotHardExpiredError }>) {
+  const isKo = globalThis.window?.location.pathname.startsWith("/ko") ?? false;
   const statusHref = isKo ? "/ko/status" : "/en/status";
   return (
     <section className="mx-auto grid min-h-[60vh] max-w-2xl place-items-center px-4 py-10">

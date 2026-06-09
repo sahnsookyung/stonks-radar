@@ -72,7 +72,7 @@ interface WatchedPerson {
   notes?: string | null;
 }
 
-export function TrumpFilingsPage() {
+export function TrumpFilingsPage() { // NOSONAR - disclosure page coordinates filters, summaries, and source-linked rows.
   const locale = useLocale();
   const { t } = useTranslation();
   const snapshotQuery = useQuery({
@@ -114,13 +114,13 @@ export function TrumpFilingsPage() {
           </p>
         </div>
         <div className="flex min-w-0 flex-wrap gap-2">
-          {lane ? (
+          {lane && (
             <>
               <SourceBadge label={locale === "ko" ? "출처 연결형" : "source-linked"} />
               <span className="safe-text max-w-full text-xs leading-5 text-muted">{lane.cadence}</span>
             </>
-          ) : null}
-          {hasApiData ? (
+          )}
+          {hasApiData && (
             <SourceBadge
               label={
                 locale === "ko"
@@ -128,7 +128,7 @@ export function TrumpFilingsPage() {
                   : `${disclosure?.open_review_items ?? 0} review items`
               }
             />
-          ) : null}
+          )}
         </div>
       </section>
 
@@ -144,7 +144,7 @@ export function TrumpFilingsPage() {
         </div>
       </section>
 
-      {disclosureQuery.isError ? (
+      {disclosureQuery.isError && (
         <section className="panel p-5">
           <div className="flex items-center gap-2 text-sm font-semibold text-warning">
             <AlertTriangle className="h-4 w-4" />
@@ -161,9 +161,9 @@ export function TrumpFilingsPage() {
             ))}
           </div>
         </section>
-      ) : null}
+      )}
 
-      {hasApiData ? (
+      {hasApiData && (
         <>
           <section className="grid gap-3 md:grid-cols-3">
             <StatCard
@@ -199,7 +199,7 @@ export function TrumpFilingsPage() {
             <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               <CapabilityTile
                 tone="good"
-                title={locale === "ko" ? "SEC Form 4" : "SEC Form 4"}
+                title="SEC Form 4"
                 body={
                   locale === "ko"
                     ? "적용 대상 내부자에 대해 주식 수, 가격, 거래 후 보유량을 대체로 정확히 제공합니다."
@@ -208,7 +208,7 @@ export function TrumpFilingsPage() {
               />
               <CapabilityTile
                 tone="watch"
-                title={locale === "ko" ? "OGE 278-T" : "OGE 278-T"}
+                title="OGE 278-T"
                 body={
                   locale === "ko"
                     ? "거래는 공개되지만 최대 45일 지연될 수 있고 금액은 범위입니다."
@@ -217,7 +217,7 @@ export function TrumpFilingsPage() {
               />
               <CapabilityTile
                 tone="watch"
-                title={locale === "ko" ? "Form 144 / 13D-G" : "Form 144 / 13D-G"}
+                title="Form 144 / 13D-G"
                 body={
                   locale === "ko"
                     ? "매도 의향 또는 5% 이상 보유 공시이지 모든 거래의 원장이 아닙니다."
@@ -234,7 +234,7 @@ export function TrumpFilingsPage() {
                 }
               />
             </div>
-            {disclosedHoldings.length ? (
+            {disclosedHoldings.length > 0 && (
               <div className="mt-5 min-w-0 rounded-md border border-line bg-panelAlt p-4">
                 <h3 className="safe-text text-sm font-bold leading-5">
                   {locale === "ko" ? "최신 SEC 공시 보유량" : "Latest SEC-disclosed holdings"}
@@ -268,7 +268,7 @@ export function TrumpFilingsPage() {
                     : "Uses only SEC rows that disclose post-transaction holdings; OGE amount ranges and private accounts are not rolled up."}
                 </p>
               </div>
-            ) : null}
+            )}
           </section>
 
           <section className="panel p-5">
@@ -281,13 +281,14 @@ export function TrumpFilingsPage() {
                   : "Uncertain OGE PDF parses stay in review and are not shown as transaction rows."
               }
             />
-            {transactions.length ? (
+            {transactions.length > 0 && (
               <div className="mt-4 grid gap-3">
                 {transactions.slice(0, 24).map((transaction) => (
                   <TransactionRow key={transaction.id} transaction={transaction} locale={locale} />
                 ))}
               </div>
-            ) : (
+            )}
+            {transactions.length === 0 && (
               <EmptyState
                 text={
                   locale === "ko"
@@ -353,7 +354,8 @@ export function TrumpFilingsPage() {
             </div>
           </section>
         </>
-      ) : disclosureQuery.isLoading ? (
+      )}
+      {!hasApiData && disclosureQuery.isLoading ? (
         <LoadingState />
       ) : null}
 
@@ -377,11 +379,11 @@ function SectionHeader({
   icon,
   title,
   subtitle
-}: {
+}: Readonly<{
   icon: ReactNode;
   title: string;
   subtitle: string;
-}) {
+}>) {
   return (
     <div className="min-w-0">
       <h2 className="safe-text flex items-center gap-2 text-lg font-bold leading-7">
@@ -398,12 +400,12 @@ function StatCard({
   label,
   value,
   detail
-}: {
+}: Readonly<{
   icon: ReactNode;
   label: string;
   value: string;
   detail: string;
-}) {
+}>) {
   return (
     <article className="panel min-w-0 p-4">
       <div className="flex items-center gap-2 text-sm font-semibold text-muted">
@@ -420,17 +422,12 @@ function CapabilityTile({
   title,
   body,
   tone
-}: {
+}: Readonly<{
   title: string;
   body: string;
   tone: "good" | "watch" | "limit";
-}) {
-  const toneClass =
-    tone === "good"
-      ? "border-success/40 bg-success/10"
-      : tone === "watch"
-        ? "border-warning/40 bg-warning/10"
-        : "border-line bg-panelAlt";
+}>) {
+  const toneClass = capabilityToneClass(tone);
   return (
     <article className={`min-w-0 rounded-md border p-4 ${toneClass}`}>
       <h3 className="safe-text text-sm font-bold leading-5">{title}</h3>
@@ -439,13 +436,19 @@ function CapabilityTile({
   );
 }
 
+function capabilityToneClass(tone: "good" | "watch" | "limit") {
+  if (tone === "good") return "border-success/40 bg-success/10";
+  if (tone === "watch") return "border-warning/40 bg-warning/10";
+  return "border-line bg-panelAlt";
+}
+
 function TransactionRow({
   transaction,
   locale
-}: {
+}: Readonly<{
   transaction: DisclosureTransaction;
   locale: "en" | "ko";
-}) {
+}>) {
   const value = transaction.source === "OGE" ? formatOgeAmount(transaction) : formatSecAmount(transaction);
   const label = disclosureTransactionLabel(transaction, locale);
   const bucket = disclosureTransactionBucket(transaction, locale);
@@ -485,11 +488,11 @@ function TransactionRow({
         ) : null}
         <div className="mt-2 flex flex-wrap gap-2">
           <span className="inline-flex rounded border border-line bg-panel px-2 py-1 text-[11px] font-semibold uppercase leading-4 text-muted">{bucket}</span>
-          {transaction.is_late ? (
+          {transaction.is_late && (
             <span className="inline-flex rounded border border-warning/40 bg-warning/10 px-2 py-1 text-[11px] font-semibold uppercase leading-4 text-warning">
               {locale === "ko" ? "지연 신고" : "late filing"}
             </span>
-          ) : null}
+          )}
         </div>
         {caveat ? <div className="mt-1 text-xs leading-5 text-warning">{caveat}</div> : null}
       </div>
@@ -512,7 +515,7 @@ function TransactionRow({
   );
 }
 
-function FilingRow({ filing, locale }: { filing: DisclosureFiling; locale: "en" | "ko" }) {
+function FilingRow({ filing, locale }: Readonly<{ filing: DisclosureFiling; locale: "en" | "ko" }>) {
   return (
     <a
       className="focus-ring block min-h-11 rounded-md border border-line bg-panelAlt p-4 hover:border-accent"
@@ -543,7 +546,7 @@ function FilingRow({ filing, locale }: { filing: DisclosureFiling; locale: "en" 
   );
 }
 
-function WatchPerson({ person }: { person: WatchedPerson }) {
+function WatchPerson({ person }: Readonly<{ person: WatchedPerson }>) {
   const tags = [...person.tickers, ...person.sec_ciks].filter(Boolean);
   return (
     <article className="min-w-0 rounded-md border border-line bg-panelAlt p-3">
@@ -565,7 +568,7 @@ function WatchPerson({ person }: { person: WatchedPerson }) {
   );
 }
 
-function FallbackCard({ item, locale }: { item: AlternativeSignalItem; locale: "en" | "ko" }) {
+function FallbackCard({ item, locale }: Readonly<{ item: AlternativeSignalItem; locale: "en" | "ko" }>) {
   const content = (
     <>
       <div className="flex items-start justify-between gap-3">
@@ -573,12 +576,12 @@ function FallbackCard({ item, locale }: { item: AlternativeSignalItem; locale: "
         <div className="safe-text shrink-0 text-xs font-semibold leading-5 text-accent">{item.value}</div>
       </div>
       <p className="safe-text mt-2 text-xs leading-5 text-muted">{item.detail}</p>
-      {item.source_url ? (
+      {item.source_url && (
         <div className="mt-3 flex items-center gap-1 text-xs font-semibold leading-5 text-accent">
           {locale === "ko" ? "출처" : "Source"}
           <ExternalLink className="h-3.5 w-3.5" />
         </div>
-      ) : null}
+      )}
     </>
   );
   const className = "focus-ring block min-h-[160px] rounded-md border border-line bg-panelAlt p-4 hover:border-accent";
@@ -592,7 +595,7 @@ function FallbackCard({ item, locale }: { item: AlternativeSignalItem; locale: "
   return <article className={className}>{content}</article>;
 }
 
-function EmptyState({ text }: { text: string }) {
+function EmptyState({ text }: Readonly<{ text: string }>) {
   return <div className="safe-text mt-4 rounded-md border border-dashed border-line p-5 text-sm leading-6 text-muted">{text}</div>;
 }
 
@@ -609,14 +612,15 @@ function formatSecAmount(transaction: DisclosureTransaction) {
   return [shares, price].filter(Boolean).join(" ");
 }
 
-function transactionSummary(transaction: DisclosureTransaction, locale: "en" | "ko") {
+function transactionSummary(transaction: DisclosureTransaction, locale: "en" | "ko") { // NOSONAR - SEC/OGE transaction code mapping stays in one auditable helper.
   if (transaction.source === "OGE") {
     const action = transaction.transaction_type || (locale === "ko" ? "거래 공시" : "reported transaction");
     const asset = transaction.asset_description || transaction.issuer_name || (locale === "ko" ? "자산" : "asset");
     const range = formatOgeAmount(transaction);
+    const tickerText = transaction.ticker ? ` (${transaction.ticker})` : "";
     return locale === "ko"
-      ? `${asset}${transaction.ticker ? ` (${transaction.ticker})` : ""}: ${action}, ${range} 범위`
-      : `${asset}${transaction.ticker ? ` (${transaction.ticker})` : ""}: ${action}, ${range} range`;
+      ? `${asset}${tickerText}: ${action}, ${range} 범위`
+      : `${asset}${tickerText}: ${action}, ${range} range`;
   }
   const actor = transaction.owner_name || transaction.person_name || (locale === "ko" ? "신고자" : "Reporter");
   const code = (transaction.transaction_code ?? "").trim().toUpperCase();
@@ -630,7 +634,8 @@ function transactionSummary(transaction: DisclosureTransaction, locale: "en" | "
     const priceText = price ? `, 가격 ${price}` : "";
     return `${actor}: ${shareText} ${verb}${priceText} (${security})`;
   }
-  const shareText = shares ? `${shares}${ticker ? ` ${ticker}` : ""} shares` : ticker || security;
+  const tickerShareText = ticker ? ` ${ticker}` : "";
+  const shareText = shares ? `${shares}${tickerShareText} shares` : ticker || security;
   const priceText = price ? ` at ${price}` : "";
   return `${actor} ${verb} ${shareText}${priceText} (${security})`;
 }
@@ -654,13 +659,7 @@ function ownershipLabel(transaction: DisclosureTransaction, locale: "en" | "ko")
   const parts: string[] = [];
   if (transaction.direct_or_indirect) {
     const direct = transaction.direct_or_indirect.trim().toUpperCase();
-    const label =
-      direct === "D"
-        ? locale === "ko" ? "직접 보유" : "direct"
-        : direct === "I"
-          ? locale === "ko" ? "간접 보유" : "indirect"
-          : transaction.direct_or_indirect;
-    parts.push(label);
+    parts.push(directOwnershipLabel(direct, transaction.direct_or_indirect, locale));
   }
   if (transaction.ownership_nature) parts.push(transaction.ownership_nature);
   if (transaction.post_transaction_shares != null) {
@@ -671,6 +670,12 @@ function ownershipLabel(transaction: DisclosureTransaction, locale: "en" | "ko")
     );
   }
   return parts.join(" · ");
+}
+
+function directOwnershipLabel(direct: string, fallback: string, locale: "en" | "ko") {
+  if (direct === "D") return locale === "ko" ? "직접 보유" : "direct";
+  if (direct === "I") return locale === "ko" ? "간접 보유" : "indirect";
+  return fallback;
 }
 
 function formatDisclosureDate(transaction: DisclosureTransaction, locale: "en" | "ko") {

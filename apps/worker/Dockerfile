@@ -5,14 +5,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app/apps/api/src:/app/apps/worker/src
 
 WORKDIR /app
-RUN addgroup --system frw && adduser --system --ingroup frw frw
-RUN apt-get update \
+RUN addgroup --system frw && adduser --system --ingroup frw frw \
+    && apt-get update \
     && apt-get install -y --no-install-recommends gosu \
     && rm -rf /var/lib/apt/lists/*
 COPY apps/api/pyproject.toml apps/api/pyproject.toml
 COPY apps/api/src apps/api/src
 COPY apps/web/public/public apps/web/public/public
-RUN pip install --no-cache-dir /app/apps/api
+RUN python -m pip install --no-cache-dir --only-binary=:all: /app/apps/api
 COPY apps/api apps/api
 COPY apps/worker apps/worker
 COPY packages packages
