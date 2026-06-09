@@ -119,11 +119,20 @@ def _build_fresh_seed_snapshots(public_root: Path) -> None:
 
     public_root.mkdir(parents=True, exist_ok=True)
     previous_public_root = build_seed_snapshots.PUBLIC_ROOT
+    previous_env_public_root = os.environ.get("STONKS_SNAPSHOT_PUBLIC_ROOT")
     build_seed_snapshots.PUBLIC_ROOT = public_root
     try:
+        os.environ["STONKS_SNAPSHOT_PUBLIC_ROOT"] = str(public_root)
         build_seed_snapshots.build_snapshots()
     finally:
         build_seed_snapshots.PUBLIC_ROOT = previous_public_root
+        if previous_env_public_root is None:
+            os.environ.pop("STONKS_SNAPSHOT_PUBLIC_ROOT", None)
+        else:
+            os.environ["STONKS_SNAPSHOT_PUBLIC_ROOT"] = previous_env_public_root
+    required_seed = public_root / "latest" / MANIFEST_FILENAME
+    if not required_seed.exists():
+        raise FileNotFoundError(f"Seed snapshot manifest was not generated at {required_seed}")
 
 
 def list_snapshot_candidates(db: Session) -> list[dict[str, Any]]:
