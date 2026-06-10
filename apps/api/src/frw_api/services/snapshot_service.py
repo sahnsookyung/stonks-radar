@@ -71,6 +71,7 @@ class SnapshotTreeContext:
     db_events: dict[str, list[dict[str, Any]]]
     db_calendar: list[dict[str, Any]]
     previous_macro_tiles: dict[str, dict[str, dict[str, Any]]]
+    previous_breaking_market: dict[str, dict[str, Any]]
     db_news_by_locale: dict[str, dict[str, Any]]
     news_event_templates: dict[str, dict[str, Any]]
 
@@ -271,6 +272,7 @@ def _snapshot_tree_context(
         db_events=_public_events(db),
         db_calendar=_calendar_items(db),
         previous_macro_tiles=_published_home_macro_tiles(),
+        previous_breaking_market=_published_home_breaking_market(),
         db_news_by_locale={
             locale: build_reviewed_news_snapshots(db, locale=locale, generated_label=_iso(generated_at))
             for locale in locales
@@ -374,18 +376,145 @@ def _apply_map_snapshot_data(
 def _apply_breaking_market_data(snapshot: dict[str, Any], locale: str, context: SnapshotTreeContext) -> None:
     news_data = context.db_news_by_locale.get(locale) or {}
     breaking = news_data.get("breaking_market")
-    if not isinstance(breaking, dict):
+    if isinstance(breaking, dict):
+        fresh_runtime = _fresh_breaking_market_projection(breaking, context.generated_at)
+        if fresh_runtime is not None:
+            _set_breaking_market_projection(snapshot, fresh_runtime)
+            return
+    seed_breaking = snapshot.get("data", {}).get("breaking_market_map")
+    if isinstance(seed_breaking, dict):
+        fresh_seed = _fresh_breaking_market_projection(seed_breaking, context.generated_at)
+        if fresh_seed is not None:
+            _set_breaking_market_projection(snapshot, fresh_seed)
+            return
+    fallback = _fresh_breaking_market_projection(
+        context.previous_breaking_market.get(locale, {}),
+        context.generated_at,
+    )
+    if fallback is not None:
+        _set_breaking_market_projection(snapshot, fallback)
         return
-    if not _has_breaking_market_content(breaking):
-        return
-    snapshot["data"]["breaking_market_events"] = breaking.get("events", [])
-    snapshot["data"]["breaking_market_map"] = breaking
+    if isinstance(seed_breaking, dict):
+        _set_breaking_market_projection(snapshot, _empty_breaking_market_projection(seed_breaking))
 
 
 def _has_breaking_market_content(breaking: dict[str, Any]) -> bool:
     events = breaking.get("events")
     map_points = breaking.get("map_points")
     return bool(isinstance(events, list) and events and isinstance(map_points, list) and map_points)
+
+
+def _set_breaking_market_projection(snapshot: dict[str, Any], breaking: dict[str, Any]) -> None:
+    snapshot["data"]["breaking_market_events"] = breaking.get("events", [])
+    snapshot["data"]["breaking_market_map"] = breaking
+
+
+def _empty_breaking_market_projection(template: dict[str, Any]) -> dict[str, Any]:
+    projection = {
+        "events": [],
+        "map_points": [],
+        "shown_count": 0,
+        "total_count": 0,
+    }
+    for key in ("registry_version", "scoring_version", "thinning_version", "ranking_cutoff"):
+        if key in template:
+            projection[key] = template[key]
+    return projection
+
+
+def _fresh_breaking_market_projection(
+    breaking: dict[str, Any],
+    generated_at: datetime,
+) -> dict[str, Any] | None:
+    if not _has_breaking_market_content(breaking):
+        return None
+    events = breaking.get("events")
+    if not isinstance(events, list):
+        return None
+    current_events: list[dict[str, Any]] = []
+    current_event_ids: set[str] = set()
+    for event in events:
+        if not isinstance(event, dict) or not _breaking_event_is_current(event, generated_at):
+            continue
+        event_id = event.get("event_id") or event.get("id")
+        if not isinstance(event_id, str) or not event_id.strip():
+            continue
+        current_events.append(event)
+        current_event_ids.add(event_id)
+    if not current_events:
+        return None
+    map_points = [
+        point
+        for point in breaking.get("map_points", [])
+        if isinstance(point, dict)
+        and _valid_breaking_map_point(point, current_event_ids, generated_at)
+    ]
+    if not map_points:
+        return None
+    projection = json.loads(json.dumps(breaking))
+    projection["events"] = current_events
+    projection["map_points"] = map_points
+    projection["shown_count"] = len(current_events)
+    projection["total_count"] = len(current_events)
+    return projection
+
+
+def _breaking_event_is_current(event: dict[str, Any], generated_at: datetime) -> bool:
+    published_at = _parse_public_timestamp(event.get("source_published_at"))
+    if published_at is None:
+        return False
+    generated_at = _ensure_utc(generated_at)
+    if published_at > generated_at + timedelta(minutes=5):
+        return False
+    return generated_at - published_at <= timedelta(hours=24)
+
+
+def _valid_breaking_map_point(
+    point: dict[str, Any],
+    current_event_ids: set[str],
+    generated_at: datetime,
+) -> bool:
+    try:
+        latitude = float(point.get("latitude"))
+        longitude = float(point.get("longitude"))
+    except (TypeError, ValueError):
+        return False
+    if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+        return False
+    if abs(latitude) < 0.0001 and abs(longitude) < 0.0001:
+        return False
+    point_published_at = point.get("source_published_at")
+    if point_published_at is not None:
+        parsed_point_time = _parse_public_timestamp(point_published_at)
+        if parsed_point_time is None:
+            return False
+        generated_at = _ensure_utc(generated_at)
+        if parsed_point_time > generated_at + timedelta(minutes=5):
+            return False
+        if generated_at - parsed_point_time > timedelta(hours=24):
+            return False
+    event_ids = point.get("event_ids")
+    if not isinstance(event_ids, list):
+        event_ids = [point.get("event_id")]
+    return any(isinstance(event_id, str) and event_id in current_event_ids for event_id in event_ids)
+
+
+def _parse_public_timestamp(value: Any) -> datetime | None:
+    if isinstance(value, datetime):
+        return _ensure_utc(value)
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return _ensure_utc(parsed)
+
+
+def _ensure_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 
 def _valid_public_event_geo(event: dict[str, Any]) -> bool:
@@ -492,6 +621,39 @@ def _published_home_macro_tiles() -> dict[str, dict[str, dict[str, Any]]]:
             for tile in tiles
             if isinstance(tile, dict) and isinstance(tile.get("key"), str)
         }
+    return previous
+
+
+def _published_home_breaking_market() -> dict[str, dict[str, Any]]:
+    manifest_path = PUBLISHED_ROOT / LATEST_MANIFEST_PATH
+    if not manifest_path.exists():
+        return {}
+    try:
+        manifest = json.loads(manifest_path.read_text())
+    except json.JSONDecodeError:
+        return {}
+    home_paths = manifest.get("objects", {}).get("home", {})
+    previous: dict[str, dict[str, Any]] = {}
+    for locale, home_path in home_paths.items():
+        if not isinstance(home_path, str):
+            continue
+        snapshot_path = PUBLISHED_ROOT / home_path.removeprefix("public/")
+        if not snapshot_path.exists():
+            continue
+        try:
+            snapshot = json.loads(snapshot_path.read_text())
+        except json.JSONDecodeError:
+            continue
+        data = snapshot.get("data", {})
+        if not isinstance(data, dict):
+            continue
+        breaking = data.get("breaking_market_map")
+        if not isinstance(breaking, dict):
+            continue
+        if not isinstance(breaking.get("events"), list) and isinstance(data.get("breaking_market_events"), list):
+            breaking = {**breaking, "events": data["breaking_market_events"]}
+        if _has_breaking_market_content(breaking):
+            previous[str(locale)] = breaking
     return previous
 
 
