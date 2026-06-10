@@ -376,8 +376,16 @@ def _apply_breaking_market_data(snapshot: dict[str, Any], locale: str, context: 
     breaking = news_data.get("breaking_market")
     if not isinstance(breaking, dict):
         return
+    if not _has_breaking_market_content(breaking):
+        return
     snapshot["data"]["breaking_market_events"] = breaking.get("events", [])
     snapshot["data"]["breaking_market_map"] = breaking
+
+
+def _has_breaking_market_content(breaking: dict[str, Any]) -> bool:
+    events = breaking.get("events")
+    map_points = breaking.get("map_points")
+    return bool(isinstance(events, list) and events and isinstance(map_points, list) and map_points)
 
 
 def _valid_public_event_geo(event: dict[str, Any]) -> bool:
