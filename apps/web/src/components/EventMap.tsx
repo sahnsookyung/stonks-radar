@@ -94,6 +94,7 @@ export function EventMap({
   useEffect(() => {
     if (!shouldLoad || !containerRef.current || mapRef.current) return;
     let disposed = false;
+    let readyFallbackTimer: number | null = null;
     void Promise.all([import("maplibre-gl"), import("maplibre-gl/dist/maplibre-gl.css")]).then(([module]) => {
       if (disposed || !containerRef.current) return;
       const maplibre = module.default;
@@ -205,11 +206,21 @@ export function EventMap({
         wireCountryHover(mapRef.current, setHoveredCountry, hoveredCountryRef);
         syncNewsMapPoints(maplibre, mapRef.current, mapPointsRef.current, onMapPointSelectRef);
         syncMarkers(maplibre, mapRef.current, markerRefs, mapPointsRef.current.length ? [] : eventsRef.current);
-        setIsReady(true);
+        const readyMap = mapRef.current;
+        const markReady = () => {
+          if (disposed || !readyMap || readyMap !== mapRef.current) return;
+          readyMap.resize();
+          setIsReady(true);
+        };
+        readyMap?.once("idle", markReady);
+        readyFallbackTimer = globalThis.window.setTimeout(markReady, 1200);
       });
     });
     return () => {
       disposed = true;
+      if (readyFallbackTimer !== null) {
+        globalThis.window.clearTimeout(readyFallbackTimer);
+      }
       if (shouldExposeMapDebugHook()) {
         delete (globalThis.window as EventMapDebugWindow).__stonksRadarMap;
       }
