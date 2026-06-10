@@ -191,6 +191,11 @@ def test_stale_previous_breaking_market_does_not_fill_empty_projection() -> None
         "map_points": [],
         "shown_count": 0,
         "total_count": 0,
+        "ranking_cutoff": None,
+        "registry_version": 1,
+        "scoring_version": "geo-priority-v1",
+        "thinning_version": "freshness-area-cap-v1",
+        "generated_at": "2026-06-10T06:00:00Z",
     }
 
 
@@ -249,6 +254,8 @@ def test_stale_seed_breaking_market_is_cleared_when_no_fresh_runtime_or_fallback
         "registry_version": "test",
         "scoring_version": "test",
         "thinning_version": "test",
+        "ranking_cutoff": None,
+        "generated_at": "2026-06-10T06:00:00Z",
     }
 
 
@@ -292,4 +299,9 @@ def test_previous_breaking_market_rejects_zero_coordinate_map_points() -> None:
         "map_points": [],
         "shown_count": 0,
         "total_count": 0,
+        "ranking_cutoff": None,
+        "registry_version": 1,
+        "scoring_version": "geo-priority-v1",
+        "thinning_version": "freshness-area-cap-v1",
+        "generated_at": "2026-06-10T06:00:00Z",
     }

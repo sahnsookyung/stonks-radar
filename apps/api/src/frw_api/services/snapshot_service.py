@@ -395,7 +395,7 @@ def _apply_breaking_market_data(snapshot: dict[str, Any], locale: str, context: 
         _set_breaking_market_projection(snapshot, fallback)
         return
     if isinstance(seed_breaking, dict):
-        _set_breaking_market_projection(snapshot, _empty_breaking_market_projection(seed_breaking))
+        _set_breaking_market_projection(snapshot, _empty_breaking_market_projection(seed_breaking, context.generated_at))
 
 
 def _has_breaking_market_content(breaking: dict[str, Any]) -> bool:
@@ -409,16 +409,18 @@ def _set_breaking_market_projection(snapshot: dict[str, Any], breaking: dict[str
     snapshot["data"]["breaking_market_map"] = breaking
 
 
-def _empty_breaking_market_projection(template: dict[str, Any]) -> dict[str, Any]:
+def _empty_breaking_market_projection(template: dict[str, Any], generated_at: datetime) -> dict[str, Any]:
     projection = {
         "events": [],
         "map_points": [],
         "shown_count": 0,
         "total_count": 0,
+        "ranking_cutoff": template.get("ranking_cutoff"),
+        "registry_version": template.get("registry_version", 1),
+        "scoring_version": template.get("scoring_version", "geo-priority-v1"),
+        "thinning_version": template.get("thinning_version", "freshness-area-cap-v1"),
+        "generated_at": template.get("generated_at") if isinstance(template.get("generated_at"), str) else _iso(generated_at),
     }
-    for key in ("registry_version", "scoring_version", "thinning_version", "ranking_cutoff"):
-        if key in template:
-            projection[key] = template[key]
     return projection
 
 
