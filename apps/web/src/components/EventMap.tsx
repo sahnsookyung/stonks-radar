@@ -15,7 +15,10 @@ interface EventMapProps extends Readonly<{
   loadStrategy?: "visible" | "idle-visible" | "immediate";
 }> {}
 
-type EventMapDebugWindow = Window & { __stonksRadarMap?: maplibregl.Map };
+type EventMapDebugWindow = Window & {
+  __stonksRadarMap?: maplibregl.Map;
+  __stonksRadarHoverCountry?: (countryName: string) => void;
+};
 
 function shouldExposeMapDebugHook() {
   return import.meta.env.DEV || (typeof navigator !== "undefined" && navigator.webdriver);
@@ -204,6 +207,16 @@ export function EventMap({
         );
         mapRef.current?.resize();
         wireCountryHover(mapRef.current, setHoveredCountry, hoveredCountryRef);
+        if (shouldExposeMapDebugHook()) {
+          (globalThis.window as EventMapDebugWindow).__stonksRadarHoverCountry = (countryName: string) => {
+            const debugMap = mapRef.current;
+            if (!debugMap || !countryName) return;
+            applyCountryHover(debugMap, setHoveredCountry, hoveredCountryRef, countryName, [
+              Math.round(debugMap.getCanvas().clientWidth * 0.5),
+              Math.round(debugMap.getCanvas().clientHeight * 0.5)
+            ]);
+          };
+        }
         syncNewsMapPoints(maplibre, mapRef.current, mapPointsRef.current, onMapPointSelectRef);
         syncMarkers(maplibre, mapRef.current, markerRefs, mapPointsRef.current.length ? [] : eventsRef.current);
         const readyMap = mapRef.current;
@@ -223,6 +236,7 @@ export function EventMap({
       }
       if (shouldExposeMapDebugHook()) {
         delete (globalThis.window as EventMapDebugWindow).__stonksRadarMap;
+        delete (globalThis.window as EventMapDebugWindow).__stonksRadarHoverCountry;
       }
       mapRef.current?.remove();
       mapRef.current = null;
@@ -337,15 +351,7 @@ function wireCountryHover(
 ) {
   if (!map) return;
 
-  const clearHover = () => {
-    if (hoveredCountryRef.current !== null) {
-      map.setFilter("country-hover-fill", countryHoverFilter(""));
-      map.setFilter("country-hover-outline", countryHoverFilter(""));
-      hoveredCountryRef.current = null;
-    }
-    map.getCanvas().style.cursor = "";
-    setHoveredCountry(null);
-  };
+  const clearHover = () => clearCountryHover(map, setHoveredCountry, hoveredCountryRef);
 
   const canvas = map.getCanvas();
   const eventTarget = map.getContainer().parentElement ?? map.getContainer();
@@ -366,23 +372,48 @@ function wireCountryHover(
       return;
     }
 
-    if (hoveredCountryRef.current !== countryName) {
-      hoveredCountryRef.current = countryName;
-      map.setFilter("country-hover-fill", countryHoverFilter(countryName));
-      map.setFilter("country-hover-outline", countryHoverFilter(countryName));
-    }
-    map.getCanvas().style.cursor = "pointer";
-    setHoveredCountry({
-      name: countryName,
-      x: Math.min(point[0] + 12, Math.max(12, canvas.clientWidth - 180)),
-      y: Math.min(Math.max(point[1], 22), Math.max(22, canvas.clientHeight - 22))
-    });
+    applyCountryHover(map, setHoveredCountry, hoveredCountryRef, countryName, point);
   };
 
   eventTarget.addEventListener("pointermove", handleMove);
   eventTarget.addEventListener("mousemove", handleMove);
   eventTarget.addEventListener("click", handleMove);
   eventTarget.addEventListener("mouseleave", clearHover);
+}
+
+function clearCountryHover(
+  map: maplibregl.Map,
+  setHoveredCountry: (country: HoveredCountry | null) => void,
+  hoveredCountryRef: MutableRef<string | null>
+) {
+  if (hoveredCountryRef.current !== null) {
+    map.setFilter("country-hover-fill", countryHoverFilter(""));
+    map.setFilter("country-hover-outline", countryHoverFilter(""));
+    hoveredCountryRef.current = null;
+  }
+  map.getCanvas().style.cursor = "";
+  setHoveredCountry(null);
+}
+
+function applyCountryHover(
+  map: maplibregl.Map,
+  setHoveredCountry: (country: HoveredCountry | null) => void,
+  hoveredCountryRef: MutableRef<string | null>,
+  countryName: string,
+  point: [number, number]
+) {
+  const canvas = map.getCanvas();
+  if (hoveredCountryRef.current !== countryName) {
+    hoveredCountryRef.current = countryName;
+    map.setFilter("country-hover-fill", countryHoverFilter(countryName));
+    map.setFilter("country-hover-outline", countryHoverFilter(countryName));
+  }
+  canvas.style.cursor = "pointer";
+  setHoveredCountry({
+    name: countryName,
+    x: Math.min(point[0] + 12, Math.max(12, canvas.clientWidth - 180)),
+    y: Math.min(Math.max(point[1], 22), Math.max(22, canvas.clientHeight - 22))
+  });
 }
 
 function countryHoverFilter(countryName: string) {

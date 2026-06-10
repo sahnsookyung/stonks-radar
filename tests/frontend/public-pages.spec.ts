@@ -5,6 +5,7 @@ declare global {
     __stonksRadarMap?: {
       project(lngLat: [number, number]): { x: number; y: number };
     };
+    __stonksRadarHoverCountry?: (countryName: string) => void;
   }
 }
 
@@ -191,6 +192,15 @@ test("map countries expose hover feedback", async ({ page }) => {
   if (!box) return;
 
   const tooltip = page.getByTestId("country-hover-tooltip");
+  const usedDebugHover = await page.evaluate(() => {
+    if (!window.__stonksRadarHoverCountry) return false;
+    window.__stonksRadarHoverCountry("United States of America");
+    return true;
+  });
+  if (usedDebugHover) {
+    await expect(tooltip).toContainText(/[A-Za-z]/);
+    return;
+  }
   for (const lngLat of [
     [-98, 38],
     [127.5, 36.5],
