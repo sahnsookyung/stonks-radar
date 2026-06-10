@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-09T19:51:21Z",
-  "stale_after": "2026-06-10T07:51:21Z",
-  "hard_expires_at": "2026-06-16T19:51:21Z",
+  "generated_at": "2026-06-10T13:38:42Z",
+  "stale_after": "2026-06-11T01:38:42Z",
+  "hard_expires_at": "2026-06-17T13:38:42Z",
   "object_type": "country_region",
   "object_key": "BRA",
-  "content_hash": "sha256:414c8b3fac836f0caf3e18f7275a0ffd850875d22d4d5254c5ac341e6e31a65f",
+  "content_hash": "sha256:b2f9e2088df492f32a43732de5d06256fd35258a56fe1464326313c02a3686b5",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -266,488 +266,488 @@
       {
         "key": "nasdaq_composite",
         "label": "Nasdaq Composite",
-        "value": "25,599.6",
+        "value": "25,591.24",
         "source": "Yahoo Finance delayed quote",
         "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-09T19:51:37Z; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-09T19:51:37Z",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-10T13:38:38Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-10T13:38:38Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EIXIC?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-09T15:04:00Z",
-            "value": 25719.232421875
+            "date": "2026-06-10T13:31:00Z",
+            "value": 25492.20703125
           },
           {
-            "date": "2026-06-09T15:51:00Z",
-            "value": 25516.224609375
+            "date": "2026-06-10T13:32:00Z",
+            "value": 25478.671875
           },
           {
-            "date": "2026-06-09T16:38:00Z",
-            "value": 25059.9375
+            "date": "2026-06-10T13:33:00Z",
+            "value": 25454.87890625
           },
           {
-            "date": "2026-06-09T17:25:00Z",
-            "value": 25351.26171875
+            "date": "2026-06-10T13:34:00Z",
+            "value": 25414.283203125
           },
           {
-            "date": "2026-06-09T18:12:00Z",
-            "value": 25494.6640625
+            "date": "2026-06-10T13:35:00Z",
+            "value": 25482.224609375
           },
           {
-            "date": "2026-06-09T18:59:00Z",
-            "value": 25663.21875
+            "date": "2026-06-10T13:36:00Z",
+            "value": 25518.19140625
           },
           {
-            "date": "2026-06-09T19:46:00Z",
-            "value": 25519.662109375
+            "date": "2026-06-10T13:37:00Z",
+            "value": 25542.07421875
           },
           {
-            "date": "2026-06-09T19:51:37Z",
-            "value": 25599.603515625
+            "date": "2026-06-10T13:38:38Z",
+            "value": 25591.23828125
           }
         ],
-        "refresh_delta": -330.0580000000009,
-        "refresh_delta_percent": -1.272897425350168
+        "refresh_delta": -87.58399999999892,
+        "refresh_delta_percent": -0.3410748359095247
       },
       {
         "key": "nasdaq_100",
         "label": "Nasdaq 100",
-        "value": "28,960.06",
+        "value": "28,972",
         "source": "Yahoo Finance delayed quote",
         "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-09T19:51:35Z; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-09T19:51:35Z",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-10T13:38:47Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-10T13:38:47Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-09T15:04:00Z",
-            "value": 29147.125
+            "date": "2026-06-10T13:31:00Z",
+            "value": 28837.5859375
           },
           {
-            "date": "2026-06-09T15:51:00Z",
-            "value": 28899.41796875
+            "date": "2026-06-10T13:32:00Z",
+            "value": 28825.478515625
           },
           {
-            "date": "2026-06-09T16:38:00Z",
-            "value": 28290.755859375
+            "date": "2026-06-10T13:33:00Z",
+            "value": 28807.59765625
           },
           {
-            "date": "2026-06-09T17:25:00Z",
-            "value": 28658.14453125
+            "date": "2026-06-10T13:34:00Z",
+            "value": 28753.21875
           },
           {
-            "date": "2026-06-09T18:12:00Z",
-            "value": 28812.595703125
+            "date": "2026-06-10T13:35:00Z",
+            "value": 28849.201171875
           },
           {
-            "date": "2026-06-09T18:59:00Z",
-            "value": 29029.04296875
+            "date": "2026-06-10T13:36:00Z",
+            "value": 28882.54296875
           },
           {
-            "date": "2026-06-09T19:46:00Z",
-            "value": 28863.791015625
+            "date": "2026-06-10T13:37:00Z",
+            "value": 28926.49609375
           },
           {
-            "date": "2026-06-09T19:51:35Z",
-            "value": 28960.0546875
+            "date": "2026-06-10T13:38:47Z",
+            "value": 28972.001953125
           }
         ],
-        "refresh_delta": -454.20300000000134,
-        "refresh_delta_percent": -1.5441592985279498
+        "refresh_delta": -112.49799999999959,
+        "refresh_delta_percent": -0.3867970912341611
       },
       {
         "key": "kospi",
         "label": "KOSPI",
-        "value": "8,096.93",
+        "value": "7,730.82",
         "source": "Yahoo Finance delayed quote",
         "freshness": "watch",
-        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-06-09T09:05:30Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-09T09:05:30Z",
+        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-06-10T09:05:40Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-10T09:05:40Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EKS11?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-09T00:45:00Z",
-            "value": 7731.52978515625
+            "date": "2026-06-10T00:45:00Z",
+            "value": 7833.31982421875
           },
           {
-            "date": "2026-06-09T01:30:00Z",
-            "value": 7714.41015625
+            "date": "2026-06-10T01:30:00Z",
+            "value": 7890.77001953125
           },
           {
-            "date": "2026-06-09T02:15:00Z",
-            "value": 7743.52001953125
+            "date": "2026-06-10T02:15:00Z",
+            "value": 7804.35009765625
           },
           {
-            "date": "2026-06-09T03:00:00Z",
-            "value": 7777.93017578125
+            "date": "2026-06-10T03:00:00Z",
+            "value": 7801.9599609375
           },
           {
-            "date": "2026-06-09T03:45:00Z",
-            "value": 7880.7900390625
+            "date": "2026-06-10T03:45:00Z",
+            "value": 7771.080078125
           },
           {
-            "date": "2026-06-09T04:30:00Z",
-            "value": 8019.740234375
+            "date": "2026-06-10T04:30:00Z",
+            "value": 7629.68017578125
           },
           {
-            "date": "2026-06-09T05:15:00Z",
-            "value": 8048.14990234375
+            "date": "2026-06-10T05:15:00Z",
+            "value": 7585.0400390625
           },
           {
-            "date": "2026-06-09T06:00:00Z",
-            "value": 8096.93017578125
+            "date": "2026-06-10T06:00:00Z",
+            "value": 7730.81982421875
           }
         ],
-        "refresh_delta": 612.5200000000004,
-        "refresh_delta_percent": 8.183945027062927
+        "refresh_delta": -366.1100000000006,
+        "refresh_delta_percent": -4.521590281748768
       },
       {
         "key": "kodex_200",
         "label": "KODEX 200 ETF",
-        "value": "130,130",
+        "value": "123,795",
         "source": "Yahoo Finance delayed quote",
         "freshness": "watch",
-        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-06-09T06:30:15Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-09T06:30:15Z",
+        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-06-10T06:30:26Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-10T06:30:26Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "KRW",
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/069500.KS?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-09T00:45:00Z",
-            "value": 123755.0
+            "date": "2026-06-10T00:45:00Z",
+            "value": 125255.0
           },
           {
-            "date": "2026-06-09T01:30:00Z",
-            "value": 123320.0
+            "date": "2026-06-10T01:30:00Z",
+            "value": 125975.0
           },
           {
-            "date": "2026-06-09T02:15:00Z",
-            "value": 123840.0
+            "date": "2026-06-10T02:15:00Z",
+            "value": 124680.0
           },
           {
-            "date": "2026-06-09T03:00:00Z",
-            "value": 124405.0
+            "date": "2026-06-10T03:00:00Z",
+            "value": 124710.0
           },
           {
-            "date": "2026-06-09T03:45:00Z",
-            "value": 126340.0
+            "date": "2026-06-10T03:45:00Z",
+            "value": 124160.0
           },
           {
-            "date": "2026-06-09T04:30:00Z",
-            "value": 128790.0
+            "date": "2026-06-10T04:30:00Z",
+            "value": 121845.0
           },
           {
-            "date": "2026-06-09T05:15:00Z",
-            "value": 129100.0
+            "date": "2026-06-10T05:15:00Z",
+            "value": 121245.0
           },
           {
-            "date": "2026-06-09T06:00:00Z",
-            "value": 130130.0
+            "date": "2026-06-10T06:00:00Z",
+            "value": 123795.0
           }
         ],
-        "refresh_delta": 10570.0,
-        "refresh_delta_percent": 8.840749414519907
+        "refresh_delta": -6335.0,
+        "refresh_delta_percent": -4.86820871436256
       },
       {
         "key": "wti_crude",
         "label": "WTI crude oil futures",
-        "value": "88.19",
+        "value": "89.38",
         "source": "Yahoo Finance delayed quote",
         "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-09T19:41:33Z; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-09T19:41:33Z",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-10T13:28:51Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-10T13:28:51Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "$",
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/CL%3DF?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-09T08:03:00Z",
-            "value": 89.76000213623047
+            "date": "2026-06-10T05:12:00Z",
+            "value": 88.58999633789062
           },
           {
-            "date": "2026-06-09T09:59:00Z",
-            "value": 89.16000366210938
+            "date": "2026-06-10T06:23:00Z",
+            "value": 87.76000213623047
           },
           {
-            "date": "2026-06-09T11:55:00Z",
-            "value": 89.66000366210938
+            "date": "2026-06-10T07:34:00Z",
+            "value": 88.4000015258789
           },
           {
-            "date": "2026-06-09T13:51:00Z",
-            "value": 87.91000366210938
+            "date": "2026-06-10T08:45:00Z",
+            "value": 87.97000122070312
           },
           {
-            "date": "2026-06-09T15:47:00Z",
-            "value": 87.51000213623047
+            "date": "2026-06-10T09:56:00Z",
+            "value": 87.9000015258789
           },
           {
-            "date": "2026-06-09T17:43:00Z",
-            "value": 88.30000305175781
+            "date": "2026-06-10T11:07:00Z",
+            "value": 89.13999938964844
           },
           {
-            "date": "2026-06-09T19:39:00Z",
-            "value": 88.20999908447266
+            "date": "2026-06-10T12:18:00Z",
+            "value": 89.77999877929688
           },
           {
-            "date": "2026-06-09T19:41:33Z",
-            "value": 88.19000244140625
+            "date": "2026-06-10T13:28:51Z",
+            "value": 89.37999725341797
           }
         ],
-        "refresh_delta": -3.1099999999999994,
-        "refresh_delta_percent": -3.406352683461117
+        "refresh_delta": 1.1799999999999926,
+        "refresh_delta_percent": 1.3378684807256152
       },
       {
         "key": "gold_futures",
         "label": "Gold futures",
-        "value": "4,276",
+        "value": "4,172.9",
         "source": "Yahoo Finance delayed quote",
         "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-09T19:41:39Z; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-09T19:41:39Z",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-10T13:28:49Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-10T13:28:49Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "$",
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-09T07:54:00Z",
-            "value": 4351.7001953125
+            "date": "2026-06-10T06:22:00Z",
+            "value": 4235.39990234375
           },
           {
-            "date": "2026-06-09T09:51:00Z",
-            "value": 4355.0
+            "date": "2026-06-10T07:33:00Z",
+            "value": 4217.89990234375
           },
           {
-            "date": "2026-06-09T11:48:00Z",
-            "value": 4364.0
+            "date": "2026-06-10T08:44:00Z",
+            "value": 4193.2998046875
           },
           {
-            "date": "2026-06-09T13:45:00Z",
-            "value": 4357.5
+            "date": "2026-06-10T09:55:00Z",
+            "value": 4189.0
           },
           {
-            "date": "2026-06-09T15:42:00Z",
-            "value": 4304.0
+            "date": "2026-06-10T11:06:00Z",
+            "value": 4184.7998046875
           },
           {
-            "date": "2026-06-09T17:39:00Z",
-            "value": 4287.2998046875
+            "date": "2026-06-10T12:17:00Z",
+            "value": 4165.0
           },
           {
-            "date": "2026-06-09T19:36:00Z",
-            "value": 4281.0
+            "date": "2026-06-10T13:28:00Z",
+            "value": 4172.7001953125
           },
           {
-            "date": "2026-06-09T19:41:39Z",
-            "value": 4276.0
+            "date": "2026-06-10T13:28:49Z",
+            "value": 4172.89990234375
           }
         ],
-        "refresh_delta": -87.39999999999964,
-        "refresh_delta_percent": -2.0030251638630348
+        "refresh_delta": -113.5,
+        "refresh_delta_percent": -2.6479096677864877
       },
       {
         "key": "silver_futures",
         "label": "Silver futures",
-        "value": "65.23",
+        "value": "64.58",
         "source": "Yahoo Finance delayed quote",
         "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-09T19:41:34Z; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-09T19:41:34Z",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-10T13:28:43Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-10T13:28:43Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "$",
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/SI%3DF?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-09T08:07:00Z",
-            "value": 68.40499877929688
+            "date": "2026-06-10T06:22:00Z",
+            "value": 65.125
           },
           {
-            "date": "2026-06-09T10:05:00Z",
-            "value": 68.51000213623047
+            "date": "2026-06-10T07:32:00Z",
+            "value": 64.625
           },
           {
-            "date": "2026-06-09T12:05:00Z",
-            "value": 68.68000030517578
+            "date": "2026-06-10T08:42:00Z",
+            "value": 64.01499938964844
           },
           {
-            "date": "2026-06-09T13:58:00Z",
-            "value": 68.2249984741211
+            "date": "2026-06-10T09:52:00Z",
+            "value": 64.02999877929688
           },
           {
-            "date": "2026-06-09T15:51:00Z",
-            "value": 65.70999908447266
+            "date": "2026-06-10T11:04:00Z",
+            "value": 64.09500122070312
           },
           {
-            "date": "2026-06-09T17:44:00Z",
-            "value": 65.32499694824219
+            "date": "2026-06-10T12:14:00Z",
+            "value": 63.709999084472656
           },
           {
-            "date": "2026-06-09T19:37:00Z",
-            "value": 65.40499877929688
+            "date": "2026-06-10T13:24:00Z",
+            "value": 64.48999786376953
           },
           {
-            "date": "2026-06-09T19:41:34Z",
-            "value": 65.2300033569336
+            "date": "2026-06-10T13:28:43Z",
+            "value": 64.58000183105469
           }
         ],
-        "refresh_delta": -3.3549999999999898,
-        "refresh_delta_percent": -4.891740176423402
+        "refresh_delta": -0.6599999999999966,
+        "refresh_delta_percent": -1.0116492949110922
       },
       {
         "key": "copper_futures",
         "label": "Copper futures",
-        "value": "6.334",
+        "value": "6.3",
         "source": "Yahoo Finance delayed quote",
         "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-09T19:41:02Z; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-09T19:41:02Z",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-10T13:28:53Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-10T13:28:53Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "$",
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/HG%3DF?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-09T08:04:00Z",
-            "value": 6.372000217437744
+            "date": "2026-06-10T05:12:00Z",
+            "value": 6.275000095367432
           },
           {
-            "date": "2026-06-09T10:01:00Z",
-            "value": 6.397500038146973
+            "date": "2026-06-10T06:23:00Z",
+            "value": 6.316500186920166
           },
           {
-            "date": "2026-06-09T11:59:00Z",
-            "value": 6.429999828338623
+            "date": "2026-06-10T07:34:00Z",
+            "value": 6.308499813079834
           },
           {
-            "date": "2026-06-09T13:54:00Z",
-            "value": 6.446000099182129
+            "date": "2026-06-10T08:45:00Z",
+            "value": 6.25600004196167
           },
           {
-            "date": "2026-06-09T15:49:00Z",
-            "value": 6.366499900817871
+            "date": "2026-06-10T09:56:00Z",
+            "value": 6.239999771118164
           },
           {
-            "date": "2026-06-09T17:44:00Z",
-            "value": 6.335000038146973
+            "date": "2026-06-10T11:07:00Z",
+            "value": 6.23799991607666
           },
           {
-            "date": "2026-06-09T19:41:00Z",
-            "value": 6.334499835968018
+            "date": "2026-06-10T12:18:00Z",
+            "value": 6.23199987411499
           },
           {
-            "date": "2026-06-09T19:41:02Z",
-            "value": 6.334499835968018
+            "date": "2026-06-10T13:28:53Z",
+            "value": 6.300000190734863
           }
         ],
-        "refresh_delta": -0.016000000000000014,
-        "refresh_delta_percent": -0.25196850393700815
+        "refresh_delta": -0.02200000000000024,
+        "refresh_delta_percent": -0.3479911420436609
       },
       {
         "key": "vix",
         "label": "VIX",
-        "value": "20.01",
+        "value": "20.99",
         "source": "Yahoo Finance delayed quote",
         "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-09T19:36:31Z; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-09T19:36:31Z",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-10T13:23:46Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-10T13:23:46Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-09T08:47:00Z",
-            "value": 18.09000015258789
+            "date": "2026-06-10T08:01:00Z",
+            "value": 20.15999984741211
           },
           {
-            "date": "2026-06-09T10:19:00Z",
-            "value": 18.139999389648438
+            "date": "2026-06-10T08:47:00Z",
+            "value": 21.010000228881836
           },
           {
-            "date": "2026-06-09T11:51:00Z",
-            "value": 18.010000228881836
+            "date": "2026-06-10T09:33:00Z",
+            "value": 20.979999542236328
           },
           {
-            "date": "2026-06-09T13:23:00Z",
-            "value": 18.049999237060547
+            "date": "2026-06-10T10:19:00Z",
+            "value": 21.239999771118164
           },
           {
-            "date": "2026-06-09T15:00:00Z",
-            "value": 18.829999923706055
+            "date": "2026-06-10T11:05:00Z",
+            "value": 21.829999923706055
           },
           {
-            "date": "2026-06-09T16:32:00Z",
-            "value": 21.6299991607666
+            "date": "2026-06-10T11:51:00Z",
+            "value": 22.0
           },
           {
-            "date": "2026-06-09T18:04:00Z",
-            "value": 20.389999389648438
+            "date": "2026-06-10T12:37:00Z",
+            "value": 20.8799991607666
           },
           {
-            "date": "2026-06-09T19:36:31Z",
-            "value": 20.010000228881836
+            "date": "2026-06-10T13:23:46Z",
+            "value": 20.989999771118164
           }
         ],
-        "refresh_delta": 1.0899999999999999,
-        "refresh_delta_percent": 5.761099365750527
+        "refresh_delta": 1.1199999999999974,
+        "refresh_delta_percent": 5.6366381479617385
       },
       {
         "key": "usd_krw",
         "label": "USD/KRW",
-        "value": "1,524.49",
+        "value": "1,519.38",
         "source": "Yahoo Finance delayed quote",
         "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-09T19:51:35Z; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-09T19:51:35Z",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-10T13:38:54Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-10T13:38:54Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "KRW",
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/KRW%3DX?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-09T05:26:00Z",
-            "value": 1515.780029296875
+            "date": "2026-06-10T03:36:00Z",
+            "value": 1522.6600341796875
           },
           {
-            "date": "2026-06-09T07:49:00Z",
-            "value": 1518.1700439453125
+            "date": "2026-06-10T05:16:00Z",
+            "value": 1524.77001953125
           },
           {
-            "date": "2026-06-09T10:12:00Z",
-            "value": 1523.1199951171875
+            "date": "2026-06-10T06:56:00Z",
+            "value": 1525.2900390625
           },
           {
-            "date": "2026-06-09T12:35:00Z",
-            "value": 1527.9200439453125
+            "date": "2026-06-10T08:36:00Z",
+            "value": 1523.8800048828125
           },
           {
-            "date": "2026-06-09T14:59:00Z",
-            "value": 1525.219970703125
+            "date": "2026-06-10T10:16:00Z",
+            "value": 1522.6199951171875
           },
           {
-            "date": "2026-06-09T17:22:00Z",
-            "value": 1526.3399658203125
+            "date": "2026-06-10T11:56:00Z",
+            "value": 1524.5799560546875
           },
           {
-            "date": "2026-06-09T19:45:00Z",
-            "value": 1525.0999755859375
+            "date": "2026-06-10T13:36:00Z",
+            "value": 1520.06005859375
           },
           {
-            "date": "2026-06-09T19:51:35Z",
-            "value": 1524.489990234375
+            "date": "2026-06-10T13:38:54Z",
+            "value": 1519.3800048828125
           }
         ],
-        "refresh_delta": -2.339999999999918,
-        "refresh_delta_percent": -0.15325871249581932
+        "refresh_delta": -5.919999999999845,
+        "refresh_delta_percent": -0.3881203697633151
       },
       {
         "key": "usd_jpy",
@@ -755,48 +755,48 @@
         "value": "160.38",
         "source": "Yahoo Finance delayed quote",
         "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-09T19:51:47Z; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-09T19:51:47Z",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-10T13:38:58Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-10T13:38:58Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "JPY",
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/JPY%3DX?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-09T04:12:00Z",
-            "value": 160.23800659179688
+            "date": "2026-06-10T02:38:00Z",
+            "value": 160.33700561523438
           },
           {
-            "date": "2026-06-09T06:48:00Z",
-            "value": 160.13600158691406
+            "date": "2026-06-10T04:27:00Z",
+            "value": 160.35499572753906
           },
           {
-            "date": "2026-06-09T09:24:00Z",
-            "value": 160.14500427246094
+            "date": "2026-06-10T06:16:00Z",
+            "value": 160.3419952392578
           },
           {
-            "date": "2026-06-09T12:00:00Z",
-            "value": 160.15499877929688
+            "date": "2026-06-10T08:05:00Z",
+            "value": 160.4010009765625
           },
           {
-            "date": "2026-06-09T14:36:00Z",
-            "value": 160.1909942626953
+            "date": "2026-06-10T09:54:00Z",
+            "value": 160.4409942626953
           },
           {
-            "date": "2026-06-09T17:12:00Z",
+            "date": "2026-06-10T11:43:00Z",
+            "value": 160.52200317382812
+          },
+          {
+            "date": "2026-06-10T13:32:00Z",
             "value": 160.37399291992188
           },
           {
-            "date": "2026-06-09T19:48:00Z",
-            "value": 160.39700317382812
-          },
-          {
-            "date": "2026-06-09T19:51:47Z",
-            "value": 160.3820037841797
+            "date": "2026-06-10T13:38:58Z",
+            "value": 160.375
           }
         ],
-        "refresh_delta": 0.23600000000001842,
-        "refresh_delta_percent": 0.14736552895484023
+        "refresh_delta": 0.05299999999999727,
+        "refresh_delta_percent": 0.03305846982946649
       },
       {
         "key": "us_2y",
@@ -1016,17 +1016,13 @@
         "value": "0.727",
         "source": "BoJ Time-Series Data Search",
         "freshness": "fresh",
-        "delay_label": "BoJ FM01/STRDCLUCON daily average actual through 2026-06-05; API last updated 2026-06-09.",
-        "updated_at": "2026-06-09T21:00:00Z",
+        "delay_label": "BoJ FM01/STRDCLUCON daily average actual through 2026-06-08; API last updated 2026-06-10.",
+        "updated_at": "2026-06-10T21:00:00Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "unit": "%",
         "source_url": "https://www.stat-search.boj.or.jp/api/v1/getDataCode?format=csv&lang=en&db=FM01&code=STRDCLUCON&startDate=202606&endDate=202606",
         "points": [
-          {
-            "date": "2026-05-27",
-            "value": 0.727
-          },
           {
             "date": "2026-05-28",
             "value": 0.727
@@ -1053,6 +1049,10 @@
           },
           {
             "date": "2026-06-05",
+            "value": 0.727
+          },
+          {
+            "date": "2026-06-08",
             "value": 0.727
           }
         ],
@@ -1177,31 +1177,31 @@
       {
         "key": "pentagon_pizza_index",
         "label": "Pentagon pizza index",
-        "value": "39.1",
+        "value": "19.6",
         "source": "Pentagon.Pizza",
         "freshness": "fresh",
-        "delay_label": "Pentagon.Pizza average busyness across 18 monitored sites; 0 anomalies through 2026-06-09",
-        "updated_at": "2026-06-09T19:51:26.480Z",
+        "delay_label": "Pentagon.Pizza average busyness across 18 monitored sites; 1 anomaly through 2026-06-10",
+        "updated_at": "2026-06-10T13:38:46.800Z",
         "coverage_status": "active",
         "refresh_seconds": 300,
         "unit": "/100",
         "source_url": "https://pentagon.pizza/",
         "points": [
           {
-            "date": "2026-06-09T19:06:21Z",
-            "value": 29.0
+            "date": "2026-06-10T12:53:42Z",
+            "value": 5.0
           },
           {
-            "date": "2026-06-09T19:21:21Z",
-            "value": 35.0
+            "date": "2026-06-10T13:08:42Z",
+            "value": 18.0
           },
           {
-            "date": "2026-06-09T19:36:21Z",
-            "value": 42.0
+            "date": "2026-06-10T13:23:42Z",
+            "value": 24.0
           },
           {
-            "date": "2026-06-09T19:51:21Z",
-            "value": 53.0
+            "date": "2026-06-10T13:38:42Z",
+            "value": 33.0
           }
         ]
       }

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-09T19:51:21Z",
-  "stale_after": "2026-06-10T07:51:21Z",
-  "hard_expires_at": "2026-06-16T19:51:21Z",
+  "generated_at": "2026-06-10T13:38:42Z",
+  "stale_after": "2026-06-11T01:38:42Z",
+  "hard_expires_at": "2026-06-17T13:38:42Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_RKLB",
-  "content_hash": "sha256:4d2d104a3db5ea0cc9c3447b481a6c681a7a9651f3b1326eb183f64bf1ff6eb3",
+  "content_hash": "sha256:fae83602eaf932496cce02714745c523ee7ae6ad0f076236fed323fefd4ff73b",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "RKLB",
     "name": "로켓랩 USA",
-    "generated_label": "2026-06-09T19:51:21Z",
+    "generated_label": "2026-06-10T13:38:42Z",
     "summary": "로켓랩 USA에 대해 공개 스냅샷에 승인·출처 연결 뉴스 이벤트 1건이 있습니다.",
     "events": [
       {
@@ -121,9 +121,9 @@
         "title": "로켓랩 발사 일정 모니터링이 RKLB 원문 근거와 연결",
         "summary": "회사 및 공시 출처를 로켓랩 발사 빈도 모니터링을 위한 티커별 이벤트로 묶습니다.",
         "event_type": "company_update",
-        "first_seen_at": "2026-06-09T01:51:21Z",
-        "last_seen_at": "2026-06-09T19:51:21Z",
-        "published_at": "2026-06-09T19:51:21Z",
+        "first_seen_at": "2026-06-09T19:38:42Z",
+        "last_seen_at": "2026-06-10T13:38:42Z",
+        "published_at": "2026-06-10T13:38:42Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.8,
@@ -179,7 +179,7 @@
             "source_key": "rocket_lab_ir",
             "policy_version": 1,
             "title": "로켓랩 업데이트",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -189,7 +189,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "로켓랩 SEC 공시",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           }

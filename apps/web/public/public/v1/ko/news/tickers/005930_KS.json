@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-09T19:51:21Z",
-  "stale_after": "2026-06-10T07:51:21Z",
-  "hard_expires_at": "2026-06-16T19:51:21Z",
+  "generated_at": "2026-06-10T13:38:42Z",
+  "stale_after": "2026-06-11T01:38:42Z",
+  "hard_expires_at": "2026-06-17T13:38:42Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_005930_KS",
-  "content_hash": "sha256:b05e3f86c2d0454343d3aba4664964adda7584eebcb3ae5e8a1369c60a95f47a",
+  "content_hash": "sha256:bc061255886d176f7c5c0428beb9e89e64169e57c7d4c8b0e4d2430705c73279",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "005930.KS",
     "name": "삼성전자",
-    "generated_label": "2026-06-09T19:51:21Z",
+    "generated_label": "2026-06-10T13:38:42Z",
     "summary": "삼성전자에 대해 공개 스냅샷에 승인·출처 연결 뉴스 이벤트 2건이 있습니다.",
     "events": [
       {
@@ -121,9 +121,9 @@
         "title": "중국발 수출통제 리스크가 AI 반도체 공급망에 높은 상태로 유지",
         "summary": "공식 정책 모니터링은 수출통제를 엔비디아, 삼성전자, 일본 장비 업체, 유럽 장비 노출과 연결합니다.",
         "event_type": "trade_policy",
-        "first_seen_at": "2026-06-07T19:51:21Z",
-        "last_seen_at": "2026-06-09T19:51:21Z",
-        "published_at": "2026-06-09T19:51:21Z",
+        "first_seen_at": "2026-06-08T13:38:42Z",
+        "last_seen_at": "2026-06-10T13:38:42Z",
+        "published_at": "2026-06-10T13:38:42Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.78,
@@ -220,7 +220,7 @@
             "source_key": "bis",
             "policy_version": 1,
             "title": "미 산업안보국 수출통제",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -230,7 +230,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "영향 기업 공시",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           },
@@ -240,7 +240,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "수출관리규정 참고",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }
@@ -251,9 +251,9 @@
         "title": "FOMC, 일본은행, 한국은행, ECB, 브라질 COPOM 결정 일정 리스크",
         "summary": "공식 일정을 하나의 정책 이벤트 워치로 묶어 앱을 벗어나지 않고 금리 결정일을 확인할 수 있습니다.",
         "event_type": "central_bank_calendar",
-        "first_seen_at": "2026-06-07T19:51:21Z",
-        "last_seen_at": "2026-06-09T19:51:21Z",
-        "published_at": "2026-06-09T19:51:21Z",
+        "first_seen_at": "2026-06-08T13:38:42Z",
+        "last_seen_at": "2026-06-10T13:38:42Z",
+        "published_at": "2026-06-10T13:38:42Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.86,
@@ -333,7 +333,7 @@
             "source_key": "federal_reserve",
             "policy_version": 1,
             "title": "FOMC 일정",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -343,7 +343,7 @@
             "source_key": "bank_of_korea",
             "policy_version": 1,
             "title": "통화정책 일정",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -353,7 +353,7 @@
             "source_key": "bank_of_japan",
             "policy_version": 1,
             "title": "통화정책회의",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -363,7 +363,7 @@
             "source_key": "ecb",
             "policy_version": 1,
             "title": "ECB 정책위원회 일정",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -373,7 +373,7 @@
             "source_key": "bcb",
             "policy_version": 1,
             "title": "COPOM 일정",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           }

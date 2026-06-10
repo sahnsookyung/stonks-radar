@@ -489,29 +489,30 @@ def _breaking_market_event(item: dict[str, Any], now: datetime) -> dict[str, Any
             source_count=event["source_count"],
             label=label,
         )
-        event_points.append(
-            {
-                "point_id": f"{point['point_id']}_{hashlib.sha1(event_id.encode()).hexdigest()[:8]}",
-                "event_id": event_id,
-                "event_ids": [event_id],
-                "title": event["title"],
-                "summary": event["summary"],
-                "area_id": point["area_key"],
-                "area_key": point["area_key"],
-                "area_label": point["area_label"],
-                "relation": point["relation"],
-                "latitude": point["latitude"],
-                "longitude": point["longitude"],
-                "severity": event["severity"],
-                "urgency_score": urgency_score,
-                "source_published_at": source_published_iso,
-                "observed_at": observed_iso,
-                "source_count": event["source_count"],
-                "geo_confidence": point["geo_confidence"],
-                "area_priority": area_priority,
-                "score_reason_codes": sorted(set(point["score_reason_codes"] + score_reason_codes + priority_reason_codes)),
-            }
-        )
+        event_point = {
+            "point_id": f"{point['point_id']}_{hashlib.sha1(event_id.encode()).hexdigest()[:8]}",
+            "event_id": event_id,
+            "event_ids": [event_id],
+            "title": event["title"],
+            "summary": event["summary"],
+            "area_id": point["area_key"],
+            "area_key": point["area_key"],
+            "area_label": point["area_label"],
+            "relation": point["relation"],
+            "latitude": point["latitude"],
+            "longitude": point["longitude"],
+            "severity": event["severity"],
+            "urgency_score": urgency_score,
+            "source_published_at": source_published_iso,
+            "observed_at": observed_iso,
+            "source_count": event["source_count"],
+            "geo_confidence": point["geo_confidence"],
+            "area_priority": area_priority,
+            "score_reason_codes": sorted(set(point["score_reason_codes"] + score_reason_codes + priority_reason_codes)),
+        }
+        if source_url:
+            event_point["source_url"] = source_url
+        event_points.append(event_point)
     event["geo_points"] = event_points
     return event
 

@@ -1,4 +1,5 @@
 import type { NewsMapPoint, PublicEvent } from "@frw/shared-types";
+import type { Feature, Geometry } from "geojson";
 import type maplibregl from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -237,8 +238,7 @@ export function EventMap({
     if (!selected || !isValidLngLat(selected.longitude, selected.latitude)) return;
     mapRef.current.easeTo({
       center: [selected.longitude, selected.latitude],
-      zoom: Math.max(mapRef.current.getZoom(), 3),
-      duration: 500
+      duration: 350
     });
   }, [mapPoints, selectedMapPointId]);
 
@@ -307,6 +307,8 @@ const NEWS_CLUSTER_LAYER_ID = "breaking-news-clusters";
 const NEWS_CLUSTER_COUNT_LAYER_ID = "breaking-news-cluster-count";
 const NEWS_POINT_LAYER_ID = "breaking-news-unclustered";
 const wiredClusterMaps = new WeakSet<maplibregl.Map>();
+const clusterPopupRefs = new WeakMap<maplibregl.Map, maplibregl.Popup>();
+const clusterPopupModes = new WeakMap<maplibregl.Map, "hover" | "click">();
 
 function cancelDeferredLoad(handle: number) {
   const cancelIdle = globalThis.window.cancelIdleCallback;
@@ -500,6 +502,8 @@ function ensureNewsPointLayers(
       const feature = event.features?.[0];
       const eventId = typeof feature?.properties?.event_id === "string" ? feature.properties.event_id : "";
       if (!eventId || !feature) return;
+      event.originalEvent.preventDefault();
+      event.originalEvent.stopPropagation();
       onMapPointSelectRef.current?.(eventId);
       const coordinates = feature.geometry.type === "Point" ? feature.geometry.coordinates : null;
       if (!Array.isArray(coordinates) || coordinates.length < 2) return;
@@ -523,14 +527,22 @@ function ensureNewsPointLayers(
   wiredClusterMaps.add(map);
   map.on("click", NEWS_CLUSTER_LAYER_ID, (event) => {
     const feature = event.features?.[0];
-    const clusterId = feature?.properties?.cluster_id;
-    const source = map.getSource(NEWS_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-    if (typeof clusterId !== "number" || !source || !feature) return;
-    void source.getClusterExpansionZoom(clusterId).then((zoom) => {
-      const coordinates = feature.geometry.type === "Point" ? feature.geometry.coordinates : null;
-      if (!Array.isArray(coordinates) || coordinates.length < 2) return;
-      map.easeTo({ center: [Number(coordinates[0]), Number(coordinates[1])], zoom, duration: 450 });
-    });
+    if (!feature) return;
+    event.originalEvent.preventDefault();
+    event.originalEvent.stopPropagation();
+    void showNewsClusterPopup(maplibre, map, feature, "click");
+  });
+  map.on("mouseenter", NEWS_CLUSTER_LAYER_ID, (event) => {
+    map.getCanvas().style.cursor = "pointer";
+    const feature = event.features?.[0];
+    if (!feature) return;
+    void showNewsClusterPopup(maplibre, map, feature, "hover");
+  });
+  map.on("mouseleave", NEWS_CLUSTER_LAYER_ID, () => {
+    map.getCanvas().style.cursor = "";
+    if (clusterPopupModes.get(map) !== "click") {
+      closeNewsClusterPopup(map);
+    }
   });
 }
 
@@ -554,10 +566,116 @@ function createNewsFeatureCollection(mapPoints: NewsMapPoint[]) {
           severity: point.severity,
           urgency_score: point.urgency_score,
           source_count: point.source_count,
+          source_url: point.source_url ?? "",
           source_published_at: point.source_published_at
         }
       }))
   };
+}
+
+type ClusterLeafSource = maplibregl.GeoJSONSource & {
+  getClusterLeaves: (
+    clusterId: number,
+    limit: number,
+    offset: number
+  ) => Promise<Array<maplibregl.MapGeoJSONFeature | Feature<Geometry>>>;
+};
+
+async function showNewsClusterPopup(
+  maplibre: typeof maplibregl,
+  map: maplibregl.Map,
+  feature: maplibregl.MapGeoJSONFeature,
+  mode: "hover" | "click"
+) {
+  const clusterId = feature.properties?.cluster_id;
+  const coordinates = feature.geometry.type === "Point" ? feature.geometry.coordinates : null;
+  const source = map.getSource(NEWS_SOURCE_ID) as ClusterLeafSource | undefined;
+  if (typeof clusterId !== "number" || !source || !Array.isArray(coordinates) || coordinates.length < 2) return;
+  const total = Number(feature.properties?.point_count ?? 0);
+  let leaves: Array<maplibregl.MapGeoJSONFeature | Feature<Geometry>> = [];
+  try {
+    leaves = await source.getClusterLeaves(clusterId, 10, 0);
+  } catch {
+    leaves = [];
+  }
+  if (!leaves.length) return;
+  closeNewsClusterPopup(map);
+  const popup = new maplibre.Popup({
+    closeButton: mode === "click",
+    closeOnClick: mode === "click",
+    className: "stonks-map-popup stonks-news-cluster-popup",
+    maxWidth: "400px"
+  })
+    .setLngLat([Number(coordinates[0]), Number(coordinates[1])])
+    .setDOMContent(createNewsClusterPopup(leaves, total))
+    .addTo(map);
+  clusterPopupRefs.set(map, popup);
+  clusterPopupModes.set(map, mode);
+  popup.on("close", () => {
+    if (clusterPopupRefs.get(map) === popup) {
+      clusterPopupRefs.delete(map);
+      clusterPopupModes.delete(map);
+    }
+  });
+}
+
+function closeNewsClusterPopup(map: maplibregl.Map) {
+  const popup = clusterPopupRefs.get(map);
+  if (popup) popup.remove();
+  clusterPopupRefs.delete(map);
+  clusterPopupModes.delete(map);
+}
+
+function createNewsClusterPopup(
+  leaves: Array<maplibregl.MapGeoJSONFeature | Feature<Geometry>>,
+  total: number
+) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "grid max-h-[360px] gap-2 overflow-y-auto p-3 text-left";
+
+  const title = document.createElement("div");
+  title.className = "text-xs font-semibold uppercase tracking-wide text-accent";
+  title.textContent = `${total || leaves.length} mapped news item${(total || leaves.length) === 1 ? "" : "s"}`;
+  wrapper.appendChild(title);
+
+  const list = document.createElement("ul");
+  list.className = "grid gap-2";
+  for (const leaf of leaves) {
+    const item = document.createElement("li");
+    item.className = "grid gap-1 rounded border border-line bg-panelAlt/80 p-2";
+    const sourceUrl = safeHttpUrl(safeProperty(leaf.properties, "source_url", 2048));
+    const headline = document.createElement(sourceUrl ? "a" : "div");
+    headline.className = "text-xs font-semibold leading-5 text-ink hover:text-accent";
+    headline.textContent = safeProperty(leaf.properties, "title") || "Mapped market event";
+    if (sourceUrl && headline instanceof HTMLAnchorElement) {
+      headline.href = sourceUrl;
+      headline.target = "_blank";
+      headline.rel = "noopener noreferrer";
+    }
+    item.appendChild(headline);
+
+    const meta = document.createElement("div");
+    meta.className = "text-[11px] leading-4 text-muted";
+    meta.textContent = [
+      safeProperty(leaf.properties, "area_label"),
+      safeProperty(leaf.properties, "severity"),
+      `urgency ${safeProperty(leaf.properties, "urgency_score")}`
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    item.appendChild(meta);
+    list.appendChild(item);
+  }
+  wrapper.appendChild(list);
+
+  const hiddenCount = Math.max(0, total - leaves.length);
+  if (hiddenCount) {
+    const more = document.createElement("div");
+    more.className = "text-[11px] font-semibold text-muted";
+    more.textContent = `+${hiddenCount} more in this cluster`;
+    wrapper.appendChild(more);
+  }
+  return wrapper;
 }
 
 function isValidLngLat(longitude: number, latitude: number) {
@@ -596,14 +714,35 @@ function createNewsMapPointPopup(properties: maplibregl.MapGeoJSONFeature["prope
   meta.textContent = `${safeProperty(properties, "severity")} · urgency ${safeProperty(properties, "urgency_score")}`;
   wrapper.appendChild(meta);
 
+  const sourceUrl = safeHttpUrl(safeProperty(properties, "source_url", 2048));
+  if (sourceUrl) {
+    const source = document.createElement("a");
+    source.className = "text-xs font-semibold text-accent hover:text-accentSoft";
+    source.href = sourceUrl;
+    source.target = "_blank";
+    source.rel = "noopener noreferrer";
+    source.textContent = "Source";
+    wrapper.appendChild(source);
+  }
+
   return wrapper;
 }
 
-function safeProperty(properties: maplibregl.MapGeoJSONFeature["properties"], key: string) {
+function safeProperty(properties: Record<string, unknown> | null | undefined, key: string, maxLength = 320) {
   const value = properties?.[key];
   if (typeof value === "number") return String(value);
   if (typeof value !== "string") return "";
-  return value.replace(/[\u0000-\u001F]+/g, " ").slice(0, 320);
+  return value.replace(/[\u0000-\u001F]+/g, " ").slice(0, maxLength);
+}
+
+function safeHttpUrl(value: string) {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return "";
+    return url.toString();
+  } catch {
+    return "";
+  }
 }
 
 function createEventPopup(event: PublicEvent) {

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-09T19:51:21Z",
-  "stale_after": "2026-06-10T07:51:21Z",
-  "hard_expires_at": "2026-06-16T19:51:21Z",
+  "generated_at": "2026-06-10T13:38:42Z",
+  "stale_after": "2026-06-11T01:38:42Z",
+  "hard_expires_at": "2026-06-17T13:38:42Z",
   "object_type": "news_region",
   "object_key": "news_region_EU",
-  "content_hash": "sha256:50663bdac9df1821fbf850c2b43bf1279ab4163b347941614f0315e0af898d98",
+  "content_hash": "sha256:8cd3909fc6a12adc7409ac6e0af6ac735f4f246b9aa3658977f32b666d47c8c8",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "EU",
     "name": "유럽연합",
-    "generated_label": "2026-06-09T19:51:21Z",
+    "generated_label": "2026-06-10T13:38:42Z",
     "regional_brief": "유럽연합 관련 승인 뉴스 이벤트 5건이 있으며 발생지, 영향 지역, 시장 지역 라벨을 분리합니다.",
     "events": [
       {
@@ -121,9 +121,9 @@
         "title": "에너지 공급 리스크 워치가 해상 요충지, 재고, 인플레이션 민감 시장을 연결",
         "summary": "공식 에너지 데이터와 검토된 지정학 맥락을 미국, 유럽, 중국, 한국, 일본, 브라질에 영향을 줄 수 있는 공급 리스크 이벤트로 묶습니다.",
         "event_type": "geopolitical_supply_risk",
-        "first_seen_at": "2026-06-07T19:51:21Z",
-        "last_seen_at": "2026-06-09T19:51:21Z",
-        "published_at": "2026-06-09T19:51:21Z",
+        "first_seen_at": "2026-06-08T13:38:42Z",
+        "last_seen_at": "2026-06-10T13:38:42Z",
+        "published_at": "2026-06-10T13:38:42Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.72,
@@ -194,7 +194,7 @@
             "source_key": "eia",
             "policy_version": 1,
             "title": "주간 석유 현황 보고서",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -204,7 +204,7 @@
             "source_key": "iea",
             "policy_version": 1,
             "title": "석유 시장 보고서",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           },
@@ -214,7 +214,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "공식 에너지 데이터 맥락",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }
@@ -225,9 +225,9 @@
         "title": "중국발 수출통제 리스크가 AI 반도체 공급망에 높은 상태로 유지",
         "summary": "공식 정책 모니터링은 수출통제를 엔비디아, 삼성전자, 일본 장비 업체, 유럽 장비 노출과 연결합니다.",
         "event_type": "trade_policy",
-        "first_seen_at": "2026-06-07T19:51:21Z",
-        "last_seen_at": "2026-06-09T19:51:21Z",
-        "published_at": "2026-06-09T19:51:21Z",
+        "first_seen_at": "2026-06-08T13:38:42Z",
+        "last_seen_at": "2026-06-10T13:38:42Z",
+        "published_at": "2026-06-10T13:38:42Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.78,
@@ -324,7 +324,7 @@
             "source_key": "bis",
             "policy_version": 1,
             "title": "미 산업안보국 수출통제",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -334,7 +334,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "영향 기업 공시",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           },
@@ -344,7 +344,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "수출관리규정 참고",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }
@@ -355,9 +355,9 @@
         "title": "공중보건 경보 모니터링이 브라질, 미국, 유럽, 아시아 여행 민감 시장을 포괄",
         "summary": "공식 공중보건 피드는 금융 뉴스와 별도로 분류되어 시장 맥락 리스크로만 표시됩니다.",
         "event_type": "public_health_alert",
-        "first_seen_at": "2026-06-07T19:51:21Z",
-        "last_seen_at": "2026-06-09T15:51:21Z",
-        "published_at": "2026-06-09T15:51:21Z",
+        "first_seen_at": "2026-06-08T13:38:42Z",
+        "last_seen_at": "2026-06-10T09:38:42Z",
+        "published_at": "2026-06-10T09:38:42Z",
         "freshness": "watch",
         "severity": "medium",
         "confidence": 0.74,
@@ -417,7 +417,7 @@
             "source_key": "who",
             "policy_version": 1,
             "title": "질병 발생 뉴스",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -427,7 +427,7 @@
             "source_key": "cdc",
             "policy_version": 1,
             "title": "여행 건강 고지",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": false
           }
@@ -438,9 +438,9 @@
         "title": "아이온큐 계약 및 자금 뉴스가 양자 섹터 티커 맥락으로 분류",
         "summary": "IONQ는 회사, 공시, 섹터 맥락 근거가 있을 때만 티커 뉴스 레이어에 표시됩니다.",
         "event_type": "company_update",
-        "first_seen_at": "2026-06-09T01:51:21Z",
-        "last_seen_at": "2026-06-09T15:51:21Z",
-        "published_at": "2026-06-09T15:51:21Z",
+        "first_seen_at": "2026-06-09T19:38:42Z",
+        "last_seen_at": "2026-06-10T09:38:42Z",
+        "published_at": "2026-06-10T09:38:42Z",
         "freshness": "watch",
         "severity": "medium",
         "confidence": 0.76,
@@ -502,7 +502,7 @@
             "source_key": "ionq_ir",
             "policy_version": 1,
             "title": "아이온큐 뉴스",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -512,7 +512,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "아이온큐 SEC 공시",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           }
@@ -523,9 +523,9 @@
         "title": "FOMC, 일본은행, 한국은행, ECB, 브라질 COPOM 결정 일정 리스크",
         "summary": "공식 일정을 하나의 정책 이벤트 워치로 묶어 앱을 벗어나지 않고 금리 결정일을 확인할 수 있습니다.",
         "event_type": "central_bank_calendar",
-        "first_seen_at": "2026-06-07T19:51:21Z",
-        "last_seen_at": "2026-06-09T19:51:21Z",
-        "published_at": "2026-06-09T19:51:21Z",
+        "first_seen_at": "2026-06-08T13:38:42Z",
+        "last_seen_at": "2026-06-10T13:38:42Z",
+        "published_at": "2026-06-10T13:38:42Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.86,
@@ -605,7 +605,7 @@
             "source_key": "federal_reserve",
             "policy_version": 1,
             "title": "FOMC 일정",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -615,7 +615,7 @@
             "source_key": "bank_of_korea",
             "policy_version": 1,
             "title": "통화정책 일정",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -625,7 +625,7 @@
             "source_key": "bank_of_japan",
             "policy_version": 1,
             "title": "통화정책회의",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -635,7 +635,7 @@
             "source_key": "ecb",
             "policy_version": 1,
             "title": "ECB 정책위원회 일정",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -645,7 +645,7 @@
             "source_key": "bcb",
             "policy_version": 1,
             "title": "COPOM 일정",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           }

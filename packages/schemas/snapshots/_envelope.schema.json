@@ -258,6 +258,7 @@
         "urgency_score": { "type": "integer", "minimum": 0, "maximum": 100 },
         "source_published_at": { "type": "string" },
         "observed_at": { "type": "string" },
+        "source_url": { "type": "string" },
         "source_count": { "type": "integer", "minimum": 0 },
         "geo_confidence": { "type": "number", "minimum": 0, "maximum": 1 },
         "area_priority": { "type": "integer", "minimum": 0, "maximum": 100 },

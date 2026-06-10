@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-09T19:51:21Z",
-  "stale_after": "2026-06-10T07:51:21Z",
-  "hard_expires_at": "2026-06-16T19:51:21Z",
+  "generated_at": "2026-06-10T13:38:42Z",
+  "stale_after": "2026-06-11T01:38:42Z",
+  "hard_expires_at": "2026-06-17T13:38:42Z",
   "object_type": "sector_page",
   "object_key": "quantum",
-  "content_hash": "sha256:8523e1e5d325ad8d25f4dba334c91d8bd1507e3ee880a1a94b398782b9099007",
+  "content_hash": "sha256:7fd97b2bc2a1e286d32969f6c84a58d646259b7b51595a56fadea554fa12fe8e",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -213,8 +213,8 @@
         "symbol": "IONQ",
         "title": "IONQ: 아이온큐 계약 및 자금 뉴스가 양자 섹터 티커 맥락으로 분류",
         "catalyst_type": "company_event",
-        "scheduled_at": "2026-06-09T15:51:21Z",
-        "scheduled_local_date": "2026-06-09",
+        "scheduled_at": "2026-06-10T09:38:42Z",
+        "scheduled_local_date": "2026-06-10",
         "timezone": "UTC",
         "source": "IonQ",
         "source_url": "https://ionq.com/news",
@@ -228,9 +228,9 @@
         "title": "아이온큐 계약 및 자금 뉴스가 양자 섹터 티커 맥락으로 분류",
         "summary": "IONQ는 회사, 공시, 섹터 맥락 근거가 있을 때만 티커 뉴스 레이어에 표시됩니다.",
         "event_type": "company_update",
-        "first_seen_at": "2026-06-09T01:51:21Z",
-        "last_seen_at": "2026-06-09T15:51:21Z",
-        "published_at": "2026-06-09T15:51:21Z",
+        "first_seen_at": "2026-06-09T19:38:42Z",
+        "last_seen_at": "2026-06-10T09:38:42Z",
+        "published_at": "2026-06-10T09:38:42Z",
         "freshness": "watch",
         "severity": "medium",
         "confidence": 0.76,
@@ -292,7 +292,7 @@
             "source_key": "ionq_ir",
             "policy_version": 1,
             "title": "아이온큐 뉴스",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -302,7 +302,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "아이온큐 SEC 공시",
-            "published_at": "2026-06-09T01:51:21Z",
+            "published_at": "2026-06-09T19:38:42Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           }
@@ -319,98 +319,98 @@
       {
         "key": "nasdaq_composite",
         "label": "나스닥 종합",
-        "value": "25,599.6",
+        "value": "25,591.24",
         "source": "Yahoo Finance delayed quote",
         "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote 관측 2026-06-09T19:51:37Z; 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-06-09T19:51:37Z",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-06-10T13:38:38Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-10T13:38:38Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EIXIC?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-09T15:04:00Z",
-            "value": 25719.232421875
+            "date": "2026-06-10T13:31:00Z",
+            "value": 25492.20703125
           },
           {
-            "date": "2026-06-09T15:51:00Z",
-            "value": 25516.224609375
+            "date": "2026-06-10T13:32:00Z",
+            "value": 25478.671875
           },
           {
-            "date": "2026-06-09T16:38:00Z",
-            "value": 25059.9375
+            "date": "2026-06-10T13:33:00Z",
+            "value": 25454.87890625
           },
           {
-            "date": "2026-06-09T17:25:00Z",
-            "value": 25351.26171875
+            "date": "2026-06-10T13:34:00Z",
+            "value": 25414.283203125
           },
           {
-            "date": "2026-06-09T18:12:00Z",
-            "value": 25494.6640625
+            "date": "2026-06-10T13:35:00Z",
+            "value": 25482.224609375
           },
           {
-            "date": "2026-06-09T18:59:00Z",
-            "value": 25663.21875
+            "date": "2026-06-10T13:36:00Z",
+            "value": 25518.19140625
           },
           {
-            "date": "2026-06-09T19:46:00Z",
-            "value": 25519.662109375
+            "date": "2026-06-10T13:37:00Z",
+            "value": 25542.07421875
           },
           {
-            "date": "2026-06-09T19:51:37Z",
-            "value": 25599.603515625
+            "date": "2026-06-10T13:38:38Z",
+            "value": 25591.23828125
           }
         ],
-        "refresh_delta": -330.0580000000009,
-        "refresh_delta_percent": -1.272897425350168
+        "refresh_delta": -87.58399999999892,
+        "refresh_delta_percent": -0.3410748359095247
       },
       {
         "key": "vix",
         "label": "VIX",
-        "value": "20.01",
+        "value": "20.99",
         "source": "Yahoo Finance delayed quote",
         "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote 관측 2026-06-09T19:36:31Z; 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-06-09T19:36:31Z",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-06-10T13:23:46Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-10T13:23:46Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-09T08:47:00Z",
-            "value": 18.09000015258789
+            "date": "2026-06-10T08:01:00Z",
+            "value": 20.15999984741211
           },
           {
-            "date": "2026-06-09T10:19:00Z",
-            "value": 18.139999389648438
+            "date": "2026-06-10T08:47:00Z",
+            "value": 21.010000228881836
           },
           {
-            "date": "2026-06-09T11:51:00Z",
-            "value": 18.010000228881836
+            "date": "2026-06-10T09:33:00Z",
+            "value": 20.979999542236328
           },
           {
-            "date": "2026-06-09T13:23:00Z",
-            "value": 18.049999237060547
+            "date": "2026-06-10T10:19:00Z",
+            "value": 21.239999771118164
           },
           {
-            "date": "2026-06-09T15:00:00Z",
-            "value": 18.829999923706055
+            "date": "2026-06-10T11:05:00Z",
+            "value": 21.829999923706055
           },
           {
-            "date": "2026-06-09T16:32:00Z",
-            "value": 21.6299991607666
+            "date": "2026-06-10T11:51:00Z",
+            "value": 22.0
           },
           {
-            "date": "2026-06-09T18:04:00Z",
-            "value": 20.389999389648438
+            "date": "2026-06-10T12:37:00Z",
+            "value": 20.8799991607666
           },
           {
-            "date": "2026-06-09T19:36:31Z",
-            "value": 20.010000228881836
+            "date": "2026-06-10T13:23:46Z",
+            "value": 20.989999771118164
           }
         ],
-        "refresh_delta": 1.0899999999999999,
-        "refresh_delta_percent": 5.761099365750527
+        "refresh_delta": 1.1199999999999974,
+        "refresh_delta_percent": 5.6366381479617385
       }
     ],
     "scenario_baskets": [

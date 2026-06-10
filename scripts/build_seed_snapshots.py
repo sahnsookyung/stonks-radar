@@ -29,6 +29,11 @@ FRED_SERIES_BASE_URL = "https://fred.stlouisfed.org/series"
 GDELT_DOC_API_URL = "https://api.gdeltproject.org/api/v2/doc/doc"
 GDELT_LASTUPDATE_URL = "http://data.gdeltproject.org/gdeltv2/lastupdate.txt"
 GDELT_EXPORT_SUFFIX = ".export.CSV.zip"
+BREAKING_MARKET_DOC_QUERY_RECORDS = 24
+BREAKING_MARKET_RSS_RECORDS = 16
+BREAKING_MARKET_BULK_MIN_ITEMS = 96
+BREAKING_MARKET_BULK_RECORDS = 180
+BREAKING_MARKET_LANE_ITEM_LIMIT = 160
 GOOGLE_NEWS_RSS_URL = "https://news.google.com/rss/search"
 YAHOO_FINANCE_RSS_URL = "https://feeds.finance.yahoo.com/rss/2.0/headline"
 YAHOO_FINANCE_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart"
@@ -1898,7 +1903,9 @@ def _gdelt_articles(
         if not title or not url:
             continue
         seen_at = _parse_gdelt_seen_datetime(str(article.get("seendate") or ""))
-        if generated_at and not _is_recent_timestamp(seen_at, generated_at, max_age_hours=max_age_hours):
+        if generated_at:
+            seen_at = _normalize_recent_timestamp(seen_at, generated_at, max_age_hours=max_age_hours)
+        if generated_at and not seen_at:
             continue
         rows.append(
             {
@@ -1953,7 +1960,9 @@ def _rss_articles(
         if not title or not link:
             continue
         seen_at = _parse_rss_datetime(_xml_text(item, "pubDate"))
-        if generated_at and not _is_recent_timestamp(seen_at, generated_at, max_age_hours=max_age_hours):
+        if generated_at:
+            seen_at = _normalize_recent_timestamp(seen_at, generated_at, max_age_hours=max_age_hours)
+        if generated_at and not seen_at:
             continue
         domain = parse.urlparse(link).netloc or _xml_text(item, "source") or "rss"
         rows.append(
@@ -1982,14 +1991,18 @@ def _gdelt_bulk_articles(
     if cache_key in _GDELT_ARTICLE_CACHE:
         return _GDELT_ARTICLE_CACHE[cache_key]
     user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
-    lastupdate = _http_text(
-        GDELT_LASTUPDATE_URL,
-        headers={"User-Agent": user_agent},
-        timeout=8,
-        max_bytes=20_000,
-        throttle_key="gdelt_doc",
-        max_attempts=1,
-    )
+    try:
+        lastupdate = _http_text(
+            GDELT_LASTUPDATE_URL,
+            headers={"User-Agent": user_agent},
+            timeout=8,
+            max_bytes=20_000,
+            throttle_key="gdelt_doc",
+            max_attempts=1,
+        )
+    except Exception:
+        _GDELT_ARTICLE_CACHE[cache_key] = []
+        return []
     selected = _select_gdelt_bulk_file(lastupdate or "", suffix=GDELT_EXPORT_SUFFIX)
     if selected is None:
         _GDELT_ARTICLE_CACHE[cache_key] = []
@@ -2050,7 +2063,7 @@ def _parse_gdelt_bulk_export(
     with archive.open(names[0]) as raw_file:
         text_file = io.TextIOWrapper(raw_file, encoding="utf-8", errors="ignore", newline="")
         for index, row in enumerate(csv.reader(text_file, delimiter="\t")):
-            if index >= 6000 or len(rows) >= maxrecords:
+            if index >= 18000 or len(rows) >= maxrecords:
                 break
             parsed = _gdelt_export_row(
                 row,
@@ -2082,8 +2095,12 @@ def _gdelt_export_row(
     source_url = row[60].strip()
     if not source_url.startswith(("http://", "https://")):
         source_url = selected["url"]
-    seen_at = _parse_gdelt_bulk_datetime(row[59].strip() or selected.get("timestamp", ""))
-    if not _is_recent_timestamp(seen_at, generated_at, max_age_hours=max_age_hours):
+    seen_at = _normalize_recent_timestamp(
+        _parse_gdelt_bulk_datetime(row[59].strip() or selected.get("timestamp", "")),
+        generated_at,
+        max_age_hours=max_age_hours,
+    )
+    if not seen_at:
         return None
     text_blob = " ".join([actor1, actor2, place, source_url, event_code, quad_class])
     if not _gdelt_bulk_row_relevant(text_blob, event_code=event_code, quad_class=quad_class):
@@ -2178,13 +2195,30 @@ def _parse_rss_datetime(value: str) -> str | None:
 
 
 def _is_recent_timestamp(value: str | None, generated_at: datetime, *, max_age_hours: int) -> bool:
+    return _normalize_recent_timestamp(value, generated_at, max_age_hours=max_age_hours) is not None
+
+
+def _normalize_recent_timestamp(
+    value: str | None,
+    generated_at: datetime,
+    *,
+    max_age_hours: int,
+    max_future_skew_minutes: int = 15,
+) -> str | None:
     if not value:
-        return False
+        return None
     try:
         observed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
-        return False
-    return timedelta(0) <= generated_at - observed <= timedelta(hours=max_age_hours)
+        return None
+    future_skew = observed - generated_at
+    if future_skew > timedelta(0):
+        if future_skew > timedelta(minutes=max_future_skew_minutes):
+            return None
+        observed = generated_at
+    if generated_at - observed > timedelta(hours=max_age_hours):
+        return None
+    return observed.isoformat().replace("+00:00", "Z")
 
 
 def _xml_text(item: ElementTree.Element, tag: str) -> str:
@@ -4191,10 +4225,36 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
             "추적 티커 헤드라인",
             '("Rocket Lab" OR RKLB OR NVDA OR NVIDIA OR TSLA OR Tesla OR DJT OR "stock offering" OR "share issuance")',
         ),
+        (
+            "energy_chokepoints",
+            "Energy and shipping chokepoints",
+            "에너지 및 해상 요충지",
+            '("Strait of Hormuz" OR Hormuz OR "Red Sea" OR "Suez Canal" OR "Bab el-Mandeb") '
+            '(oil OR LNG OR tanker OR shipping OR freight OR insurance)',
+        ),
+        (
+            "semiconductor_controls",
+            "Semiconductor supply risk",
+            "반도체 공급 리스크",
+            '(semiconductor OR chip OR NVIDIA OR TSMC OR ASML OR Samsung) '
+            '("export control" OR sanctions OR tariff OR Taiwan OR China)',
+        ),
+        (
+            "space_defense",
+            "Space and defense catalysts",
+            "우주 및 방산 촉매",
+            '("Rocket Lab" OR RKLB OR "Intuitive Machines" OR LUNR OR "AST SpaceMobile" OR ASTS OR Redwire OR RDW) '
+            '(launch OR contract OR NASA OR Pentagon OR offering OR shares)',
+        ),
     ]
     market_news_items: list[dict[str, Any]] = []
     for query_key, label_en, label_ko, query in news_queries:
-        for article in _gdelt_articles(query, maxrecords=8, generated_at=generated_at, max_age_hours=news_max_age_hours):
+        for article in _gdelt_articles(
+            query,
+            maxrecords=BREAKING_MARKET_DOC_QUERY_RECORDS,
+            generated_at=generated_at,
+            max_age_hours=news_max_age_hours,
+        ):
             seen = article["seen_date"][:8]
             market_news_items.append(
                 item(
@@ -4234,7 +4294,13 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
     ]
     seen_news_urls = {str(item.get("source_url") or "") for item in market_news_items}
     for source_key, label_en, label_ko, source_name, url, severity in rss_sources:
-        for article in _rss_articles(url, cache_key=source_key, maxrecords=8, generated_at=generated_at, max_age_hours=news_max_age_hours):
+        for article in _rss_articles(
+            url,
+            cache_key=source_key,
+            maxrecords=BREAKING_MARKET_RSS_RECORDS,
+            generated_at=generated_at,
+            max_age_hours=news_max_age_hours,
+        ):
             if article["url"] in seen_news_urls:
                 continue
             seen_news_urls.add(article["url"])
@@ -4254,8 +4320,12 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
                     article.get("seen_at") or None,
                 )
             )
-    if len(market_news_items) < 4:
-        for article in _gdelt_bulk_articles(generated_at=generated_at, maxrecords=8, max_age_hours=news_max_age_hours):
+    if len(market_news_items) < BREAKING_MARKET_BULK_MIN_ITEMS:
+        for article in _gdelt_bulk_articles(
+            generated_at=generated_at,
+            maxrecords=BREAKING_MARKET_BULK_RECORDS,
+            max_age_hours=news_max_age_hours,
+        ):
             if article["url"] in seen_news_urls:
                 continue
             seen_news_urls.add(article["url"])
@@ -4494,12 +4564,12 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
             if market_news_article_count
             else _t(locale, "no current headlines", "현재 속보 없음"),
             "cadence": _t(locale, "5-minute target; only max-24h headlines are shown as breaking.", "5분 목표; 최대 24시간 이내 헤드라인만 속보로 표시합니다."),
-            "source": "GDELT Doc API",
+            "source": "GDELT DOC, Event Files, and public RSS",
             "source_url": "https://www.gdeltproject.org/",
             "freshness": "fresh" if market_news_article_count else "watch",
             "severity": "high",
             "refresh_seconds": 300,
-            "items": market_news_items[:6],
+            "items": market_news_items[:BREAKING_MARKET_LANE_ITEM_LIMIT],
         },
         {
             "key": "short_research_reports",
@@ -4791,29 +4861,30 @@ def _breaking_market_event_from_signal(item: dict[str, Any], *, generated_at: da
             source_count=1,
             label=label,
         )
-        event_points.append(
-            {
-                "point_id": f"{point['point_id']}_{event_id.removeprefix('seed_')}",
-                "event_id": event_id,
-                "event_ids": [event_id],
-                "title": title,
-                "summary": summary,
-                "area_id": point["area_key"],
-                "area_key": point["area_key"],
-                "area_label": point["area_label"],
-                "relation": point["relation"],
-                "latitude": point["latitude"],
-                "longitude": point["longitude"],
-                "severity": severity,
-                "urgency_score": urgency_score,
-                "source_published_at": source_published_iso,
-                "observed_at": observed_iso,
-                "source_count": 1,
-                "geo_confidence": point["geo_confidence"],
-                "area_priority": area_priority,
-                "score_reason_codes": sorted(set(point["score_reason_codes"] + score_reason_codes + priority_reason_codes)),
-            }
-        )
+        event_point = {
+            "point_id": f"{point['point_id']}_{event_id.removeprefix('seed_')}",
+            "event_id": event_id,
+            "event_ids": [event_id],
+            "title": title,
+            "summary": summary,
+            "area_id": point["area_key"],
+            "area_key": point["area_key"],
+            "area_label": point["area_label"],
+            "relation": point["relation"],
+            "latitude": point["latitude"],
+            "longitude": point["longitude"],
+            "severity": severity,
+            "urgency_score": urgency_score,
+            "source_published_at": source_published_iso,
+            "observed_at": observed_iso,
+            "source_count": 1,
+            "geo_confidence": point["geo_confidence"],
+            "area_priority": area_priority,
+            "score_reason_codes": sorted(set(point["score_reason_codes"] + score_reason_codes + priority_reason_codes)),
+        }
+        if source_url:
+            event_point["source_url"] = source_url
+        event_points.append(event_point)
     event["geo_points"] = event_points
     return event
 

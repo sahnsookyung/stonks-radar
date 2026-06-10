@@ -172,6 +172,7 @@ export interface NewsMapPoint {
   urgency_score: number;
   source_published_at: string;
   observed_at: string;
+  source_url?: string;
   source_count: number;
   geo_confidence: number;
   area_priority: number;
