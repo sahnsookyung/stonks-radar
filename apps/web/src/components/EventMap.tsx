@@ -369,6 +369,7 @@ function wireCountryHover(
   };
 
   eventTarget.addEventListener("pointermove", handleMove);
+  eventTarget.addEventListener("mousemove", handleMove);
   eventTarget.addEventListener("click", handleMove);
   eventTarget.addEventListener("mouseleave", clearHover);
 }
