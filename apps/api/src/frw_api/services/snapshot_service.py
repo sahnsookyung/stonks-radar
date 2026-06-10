@@ -134,6 +134,80 @@ def _build_fresh_seed_snapshots(public_root: Path) -> None:
     required_seed = public_root / "latest" / MANIFEST_FILENAME
     if not required_seed.exists():
         raise FileNotFoundError(f"Seed snapshot manifest was not generated at {required_seed}")
+    _preserve_packaged_breaking_market_seed(public_root, datetime.now(timezone.utc).replace(microsecond=0))
+
+
+def _preserve_packaged_breaking_market_seed(public_root: Path, generated_at: datetime) -> None:
+    if public_root.resolve() == WEB_PUBLIC.resolve():
+        return
+    runtime_manifest_path = public_root / LATEST_MANIFEST_PATH
+    packaged_manifest_path = WEB_PUBLIC / LATEST_MANIFEST_PATH
+    if not runtime_manifest_path.exists() or not packaged_manifest_path.exists():
+        return
+    runtime_manifest = json.loads(runtime_manifest_path.read_text())
+    packaged_manifest = json.loads(packaged_manifest_path.read_text())
+    locales = runtime_manifest.get("locales")
+    if not isinstance(locales, list):
+        return
+    for locale in locales:
+        if not isinstance(locale, str):
+            continue
+        packaged_breaking = _breaking_market_projection_from_seed(WEB_PUBLIC, packaged_manifest, "home", locale)
+        fresh_packaged = (
+            _fresh_breaking_market_projection(packaged_breaking, generated_at)
+            if isinstance(packaged_breaking, dict)
+            else None
+        )
+        if fresh_packaged is None:
+            continue
+        for object_key in ("home", "map_events"):
+            runtime_path = _seed_manifest_path(public_root, runtime_manifest, object_key, locale)
+            if runtime_path is None or not runtime_path.exists():
+                continue
+            snapshot = json.loads(runtime_path.read_text())
+            data = snapshot.get("data")
+            if not isinstance(data, dict):
+                continue
+            current_breaking = data.get("breaking_market_map")
+            if isinstance(current_breaking, dict) and _fresh_breaking_market_projection(current_breaking, generated_at):
+                continue
+            _set_breaking_market_projection(snapshot, fresh_packaged)
+            runtime_path.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False) + "\n")
+
+
+def _breaking_market_projection_from_seed(
+    public_root: Path,
+    manifest: dict[str, Any],
+    object_key: str,
+    locale: str,
+) -> dict[str, Any] | None:
+    snapshot_path = _seed_manifest_path(public_root, manifest, object_key, locale)
+    if snapshot_path is None or not snapshot_path.exists():
+        return None
+    snapshot = json.loads(snapshot_path.read_text())
+    data = snapshot.get("data")
+    if not isinstance(data, dict):
+        return None
+    breaking = data.get("breaking_market_map")
+    return breaking if isinstance(breaking, dict) else None
+
+
+def _seed_manifest_path(
+    public_root: Path,
+    manifest: dict[str, Any],
+    object_key: str,
+    locale: str,
+) -> Path | None:
+    objects = manifest.get("objects")
+    if not isinstance(objects, dict):
+        return None
+    locale_paths = objects.get(object_key)
+    if not isinstance(locale_paths, dict):
+        return None
+    raw_path = locale_paths.get(locale)
+    if not isinstance(raw_path, str) or not raw_path:
+        return None
+    return public_root / raw_path.removeprefix("public/")
 
 
 def list_snapshot_candidates(db: Session) -> list[dict[str, Any]]:
