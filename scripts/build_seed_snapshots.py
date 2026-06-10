@@ -1872,10 +1872,11 @@ def _gdelt_articles(
             "maxrecords": str(maxrecords),
         }
     )
+    user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
     try:
         payload = _http_json(
             f"{GDELT_DOC_API_URL}?{params}",
-            headers={"Accept": "application/json"},
+            headers={"User-Agent": user_agent, "Accept": "application/json"},
             timeout=5,
             throttle_key="gdelt_doc",
             max_bytes=1_000_000,
