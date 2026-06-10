@@ -159,8 +159,10 @@ export interface NewsEventListItem {
 export interface NewsMapPoint {
   point_id: string;
   event_id: string;
+  event_ids: string[];
   title: string;
   summary: string;
+  area_id: string;
   area_key: string;
   area_label: string;
   relation: NewsMapPointRelation;

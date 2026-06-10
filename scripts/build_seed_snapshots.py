@@ -4795,8 +4795,10 @@ def _breaking_market_event_from_signal(item: dict[str, Any], *, generated_at: da
             {
                 "point_id": f"{point['point_id']}_{event_id.removeprefix('seed_')}",
                 "event_id": event_id,
+                "event_ids": [event_id],
                 "title": title,
                 "summary": summary,
+                "area_id": point["area_key"],
                 "area_key": point["area_key"],
                 "area_label": point["area_label"],
                 "relation": point["relation"],

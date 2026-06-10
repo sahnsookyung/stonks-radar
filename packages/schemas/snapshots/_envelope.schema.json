@@ -224,8 +224,10 @@
       "required": [
         "point_id",
         "event_id",
+        "event_ids",
         "title",
         "summary",
+        "area_id",
         "area_key",
         "area_label",
         "relation",
@@ -243,8 +245,10 @@
       "properties": {
         "point_id": { "type": "string" },
         "event_id": { "type": "string" },
+        "event_ids": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
         "title": { "type": "string" },
         "summary": { "type": "string" },
+        "area_id": { "type": "string" },
         "area_key": { "type": "string" },
         "area_label": { "type": "string" },
         "relation": { "enum": ["event_location", "chokepoint", "affected_market", "source_region"] },

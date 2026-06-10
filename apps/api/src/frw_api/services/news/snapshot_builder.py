@@ -493,8 +493,10 @@ def _breaking_market_event(item: dict[str, Any], now: datetime) -> dict[str, Any
             {
                 "point_id": f"{point['point_id']}_{hashlib.sha1(event_id.encode()).hexdigest()[:8]}",
                 "event_id": event_id,
+                "event_ids": [event_id],
                 "title": event["title"],
                 "summary": event["summary"],
+                "area_id": point["area_key"],
                 "area_key": point["area_key"],
                 "area_label": point["area_label"],
                 "relation": point["relation"],
