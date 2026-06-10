@@ -7,6 +7,7 @@ import json
 import os
 import re
 import time
+import zipfile
 from base64 import b64encode
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
@@ -26,6 +27,8 @@ LOCALES = ["en", "ko"]
 FRED_API_BASE_URL = "https://api.stlouisfed.org/fred"
 FRED_SERIES_BASE_URL = "https://fred.stlouisfed.org/series"
 GDELT_DOC_API_URL = "https://api.gdeltproject.org/api/v2/doc/doc"
+GDELT_LASTUPDATE_URL = "http://data.gdeltproject.org/gdeltv2/lastupdate.txt"
+GDELT_EXPORT_SUFFIX = ".export.CSV.zip"
 GOOGLE_NEWS_RSS_URL = "https://news.google.com/rss/search"
 YAHOO_FINANCE_RSS_URL = "https://feeds.finance.yahoo.com/rss/2.0/headline"
 YAHOO_FINANCE_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart"
@@ -1967,6 +1970,186 @@ def _rss_articles(
             break
     _RSS_ARTICLE_CACHE[cache_id] = rows
     return rows
+
+
+def _gdelt_bulk_articles(
+    *,
+    generated_at: datetime,
+    maxrecords: int = 8,
+    max_age_hours: int = 24,
+) -> list[dict[str, str]]:
+    cache_key = f"bulk:{generated_at.isoformat()}:{maxrecords}:{max_age_hours}"
+    if cache_key in _GDELT_ARTICLE_CACHE:
+        return _GDELT_ARTICLE_CACHE[cache_key]
+    user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
+    lastupdate = _http_text(
+        GDELT_LASTUPDATE_URL,
+        headers={"User-Agent": user_agent},
+        timeout=8,
+        max_bytes=20_000,
+        throttle_key="gdelt_doc",
+        max_attempts=1,
+    )
+    selected = _select_gdelt_bulk_file(lastupdate or "", suffix=GDELT_EXPORT_SUFFIX)
+    if selected is None:
+        _GDELT_ARTICLE_CACHE[cache_key] = []
+        return []
+    try:
+        payload = _http_bytes(
+            selected["url"],
+            headers={"User-Agent": user_agent},
+            timeout=12,
+            max_bytes=750_000,
+            throttle_key="gdelt_doc",
+            max_attempts=1,
+        )
+    except Exception:
+        _GDELT_ARTICLE_CACHE[cache_key] = []
+        return []
+    rows = _parse_gdelt_bulk_export(
+        payload,
+        selected=selected,
+        generated_at=generated_at,
+        maxrecords=maxrecords,
+        max_age_hours=max_age_hours,
+    )
+    _GDELT_ARTICLE_CACHE[cache_key] = rows
+    return rows
+
+
+def _select_gdelt_bulk_file(text: str, *, suffix: str) -> dict[str, str] | None:
+    for raw_line in text.splitlines():
+        parts = raw_line.split()
+        if len(parts) < 3:
+            continue
+        url = parts[2].strip()
+        if not url.endswith(suffix):
+            continue
+        match = re.search(r"/(\d{14})\.", url)
+        return {"url": url, "timestamp": match.group(1) if match else ""}
+    return None
+
+
+def _parse_gdelt_bulk_export(
+    payload: bytes,
+    *,
+    selected: dict[str, str],
+    generated_at: datetime,
+    maxrecords: int,
+    max_age_hours: int,
+) -> list[dict[str, str]]:
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(payload))
+    except zipfile.BadZipFile:
+        return []
+    names = archive.namelist()
+    if len(names) != 1:
+        return []
+    rows: list[dict[str, str]] = []
+    seen_urls: set[str] = set()
+    with archive.open(names[0]) as raw_file:
+        text_file = io.TextIOWrapper(raw_file, encoding="utf-8", errors="ignore", newline="")
+        for index, row in enumerate(csv.reader(text_file, delimiter="\t")):
+            if index >= 6000 or len(rows) >= maxrecords:
+                break
+            parsed = _gdelt_export_row(
+                row,
+                selected=selected,
+                generated_at=generated_at,
+                max_age_hours=max_age_hours,
+            )
+            if parsed is None or parsed["url"] in seen_urls:
+                continue
+            seen_urls.add(parsed["url"])
+            rows.append(parsed)
+    return rows
+
+
+def _gdelt_export_row(
+    row: list[str],
+    *,
+    selected: dict[str, str],
+    generated_at: datetime,
+    max_age_hours: int,
+) -> dict[str, str] | None:
+    if len(row) < 61:
+        return None
+    actor1 = row[6].strip()
+    actor2 = row[16].strip()
+    event_code = row[26].strip()
+    quad_class = row[29].strip()
+    place = row[53].strip()
+    source_url = row[60].strip()
+    if not source_url.startswith(("http://", "https://")):
+        source_url = selected["url"]
+    seen_at = _parse_gdelt_bulk_datetime(row[59].strip() or selected.get("timestamp", ""))
+    if not _is_recent_timestamp(seen_at, generated_at, max_age_hours=max_age_hours):
+        return None
+    text_blob = " ".join([actor1, actor2, place, source_url, event_code, quad_class])
+    if not _gdelt_bulk_row_relevant(text_blob, event_code=event_code, quad_class=quad_class):
+        return None
+    if not match_geo_points(texts=[text_blob], max_points=1):
+        return None
+    actors = " / ".join(value for value in (actor1, actor2) if value) or "reported actors"
+    title = f"GDELT event {event_code or 'update'}: {actors}"
+    if place:
+        title = f"{title} near {place}"
+    return {
+        "key": hashlib.sha1(f"{row[0]}:{source_url}:{seen_at}".encode()).hexdigest()[:12],
+        "title": _safe_display_text(title, 140),
+        "url": source_url,
+        "domain": parse.urlparse(source_url).netloc or "data.gdeltproject.org",
+        "seen_date": seen_at or selected.get("timestamp", ""),
+        "seen_at": seen_at or "",
+        "severity": "critical" if quad_class == "4" else "high" if quad_class == "3" else "medium",
+    }
+
+
+def _parse_gdelt_bulk_datetime(value: str) -> str | None:
+    digits = "".join(ch for ch in value if ch.isdigit())
+    if len(digits) < 14:
+        return None
+    try:
+        parsed = datetime.strptime(digits[:14], "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+    return parsed.isoformat().replace("+00:00", "Z")
+
+
+def _gdelt_bulk_row_relevant(text: str, *, event_code: str, quad_class: str) -> bool:
+    lower = text.lower()
+    return any(_gdelt_bulk_relevance_term_matches(lower, term) for term in _GDELT_BULK_RELEVANCE_TERMS)
+
+
+def _gdelt_bulk_relevance_term_matches(text: str, term: str) -> bool:
+    if re.search(r"[^a-z0-9]", term):
+        return term in text
+    return re.search(rf"\b{re.escape(term)}\b", text) is not None
+
+
+_GDELT_BULK_RELEVANCE_TERMS = (
+    "hormuz",
+    "red sea",
+    "taiwan",
+    "iran",
+    "israel",
+    "ukraine",
+    "russia",
+    "sanction",
+    "export-control",
+    "export control",
+    "chip",
+    "semiconductor",
+    "oil",
+    "lng",
+    "shipping",
+    "missile",
+    "strike",
+    "war",
+    "conflict",
+    "tariff",
+    "supply chain",
+)
 
 
 def _parse_gdelt_seen_datetime(value: str) -> str | None:
@@ -4066,6 +4249,27 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
                     f"{label_ko}; {article['domain']}" + (f"; 관측 {article['seen_date']}" if article["seen_date"] else ""),
                     source_name,
                     severity,
+                    "fresh",
+                    article["url"],
+                    article.get("seen_at") or None,
+                )
+            )
+    if len(market_news_items) < 4:
+        for article in _gdelt_bulk_articles(generated_at=generated_at, maxrecords=8, max_age_hours=news_max_age_hours):
+            if article["url"] in seen_news_urls:
+                continue
+            seen_news_urls.add(article["url"])
+            market_news_items.append(
+                item(
+                    "breaking_market_news",
+                    f"gdelt_bulk_{article['key']}",
+                    article["title"],
+                    article["title"],
+                    _t(locale, "event metadata", "이벤트 메타데이터"),
+                    f"GDELT event file; {article['domain']}; seen {article['seen_date']}",
+                    f"GDELT 이벤트 파일; {article['domain']}; 관측 {article['seen_date']}",
+                    "GDELT Event Files",
+                    article.get("severity") or "medium",
                     "fresh",
                     article["url"],
                     article.get("seen_at") or None,
