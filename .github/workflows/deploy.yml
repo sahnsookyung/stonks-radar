@@ -58,6 +58,14 @@ jobs:
       - name: Build web assets
         run: STONKS_SNAPSHOT_ENV_FILE=/tmp/stonks-production.env npm run build
 
+      - name: Promote generated snapshots for runtime seed
+        run: |
+          set -euo pipefail
+          test -f apps/web/.generated-public/public/latest/manifest.json
+          rm -rf apps/web/public/public
+          mkdir -p apps/web/public
+          cp -a apps/web/.generated-public/public apps/web/public/public
+
       - name: Deploy local OCI compose stack
         env:
           STONKS_DEPLOY_DIR: /opt/stonks-radar
@@ -103,6 +111,14 @@ jobs:
 
       - name: Build web assets
         run: STONKS_SNAPSHOT_ENV_FILE=/tmp/stonks-production.env npm run build
+
+      - name: Promote generated snapshots for runtime seed
+        run: |
+          set -euo pipefail
+          test -f apps/web/.generated-public/public/latest/manifest.json
+          rm -rf apps/web/public/public
+          mkdir -p apps/web/public
+          cp -a apps/web/.generated-public/public apps/web/public/public
 
       - name: Prepare SSH
         env:
