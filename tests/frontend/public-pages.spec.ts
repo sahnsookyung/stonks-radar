@@ -236,7 +236,24 @@ test("map renders news nodes at relevant geographies", async ({
   page,
   request,
 }) => {
-  const response = await request.get("/public/v1/en/map/events.json");
+  const manifestResponse = await request.get("/public/latest/manifest.json");
+  expect(manifestResponse.ok()).toBeTruthy();
+  const manifest = (await manifestResponse.json()) as {
+    objects?: {
+      map_events?: {
+        en?: string;
+      };
+    };
+  };
+  const mapEventsPath = manifest.objects?.map_events?.en;
+  expect(mapEventsPath).toBeTruthy();
+  if (!mapEventsPath) {
+    throw new Error("Manifest is missing map_events.en");
+  }
+
+  const response = await request.get(
+    mapEventsPath.startsWith("/") ? mapEventsPath : `/${mapEventsPath}`,
+  );
   expect(response.ok()).toBeTruthy();
   const snapshot = (await response.json()) as {
     data?: {
