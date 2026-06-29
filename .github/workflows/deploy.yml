@@ -149,17 +149,26 @@ jobs:
           set -euo pipefail
           ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" '
             set -euo pipefail
-            rm -rf /tmp/stonks-radar-old-assets /opt/stonks-radar-old-assets
+            rm -rf \
+              /tmp/stonks-radar-old-assets \
+              /opt/stonks-radar/.deploy-old-assets \
+              /opt/stonks-radar/node_modules \
+              /opt/stonks-radar/apps/web/node_modules \
+              /opt/stonks-radar/apps/web/.generated-public \
+              /opt/stonks-radar/apps/backend_elixir/deps \
+              /opt/stonks-radar/apps/backend_elixir/_build \
+              /opt/stonks-radar/.pytest_cache
             docker container prune -f || true
             docker builder prune -af || true
             docker image prune -af || true
             df -h / /opt /tmp || true
           '
           ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
-            'rm -rf /opt/stonks-radar-old-assets && mkdir -p /opt/stonks-radar-old-assets && if [ -d /opt/stonks-radar/apps/web/dist/assets ]; then cp -an /opt/stonks-radar/apps/web/dist/assets/. /opt/stonks-radar-old-assets/; fi'
+            'rm -rf /opt/stonks-radar/.deploy-old-assets && mkdir -p /opt/stonks-radar/.deploy-old-assets && if [ -d /opt/stonks-radar/apps/web/dist/assets ]; then cp -an /opt/stonks-radar/apps/web/dist/assets/. /opt/stonks-radar/.deploy-old-assets/; fi'
           rsync -az --delete \
             --exclude '.git' \
             --exclude '.gitnexus' \
+            --exclude '.deploy-old-assets' \
             --exclude '.secrets' \
             --exclude '.env' \
             --exclude '.env.*' \
@@ -170,7 +179,7 @@ jobs:
             -e "ssh -i ~/.ssh/stonks_deploy_key" \
             ./ "$STONKS_USER@$STONKS_HOST:/opt/stonks-radar/"
           ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
-            'mkdir -p /opt/stonks-radar/apps/web/dist/assets && cp -an /opt/stonks-radar-old-assets/. /opt/stonks-radar/apps/web/dist/assets/ || true && rm -rf /opt/stonks-radar-old-assets'
+            'mkdir -p /opt/stonks-radar/apps/web/dist/assets && cp -an /opt/stonks-radar/.deploy-old-assets/. /opt/stonks-radar/apps/web/dist/assets/ || true && rm -rf /opt/stonks-radar/.deploy-old-assets'
 
       - name: Write production env
         env:

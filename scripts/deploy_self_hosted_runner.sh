@@ -47,7 +47,15 @@ docker container prune -f || true
 docker builder prune -af || true
 docker image prune -af || true
 
-old_assets_dir="${STONKS_DEPLOY_OLD_ASSETS_DIR:-${deploy_dir%/}-old-assets}"
+rm -rf \
+  "$deploy_dir/node_modules" \
+  "$deploy_dir/apps/web/node_modules" \
+  "$deploy_dir/apps/web/.generated-public" \
+  "$deploy_dir/apps/backend_elixir/deps" \
+  "$deploy_dir/apps/backend_elixir/_build" \
+  "$deploy_dir/.pytest_cache"
+
+old_assets_dir="${STONKS_DEPLOY_OLD_ASSETS_DIR:-${deploy_dir%/}/.deploy-old-assets}"
 rm -rf "$old_assets_dir"
 mkdir -p "$old_assets_dir"
 cleanup() {
@@ -63,6 +71,7 @@ if [[ "$(cd "$source_dir" && pwd -P)" != "$(cd "$deploy_dir" && pwd -P)" ]]; the
   rsync -az --delete \
     --exclude '.git' \
     --exclude '.gitnexus' \
+    --exclude '.deploy-old-assets' \
     --exclude '.secrets' \
     --exclude '.env' \
     --exclude '.env.*' \
