@@ -92,9 +92,22 @@ install -m 600 "$env_file" "$deploy_dir/.env"
 install -m 600 "$env_file" "$deploy_dir/.secrets/stonks-radar.production.env"
 
 cd "$deploy_dir"
-docker compose "${compose_files[@]}" build --pull
-docker compose "${compose_files[@]}" up -d
-docker builder prune -af
+docker compose "${compose_files[@]}" down --remove-orphans
+docker image rm -f stonks-radar-api stonks-radar-worker stonks-radar-fetch-sandbox stonks-radar-web || true
+docker container prune -f || true
+docker builder prune -af || true
+docker image prune -f || true
+df -h / /opt /tmp || true
+
+for service in api worker fetch-sandbox web; do
+  COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 docker compose "${compose_files[@]}" build "$service"
+  docker builder prune -af || true
+done
+
+COMPOSE_PARALLEL_LIMIT=1 docker compose "${compose_files[@]}" up -d
+docker builder prune -af || true
+docker image prune -f || true
+df -h / /opt /tmp || true
 docker compose "${compose_files[@]}" run --rm -e PYTHONPATH=/app worker \
   python scripts/publish_runtime_snapshots.py --generated-by github-actions-self-hosted
 

@@ -202,7 +202,21 @@ jobs:
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
-            'cd /opt/stonks-radar && docker compose -f compose.yaml -f infra/docker-compose.prod.yml build --pull && docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d && docker builder prune -af'
+            'cd /opt/stonks-radar &&
+             docker compose -f compose.yaml -f infra/docker-compose.prod.yml down --remove-orphans &&
+             docker image rm -f stonks-radar-api stonks-radar-worker stonks-radar-fetch-sandbox stonks-radar-web || true &&
+             docker container prune -f || true &&
+             docker builder prune -af || true &&
+             docker image prune -f || true &&
+             df -h / /opt /tmp || true &&
+             for service in api worker fetch-sandbox web; do
+               COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml build "$service"
+               docker builder prune -af || true
+             done &&
+             COMPOSE_PARALLEL_LIMIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d &&
+             docker builder prune -af || true &&
+             docker image prune -f || true &&
+             df -h / /opt /tmp || true'
 
       - name: Refresh published snapshots
         env:
