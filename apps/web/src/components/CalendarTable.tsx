@@ -95,7 +95,7 @@ function CalendarSourceLink({ item }: Readonly<{ item: CalendarItem }>) {
       href={item.source_url}
       target={item.source_url.startsWith("http") ? "_blank" : undefined}
       rel="noreferrer"
-      className="focus-ring inline-flex min-h-8 items-center gap-1 rounded text-xs font-semibold text-accent hover:text-accentSoft"
+      className="focus-ring inline-flex min-h-11 items-center gap-1 rounded px-3 text-xs font-semibold text-accent hover:text-accentSoft"
     >
       {item.source}
       <ExternalLink className="h-3.5 w-3.5" />

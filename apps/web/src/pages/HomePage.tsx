@@ -109,7 +109,7 @@ export function HomePage() {
                 <div className="mt-1.5 text-xs leading-5 text-muted">
                   {item.scheduled_local_date} · {item.source} · {calendarExpectationLabel(item.expectation_type, locale)}
                 </div>
-                <a href={item.source_url} target={item.source_url.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="focus-ring mt-2 inline-flex min-h-8 items-center gap-1 rounded text-xs font-semibold text-accent hover:text-accentSoft">
+                <a href={item.source_url} target={item.source_url.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="focus-ring mt-2 inline-flex min-h-11 items-center gap-1 rounded px-3 text-xs font-semibold text-accent hover:text-accentSoft">
                   {t("source")}
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
