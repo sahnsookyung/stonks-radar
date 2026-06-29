@@ -21,6 +21,21 @@ test("public routes render from snapshots", async ({ page }) => {
   await expect(
     page.getByText("Global market intelligence dashboard"),
   ).toBeVisible();
+  await expect(page.getByText("Priority Event")).toHaveCount(0);
+  await expect(page.getByText("Approved Events")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Scenario Evidence" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Open evidence/ }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /Open external tracker/ })).toBeVisible();
+  await page.goto("/en/calendar");
+  await expect(page.getByRole("heading", { name: "Economic Calendar" })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /Federal Reserve|NVIDIA IR|FMP|BLS|TSMC IR/ }).first(),
+  ).toBeVisible();
+  await page.goto("/en/scenario-baskets/ai-infra-capex");
+  await expect(page.getByText("Scenario evidence")).toBeVisible();
+  await expect(page.getByText("Illustrative methodology")).toHaveCount(0);
+  await expect(page.getByText("equal-weight seed")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /External tracker/ })).toBeVisible();
   await page.goto("/en/news");
   await expect(page.getByText("Source-Linked Event News")).toBeVisible();
   await page.goto("/en/portfolio");

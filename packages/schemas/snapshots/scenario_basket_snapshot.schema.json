@@ -1,5 +1,51 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "coverageStatus": { "enum": ["active", "partial", "coverage_gap"] },
+    "metricRow": {
+      "type": "object",
+      "required": ["key", "label", "value", "detail", "source", "source_url", "freshness", "as_of_date", "coverage_status"],
+      "properties": {
+        "key": { "type": "string" },
+        "label": { "type": "string" },
+        "value": { "type": "string" },
+        "detail": { "type": "string" },
+        "source": { "type": "string" },
+        "source_url": { "type": "string" },
+        "freshness": { "enum": ["fresh", "watch", "stale", "unsupported"] },
+        "as_of_date": { "type": "string" },
+        "coverage_status": { "$ref": "#/$defs/coverageStatus" }
+      },
+      "additionalProperties": false
+    },
+    "sourceLink": {
+      "type": "object",
+      "required": ["label", "url", "source_key", "policy_version"],
+      "properties": {
+        "label": { "type": "string" },
+        "url": { "type": "string" },
+        "source_key": { "type": "string" },
+        "policy_version": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "trackerSection": {
+      "type": "object",
+      "required": ["key", "title", "summary", "coverage_status", "evidence_count", "last_observed_at", "metric_rows", "news_events", "source_links"],
+      "properties": {
+        "key": { "type": "string" },
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "coverage_status": { "$ref": "#/$defs/coverageStatus" },
+        "evidence_count": { "type": "integer", "minimum": 0 },
+        "last_observed_at": { "type": "string" },
+        "metric_rows": { "type": "array", "items": { "$ref": "#/$defs/metricRow" } },
+        "news_events": { "type": "array", "items": { "$ref": "./_news.schema.json#/$defs/newsEventListItem" } },
+        "source_links": { "type": "array", "items": { "$ref": "#/$defs/sourceLink" } }
+      },
+      "additionalProperties": false
+    }
+  },
   "allOf": [
     { "$ref": "./_envelope.schema.json" },
     {
@@ -8,18 +54,40 @@
         "object_type": { "const": "scenario_basket" },
         "data": {
           "type": "object",
-          "required": ["key", "name", "thesis", "methodology", "included_objects", "risk_summary", "freshness_timestamp", "data_delay_warning", "disclaimer", "approval_status"],
+          "required": [
+            "key",
+            "name",
+            "thesis",
+            "methodology",
+            "tracker_sections",
+            "risk_summary",
+            "freshness_timestamp",
+            "data_delay_warning",
+            "disclaimer",
+            "coverage_status",
+            "evidence_count",
+            "last_observed_at",
+            "primary_source_url"
+          ],
           "properties": {
             "key": { "type": "string" },
             "name": { "type": "string" },
             "thesis": { "type": "string" },
             "methodology": { "type": "string" },
-            "included_objects": { "type": "array" },
+            "tracker_sections": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/trackerSection" }
+            },
             "risk_summary": { "type": "string" },
             "freshness_timestamp": { "type": "string" },
             "data_delay_warning": { "type": "string" },
             "disclaimer": { "type": "string" },
-            "approval_status": { "const": "approved" }
+            "coverage_status": { "$ref": "#/$defs/coverageStatus" },
+            "evidence_count": { "type": "integer", "minimum": 0 },
+            "last_observed_at": { "type": "string" },
+            "primary_source_url": { "type": "string" },
+            "external_tracker_url": { "type": "string" }
           },
           "additionalProperties": false
         }

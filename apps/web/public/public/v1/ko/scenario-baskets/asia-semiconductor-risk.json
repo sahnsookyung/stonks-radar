@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-29T05:27:58Z",
-  "stale_after": "2026-06-29T17:27:58Z",
-  "hard_expires_at": "2026-07-06T05:27:58Z",
+  "generated_at": "2026-06-29T13:35:27Z",
+  "stale_after": "2026-06-30T01:35:27Z",
+  "hard_expires_at": "2026-07-06T13:35:27Z",
   "object_type": "scenario_basket",
   "object_key": "asia-semiconductor-risk",
-  "content_hash": "sha256:9a3d840dd76593c751235473c899a4b89803e7f1b46c97910af5d67ca136f4b3",
+  "content_hash": "sha256:78f3ebf8349880366a3047285d5665f6d2863af4a2191baad2d764ea251db95d",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -114,44 +114,195 @@
     "key": "asia-semiconductor-risk",
     "name": "아시아 반도체 리스크",
     "thesis": "대만, 한국, 일본, 수출통제, 메모리, 파운드리 리스크 경로를 매핑합니다.",
-    "methodology": "예시 비중은 편집 승인 방법론 데이터 수집 전까지 동일가중 시드 placeholder입니다. 포함 기준은 테마 노출과 검토된 공개 사실입니다.",
-    "included_objects": [
+    "methodology": "행은 출처 연결 지표, 공식 페이지, 최근 뉴스 스냅샷에서만 렌더링합니다. 구조화 데이터가 없으면 명시적 커버리지 공백으로 표시합니다.",
+    "tracker_sections": [
       {
-        "name": "TSMC",
-        "object_key": "TSMC",
-        "reason": "모니터링 시나리오에 대한 테마 노출.",
-        "illustrative_weight": "equal-weight seed"
-      },
-      {
-        "name": "Samsung Electronics",
-        "object_key": "SAMSUNG_ELECTRONICS",
-        "reason": "모니터링 시나리오에 대한 테마 노출.",
-        "illustrative_weight": "equal-weight seed"
-      },
-      {
-        "name": "SK Hynix",
-        "object_key": "SK_HYNIX",
-        "reason": "모니터링 시나리오에 대한 테마 노출.",
-        "illustrative_weight": "equal-weight seed"
-      },
-      {
-        "name": "ASML",
-        "object_key": "ASML",
-        "reason": "모니터링 시나리오에 대한 테마 노출.",
-        "illustrative_weight": "equal-weight seed"
-      },
-      {
-        "name": "NVIDIA",
-        "object_key": "NVIDIA",
-        "reason": "모니터링 시나리오에 대한 테마 노출.",
-        "illustrative_weight": "equal-weight seed"
+        "key": "asia-semis-evidence",
+        "title": "아시아 반도체 근거",
+        "summary": "수출통제, 대만/한국/일본 노출, 추적 반도체 티커를 최근 출처 연결 뉴스에서 요약합니다.",
+        "coverage_status": "active",
+        "evidence_count": 3,
+        "last_observed_at": "2026-06-29T13:35:27Z",
+        "metric_rows": [
+          {
+            "key": "seven-day-news",
+            "label": "7일 출처 연결 뉴스",
+            "value": "1개 항목",
+            "detail": "최근 7일 내 관측된 반도체, 수출통제, 아시아 지역 뉴스만 집계합니다.",
+            "source": "Stonks Radar news snapshots",
+            "source_url": "https://www.bis.gov/",
+            "freshness": "fresh",
+            "as_of_date": "2026-06-29T13:35:27Z",
+            "coverage_status": "active"
+          },
+          {
+            "key": "bis-policy-source",
+            "label": "공식 수출통제 출처",
+            "value": "출처 링크",
+            "detail": "BIS는 공식 정책 출처이며 뉴스 분석은 정책 확인으로 취급하지 않습니다.",
+            "source": "BIS",
+            "source_url": "https://www.bis.gov/",
+            "freshness": "watch",
+            "as_of_date": "2026-06-29",
+            "coverage_status": "active"
+          }
+        ],
+        "news_events": [
+          {
+            "id": "semiconductor_export_controls_seed",
+            "title": "중국발 수출통제 리스크가 AI 반도체 공급망에 높은 상태로 유지",
+            "summary": "공식 정책 모니터링은 수출통제를 엔비디아, 삼성전자, 일본 장비 업체, 유럽 장비 노출과 연결합니다.",
+            "event_type": "trade_policy",
+            "first_seen_at": "2026-06-27T13:35:27Z",
+            "last_seen_at": "2026-06-29T13:35:27Z",
+            "published_at": "2026-06-29T13:35:27Z",
+            "freshness": "fresh",
+            "severity": "high",
+            "confidence": 0.78,
+            "breaking_score": 76,
+            "trust_score": 88,
+            "source_count": 3,
+            "tickers": [
+              {
+                "symbol": "NVDA",
+                "name": "엔비디아",
+                "exchange": "NASDAQ",
+                "relationship": "affected_company",
+                "confidence": 0.88
+              },
+              {
+                "symbol": "005930.KS",
+                "name": "삼성전자",
+                "exchange": "KRX",
+                "relationship": "affected_company",
+                "confidence": 0.84
+              }
+            ],
+            "regions": [
+              {
+                "key": "CHN",
+                "name": "중국",
+                "relation": "event_region",
+                "confidence": 0.92
+              },
+              {
+                "key": "USA",
+                "name": "미국",
+                "relation": "affected_region",
+                "confidence": 0.86
+              },
+              {
+                "key": "KOR",
+                "name": "대한민국",
+                "relation": "affected_region",
+                "confidence": 0.84
+              },
+              {
+                "key": "JPN",
+                "name": "일본",
+                "relation": "affected_region",
+                "confidence": 0.78
+              },
+              {
+                "key": "EU",
+                "name": "유럽연합",
+                "relation": "affected_region",
+                "confidence": 0.72
+              },
+              {
+                "key": "USA",
+                "name": "미국",
+                "relation": "market_region",
+                "confidence": 0.76
+              },
+              {
+                "key": "KOR",
+                "name": "대한민국",
+                "relation": "market_region",
+                "confidence": 0.74
+              }
+            ],
+            "topics": [
+              {
+                "key": "semiconductors",
+                "label": "반도체",
+                "confidence": 0.94
+              },
+              {
+                "key": "geopolitics",
+                "label": "지정학",
+                "confidence": 0.79
+              },
+              {
+                "key": "trade_policy",
+                "label": "무역 정책",
+                "confidence": 0.86
+              },
+              {
+                "key": "supply_chain",
+                "label": "공급망",
+                "confidence": 0.77
+              }
+            ],
+            "market_direction": "mixed",
+            "source_links": [
+              {
+                "label": "BIS",
+                "url": "https://www.bis.gov/",
+                "source_key": "bis",
+                "policy_version": 1,
+                "title": "미 산업안보국 수출통제",
+                "published_at": "2026-06-28T19:35:27Z",
+                "trust_tier": "T0_OFFICIAL",
+                "is_primary": true
+              },
+              {
+                "label": "SEC EDGAR",
+                "url": "https://www.sec.gov/edgar/search/",
+                "source_key": "sec_edgar",
+                "policy_version": 1,
+                "title": "영향 기업 공시",
+                "published_at": "2026-06-28T19:35:27Z",
+                "trust_tier": "T1_REGULATED_FILING",
+                "is_primary": false
+              },
+              {
+                "label": "Source policy",
+                "url": "https://www.bis.gov/regulations/ear/table-of-contents",
+                "source_key": "source_policy",
+                "policy_version": 1,
+                "title": "수출관리규정 참고",
+                "published_at": "2026-06-28T19:35:27Z",
+                "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
+                "is_primary": false
+              }
+            ]
+          }
+        ],
+        "source_links": [
+          {
+            "label": "BIS",
+            "url": "https://www.bis.gov/",
+            "source_key": "bis",
+            "policy_version": 1
+          },
+          {
+            "label": "TSMC",
+            "url": "https://investor.tsmc.com/english/quarterly-results",
+            "source_key": "tsmc_ir",
+            "policy_version": 1
+          }
+        ]
       }
     ],
-    "risk_summary": "출처 데이터가 오래되거나 정책 리스크가 반전되거나 섹터 노출이 예상보다 약하면 시나리오가 실패할 수 있습니다.",
-    "freshness_timestamp": "2026-06-29T05:27:58Z",
-    "data_delay_warning": "지연/참조 지표만 사용하며 증권사 연결이나 주문 실행은 없습니다.",
+    "risk_summary": "수출 규정, 대만/한국/일본 헤드라인, 기업 가이던스가 엇갈리면 아시아 반도체 리스크는 빠르게 바뀔 수 있습니다.",
+    "freshness_timestamp": "2026-06-29T13:35:27Z",
+    "data_delay_warning": "지연/참조 지표와 외부 출처 링크만 사용하며 증권사 연결이나 주문 실행은 없습니다.",
     "disclaimer": "리서치 목적입니다. 개인화 금융 조언이 아니며 매수, 매도, 배분 추천으로 해석하지 마십시오.",
-    "approval_status": "approved"
+    "coverage_status": "active",
+    "evidence_count": 3,
+    "last_observed_at": "2026-06-29T13:35:27Z",
+    "primary_source_url": "https://www.bis.gov/"
   },
   "warnings": [
     {

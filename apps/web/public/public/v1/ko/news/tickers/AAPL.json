@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-29T05:27:58Z",
-  "stale_after": "2026-06-29T17:27:58Z",
-  "hard_expires_at": "2026-07-06T05:27:58Z",
+  "generated_at": "2026-06-29T13:35:27Z",
+  "stale_after": "2026-06-30T01:35:27Z",
+  "hard_expires_at": "2026-07-06T13:35:27Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_AAPL",
-  "content_hash": "sha256:5f1e8a2b7c031057e0e61647826bc8448be43008e1f64a9bd71eb281d3f9213d",
+  "content_hash": "sha256:fe87125cebaf3034e76e9b5d6a9fb7e87ba9492b1b85357b1456ba897a65a62e",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "AAPL",
     "name": "애플",
-    "generated_label": "2026-06-29T05:27:58Z",
+    "generated_label": "2026-06-29T13:35:27Z",
     "summary": "AAPL에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
     "events": []
   },

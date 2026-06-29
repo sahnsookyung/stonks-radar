@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-29T05:27:58Z",
-  "stale_after": "2026-06-29T17:27:58Z",
-  "hard_expires_at": "2026-07-06T05:27:58Z",
+  "generated_at": "2026-06-29T13:35:27Z",
+  "stale_after": "2026-06-30T01:35:27Z",
+  "hard_expires_at": "2026-07-06T13:35:27Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_QUANTINUUM",
-  "content_hash": "sha256:a409e8e212f2b35e9e0905f59aa2bedcd603a905f74b655f7f5a8c39e43cbbfb",
+  "content_hash": "sha256:034f904903eb7071737a7437a5461d211c737da7e790921bd827384d65f75c0a",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "QUANTINUUM",
     "name": "퀀티넘",
-    "generated_label": "2026-06-29T05:27:58Z",
+    "generated_label": "2026-06-29T13:35:27Z",
     "summary": "QUANTINUUM에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
     "events": []
   },

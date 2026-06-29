@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-29T05:27:58Z",
-  "stale_after": "2026-06-29T17:27:58Z",
-  "hard_expires_at": "2026-07-06T05:27:58Z",
+  "generated_at": "2026-06-29T13:35:27Z",
+  "stale_after": "2026-06-30T01:35:27Z",
+  "hard_expires_at": "2026-07-06T13:35:27Z",
   "object_type": "news_topic",
   "object_key": "news_topic_energy",
-  "content_hash": "sha256:f2daf4205e304bf33ae65131f5239eeb65b6efebe16228cfc988c85fae049e71",
+  "content_hash": "sha256:8e9cdb9b00b5d4b255bb913eba156f4d7c08bf84776169a8b97ea4141d710ffa",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "energy",
     "label": "에너지",
-    "generated_label": "2026-06-29T05:27:58Z",
+    "generated_label": "2026-06-29T13:35:27Z",
     "topic_brief": "에너지에는 출처 연결 공개 메타데이터에서 만든 승인 이벤트 클러스터 1건이 포함됩니다.",
     "events": [
       {
@@ -121,9 +121,9 @@
         "title": "에너지 공급 리스크 워치가 해상 요충지, 재고, 인플레이션 민감 시장을 연결",
         "summary": "공식 에너지 데이터와 검토된 지정학 맥락을 미국, 유럽, 중국, 한국, 일본, 브라질에 영향을 줄 수 있는 공급 리스크 이벤트로 묶습니다.",
         "event_type": "geopolitical_supply_risk",
-        "first_seen_at": "2026-06-27T05:27:58Z",
-        "last_seen_at": "2026-06-29T05:27:58Z",
-        "published_at": "2026-06-29T05:27:58Z",
+        "first_seen_at": "2026-06-27T13:35:27Z",
+        "last_seen_at": "2026-06-29T13:35:27Z",
+        "published_at": "2026-06-29T13:35:27Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.72,
@@ -194,7 +194,7 @@
             "source_key": "eia",
             "policy_version": 1,
             "title": "주간 석유 현황 보고서",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -204,7 +204,7 @@
             "source_key": "iea",
             "policy_version": 1,
             "title": "석유 시장 보고서",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           },
@@ -214,7 +214,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "공식 에너지 데이터 맥락",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }

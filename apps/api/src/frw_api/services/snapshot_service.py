@@ -894,6 +894,7 @@ def _calendar_items(db: Session) -> list[dict[str, Any]]:
             "previous_value": None,
             "surprise": None,
             "source": "canonical_db",
+            "source_url": "/en/sources",
             "freshness": "fresh",
         }
         for row in rows

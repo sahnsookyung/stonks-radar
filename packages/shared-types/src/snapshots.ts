@@ -437,8 +437,11 @@ export interface CalendarItem {
   previous_value: string | null;
   surprise: string | null;
   source: string;
+  source_url: string;
   freshness: Freshness;
 }
+
+export type ScenarioCoverageStatus = "active" | "partial" | "coverage_gap";
 
 export interface ScenarioBasketSummary {
   key: string;
@@ -446,6 +449,35 @@ export interface ScenarioBasketSummary {
   thesis: string;
   risk_summary: string;
   freshness: Freshness;
+  coverage_status: ScenarioCoverageStatus;
+  evidence_count: number;
+  last_observed_at: string;
+  primary_source_url: string;
+  external_tracker_url?: string;
+}
+
+export interface ScenarioTrackerMetricRow {
+  key: string;
+  label: string;
+  value: string;
+  detail: string;
+  source: string;
+  source_url: string;
+  freshness: Freshness;
+  as_of_date: string;
+  coverage_status: ScenarioCoverageStatus;
+}
+
+export interface ScenarioTrackerSection {
+  key: string;
+  title: string;
+  summary: string;
+  coverage_status: ScenarioCoverageStatus;
+  evidence_count: number;
+  last_observed_at: string;
+  metric_rows: ScenarioTrackerMetricRow[];
+  news_events: NewsEventListItem[];
+  source_links: SourceLink[];
 }
 
 export interface MapEventsData {
@@ -569,17 +601,16 @@ export interface ScenarioBasketSnapshotData {
   name: string;
   thesis: string;
   methodology: string;
-  included_objects: {
-    name: string;
-    object_key: string;
-    reason: string;
-    illustrative_weight: string;
-  }[];
+  tracker_sections: ScenarioTrackerSection[];
   risk_summary: string;
   freshness_timestamp: string;
   data_delay_warning: string;
   disclaimer: string;
-  approval_status: "approved";
+  coverage_status: ScenarioCoverageStatus;
+  evidence_count: number;
+  last_observed_at: string;
+  primary_source_url: string;
+  external_tracker_url?: string;
 }
 
 export interface SourceStatusSnapshotData {

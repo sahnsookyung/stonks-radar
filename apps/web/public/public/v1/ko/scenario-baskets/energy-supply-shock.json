@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-29T05:27:58Z",
-  "stale_after": "2026-06-29T17:27:58Z",
-  "hard_expires_at": "2026-07-06T05:27:58Z",
+  "generated_at": "2026-06-29T13:35:27Z",
+  "stale_after": "2026-06-30T01:35:27Z",
+  "hard_expires_at": "2026-07-06T13:35:27Z",
   "object_type": "scenario_basket",
   "object_key": "energy-supply-shock",
-  "content_hash": "sha256:e3e9fa58bb0df38857972b88c75da7449719f33a1065f55b423d950f61910e27",
+  "content_hash": "sha256:4499218a0922539b2f14878466191810a79e7027711f845c90cfea11a7ab314d",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -114,44 +114,186 @@
     "key": "energy-supply-shock",
     "name": "에너지 공급 충격 워치리스트",
     "thesis": "재고, OPEC+ 회의, 제재, 해상 요충지, 통합 에너지 기업을 모니터링합니다.",
-    "methodology": "예시 비중은 편집 승인 방법론 데이터 수집 전까지 동일가중 시드 placeholder입니다. 포함 기준은 테마 노출과 검토된 공개 사실입니다.",
-    "included_objects": [
+    "methodology": "행은 출처 연결 지표, 공식 페이지, 최근 뉴스 스냅샷에서만 렌더링합니다. 구조화 데이터가 없으면 명시적 커버리지 공백으로 표시합니다.",
+    "tracker_sections": [
       {
-        "name": "OPEC+",
-        "object_key": "OPEC+",
-        "reason": "모니터링 시나리오에 대한 테마 노출.",
-        "illustrative_weight": "equal-weight seed"
-      },
-      {
-        "name": "Chevron",
-        "object_key": "CHEVRON",
-        "reason": "모니터링 시나리오에 대한 테마 노출.",
-        "illustrative_weight": "equal-weight seed"
-      },
-      {
-        "name": "ExxonMobil",
-        "object_key": "EXXONMOBIL",
-        "reason": "모니터링 시나리오에 대한 테마 노출.",
-        "illustrative_weight": "equal-weight seed"
-      },
-      {
-        "name": "WTI reference",
-        "object_key": "WTI_REFERENCE",
-        "reason": "모니터링 시나리오에 대한 테마 노출.",
-        "illustrative_weight": "equal-weight seed"
-      },
-      {
-        "name": "Brent reference",
-        "object_key": "BRENT_REFERENCE",
-        "reason": "모니터링 시나리오에 대한 테마 노출.",
-        "illustrative_weight": "equal-weight seed"
+        "key": "energy-supply-evidence",
+        "title": "에너지 공급 근거",
+        "summary": "재고, 원유 참고 지표, 해상 요충지, 공식 시장 보고서를 분리해 공백이 보이도록 합니다.",
+        "coverage_status": "partial",
+        "evidence_count": 2,
+        "last_observed_at": "2026-06-29T13:35:27Z",
+        "metric_rows": [
+          {
+            "key": "wti-reference",
+            "label": "WTI 원유 참고 지표",
+            "value": "70.23",
+            "detail": "재고 주장이 아니라 맥락 지표로 표시되는 지연/참조 시장 타일입니다.",
+            "source": "Yahoo Finance delayed quote",
+            "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/CL%3DF?range=1d&interval=1m",
+            "freshness": "fresh",
+            "as_of_date": "2026-06-29",
+            "coverage_status": "active"
+          },
+          {
+            "key": "eia-weekly-stocks",
+            "label": "미국 석유 재고 출처",
+            "value": "공식 주간 보고서",
+            "detail": "미국 주간 재고 추세는 EIA를 사용하며 구조화된 기준일 데이터가 수집될 때만 수치 추세를 표시합니다.",
+            "source": "EIA",
+            "source_url": "https://www.eia.gov/petroleum/supply/weekly/",
+            "freshness": "watch",
+            "as_of_date": "2026-06-29",
+            "coverage_status": "coverage_gap"
+          },
+          {
+            "key": "jodi-country-stocks",
+            "label": "국가별 석유 재고 출처",
+            "value": "월간 공식 데이터셋",
+            "detail": "JODI는 국가별 석유 재고 출처로 연결되며 월간 관측치가 파싱될 때까지 커버리지 공백으로 유지됩니다.",
+            "source": "JODI",
+            "source_url": "https://www.jodidata.org/oil/",
+            "freshness": "watch",
+            "as_of_date": "2026-06-29",
+            "coverage_status": "coverage_gap"
+          }
+        ],
+        "news_events": [
+          {
+            "id": "energy_geopolitical_supply_risk_seed",
+            "title": "에너지 공급 리스크 워치가 해상 요충지, 재고, 인플레이션 민감 시장을 연결",
+            "summary": "공식 에너지 데이터와 검토된 지정학 맥락을 미국, 유럽, 중국, 한국, 일본, 브라질에 영향을 줄 수 있는 공급 리스크 이벤트로 묶습니다.",
+            "event_type": "geopolitical_supply_risk",
+            "first_seen_at": "2026-06-27T13:35:27Z",
+            "last_seen_at": "2026-06-29T13:35:27Z",
+            "published_at": "2026-06-29T13:35:27Z",
+            "freshness": "fresh",
+            "severity": "high",
+            "confidence": 0.72,
+            "breaking_score": 82,
+            "trust_score": 84,
+            "source_count": 3,
+            "tickers": [],
+            "regions": [
+              {
+                "key": "USA",
+                "name": "미국",
+                "relation": "affected_region",
+                "confidence": 0.76
+              },
+              {
+                "key": "EU",
+                "name": "유럽연합",
+                "relation": "affected_region",
+                "confidence": 0.74
+              },
+              {
+                "key": "CHN",
+                "name": "중국",
+                "relation": "affected_region",
+                "confidence": 0.72
+              },
+              {
+                "key": "KOR",
+                "name": "대한민국",
+                "relation": "affected_region",
+                "confidence": 0.7
+              },
+              {
+                "key": "JPN",
+                "name": "일본",
+                "relation": "affected_region",
+                "confidence": 0.7
+              },
+              {
+                "key": "BRA",
+                "name": "브라질",
+                "relation": "affected_region",
+                "confidence": 0.54
+              }
+            ],
+            "topics": [
+              {
+                "key": "energy",
+                "label": "에너지",
+                "confidence": 0.96
+              },
+              {
+                "key": "geopolitics",
+                "label": "지정학",
+                "confidence": 0.86
+              },
+              {
+                "key": "supply_chain",
+                "label": "공급망",
+                "confidence": 0.72
+              }
+            ],
+            "market_direction": "mixed",
+            "source_links": [
+              {
+                "label": "EIA",
+                "url": "https://www.eia.gov/petroleum/supply/weekly/",
+                "source_key": "eia",
+                "policy_version": 1,
+                "title": "주간 석유 현황 보고서",
+                "published_at": "2026-06-28T19:35:27Z",
+                "trust_tier": "T0_OFFICIAL",
+                "is_primary": true
+              },
+              {
+                "label": "IEA",
+                "url": "https://www.iea.org/reports/oil-market-report",
+                "source_key": "iea",
+                "policy_version": 1,
+                "title": "석유 시장 보고서",
+                "published_at": "2026-06-28T19:35:27Z",
+                "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
+                "is_primary": false
+              },
+              {
+                "label": "Source policy",
+                "url": "https://www.eia.gov/",
+                "source_key": "source_policy",
+                "policy_version": 1,
+                "title": "공식 에너지 데이터 맥락",
+                "published_at": "2026-06-28T19:35:27Z",
+                "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
+                "is_primary": false
+              }
+            ]
+          }
+        ],
+        "source_links": [
+          {
+            "label": "EIA",
+            "url": "https://www.eia.gov/petroleum/supply/weekly/",
+            "source_key": "eia",
+            "policy_version": 1
+          },
+          {
+            "label": "JODI",
+            "url": "https://www.jodidata.org/oil/",
+            "source_key": "jodi",
+            "policy_version": 1
+          },
+          {
+            "label": "IEA",
+            "url": "https://www.iea.org/reports/oil-market-report",
+            "source_key": "iea",
+            "policy_version": 1
+          }
+        ]
       }
     ],
-    "risk_summary": "출처 데이터가 오래되거나 정책 리스크가 반전되거나 섹터 노출이 예상보다 약하면 시나리오가 실패할 수 있습니다.",
-    "freshness_timestamp": "2026-06-29T05:27:58Z",
-    "data_delay_warning": "지연/참조 지표만 사용하며 증권사 연결이나 주문 실행은 없습니다.",
+    "risk_summary": "재고가 재축적되고 해상 요충지가 열려 있으며 수요가 공급보다 빠르게 약해지면 에너지 공급 리스크는 완화될 수 있습니다.",
+    "freshness_timestamp": "2026-06-29T13:35:27Z",
+    "data_delay_warning": "지연/참조 지표와 외부 출처 링크만 사용하며 증권사 연결이나 주문 실행은 없습니다.",
     "disclaimer": "리서치 목적입니다. 개인화 금융 조언이 아니며 매수, 매도, 배분 추천으로 해석하지 마십시오.",
-    "approval_status": "approved"
+    "coverage_status": "partial",
+    "evidence_count": 2,
+    "last_observed_at": "2026-06-29T13:35:27Z",
+    "primary_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/CL%3DF?range=1d&interval=1m"
   },
   "warnings": [
     {

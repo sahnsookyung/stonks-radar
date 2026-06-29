@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-29T05:27:58Z",
-  "stale_after": "2026-06-29T17:27:58Z",
-  "hard_expires_at": "2026-07-06T05:27:58Z",
+  "generated_at": "2026-06-29T13:35:27Z",
+  "stale_after": "2026-06-30T01:35:27Z",
+  "hard_expires_at": "2026-07-06T13:35:27Z",
   "object_type": "sector_page",
   "object_key": "semiconductors",
-  "content_hash": "sha256:74605ee6f9216f327a7f42058ea1504fb37281523788ca7b37ab1113505ce21c",
+  "content_hash": "sha256:7624c4cd8d7cd3d1cca88a3bcb90f14c81c074aed717b7d3542fce550e9dbf3d",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -193,7 +193,7 @@
       {
         "id": "event_semis_export_controls_seed",
         "title": "Semiconductor export-control monitoring remains elevated",
-        "summary": "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
+        "summary": "Source-linked event context connects export-control risk to advanced chips, foundry exposure, and Asia supply chains.",
         "why_it_matters": "The effect can propagate through AI accelerator availability, capex timing, and country exposure.",
         "occurred_at": "2026-05-25T00:00:00Z",
         "published_at": "2026-05-25T00:00:00Z",
@@ -242,7 +242,7 @@
         "symbol": "005930.KS",
         "title": "005930.KS: China-origin export-control risk remains elevated for AI-chip supply chains",
         "catalyst_type": "source_review",
-        "scheduled_at": "2026-06-29T05:27:58Z",
+        "scheduled_at": "2026-06-29T13:35:27Z",
         "scheduled_local_date": "2026-06-29",
         "timezone": "UTC",
         "source": "BIS",
@@ -256,7 +256,7 @@
         "symbol": "NVDA",
         "title": "NVDA: China-origin export-control risk remains elevated for AI-chip supply chains",
         "catalyst_type": "source_review",
-        "scheduled_at": "2026-06-29T05:27:58Z",
+        "scheduled_at": "2026-06-29T13:35:27Z",
         "scheduled_local_date": "2026-06-29",
         "timezone": "UTC",
         "source": "BIS",
@@ -271,9 +271,9 @@
         "title": "China-origin export-control risk remains elevated for AI-chip supply chains",
         "summary": "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.",
         "event_type": "trade_policy",
-        "first_seen_at": "2026-06-27T05:27:58Z",
-        "last_seen_at": "2026-06-29T05:27:58Z",
-        "published_at": "2026-06-29T05:27:58Z",
+        "first_seen_at": "2026-06-27T13:35:27Z",
+        "last_seen_at": "2026-06-29T13:35:27Z",
+        "published_at": "2026-06-29T13:35:27Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.78,
@@ -370,7 +370,7 @@
             "source_key": "bis",
             "policy_version": 1,
             "title": "Bureau of Industry and Security export controls",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -380,7 +380,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "Issuer filings for affected companies",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           },
@@ -390,7 +390,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "Export Administration Regulations reference",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }
@@ -401,9 +401,9 @@
         "title": "Central-bank decision calendar clusters FOMC, BoJ, BoK, ECB, and Brazil COPOM risk",
         "summary": "Official calendars are grouped into one policy-event watch so users can scan rate dates without leaving the app.",
         "event_type": "central_bank_calendar",
-        "first_seen_at": "2026-06-27T05:27:58Z",
-        "last_seen_at": "2026-06-29T05:27:58Z",
-        "published_at": "2026-06-29T05:27:58Z",
+        "first_seen_at": "2026-06-27T13:35:27Z",
+        "last_seen_at": "2026-06-29T13:35:27Z",
+        "published_at": "2026-06-29T13:35:27Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.86,
@@ -483,7 +483,7 @@
             "source_key": "federal_reserve",
             "policy_version": 1,
             "title": "FOMC calendars",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -493,7 +493,7 @@
             "source_key": "bank_of_korea",
             "policy_version": 1,
             "title": "Monetary policy schedule",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -503,7 +503,7 @@
             "source_key": "bank_of_japan",
             "policy_version": 1,
             "title": "Monetary policy meetings",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -513,7 +513,7 @@
             "source_key": "ecb",
             "policy_version": 1,
             "title": "Governing Council calendars",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -523,7 +523,7 @@
             "source_key": "bcb",
             "policy_version": 1,
             "title": "COPOM calendar",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           }
@@ -542,170 +542,171 @@
       {
         "key": "nasdaq_composite",
         "label": "Nasdaq Composite",
-        "value": "25,297.62",
+        "value": "25,615.87",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "stale",
-        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-06-26T21:15:59Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-26T21:15:59Z",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-29T13:35:55Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-29T13:35:55Z",
         "coverage_status": "active",
-        "refresh_seconds": 43200,
+        "refresh_seconds": 900,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EIXIC?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-26T15:06:00Z",
-            "value": 25294.7578125
+            "date": "2026-06-29T13:30:00Z",
+            "value": 25522.435546875
           },
           {
-            "date": "2026-06-26T15:54:00Z",
-            "value": 25392.326171875
+            "date": "2026-06-29T13:31:00Z",
+            "value": 25564.775390625
           },
           {
-            "date": "2026-06-26T16:42:00Z",
-            "value": 25413.98046875
+            "date": "2026-06-29T13:32:00Z",
+            "value": 25618.28515625
           },
           {
-            "date": "2026-06-26T17:30:00Z",
-            "value": 25437.7734375
+            "date": "2026-06-29T13:33:00Z",
+            "value": 25623.888671875
           },
           {
-            "date": "2026-06-26T18:18:00Z",
-            "value": 25347.6640625
+            "date": "2026-06-29T13:34:00Z",
+            "value": 25641.482421875
           },
           {
-            "date": "2026-06-26T19:06:00Z",
-            "value": 25280.28515625
-          },
-          {
-            "date": "2026-06-26T19:54:00Z",
-            "value": 25337.69921875
-          },
-          {
-            "date": "2026-06-26T20:00:00Z",
-            "value": 25297.6171875
+            "date": "2026-06-29T13:35:55Z",
+            "value": 25615.873046875
           }
         ],
-        "refresh_delta": -60.983000000000175,
-        "refresh_delta_percent": -0.24048251875103585
+        "refresh_delta": 318.2560000000012,
+        "refresh_delta_percent": 1.2580473488866608
       },
       {
         "key": "nasdaq_100",
         "label": "Nasdaq 100",
-        "value": "29,118.24",
+        "value": "29,445.35",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "stale",
-        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-06-26T21:15:59Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-26T21:15:59Z",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-29T13:35:53Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-29T13:35:53Z",
         "coverage_status": "active",
-        "refresh_seconds": 43200,
+        "refresh_seconds": 900,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-26T15:06:00Z",
-            "value": 29176.486328125
+            "date": "2026-06-29T13:30:00Z",
+            "value": 29335.3515625
           },
           {
-            "date": "2026-06-26T15:54:00Z",
-            "value": 29263.7734375
+            "date": "2026-06-29T13:31:00Z",
+            "value": 29369.0234375
           },
           {
-            "date": "2026-06-26T16:42:00Z",
-            "value": 29326.548828125
+            "date": "2026-06-29T13:32:00Z",
+            "value": 29435.333984375
           },
           {
-            "date": "2026-06-26T17:30:00Z",
-            "value": 29359.3984375
+            "date": "2026-06-29T13:33:00Z",
+            "value": 29439.78125
           },
           {
-            "date": "2026-06-26T18:18:00Z",
-            "value": 29205.626953125
+            "date": "2026-06-29T13:34:00Z",
+            "value": 29475.197265625
           },
           {
-            "date": "2026-06-26T19:06:00Z",
-            "value": 29130.8203125
+            "date": "2026-06-29T13:35:00Z",
+            "value": 29445.353515625
           },
           {
-            "date": "2026-06-26T19:54:00Z",
-            "value": 29154.455078125
-          },
-          {
-            "date": "2026-06-26T20:00:00Z",
-            "value": 29118.23828125
+            "date": "2026-06-29T13:35:53Z",
+            "value": 29445.353515625
           }
         ],
-        "refresh_delta": -322.0619999999981,
-        "refresh_delta_percent": -1.0939494502433673
+        "refresh_delta": 327.11599999999817,
+        "refresh_delta_percent": 1.1234058874029333
       },
       {
         "key": "kodex_200",
         "label": "KODEX 200 ETF",
-        "value": "133,755",
+        "value": "136,415",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-29T05:08:18Z; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-29T05:08:18Z",
+        "freshness": "watch",
+        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-06-29T06:30:29Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-29T06:30:29Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 43200,
         "unit": "KRW",
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/069500.KS?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-29T01:16:00Z",
-            "value": 134285.0
+            "date": "2026-06-29T00:45:00Z",
+            "value": 133235.0
           },
           {
-            "date": "2026-06-29T01:54:00Z",
-            "value": 135175.0
+            "date": "2026-06-29T01:30:00Z",
+            "value": 134190.0
           },
           {
-            "date": "2026-06-29T02:32:00Z",
-            "value": 133795.0
+            "date": "2026-06-29T02:15:00Z",
+            "value": 133280.0
           },
           {
-            "date": "2026-06-29T03:10:00Z",
-            "value": 133630.0
+            "date": "2026-06-29T03:00:00Z",
+            "value": 134185.0
           },
           {
-            "date": "2026-06-29T03:48:00Z",
-            "value": 133415.0
+            "date": "2026-06-29T03:45:00Z",
+            "value": 133070.0
           },
           {
-            "date": "2026-06-29T04:26:00Z",
-            "value": 133580.0
+            "date": "2026-06-29T04:30:00Z",
+            "value": 133480.0
           },
           {
-            "date": "2026-06-29T05:04:00Z",
-            "value": 133475.0
+            "date": "2026-06-29T05:15:00Z",
+            "value": 134540.0
           },
           {
-            "date": "2026-06-29T05:08:18Z",
-            "value": 133755.0
+            "date": "2026-06-29T06:00:00Z",
+            "value": 136415.0
           }
         ],
-        "refresh_delta": -3625.0,
-        "refresh_delta_percent": -2.638666472557869
+        "refresh_delta": -965.0,
+        "refresh_delta_percent": -0.7024312126947154
       }
     ],
     "scenario_baskets": [
       {
         "key": "ai-infra-capex",
         "name": "AI Infrastructure Capex",
-        "thesis": "Tracks data-center, accelerator, memory, power, and cloud capex channels using approved public facts.",
-        "risk_summary": "Illustrative only; risk factors and data delays must remain visible.",
-        "freshness": "fresh"
+        "thesis": "Tracks data-center, accelerator, memory, power, and cloud capex channels using source-linked public facts.",
+        "risk_summary": "AI capex can reverse if source data lags, power constraints intensify, or hyperscaler spending guidance weakens.",
+        "freshness": "fresh",
+        "coverage_status": "active",
+        "evidence_count": 2,
+        "last_observed_at": "2026-06-29T13:35:27Z",
+        "primary_source_url": "https://www.bis.gov/",
+        "external_tracker_url": "https://www.nextgig.rocks/dash/ai-tracker/"
       },
       {
         "key": "energy-supply-shock",
         "name": "Energy Supply Shock Watchlist",
         "thesis": "Monitors inventories, OPEC+ meetings, sanctions, chokepoints, and integrated energy companies.",
-        "risk_summary": "Illustrative only; risk factors and data delays must remain visible.",
-        "freshness": "fresh"
+        "risk_summary": "Energy supply risk can fade if inventories rebuild, chokepoints stay open, or demand weakens faster than supply.",
+        "freshness": "unsupported",
+        "coverage_status": "coverage_gap",
+        "evidence_count": 0,
+        "last_observed_at": "2026-06-29T13:35:27Z",
+        "primary_source_url": "https://www.eia.gov/petroleum/supply/weekly/"
       },
       {
         "key": "asia-semiconductor-risk",
         "name": "Asia Semiconductor Risk",
         "thesis": "Maps Taiwan, Korea, Japan, export-control, memory, and foundry risk channels.",
-        "risk_summary": "Illustrative only; risk factors and data delays must remain visible.",
-        "freshness": "fresh"
+        "risk_summary": "Asia semiconductor risk can change quickly when export rules, Taiwan/Korea/Japan headlines, or company guidance diverge.",
+        "freshness": "watch",
+        "coverage_status": "active",
+        "evidence_count": 3,
+        "last_observed_at": "2026-06-29T13:35:27Z",
+        "primary_source_url": "https://www.bis.gov/"
       }
     ],
     "risks_and_caveats": [

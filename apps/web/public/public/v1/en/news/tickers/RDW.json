@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-29T05:27:58Z",
-  "stale_after": "2026-06-29T17:27:58Z",
-  "hard_expires_at": "2026-07-06T05:27:58Z",
+  "generated_at": "2026-06-29T13:35:27Z",
+  "stale_after": "2026-06-30T01:35:27Z",
+  "hard_expires_at": "2026-07-06T13:35:27Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_RDW",
-  "content_hash": "sha256:77225808adc9a5be181077ca6747ba7a3d1637843822f011603663875970e56e",
+  "content_hash": "sha256:c1f5dbb6c08ddd0db500fc8b3f02399965f46d645a7b7302a879b64d51aa34e3",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "RDW",
     "name": "Redwire Corporation",
-    "generated_label": "2026-06-29T05:27:58Z",
+    "generated_label": "2026-06-29T13:35:27Z",
     "summary": "No approved news events are currently linked to RDW.",
     "events": []
   },

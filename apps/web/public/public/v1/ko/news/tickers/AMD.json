@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-29T05:27:58Z",
-  "stale_after": "2026-06-29T17:27:58Z",
-  "hard_expires_at": "2026-07-06T05:27:58Z",
+  "generated_at": "2026-06-29T13:35:27Z",
+  "stale_after": "2026-06-30T01:35:27Z",
+  "hard_expires_at": "2026-07-06T13:35:27Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_AMD",
-  "content_hash": "sha256:8f2ec1a59726686128a80ede2c122700c2bcaa6f76e0533a579b5e48a003323d",
+  "content_hash": "sha256:2f0f2f55b1f45df47c39eb0c5b4015d94128d0d75a5d1a887a510d7819082bfe",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "AMD",
     "name": "AMD",
-    "generated_label": "2026-06-29T05:27:58Z",
+    "generated_label": "2026-06-29T13:35:27Z",
     "summary": "AMD에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
     "events": []
   },

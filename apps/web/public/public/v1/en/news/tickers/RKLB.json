@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-29T05:27:58Z",
-  "stale_after": "2026-06-29T17:27:58Z",
-  "hard_expires_at": "2026-07-06T05:27:58Z",
+  "generated_at": "2026-06-29T13:35:27Z",
+  "stale_after": "2026-06-30T01:35:27Z",
+  "hard_expires_at": "2026-07-06T13:35:27Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_RKLB",
-  "content_hash": "sha256:664af35c6cc2b5d21c8d9c272fa3c0462cfd703d8257e4d4bb96bc37aebafb85",
+  "content_hash": "sha256:8ec46c1e330a9f969a94b12c5f1186ac785f8e34c1128d71a61452eac614f748",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "RKLB",
     "name": "Rocket Lab USA, Inc.",
-    "generated_label": "2026-06-29T05:27:58Z",
+    "generated_label": "2026-06-29T13:35:27Z",
     "summary": "Rocket Lab USA, Inc. has 1 approved, source-linked news event(s) in the public snapshot.",
     "events": [
       {
@@ -121,9 +121,9 @@
         "title": "Rocket Lab launch-window monitoring is linked to source evidence for RKLB",
         "summary": "Company and filing sources are grouped into a ticker-specific event for Rocket Lab launch-cadence monitoring.",
         "event_type": "company_update",
-        "first_seen_at": "2026-06-28T11:27:58Z",
-        "last_seen_at": "2026-06-29T05:27:58Z",
-        "published_at": "2026-06-29T05:27:58Z",
+        "first_seen_at": "2026-06-28T19:35:27Z",
+        "last_seen_at": "2026-06-29T13:35:27Z",
+        "published_at": "2026-06-29T13:35:27Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.8,
@@ -179,7 +179,7 @@
             "source_key": "rocket_lab_ir",
             "policy_version": 1,
             "title": "Rocket Lab updates",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -189,7 +189,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "Rocket Lab SEC filings",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           }

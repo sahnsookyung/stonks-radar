@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-29T05:27:58Z",
-  "stale_after": "2026-06-29T17:27:58Z",
-  "hard_expires_at": "2026-07-06T05:27:58Z",
+  "generated_at": "2026-06-29T13:35:27Z",
+  "stale_after": "2026-06-30T01:35:27Z",
+  "hard_expires_at": "2026-07-06T13:35:27Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_RGTI",
-  "content_hash": "sha256:a6c63a5dfe06e42912831959a67e40a7fe6eb90d3de3808c75665053476969c3",
+  "content_hash": "sha256:8527d4f25a3caa5b4e0636ab337f5c389019a83c101c66aa7e33834290353ba2",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "RGTI",
     "name": "리게티 컴퓨팅",
-    "generated_label": "2026-06-29T05:27:58Z",
+    "generated_label": "2026-06-29T13:35:27Z",
     "summary": "RGTI에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
     "events": []
   },

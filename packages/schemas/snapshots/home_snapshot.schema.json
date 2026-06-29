@@ -24,7 +24,26 @@
             },
             "sector_tiles": { "type": "array" },
             "calendar_preview": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/calendarItem" } },
-            "scenario_baskets": { "type": "array" }
+            "scenario_baskets": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["key", "name", "thesis", "risk_summary", "freshness", "coverage_status", "evidence_count", "last_observed_at", "primary_source_url"],
+                "properties": {
+                  "key": { "type": "string" },
+                  "name": { "type": "string" },
+                  "thesis": { "type": "string" },
+                  "risk_summary": { "type": "string" },
+                  "freshness": { "enum": ["fresh", "watch", "stale", "unsupported"] },
+                  "coverage_status": { "enum": ["active", "partial", "coverage_gap"] },
+                  "evidence_count": { "type": "integer", "minimum": 0 },
+                  "last_observed_at": { "type": "string" },
+                  "primary_source_url": { "type": "string" },
+                  "external_tracker_url": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            }
           },
           "additionalProperties": false
         }

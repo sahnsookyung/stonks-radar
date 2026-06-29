@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-29T05:27:58Z",
-  "stale_after": "2026-06-29T17:27:58Z",
-  "hard_expires_at": "2026-07-06T05:27:58Z",
+  "generated_at": "2026-06-29T13:35:27Z",
+  "stale_after": "2026-06-30T01:35:27Z",
+  "hard_expires_at": "2026-07-06T13:35:27Z",
   "object_type": "sector_page",
   "object_key": "oil-energy",
-  "content_hash": "sha256:d254606a63704b6ed970f3d02c140a014cd85962870eb6fc725bb770754d519b",
+  "content_hash": "sha256:e35d3d6e1c8690cb92ec847f74d70ed9a94a31d2bdf1c712f3fd4d162623c490",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -171,9 +171,9 @@
         "title": "Energy supply-risk watch links shipping chokepoints, inventories, and inflation-sensitive markets",
         "summary": "Official energy data and reviewed geopolitical context are grouped as a supply-risk event affecting the US, Europe, China, Korea, Japan, and Brazil.",
         "event_type": "geopolitical_supply_risk",
-        "first_seen_at": "2026-06-27T05:27:58Z",
-        "last_seen_at": "2026-06-29T05:27:58Z",
-        "published_at": "2026-06-29T05:27:58Z",
+        "first_seen_at": "2026-06-27T13:35:27Z",
+        "last_seen_at": "2026-06-29T13:35:27Z",
+        "published_at": "2026-06-29T13:35:27Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.72,
@@ -244,7 +244,7 @@
             "source_key": "eia",
             "policy_version": 1,
             "title": "Weekly petroleum status report",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -254,7 +254,7 @@
             "source_key": "iea",
             "policy_version": 1,
             "title": "Oil market report",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           },
@@ -264,7 +264,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "Official energy-data context",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }
@@ -275,9 +275,9 @@
         "title": "China-origin export-control risk remains elevated for AI-chip supply chains",
         "summary": "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.",
         "event_type": "trade_policy",
-        "first_seen_at": "2026-06-27T05:27:58Z",
-        "last_seen_at": "2026-06-29T05:27:58Z",
-        "published_at": "2026-06-29T05:27:58Z",
+        "first_seen_at": "2026-06-27T13:35:27Z",
+        "last_seen_at": "2026-06-29T13:35:27Z",
+        "published_at": "2026-06-29T13:35:27Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.78,
@@ -374,7 +374,7 @@
             "source_key": "bis",
             "policy_version": 1,
             "title": "Bureau of Industry and Security export controls",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -384,7 +384,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "Issuer filings for affected companies",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           },
@@ -394,7 +394,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "Export Administration Regulations reference",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }
@@ -405,9 +405,9 @@
         "title": "Rocket Lab launch-window monitoring is linked to source evidence for RKLB",
         "summary": "Company and filing sources are grouped into a ticker-specific event for Rocket Lab launch-cadence monitoring.",
         "event_type": "company_update",
-        "first_seen_at": "2026-06-28T11:27:58Z",
-        "last_seen_at": "2026-06-29T05:27:58Z",
-        "published_at": "2026-06-29T05:27:58Z",
+        "first_seen_at": "2026-06-28T19:35:27Z",
+        "last_seen_at": "2026-06-29T13:35:27Z",
+        "published_at": "2026-06-29T13:35:27Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.8,
@@ -463,7 +463,7 @@
             "source_key": "rocket_lab_ir",
             "policy_version": 1,
             "title": "Rocket Lab updates",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -473,7 +473,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "Rocket Lab SEC filings",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           }
@@ -492,214 +492,223 @@
       {
         "key": "wti_crude",
         "label": "WTI crude oil futures",
-        "value": "69.83",
+        "value": "70.23",
         "source": "Yahoo Finance delayed quote",
         "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-29T05:18:05Z; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-29T05:18:05Z",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-29T13:26:01Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-29T13:26:01Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "$",
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/CL%3DF?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-29T04:10:00Z",
-            "value": 70.06999969482422
+            "date": "2026-06-29T06:21:00Z",
+            "value": 69.83999633789062
           },
           {
-            "date": "2026-06-29T04:20:00Z",
-            "value": 70.06999969482422
+            "date": "2026-06-29T07:31:00Z",
+            "value": 69.97000122070312
           },
           {
-            "date": "2026-06-29T04:30:00Z",
-            "value": 70.0
+            "date": "2026-06-29T08:41:00Z",
+            "value": 70.05999755859375
           },
           {
-            "date": "2026-06-29T04:40:00Z",
-            "value": 70.04000091552734
+            "date": "2026-06-29T09:51:00Z",
+            "value": 70.69999694824219
           },
           {
-            "date": "2026-06-29T04:50:00Z",
-            "value": 70.02999877929688
+            "date": "2026-06-29T11:01:00Z",
+            "value": 69.80000305175781
           },
           {
-            "date": "2026-06-29T05:00:00Z",
-            "value": 69.91999816894531
+            "date": "2026-06-29T12:11:00Z",
+            "value": 69.79000091552734
           },
           {
-            "date": "2026-06-29T05:10:00Z",
-            "value": 69.77999877929688
+            "date": "2026-06-29T13:21:00Z",
+            "value": 70.16999816894531
           },
           {
-            "date": "2026-06-29T05:18:05Z",
-            "value": 69.83000183105469
+            "date": "2026-06-29T13:26:01Z",
+            "value": 70.2300033569336
           }
         ],
-        "refresh_delta": 0.5999999999999943,
-        "refresh_delta_percent": 0.8666762964032851
+        "refresh_delta": 1.0,
+        "refresh_delta_percent": 1.4444604940054888
       },
       {
         "key": "gold_futures",
         "label": "Gold futures",
-        "value": "4,070.7",
+        "value": "4,055.9",
         "source": "Yahoo Finance delayed quote",
         "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-29T05:18:08Z; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-29T05:18:08Z",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-29T13:26:04Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-29T13:26:04Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "$",
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-29T04:18:00Z",
-            "value": 4078.199951171875
+            "date": "2026-06-29T06:21:00Z",
+            "value": 4073.199951171875
           },
           {
-            "date": "2026-06-29T04:28:00Z",
-            "value": 4079.300048828125
+            "date": "2026-06-29T07:31:00Z",
+            "value": 4079.5
           },
           {
-            "date": "2026-06-29T04:37:00Z",
-            "value": 4072.60009765625
+            "date": "2026-06-29T08:41:00Z",
+            "value": 4073.800048828125
           },
           {
-            "date": "2026-06-29T04:46:00Z",
-            "value": 4071.10009765625
+            "date": "2026-06-29T09:51:00Z",
+            "value": 4047.89990234375
           },
           {
-            "date": "2026-06-29T04:55:00Z",
-            "value": 4065.39990234375
+            "date": "2026-06-29T11:01:00Z",
+            "value": 4050.199951171875
           },
           {
-            "date": "2026-06-29T05:04:00Z",
-            "value": 4068.60009765625
+            "date": "2026-06-29T12:11:00Z",
+            "value": 4065.300048828125
           },
           {
-            "date": "2026-06-29T05:13:00Z",
-            "value": 4069.10009765625
+            "date": "2026-06-29T13:21:00Z",
+            "value": 4057.60009765625
           },
           {
-            "date": "2026-06-29T05:18:08Z",
-            "value": 4070.699951171875
+            "date": "2026-06-29T13:26:04Z",
+            "value": 4055.89990234375
           }
         ],
-        "refresh_delta": -25.600000000000364,
-        "refresh_delta_percent": -0.6249542269853371
+        "refresh_delta": -40.40000000000009,
+        "refresh_delta_percent": -0.9862558894612232
       },
       {
         "key": "silver_futures",
         "label": "Silver futures",
-        "value": "58.75",
+        "value": "58.885",
         "source": "Yahoo Finance delayed quote",
         "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-29T05:18:16Z; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-29T05:18:16Z",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-29T13:26:08Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-29T13:26:08Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "$",
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/SI%3DF?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-29T04:23:00Z",
-            "value": 58.875
+            "date": "2026-06-29T05:13:00Z",
+            "value": 58.720001220703125
           },
           {
-            "date": "2026-06-29T04:32:00Z",
-            "value": 58.83000183105469
+            "date": "2026-06-29T06:23:00Z",
+            "value": 59.25
           },
           {
-            "date": "2026-06-29T04:41:00Z",
-            "value": 58.66999816894531
+            "date": "2026-06-29T07:31:00Z",
+            "value": 58.91999816894531
           },
           {
-            "date": "2026-06-29T04:50:00Z",
-            "value": 58.75
-          },
-          {
-            "date": "2026-06-29T04:59:00Z",
-            "value": 58.619998931884766
-          },
-          {
-            "date": "2026-06-29T05:08:00Z",
-            "value": 58.64500045776367
-          },
-          {
-            "date": "2026-06-29T05:18:00Z",
+            "date": "2026-06-29T08:43:00Z",
             "value": 58.73500061035156
           },
           {
-            "date": "2026-06-29T05:18:16Z",
-            "value": 58.75
+            "date": "2026-06-29T09:55:00Z",
+            "value": 58.154998779296875
+          },
+          {
+            "date": "2026-06-29T11:10:00Z",
+            "value": 58.15999984741211
+          },
+          {
+            "date": "2026-06-29T12:20:00Z",
+            "value": 58.69499969482422
+          },
+          {
+            "date": "2026-06-29T13:26:08Z",
+            "value": 58.8849983215332
           }
         ],
-        "refresh_delta": -0.9239999999999995,
-        "refresh_delta_percent": -1.5484130442068564
+        "refresh_delta": -0.7890000000000015,
+        "refresh_delta_percent": -1.3221838656701437
       },
       {
         "key": "copper_futures",
         "label": "Copper futures",
-        "value": "6.193",
+        "value": "6.171",
         "source": "Yahoo Finance delayed quote",
         "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-29T05:18:08Z; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-29T05:18:08Z",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-29T13:26:08Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-29T13:26:08Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "unit": "$",
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/HG%3DF?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-29T04:19:00Z",
-            "value": 6.192500114440918
+            "date": "2026-06-29T06:35:00Z",
+            "value": 6.228000164031982
           },
           {
-            "date": "2026-06-29T04:30:00Z",
-            "value": 6.191999912261963
+            "date": "2026-06-29T07:45:00Z",
+            "value": 6.209499835968018
           },
           {
-            "date": "2026-06-29T04:39:00Z",
-            "value": 6.188499927520752
+            "date": "2026-06-29T08:52:00Z",
+            "value": 6.186999797821045
           },
           {
-            "date": "2026-06-29T04:48:00Z",
-            "value": 6.184999942779541
+            "date": "2026-06-29T09:59:00Z",
+            "value": 6.175000190734863
           },
           {
-            "date": "2026-06-29T05:00:00Z",
-            "value": 6.177000045776367
+            "date": "2026-06-29T11:10:00Z",
+            "value": 6.186500072479248
           },
           {
-            "date": "2026-06-29T05:07:00Z",
-            "value": 6.191500186920166
+            "date": "2026-06-29T12:16:00Z",
+            "value": 6.201000213623047
           },
           {
-            "date": "2026-06-29T05:17:00Z",
-            "value": 6.191500186920166
+            "date": "2026-06-29T13:22:00Z",
+            "value": 6.161499977111816
           },
           {
-            "date": "2026-06-29T05:18:00Z",
-            "value": 6.191999912261963
+            "date": "2026-06-29T13:26:08Z",
+            "value": 6.171000003814697
           }
         ],
-        "refresh_delta": -0.014000000000000234,
-        "refresh_delta_percent": -0.22555179635895337
+        "refresh_delta": -0.03599999999999959,
+        "refresh_delta_percent": -0.5799903334944351
       }
     ],
     "scenario_baskets": [
       {
         "key": "ai-infra-capex",
         "name": "AI Infrastructure Capex",
-        "thesis": "Tracks data-center, accelerator, memory, power, and cloud capex channels using approved public facts.",
-        "risk_summary": "Illustrative only; risk factors and data delays must remain visible.",
-        "freshness": "fresh"
+        "thesis": "Tracks data-center, accelerator, memory, power, and cloud capex channels using source-linked public facts.",
+        "risk_summary": "AI capex can reverse if source data lags, power constraints intensify, or hyperscaler spending guidance weakens.",
+        "freshness": "fresh",
+        "coverage_status": "active",
+        "evidence_count": 2,
+        "last_observed_at": "2026-06-29T13:35:27Z",
+        "primary_source_url": "https://www.bis.gov/",
+        "external_tracker_url": "https://www.nextgig.rocks/dash/ai-tracker/"
       },
       {
         "key": "energy-supply-shock",
         "name": "Energy Supply Shock Watchlist",
         "thesis": "Monitors inventories, OPEC+ meetings, sanctions, chokepoints, and integrated energy companies.",
-        "risk_summary": "Illustrative only; risk factors and data delays must remain visible.",
-        "freshness": "fresh"
+        "risk_summary": "Energy supply risk can fade if inventories rebuild, chokepoints stay open, or demand weakens faster than supply.",
+        "freshness": "fresh",
+        "coverage_status": "partial",
+        "evidence_count": 2,
+        "last_observed_at": "2026-06-29T13:35:27Z",
+        "primary_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/CL%3DF?range=1d&interval=1m"
       }
     ],
     "risks_and_caveats": [

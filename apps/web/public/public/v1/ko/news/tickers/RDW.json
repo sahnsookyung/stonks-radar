@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-29T05:27:58Z",
-  "stale_after": "2026-06-29T17:27:58Z",
-  "hard_expires_at": "2026-07-06T05:27:58Z",
+  "generated_at": "2026-06-29T13:35:27Z",
+  "stale_after": "2026-06-30T01:35:27Z",
+  "hard_expires_at": "2026-07-06T13:35:27Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_RDW",
-  "content_hash": "sha256:03de05c3a9293a313c46f7762b371b092199b09ab5ce11bc5ab406e94afcfbfe",
+  "content_hash": "sha256:d9b5c9d1d90ed173036f81df844a518f2d6a35958b87f0136693de3ce4324aab",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "RDW",
     "name": "레드와이어",
-    "generated_label": "2026-06-29T05:27:58Z",
+    "generated_label": "2026-06-29T13:35:27Z",
     "summary": "RDW에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
     "events": []
   },

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-29T05:27:58Z",
-  "stale_after": "2026-06-29T17:27:58Z",
-  "hard_expires_at": "2026-07-06T05:27:58Z",
+  "generated_at": "2026-06-29T13:35:27Z",
+  "stale_after": "2026-06-30T01:35:27Z",
+  "hard_expires_at": "2026-07-06T13:35:27Z",
   "object_type": "scenario_basket",
   "object_key": "energy-supply-shock",
-  "content_hash": "sha256:882a5826b960ae95e0ab8f460bdcf95419e2a4ba4fe1025ee0d45231a2fa93d0",
+  "content_hash": "sha256:c5cf3472e37ff46b7491d20456e405f62509fddca802acb8515cb477e157bc28",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -114,44 +114,186 @@
     "key": "energy-supply-shock",
     "name": "Energy Supply Shock Watchlist",
     "thesis": "Monitors inventories, OPEC+ meetings, sanctions, chokepoints, and integrated energy companies.",
-    "methodology": "Illustrative weights are equal-weight seed placeholders until editor-approved methodology data is ingested. Inclusion is based on thematic exposure and reviewed public facts.",
-    "included_objects": [
+    "methodology": "Rows are rendered only from source-linked metrics, official pages, or recent news snapshots. Missing structured data is shown as an explicit coverage gap.",
+    "tracker_sections": [
       {
-        "name": "OPEC+",
-        "object_key": "OPEC+",
-        "reason": "Thematic exposure under monitored scenario.",
-        "illustrative_weight": "equal-weight seed"
-      },
-      {
-        "name": "Chevron",
-        "object_key": "CHEVRON",
-        "reason": "Thematic exposure under monitored scenario.",
-        "illustrative_weight": "equal-weight seed"
-      },
-      {
-        "name": "ExxonMobil",
-        "object_key": "EXXONMOBIL",
-        "reason": "Thematic exposure under monitored scenario.",
-        "illustrative_weight": "equal-weight seed"
-      },
-      {
-        "name": "WTI reference",
-        "object_key": "WTI_REFERENCE",
-        "reason": "Thematic exposure under monitored scenario.",
-        "illustrative_weight": "equal-weight seed"
-      },
-      {
-        "name": "Brent reference",
-        "object_key": "BRENT_REFERENCE",
-        "reason": "Thematic exposure under monitored scenario.",
-        "illustrative_weight": "equal-weight seed"
+        "key": "energy-supply-evidence",
+        "title": "Energy supply evidence",
+        "summary": "Inventories, oil-reference tiles, chokepoints, and official market reports are separated so gaps stay visible.",
+        "coverage_status": "partial",
+        "evidence_count": 2,
+        "last_observed_at": "2026-06-29T13:35:27Z",
+        "metric_rows": [
+          {
+            "key": "wti-reference",
+            "label": "WTI crude reference",
+            "value": "70.23",
+            "detail": "Delayed/reference market tile, shown as context rather than an inventory claim.",
+            "source": "Yahoo Finance delayed quote",
+            "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/CL%3DF?range=1d&interval=1m",
+            "freshness": "fresh",
+            "as_of_date": "2026-06-29",
+            "coverage_status": "active"
+          },
+          {
+            "key": "eia-weekly-stocks",
+            "label": "US petroleum inventory source",
+            "value": "official weekly report",
+            "detail": "Use EIA for weekly US stock trends; a numeric trend appears only when structured as-of data is ingested.",
+            "source": "EIA",
+            "source_url": "https://www.eia.gov/petroleum/supply/weekly/",
+            "freshness": "watch",
+            "as_of_date": "2026-06-29",
+            "coverage_status": "coverage_gap"
+          },
+          {
+            "key": "jodi-country-stocks",
+            "label": "Country oil stock source",
+            "value": "monthly official dataset",
+            "detail": "JODI is linked for country-level oil stocks; this row stays a coverage gap until a monthly observation is parsed.",
+            "source": "JODI",
+            "source_url": "https://www.jodidata.org/oil/",
+            "freshness": "watch",
+            "as_of_date": "2026-06-29",
+            "coverage_status": "coverage_gap"
+          }
+        ],
+        "news_events": [
+          {
+            "id": "energy_geopolitical_supply_risk_seed",
+            "title": "Energy supply-risk watch links shipping chokepoints, inventories, and inflation-sensitive markets",
+            "summary": "Official energy data and reviewed geopolitical context are grouped as a supply-risk event affecting the US, Europe, China, Korea, Japan, and Brazil.",
+            "event_type": "geopolitical_supply_risk",
+            "first_seen_at": "2026-06-27T13:35:27Z",
+            "last_seen_at": "2026-06-29T13:35:27Z",
+            "published_at": "2026-06-29T13:35:27Z",
+            "freshness": "fresh",
+            "severity": "high",
+            "confidence": 0.72,
+            "breaking_score": 82,
+            "trust_score": 84,
+            "source_count": 3,
+            "tickers": [],
+            "regions": [
+              {
+                "key": "USA",
+                "name": "United States",
+                "relation": "affected_region",
+                "confidence": 0.76
+              },
+              {
+                "key": "EU",
+                "name": "European Union",
+                "relation": "affected_region",
+                "confidence": 0.74
+              },
+              {
+                "key": "CHN",
+                "name": "China",
+                "relation": "affected_region",
+                "confidence": 0.72
+              },
+              {
+                "key": "KOR",
+                "name": "South Korea",
+                "relation": "affected_region",
+                "confidence": 0.7
+              },
+              {
+                "key": "JPN",
+                "name": "Japan",
+                "relation": "affected_region",
+                "confidence": 0.7
+              },
+              {
+                "key": "BRA",
+                "name": "Brazil",
+                "relation": "affected_region",
+                "confidence": 0.54
+              }
+            ],
+            "topics": [
+              {
+                "key": "energy",
+                "label": "Energy",
+                "confidence": 0.96
+              },
+              {
+                "key": "geopolitics",
+                "label": "Geopolitics",
+                "confidence": 0.86
+              },
+              {
+                "key": "supply_chain",
+                "label": "Supply chain",
+                "confidence": 0.72
+              }
+            ],
+            "market_direction": "mixed",
+            "source_links": [
+              {
+                "label": "EIA",
+                "url": "https://www.eia.gov/petroleum/supply/weekly/",
+                "source_key": "eia",
+                "policy_version": 1,
+                "title": "Weekly petroleum status report",
+                "published_at": "2026-06-28T19:35:27Z",
+                "trust_tier": "T0_OFFICIAL",
+                "is_primary": true
+              },
+              {
+                "label": "IEA",
+                "url": "https://www.iea.org/reports/oil-market-report",
+                "source_key": "iea",
+                "policy_version": 1,
+                "title": "Oil market report",
+                "published_at": "2026-06-28T19:35:27Z",
+                "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
+                "is_primary": false
+              },
+              {
+                "label": "Source policy",
+                "url": "https://www.eia.gov/",
+                "source_key": "source_policy",
+                "policy_version": 1,
+                "title": "Official energy-data context",
+                "published_at": "2026-06-28T19:35:27Z",
+                "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
+                "is_primary": false
+              }
+            ]
+          }
+        ],
+        "source_links": [
+          {
+            "label": "EIA",
+            "url": "https://www.eia.gov/petroleum/supply/weekly/",
+            "source_key": "eia",
+            "policy_version": 1
+          },
+          {
+            "label": "JODI",
+            "url": "https://www.jodidata.org/oil/",
+            "source_key": "jodi",
+            "policy_version": 1
+          },
+          {
+            "label": "IEA",
+            "url": "https://www.iea.org/reports/oil-market-report",
+            "source_key": "iea",
+            "policy_version": 1
+          }
+        ]
       }
     ],
-    "risk_summary": "Scenario can fail if source data is stale, policy risk reverses, or sector exposure is weaker than expected.",
-    "freshness_timestamp": "2026-06-29T05:27:58Z",
-    "data_delay_warning": "Uses delayed/reference indicators only; no brokerage connection or trade execution.",
+    "risk_summary": "Energy supply risk can fade if inventories rebuild, chokepoints stay open, or demand weakens faster than supply.",
+    "freshness_timestamp": "2026-06-29T13:35:27Z",
+    "data_delay_warning": "Uses delayed/reference indicators and outbound source links only; no brokerage connection or trade execution.",
     "disclaimer": "Research only. Not personalized financial advice. Do not treat this as a buy, sell, or allocation recommendation.",
-    "approval_status": "approved"
+    "coverage_status": "partial",
+    "evidence_count": 2,
+    "last_observed_at": "2026-06-29T13:35:27Z",
+    "primary_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/CL%3DF?range=1d&interval=1m"
   },
   "warnings": [
     {

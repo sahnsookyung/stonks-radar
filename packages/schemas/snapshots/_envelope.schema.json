@@ -110,6 +110,7 @@
         "previous_value",
         "surprise",
         "source",
+        "source_url",
         "freshness"
       ],
       "properties": {
@@ -128,6 +129,7 @@
         "previous_value": { "type": ["string", "null"] },
         "surprise": { "type": ["string", "null"] },
         "source": { "type": "string" },
+        "source_url": { "type": "string" },
         "freshness": { "enum": ["fresh", "watch", "stale", "unsupported"] }
       },
       "additionalProperties": false

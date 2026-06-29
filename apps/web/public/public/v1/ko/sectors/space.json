@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-29T05:27:58Z",
-  "stale_after": "2026-06-29T17:27:58Z",
-  "hard_expires_at": "2026-07-06T05:27:58Z",
+  "generated_at": "2026-06-29T13:35:27Z",
+  "stale_after": "2026-06-30T01:35:27Z",
+  "hard_expires_at": "2026-07-06T13:35:27Z",
   "object_type": "sector_page",
   "object_key": "space",
-  "content_hash": "sha256:db4f382ce36cd14e6ab6042171bae094ca0df9da00c4cc4f8340597650a59be7",
+  "content_hash": "sha256:eaecf62afbae519ec4d5efac4fa6dd076ae5243801c652ee48ee4e941e1a2b9a",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -215,7 +215,7 @@
         "symbol": "RKLB",
         "title": "RKLB: 로켓랩 발사 일정 모니터링이 RKLB 원문 근거와 연결",
         "catalyst_type": "company_event",
-        "scheduled_at": "2026-06-29T05:27:58Z",
+        "scheduled_at": "2026-06-29T13:35:27Z",
         "scheduled_local_date": "2026-06-29",
         "timezone": "UTC",
         "source": "Rocket Lab",
@@ -230,9 +230,9 @@
         "title": "로켓랩 발사 일정 모니터링이 RKLB 원문 근거와 연결",
         "summary": "회사 및 공시 출처를 로켓랩 발사 빈도 모니터링을 위한 티커별 이벤트로 묶습니다.",
         "event_type": "company_update",
-        "first_seen_at": "2026-06-28T11:27:58Z",
-        "last_seen_at": "2026-06-29T05:27:58Z",
-        "published_at": "2026-06-29T05:27:58Z",
+        "first_seen_at": "2026-06-28T19:35:27Z",
+        "last_seen_at": "2026-06-29T13:35:27Z",
+        "published_at": "2026-06-29T13:35:27Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.8,
@@ -288,7 +288,7 @@
             "source_key": "rocket_lab_ir",
             "policy_version": 1,
             "title": "로켓랩 업데이트",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -298,7 +298,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "로켓랩 SEC 공시",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           }
@@ -316,114 +316,115 @@
       {
         "key": "nasdaq_composite",
         "label": "나스닥 종합",
-        "value": "25,297.62",
+        "value": "25,615.87",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "stale",
-        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-26T21:15:59Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-06-26T21:15:59Z",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-06-29T13:35:55Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-29T13:35:55Z",
         "coverage_status": "active",
-        "refresh_seconds": 43200,
+        "refresh_seconds": 900,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EIXIC?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-26T15:06:00Z",
-            "value": 25294.7578125
+            "date": "2026-06-29T13:30:00Z",
+            "value": 25522.435546875
           },
           {
-            "date": "2026-06-26T15:54:00Z",
-            "value": 25392.326171875
+            "date": "2026-06-29T13:31:00Z",
+            "value": 25564.775390625
           },
           {
-            "date": "2026-06-26T16:42:00Z",
-            "value": 25413.98046875
+            "date": "2026-06-29T13:32:00Z",
+            "value": 25618.28515625
           },
           {
-            "date": "2026-06-26T17:30:00Z",
-            "value": 25437.7734375
+            "date": "2026-06-29T13:33:00Z",
+            "value": 25623.888671875
           },
           {
-            "date": "2026-06-26T18:18:00Z",
-            "value": 25347.6640625
+            "date": "2026-06-29T13:34:00Z",
+            "value": 25641.482421875
           },
           {
-            "date": "2026-06-26T19:06:00Z",
-            "value": 25280.28515625
-          },
-          {
-            "date": "2026-06-26T19:54:00Z",
-            "value": 25337.69921875
-          },
-          {
-            "date": "2026-06-26T20:00:00Z",
-            "value": 25297.6171875
+            "date": "2026-06-29T13:35:55Z",
+            "value": 25615.873046875
           }
         ],
-        "refresh_delta": -60.983000000000175,
-        "refresh_delta_percent": -0.24048251875103585
+        "refresh_delta": 318.2560000000012,
+        "refresh_delta_percent": 1.2580473488866608
       },
       {
         "key": "vix",
         "label": "VIX",
-        "value": "18.41",
+        "value": "18.23",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "stale",
-        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-26T20:15:01Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-06-26T20:15:01Z",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-06-29T13:21:01Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-29T13:21:01Z",
         "coverage_status": "active",
-        "refresh_seconds": 43200,
+        "refresh_seconds": 900,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-26T08:52:00Z",
-            "value": 20.059999465942383
-          },
-          {
-            "date": "2026-06-26T10:29:00Z",
-            "value": 20.190000534057617
-          },
-          {
-            "date": "2026-06-26T12:06:00Z",
-            "value": 19.93000030517578
-          },
-          {
-            "date": "2026-06-26T13:48:00Z",
-            "value": 20.09000015258789
-          },
-          {
-            "date": "2026-06-26T15:25:00Z",
-            "value": 19.059999465942383
-          },
-          {
-            "date": "2026-06-26T17:02:00Z",
-            "value": 18.760000228881836
-          },
-          {
-            "date": "2026-06-26T18:39:00Z",
-            "value": 18.770000457763672
-          },
-          {
-            "date": "2026-06-26T20:15:00Z",
+            "date": "2026-06-29T08:45:00Z",
             "value": 18.40999984741211
+          },
+          {
+            "date": "2026-06-29T09:30:00Z",
+            "value": 18.360000610351562
+          },
+          {
+            "date": "2026-06-29T10:15:00Z",
+            "value": 18.43000030517578
+          },
+          {
+            "date": "2026-06-29T11:00:00Z",
+            "value": 18.229999542236328
+          },
+          {
+            "date": "2026-06-29T11:45:00Z",
+            "value": 18.299999237060547
+          },
+          {
+            "date": "2026-06-29T12:30:00Z",
+            "value": 18.280000686645508
+          },
+          {
+            "date": "2026-06-29T13:15:00Z",
+            "value": 18.170000076293945
+          },
+          {
+            "date": "2026-06-29T13:21:01Z",
+            "value": 18.229999542236328
           }
         ],
-        "refresh_delta": -0.4800000000000004,
-        "refresh_delta_percent": -2.5410269984118603
+        "refresh_delta": -0.17999999999999972,
+        "refresh_delta_percent": -0.9777294948397593
       }
     ],
     "scenario_baskets": [
       {
         "key": "ai-infra-capex",
         "name": "AI 인프라 투자",
-        "thesis": "승인된 공개 사실을 기반으로 데이터센터, 가속기, 메모리, 전력, 클라우드 투자 경로를 추적합니다.",
-        "risk_summary": "예시 목적이며 리스크 요인과 데이터 지연을 항상 표시해야 합니다.",
-        "freshness": "fresh"
+        "thesis": "출처 연결 공개 사실을 기반으로 데이터센터, 가속기, 메모리, 전력, 클라우드 투자 경로를 추적합니다.",
+        "risk_summary": "출처 데이터가 지연되거나 전력 제약이 커지거나 하이퍼스케일러 투자 가이던스가 약화되면 AI 투자 시나리오가 반전될 수 있습니다.",
+        "freshness": "unsupported",
+        "coverage_status": "coverage_gap",
+        "evidence_count": 0,
+        "last_observed_at": "2026-06-29T13:35:27Z",
+        "primary_source_url": "https://www.nextgig.rocks/dash/ai-tracker/",
+        "external_tracker_url": "https://www.nextgig.rocks/dash/ai-tracker/"
       },
       {
         "key": "energy-supply-shock",
         "name": "에너지 공급 충격 워치리스트",
         "thesis": "재고, OPEC+ 회의, 제재, 해상 요충지, 통합 에너지 기업을 모니터링합니다.",
-        "risk_summary": "예시 목적이며 리스크 요인과 데이터 지연을 항상 표시해야 합니다.",
-        "freshness": "fresh"
+        "risk_summary": "재고가 재축적되고 해상 요충지가 열려 있으며 수요가 공급보다 빠르게 약해지면 에너지 공급 리스크는 완화될 수 있습니다.",
+        "freshness": "unsupported",
+        "coverage_status": "coverage_gap",
+        "evidence_count": 0,
+        "last_observed_at": "2026-06-29T13:35:27Z",
+        "primary_source_url": "https://www.eia.gov/petroleum/supply/weekly/"
       }
     ],
     "risks_and_caveats": [

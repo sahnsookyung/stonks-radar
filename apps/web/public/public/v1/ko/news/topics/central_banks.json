@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-29T05:27:58Z",
-  "stale_after": "2026-06-29T17:27:58Z",
-  "hard_expires_at": "2026-07-06T05:27:58Z",
+  "generated_at": "2026-06-29T13:35:27Z",
+  "stale_after": "2026-06-30T01:35:27Z",
+  "hard_expires_at": "2026-07-06T13:35:27Z",
   "object_type": "news_topic",
   "object_key": "news_topic_central_banks",
-  "content_hash": "sha256:a47d735e495a13080248175b9907d370a5f9f98c1564b2b7f4d0875c7ad5fa77",
+  "content_hash": "sha256:b9019cf00cf3f2a01f95f5164fa9ebf3adf827f8db265fe0c8e61be87608f2fd",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "central_banks",
     "label": "중앙은행",
-    "generated_label": "2026-06-29T05:27:58Z",
+    "generated_label": "2026-06-29T13:35:27Z",
     "topic_brief": "중앙은행에는 출처 연결 공개 메타데이터에서 만든 승인 이벤트 클러스터 1건이 포함됩니다.",
     "events": [
       {
@@ -121,9 +121,9 @@
         "title": "FOMC, 일본은행, 한국은행, ECB, 브라질 COPOM 결정 일정 리스크",
         "summary": "공식 일정을 하나의 정책 이벤트 워치로 묶어 앱을 벗어나지 않고 금리 결정일을 확인할 수 있습니다.",
         "event_type": "central_bank_calendar",
-        "first_seen_at": "2026-06-27T05:27:58Z",
-        "last_seen_at": "2026-06-29T05:27:58Z",
-        "published_at": "2026-06-29T05:27:58Z",
+        "first_seen_at": "2026-06-27T13:35:27Z",
+        "last_seen_at": "2026-06-29T13:35:27Z",
+        "published_at": "2026-06-29T13:35:27Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.86,
@@ -203,7 +203,7 @@
             "source_key": "federal_reserve",
             "policy_version": 1,
             "title": "FOMC 일정",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -213,7 +213,7 @@
             "source_key": "bank_of_korea",
             "policy_version": 1,
             "title": "통화정책 일정",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -223,7 +223,7 @@
             "source_key": "bank_of_japan",
             "policy_version": 1,
             "title": "통화정책회의",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -233,7 +233,7 @@
             "source_key": "ecb",
             "policy_version": 1,
             "title": "ECB 정책위원회 일정",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -243,7 +243,7 @@
             "source_key": "bcb",
             "policy_version": 1,
             "title": "COPOM 일정",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           }

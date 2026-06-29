@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-29T05:27:58Z",
-  "stale_after": "2026-06-29T17:27:58Z",
-  "hard_expires_at": "2026-07-06T05:27:58Z",
+  "generated_at": "2026-06-29T13:35:27Z",
+  "stale_after": "2026-06-30T01:35:27Z",
+  "hard_expires_at": "2026-07-06T13:35:27Z",
   "object_type": "news_event",
   "object_key": "news_event_ionq_contract_watch_seed",
-  "content_hash": "sha256:24edf74d5bd5391f662a55e92eac7e61d860f3468e20a5cb5bb8d6e0b7e61eec",
+  "content_hash": "sha256:238ad5a02646f673aa76d68173f5b31aecfd4ba16b5626e2f55fdeb3f7764674",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -115,9 +115,9 @@
     "title": "IonQ contract and funding news is classified as quantum-sector ticker context",
     "summary": "IONQ appears in the ticker news layer only when company, filing, or sector-context evidence is present.",
     "event_type": "company_update",
-    "first_seen_at": "2026-06-28T11:27:58Z",
-    "last_seen_at": "2026-06-29T01:27:58Z",
-    "published_at": "2026-06-29T01:27:58Z",
+    "first_seen_at": "2026-06-28T19:35:27Z",
+    "last_seen_at": "2026-06-29T09:35:27Z",
+    "published_at": "2026-06-29T09:35:27Z",
     "freshness": "watch",
     "severity": "medium",
     "confidence": 0.76,
@@ -179,7 +179,7 @@
         "source_key": "ionq_ir",
         "policy_version": 1,
         "title": "IonQ news",
-        "published_at": "2026-06-28T11:27:58Z",
+        "published_at": "2026-06-28T19:35:27Z",
         "trust_tier": "T0_OFFICIAL",
         "is_primary": true
       },
@@ -189,7 +189,7 @@
         "source_key": "sec_edgar",
         "policy_version": 1,
         "title": "IonQ SEC filings",
-        "published_at": "2026-06-28T11:27:58Z",
+        "published_at": "2026-06-28T19:35:27Z",
         "trust_tier": "T1_REGULATED_FILING",
         "is_primary": false
       }
@@ -229,9 +229,9 @@
         "title": "China-origin export-control risk remains elevated for AI-chip supply chains",
         "summary": "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.",
         "event_type": "trade_policy",
-        "first_seen_at": "2026-06-27T05:27:58Z",
-        "last_seen_at": "2026-06-29T05:27:58Z",
-        "published_at": "2026-06-29T05:27:58Z",
+        "first_seen_at": "2026-06-27T13:35:27Z",
+        "last_seen_at": "2026-06-29T13:35:27Z",
+        "published_at": "2026-06-29T13:35:27Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.78,
@@ -328,7 +328,7 @@
             "source_key": "bis",
             "policy_version": 1,
             "title": "Bureau of Industry and Security export controls",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -338,7 +338,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "Issuer filings for affected companies",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           },
@@ -348,7 +348,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "Export Administration Regulations reference",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }
@@ -359,9 +359,9 @@
         "title": "Central-bank decision calendar clusters FOMC, BoJ, BoK, ECB, and Brazil COPOM risk",
         "summary": "Official calendars are grouped into one policy-event watch so users can scan rate dates without leaving the app.",
         "event_type": "central_bank_calendar",
-        "first_seen_at": "2026-06-27T05:27:58Z",
-        "last_seen_at": "2026-06-29T05:27:58Z",
-        "published_at": "2026-06-29T05:27:58Z",
+        "first_seen_at": "2026-06-27T13:35:27Z",
+        "last_seen_at": "2026-06-29T13:35:27Z",
+        "published_at": "2026-06-29T13:35:27Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.86,
@@ -441,7 +441,7 @@
             "source_key": "federal_reserve",
             "policy_version": 1,
             "title": "FOMC calendars",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -451,7 +451,7 @@
             "source_key": "bank_of_korea",
             "policy_version": 1,
             "title": "Monetary policy schedule",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -461,7 +461,7 @@
             "source_key": "bank_of_japan",
             "policy_version": 1,
             "title": "Monetary policy meetings",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -471,7 +471,7 @@
             "source_key": "ecb",
             "policy_version": 1,
             "title": "Governing Council calendars",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -481,7 +481,7 @@
             "source_key": "bcb",
             "policy_version": 1,
             "title": "COPOM calendar",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           }
@@ -492,9 +492,9 @@
         "title": "Public-health alert monitoring covers Brazil, US, Europe, and Asia travel-sensitive markets",
         "summary": "Official public-health feeds are classified separately from financial news and surfaced only as market-context risk.",
         "event_type": "public_health_alert",
-        "first_seen_at": "2026-06-27T05:27:58Z",
-        "last_seen_at": "2026-06-29T01:27:58Z",
-        "published_at": "2026-06-29T01:27:58Z",
+        "first_seen_at": "2026-06-27T13:35:27Z",
+        "last_seen_at": "2026-06-29T09:35:27Z",
+        "published_at": "2026-06-29T09:35:27Z",
         "freshness": "watch",
         "severity": "medium",
         "confidence": 0.74,
@@ -554,7 +554,7 @@
             "source_key": "who",
             "policy_version": 1,
             "title": "Disease Outbreak News",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -564,7 +564,7 @@
             "source_key": "cdc",
             "policy_version": 1,
             "title": "Travel health notices",
-            "published_at": "2026-06-28T11:27:58Z",
+            "published_at": "2026-06-28T19:35:27Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": false
           }

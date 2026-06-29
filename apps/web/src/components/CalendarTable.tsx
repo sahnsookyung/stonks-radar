@@ -1,4 +1,5 @@
 import type { CalendarItem } from "@frw/shared-types";
+import { ExternalLink } from "lucide-react";
 import { FreshnessBadge, SourceBadge } from "./Badge";
 
 export function CalendarTable({ items }: Readonly<{ items: CalendarItem[] }>) {
@@ -36,7 +37,7 @@ export function CalendarTable({ items }: Readonly<{ items: CalendarItem[] }>) {
             </dl>
             <div className="mt-3 flex flex-wrap gap-2">
               <span className="badge whitespace-nowrap border border-line bg-panel text-muted">{item.country_region_key}</span>
-              <SourceBadge label={item.source} />
+              <CalendarSourceLink item={item} />
             </div>
           </article>
         ))}
@@ -76,7 +77,7 @@ export function CalendarTable({ items }: Readonly<{ items: CalendarItem[] }>) {
                 <td className="px-3 py-3">{item.previous_value ?? "n/a"}</td>
                 <td className="px-3 py-3">{item.surprise ?? "not computed"}</td>
                 <td className="px-3 py-3">
-                  <SourceBadge label={item.source} />
+                  <CalendarSourceLink item={item} />
                 </td>
               </tr>
             ))}
@@ -84,6 +85,21 @@ export function CalendarTable({ items }: Readonly<{ items: CalendarItem[] }>) {
         </table>
       </div>
     </>
+  );
+}
+
+function CalendarSourceLink({ item }: Readonly<{ item: CalendarItem }>) {
+  if (!item.source_url) return <SourceBadge label={item.source} />;
+  return (
+    <a
+      href={item.source_url}
+      target={item.source_url.startsWith("http") ? "_blank" : undefined}
+      rel="noreferrer"
+      className="focus-ring inline-flex min-h-8 items-center gap-1 rounded text-xs font-semibold text-accent hover:text-accentSoft"
+    >
+      {item.source}
+      <ExternalLink className="h-3.5 w-3.5" />
+    </a>
   );
 }
 

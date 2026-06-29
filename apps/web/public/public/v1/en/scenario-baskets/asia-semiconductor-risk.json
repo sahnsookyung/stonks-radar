@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-29T05:27:58Z",
-  "stale_after": "2026-06-29T17:27:58Z",
-  "hard_expires_at": "2026-07-06T05:27:58Z",
+  "generated_at": "2026-06-29T13:35:27Z",
+  "stale_after": "2026-06-30T01:35:27Z",
+  "hard_expires_at": "2026-07-06T13:35:27Z",
   "object_type": "scenario_basket",
   "object_key": "asia-semiconductor-risk",
-  "content_hash": "sha256:48bb4bed017dd021554fbe75a0f6d553b5ff23af599da5596553b2a32e8acf2d",
+  "content_hash": "sha256:05be5e32dfe203791e85e554597052d7913534991a559602937a81e65cd480a6",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -114,44 +114,195 @@
     "key": "asia-semiconductor-risk",
     "name": "Asia Semiconductor Risk",
     "thesis": "Maps Taiwan, Korea, Japan, export-control, memory, and foundry risk channels.",
-    "methodology": "Illustrative weights are equal-weight seed placeholders until editor-approved methodology data is ingested. Inclusion is based on thematic exposure and reviewed public facts.",
-    "included_objects": [
+    "methodology": "Rows are rendered only from source-linked metrics, official pages, or recent news snapshots. Missing structured data is shown as an explicit coverage gap.",
+    "tracker_sections": [
       {
-        "name": "TSMC",
-        "object_key": "TSMC",
-        "reason": "Thematic exposure under monitored scenario.",
-        "illustrative_weight": "equal-weight seed"
-      },
-      {
-        "name": "Samsung Electronics",
-        "object_key": "SAMSUNG_ELECTRONICS",
-        "reason": "Thematic exposure under monitored scenario.",
-        "illustrative_weight": "equal-weight seed"
-      },
-      {
-        "name": "SK Hynix",
-        "object_key": "SK_HYNIX",
-        "reason": "Thematic exposure under monitored scenario.",
-        "illustrative_weight": "equal-weight seed"
-      },
-      {
-        "name": "ASML",
-        "object_key": "ASML",
-        "reason": "Thematic exposure under monitored scenario.",
-        "illustrative_weight": "equal-weight seed"
-      },
-      {
-        "name": "NVIDIA",
-        "object_key": "NVIDIA",
-        "reason": "Thematic exposure under monitored scenario.",
-        "illustrative_weight": "equal-weight seed"
+        "key": "asia-semis-evidence",
+        "title": "Asia semiconductor evidence",
+        "summary": "Export controls, Taiwan/Korea/Japan exposure, and tracked semiconductor tickers are summarized from recent source-linked news.",
+        "coverage_status": "active",
+        "evidence_count": 3,
+        "last_observed_at": "2026-06-29T13:35:27Z",
+        "metric_rows": [
+          {
+            "key": "seven-day-news",
+            "label": "Seven-day source-linked news",
+            "value": "1 items",
+            "detail": "Only semiconductor, export-control, and Asia-region news observed inside the last seven days is counted.",
+            "source": "Stonks Radar news snapshots",
+            "source_url": "https://www.bis.gov/",
+            "freshness": "fresh",
+            "as_of_date": "2026-06-29T13:35:27Z",
+            "coverage_status": "active"
+          },
+          {
+            "key": "bis-policy-source",
+            "label": "Official export-control source",
+            "value": "linked source",
+            "detail": "BIS remains the official policy source; news analysis is not treated as policy confirmation.",
+            "source": "BIS",
+            "source_url": "https://www.bis.gov/",
+            "freshness": "watch",
+            "as_of_date": "2026-06-29",
+            "coverage_status": "active"
+          }
+        ],
+        "news_events": [
+          {
+            "id": "semiconductor_export_controls_seed",
+            "title": "China-origin export-control risk remains elevated for AI-chip supply chains",
+            "summary": "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.",
+            "event_type": "trade_policy",
+            "first_seen_at": "2026-06-27T13:35:27Z",
+            "last_seen_at": "2026-06-29T13:35:27Z",
+            "published_at": "2026-06-29T13:35:27Z",
+            "freshness": "fresh",
+            "severity": "high",
+            "confidence": 0.78,
+            "breaking_score": 76,
+            "trust_score": 88,
+            "source_count": 3,
+            "tickers": [
+              {
+                "symbol": "NVDA",
+                "name": "NVIDIA Corporation",
+                "exchange": "NASDAQ",
+                "relationship": "affected_company",
+                "confidence": 0.88
+              },
+              {
+                "symbol": "005930.KS",
+                "name": "Samsung Electronics Co., Ltd.",
+                "exchange": "KRX",
+                "relationship": "affected_company",
+                "confidence": 0.84
+              }
+            ],
+            "regions": [
+              {
+                "key": "CHN",
+                "name": "China",
+                "relation": "event_region",
+                "confidence": 0.92
+              },
+              {
+                "key": "USA",
+                "name": "United States",
+                "relation": "affected_region",
+                "confidence": 0.86
+              },
+              {
+                "key": "KOR",
+                "name": "South Korea",
+                "relation": "affected_region",
+                "confidence": 0.84
+              },
+              {
+                "key": "JPN",
+                "name": "Japan",
+                "relation": "affected_region",
+                "confidence": 0.78
+              },
+              {
+                "key": "EU",
+                "name": "European Union",
+                "relation": "affected_region",
+                "confidence": 0.72
+              },
+              {
+                "key": "USA",
+                "name": "United States",
+                "relation": "market_region",
+                "confidence": 0.76
+              },
+              {
+                "key": "KOR",
+                "name": "South Korea",
+                "relation": "market_region",
+                "confidence": 0.74
+              }
+            ],
+            "topics": [
+              {
+                "key": "semiconductors",
+                "label": "Semiconductors",
+                "confidence": 0.94
+              },
+              {
+                "key": "geopolitics",
+                "label": "Geopolitics",
+                "confidence": 0.79
+              },
+              {
+                "key": "trade_policy",
+                "label": "Trade policy",
+                "confidence": 0.86
+              },
+              {
+                "key": "supply_chain",
+                "label": "Supply chain",
+                "confidence": 0.77
+              }
+            ],
+            "market_direction": "mixed",
+            "source_links": [
+              {
+                "label": "BIS",
+                "url": "https://www.bis.gov/",
+                "source_key": "bis",
+                "policy_version": 1,
+                "title": "Bureau of Industry and Security export controls",
+                "published_at": "2026-06-28T19:35:27Z",
+                "trust_tier": "T0_OFFICIAL",
+                "is_primary": true
+              },
+              {
+                "label": "SEC EDGAR",
+                "url": "https://www.sec.gov/edgar/search/",
+                "source_key": "sec_edgar",
+                "policy_version": 1,
+                "title": "Issuer filings for affected companies",
+                "published_at": "2026-06-28T19:35:27Z",
+                "trust_tier": "T1_REGULATED_FILING",
+                "is_primary": false
+              },
+              {
+                "label": "Source policy",
+                "url": "https://www.bis.gov/regulations/ear/table-of-contents",
+                "source_key": "source_policy",
+                "policy_version": 1,
+                "title": "Export Administration Regulations reference",
+                "published_at": "2026-06-28T19:35:27Z",
+                "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
+                "is_primary": false
+              }
+            ]
+          }
+        ],
+        "source_links": [
+          {
+            "label": "BIS",
+            "url": "https://www.bis.gov/",
+            "source_key": "bis",
+            "policy_version": 1
+          },
+          {
+            "label": "TSMC",
+            "url": "https://investor.tsmc.com/english/quarterly-results",
+            "source_key": "tsmc_ir",
+            "policy_version": 1
+          }
+        ]
       }
     ],
-    "risk_summary": "Scenario can fail if source data is stale, policy risk reverses, or sector exposure is weaker than expected.",
-    "freshness_timestamp": "2026-06-29T05:27:58Z",
-    "data_delay_warning": "Uses delayed/reference indicators only; no brokerage connection or trade execution.",
+    "risk_summary": "Asia semiconductor risk can change quickly when export rules, Taiwan/Korea/Japan headlines, or company guidance diverge.",
+    "freshness_timestamp": "2026-06-29T13:35:27Z",
+    "data_delay_warning": "Uses delayed/reference indicators and outbound source links only; no brokerage connection or trade execution.",
     "disclaimer": "Research only. Not personalized financial advice. Do not treat this as a buy, sell, or allocation recommendation.",
-    "approval_status": "approved"
+    "coverage_status": "active",
+    "evidence_count": 3,
+    "last_observed_at": "2026-06-29T13:35:27Z",
+    "primary_source_url": "https://www.bis.gov/"
   },
   "warnings": [
     {

@@ -41,6 +41,8 @@ YAHOO_FINANCE_QUOTE_URL = "https://finance.yahoo.com/quote"
 STOOQ_QUOTE_URL = "https://stooq.com/q/l/"
 STOOQ_QUOTE_TIMEZONE = ZoneInfo("Europe/Warsaw")
 FINNHUB_QUOTE_URL = "https://finnhub.io/api/v1/quote"
+FINNHUB_EARNINGS_CALENDAR_URL = "https://finnhub.io/api/v1/calendar/earnings"
+FMP_EARNINGS_CALENDAR_URL = "https://financialmodelingprep.com/stable/earnings-calendar"
 TWELVE_DATA_QUOTE_URL = "https://api.twelvedata.com/quote"
 TREASURY_YIELD_XML_URL = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml"
 TREASURY_YIELD_FEED_DOC_URL = "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed"
@@ -128,6 +130,7 @@ _PENTAGON_PIZZA_CACHE: dict[str, dict[str, Any] | None] = {}
 _YAHOO_QUOTE_CACHE: dict[str, dict[str, Any] | None] = {}
 _STOOQ_QUOTE_CACHE: dict[str, dict[str, Any] | None] = {}
 _FINNHUB_QUOTE_CACHE: dict[str, dict[str, Any] | None] = {}
+_EARNINGS_CALENDAR_CACHE: dict[tuple[str, str, str], dict[str, Any] | None] = {}
 _TWELVE_DATA_QUOTE_CACHE: dict[str, dict[str, Any] | None] = {}
 _TREASURY_YIELD_CACHE: dict[str, Any] | None = None
 _GDELT_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
@@ -222,8 +225,8 @@ SCENARIOS = {
     "ai-infra-capex": {
         "en": "AI Infrastructure Capex",
         "ko": "AI 인프라 투자",
-        "thesis_en": "Tracks data-center, accelerator, memory, power, and cloud capex channels using approved public facts.",
-        "thesis_ko": "승인된 공개 사실을 기반으로 데이터센터, 가속기, 메모리, 전력, 클라우드 투자 경로를 추적합니다.",
+        "thesis_en": "Tracks data-center, accelerator, memory, power, and cloud capex channels using source-linked public facts.",
+        "thesis_ko": "출처 연결 공개 사실을 기반으로 데이터센터, 가속기, 메모리, 전력, 클라우드 투자 경로를 추적합니다.",
         "objects": ["NVIDIA", "Microsoft", "TSMC", "Samsung Electronics", "SK Hynix", "ASML"],
     },
     "energy-supply-shock": {
@@ -241,6 +244,35 @@ SCENARIOS = {
         "objects": ["TSMC", "Samsung Electronics", "SK Hynix", "ASML", "NVIDIA"],
     },
 }
+
+SCENARIO_SOURCE_URLS = {
+    "nextgig_ai_tracker": "https://www.nextgig.rocks/dash/ai-tracker/",
+    "eia_weekly_petroleum": "https://www.eia.gov/petroleum/supply/weekly/",
+    "jodi_oil": "https://www.jodidata.org/oil/",
+    "iea_oil_market_report": "https://www.iea.org/reports/oil-market-report",
+    "bis": "https://www.bis.gov/",
+    "tsmc_results": "https://investor.tsmc.com/english/quarterly-results",
+    "fmp_earnings_calendar": "https://site.financialmodelingprep.com/developer/docs/stable/earnings-calendar",
+}
+
+EARNINGS_CALENDAR_DEFINITIONS = [
+    ("NVDA", "NVIDIA", "NVIDIA earnings calendar", "USA", "NVIDIA IR", "https://investor.nvidia.com/events-and-presentations/events-and-presentations/default.aspx"),
+    ("AMD", "Advanced Micro Devices", "AMD earnings calendar", "USA", "AMD IR", "https://ir.amd.com/news-events/ir-calendar"),
+    ("MSFT", "Microsoft", "Microsoft earnings calendar", "USA", "Microsoft IR", "https://www.microsoft.com/en-us/investor/events"),
+    ("AAPL", "Apple", "Apple earnings calendar", "USA", "Apple IR", "https://investor.apple.com/investor-relations/default.aspx"),
+    ("TSM", "TSMC", "TSMC earnings calendar", "TWN", "TSMC IR", SCENARIO_SOURCE_URLS["tsmc_results"]),
+    ("005930.KS", "Samsung Electronics", "Samsung Electronics earnings calendar", "KOR", "Samsung IR", "https://www.samsung.com/global/ir/financial-information/earnings-release/"),
+    ("000660.KS", "SK Hynix", "SK Hynix earnings calendar", "KOR", "SK Hynix IR", "https://www.skhynix.com/ir/UI-FR-IR04"),
+    ("ASML", "ASML", "ASML earnings calendar", "EU", "ASML IR", "https://www.asml.com/en/investors/financial-calendar"),
+    ("RKLB", "Rocket Lab", "Rocket Lab earnings calendar", "USA", "Rocket Lab IR", "https://investors.rocketlabusa.com/news-events/events-presentations"),
+    ("IONQ", "IonQ", "IonQ earnings calendar", "USA", "IonQ IR", "https://investors.ionq.com/news-events/events-presentations"),
+    ("RGTI", "Rigetti Computing", "Rigetti earnings calendar", "USA", "Rigetti IR", "https://investors.rigetti.com/news-events/events-presentations"),
+    ("QBTS", "D-Wave Quantum", "D-Wave earnings calendar", "USA", "D-Wave IR", "https://ir.dwavesys.com/news-events/events-presentations"),
+    ("LUNR", "Intuitive Machines", "Intuitive Machines earnings calendar", "USA", "Intuitive Machines IR", "https://investors.intuitivemachines.com/news-events/events-presentations"),
+    ("ASTS", "AST SpaceMobile", "AST SpaceMobile earnings calendar", "USA", "AST SpaceMobile IR", "https://investors.ast-science.com/news-events/events-presentations"),
+    ("RDW", "Redwire", "Redwire earnings calendar", "USA", "Redwire IR", "https://investors.redwirespace.com/news-events/events-presentations"),
+    ("DJT", "Trump Media & Technology Group", "Trump Media earnings calendar", "USA", "SEC EDGAR", "https://www.sec.gov/edgar/browse/?CIK=0001849635"),
+]
 
 NEWS_TICKER_KO_NAMES = {
     "DJT": "트럼프 미디어",
@@ -381,7 +413,10 @@ def build_snapshots() -> None:
         alternative_signals = _alternative_signals(locale, generated_at)
         breaking_market_map = _breaking_market_projection_from_signals(alternative_signals, generated_at=generated_at)
         sector_tiles = [_sector_tile(key, locale, events) for key in SECTORS]
-        scenario_summaries = [_scenario_summary(key, locale) for key in SCENARIOS]
+        scenario_summaries = [
+            _scenario_summary(key, locale, generated_at, news_list_items, macro_tiles)
+            for key in SCENARIOS
+        ]
 
         _write(
             manifest,
@@ -399,8 +434,8 @@ def build_snapshots() -> None:
                     "headline": _t(locale, "Global market intelligence dashboard", "글로벌 시장 인텔리전스 대시보드"),
                     "summary": _t(
                         locale,
-                        "Snapshot-first research dashboard for public, source-gated intelligence. It highlights monitored sectors, central-bank calendars, scenario baskets, and approved events without personalized advice.",
-                        "공개 출처 정책을 통과한 정보를 스냅샷 우선 방식으로 보여주는 리서치 대시보드입니다. 개인화 조언 없이 섹터, 중앙은행 일정, 시나리오 바스켓, 승인 이벤트를 표시합니다.",
+                        "Snapshot-first research dashboard for public, source-gated intelligence. It highlights monitored sectors, source-linked calendars, scenario evidence, and breaking market context without personalized advice.",
+                        "공개 출처 정책을 통과한 정보를 스냅샷 우선 방식으로 보여주는 리서치 대시보드입니다. 개인화 조언 없이 섹터, 출처 연결 일정, 시나리오 근거, 시장 속보 맥락을 표시합니다.",
                     ),
                     "generated_label": generated_at.isoformat().replace("+00:00", "Z"),
                     "snapshot_health": {
@@ -520,7 +555,7 @@ def build_snapshots() -> None:
                     hard_expires_at,
                     "scenario_basket",
                     key,
-                    _scenario_page(key, locale, generated_at),
+                    _scenario_page(key, locale, generated_at, news_list_items, macro_tiles),
                 ),
             )
 
@@ -586,6 +621,7 @@ def _reset_runtime_caches() -> None:
     _YAHOO_QUOTE_CACHE.clear()
     _STOOQ_QUOTE_CACHE.clear()
     _FINNHUB_QUOTE_CACHE.clear()
+    _EARNINGS_CALENDAR_CACHE.clear()
     _TWELVE_DATA_QUOTE_CACHE.clear()
     _TREASURY_YIELD_CACHE = None
     _GDELT_ARTICLE_CACHE.clear()
@@ -2582,7 +2618,7 @@ def _events(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
         {
             "id": "event_semis_export_controls_seed",
             "title": _t(locale, "Semiconductor export-control monitoring remains elevated", "반도체 수출통제 모니터링 강도 유지"),
-            "summary": _t(locale, "Approved seed event links export-control risk to advanced chips, foundry exposure, and Asia supply chains.", "승인된 시드 이벤트가 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다."),
+            "summary": _t(locale, "Source-linked event context connects export-control risk to advanced chips, foundry exposure, and Asia supply chains.", "출처 연결 이벤트 맥락이 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다."),
             "why_it_matters": _t(locale, "The effect can propagate through AI accelerator availability, capex timing, and country exposure.", "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다."),
             "occurred_at": ts,
             "published_at": ts,
@@ -3539,19 +3575,6 @@ def _official_calendar_definitions() -> list[dict[str, Any]]:
             "source_url": OFFICIAL_MACRO_CALENDAR_URLS["bls_jobs"],
             "prefer_range_end": False,
         },
-        {
-            "item_id": "cal_earnings_ai",
-            "title_en": "Monitored AI infrastructure earnings window",
-            "title_ko": "AI 인프라 모니터링 기업 실적 구간",
-            "country": "USA",
-            "release_type": "earnings_window",
-            "fallback_date": "2026-06-30",
-            "timezone": "UTC",
-            "expectation_value": None,
-            "source": "SEC/company IR",
-            "source_url": None,
-            "prefer_range_end": False,
-        },
     ]
 
 
@@ -3562,6 +3585,7 @@ def _calendar(locale: str, generated_at: datetime | None = None) -> list[dict[st
         for definition in _official_calendar_definitions()
         if (item := _calendar_item_from_definition(definition, locale, observed_at)) is not None
     ]
+    items.extend(_earnings_calendar_items(locale, observed_at))
     return _sort_calendar_items(items)
 
 
@@ -3594,8 +3618,135 @@ def _calendar_item_from_definition(
         "previous_value": None,
         "surprise": None,
         "source": str(definition["source"]),
+        "source_url": str(definition["source_url"]),
         "freshness": "fresh" if live_source else "watch",
     }
+
+
+def _earnings_calendar_items(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
+    today = _calendar_today(generated_at, "UTC")
+    return [
+        _earnings_calendar_item(definition, locale, generated_at, today)
+        for definition in EARNINGS_CALENDAR_DEFINITIONS
+    ]
+
+
+def _earnings_calendar_item(
+    definition: tuple[str, str, str, str, str, str],
+    locale: str,
+    generated_at: datetime,
+    today: date,
+) -> dict[str, Any]:
+    symbol, name, title_en, country, source, source_url = definition
+    provider_event = _earnings_provider_event(symbol, today, today + timedelta(days=180))
+    provider_date = _parse_calendar_date(str(provider_event.get("date") or "")) if provider_event else None
+    if provider_date and provider_date >= today:
+        selected_date = provider_date
+        provider_name = str(provider_event.get("provider") or "provider")
+        expectation_type = "provider_calendar"
+        freshness = "fresh"
+        status = "scheduled"
+        row_source = f"{provider_name} / {source}"
+        expectation_value = _t(
+            locale,
+            f"{provider_name} earnings calendar linked to {source}",
+            f"{provider_name} 실적 캘린더 및 {source} 링크",
+        )
+    else:
+        selected_date = today
+        expectation_type = "manual_watch"
+        freshness = "watch"
+        status = "monitoring"
+        row_source = source
+        expectation_value = _t(
+            locale,
+            f"No provider date confirmed; open {source} for the next {name} earnings date.",
+            f"제공사 날짜 미확인; 다음 {name} 실적일은 {source}에서 확인하세요.",
+        )
+    return {
+        "id": f"cal_earnings_{_symbol_route_key(symbol)}",
+        "title": _t(locale, title_en, f"{name} 실적 캘린더"),
+        "country_region_key": country,
+        "release_type": "earnings" if provider_date else "earnings_watch",
+        "scheduled_at": f"{selected_date.isoformat()}T12:00:00Z" if provider_date else None,
+        "scheduled_local_date": selected_date.isoformat(),
+        "timezone": "UTC",
+        "time_precision": "date_only",
+        "status": status,
+        "expectation_type": expectation_type,
+        "expectation_value": expectation_value,
+        "actual_value": None,
+        "previous_value": None,
+        "surprise": None,
+        "source": row_source,
+        "source_url": source_url,
+        "freshness": freshness,
+    }
+
+
+def _earnings_provider_event(symbol: str, start: date, end: date) -> dict[str, Any] | None:
+    return _fmp_earnings_event(symbol, start, end) or _finnhub_earnings_event(symbol, start, end)
+
+
+def _fmp_earnings_event(symbol: str, start: date, end: date) -> dict[str, Any] | None:
+    token = str(_runtime_env().get("FMP_API_KEY") or "").strip()
+    if not token:
+        return None
+    cache_key = ("fmp", symbol.upper(), start.isoformat())
+    if cache_key in _EARNINGS_CALENDAR_CACHE:
+        return _EARNINGS_CALENDAR_CACHE[cache_key]
+    params = parse.urlencode({"symbol": symbol, "from": start.isoformat(), "to": end.isoformat(), "apikey": token})
+    try:
+        payload = _http_json(
+            f"{FMP_EARNINGS_CALENDAR_URL}?{params}",
+            headers={"Accept": "application/json"},
+            timeout=12,
+            throttle_key="fmp_earnings_calendar",
+            max_bytes=500_000,
+        )
+    except Exception:
+        _EARNINGS_CALENDAR_CACHE[cache_key] = None
+        return None
+    event = _earnings_event_from_payload(payload, "FMP")
+    _EARNINGS_CALENDAR_CACHE[cache_key] = event
+    return event
+
+
+def _finnhub_earnings_event(symbol: str, start: date, end: date) -> dict[str, Any] | None:
+    token = str(_runtime_env().get("FINNHUB_API_KEY") or "").strip()
+    if not token:
+        return None
+    cache_key = ("finnhub", symbol.upper(), start.isoformat())
+    if cache_key in _EARNINGS_CALENDAR_CACHE:
+        return _EARNINGS_CALENDAR_CACHE[cache_key]
+    params = parse.urlencode({"symbol": symbol, "from": start.isoformat(), "to": end.isoformat(), "token": token})
+    try:
+        payload = _http_json(
+            f"{FINNHUB_EARNINGS_CALENDAR_URL}?{params}",
+            headers={"Accept": "application/json"},
+            timeout=12,
+            throttle_key="finnhub_earnings_calendar",
+            max_bytes=500_000,
+        )
+    except Exception:
+        _EARNINGS_CALENDAR_CACHE[cache_key] = None
+        return None
+    event = _earnings_event_from_payload(payload.get("earningsCalendar") if isinstance(payload, dict) else payload, "Finnhub")
+    _EARNINGS_CALENDAR_CACHE[cache_key] = event
+    return event
+
+
+def _earnings_event_from_payload(payload: Any, provider: str) -> dict[str, Any] | None:
+    rows = payload if isinstance(payload, list) else payload.get("data") if isinstance(payload, dict) else []
+    if not isinstance(rows, list):
+        return None
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        date_text = _iso_date(str(row.get("date") or row.get("epsDate") or row.get("reportDate") or ""))
+        if date_text:
+            return {"date": date_text, "provider": provider}
+    return None
 
 
 def _calendar_today(generated_at: datetime, timezone_name: str) -> date:
@@ -5769,7 +5920,11 @@ def _sector_page(
         "sector_short_facts": short_facts,
         "macro_geopolitical_drivers": sector[f"drivers_{locale}"],
         "reference_indicators": indicators,
-        "scenario_baskets": [_scenario_summary(key2, locale) for key2 in SCENARIOS if key == "semiconductors" or key2 != "asia-semiconductor-risk"],
+        "scenario_baskets": [
+            _scenario_summary(key2, locale, generated_at, sector_news, indicators)
+            for key2 in SCENARIOS
+            if key == "semiconductors" or key2 != "asia-semiconductor-risk"
+        ],
         "risks_and_caveats": [
             _t(locale, "Coverage is explicit; unsupported data remains labeled rather than inferred.", "지원 범위는 명시되며 미지원 데이터는 추론하지 않고 라벨링합니다."),
             _t(locale, "Market data is delayed/reference unless terms permit realtime public redistribution.", "시장 데이터는 조건상 실시간 공개 재배포가 허용되지 않는 한 지연/참조입니다."),
@@ -5817,39 +5972,443 @@ def _country_region_data(
     }
 
 
-def _scenario_summary(key: str, locale: str) -> dict[str, Any]:
+def _scenario_summary(
+    key: str,
+    locale: str,
+    generated_at: datetime,
+    news_items: list[dict[str, Any]],
+    macro_tiles: list[dict[str, Any]],
+) -> dict[str, Any]:
     item = SCENARIOS[key]
+    sections = _scenario_tracker_sections(key, locale, generated_at, news_items, macro_tiles)
+    evidence_count = _scenario_evidence_count(sections)
     return {
         "key": key,
         "name": item[locale],
         "thesis": item[f"thesis_{locale}"],
-        "risk_summary": _t(locale, "Illustrative only; risk factors and data delays must remain visible.", "예시 목적이며 리스크 요인과 데이터 지연을 항상 표시해야 합니다."),
-        "freshness": "fresh",
+        "risk_summary": _scenario_risk_summary(key, locale),
+        "freshness": _scenario_freshness(sections, evidence_count),
+        "coverage_status": _scenario_coverage_status(sections, evidence_count),
+        "evidence_count": evidence_count,
+        "last_observed_at": _scenario_last_observed_at(sections, generated_at),
+        "primary_source_url": _scenario_primary_source_url(sections),
+        **_scenario_external_tracker_field(key),
     }
 
 
-def _scenario_page(key: str, locale: str, generated_at: datetime) -> dict[str, Any]:
+def _scenario_page(
+    key: str,
+    locale: str,
+    generated_at: datetime,
+    news_items: list[dict[str, Any]],
+    macro_tiles: list[dict[str, Any]],
+) -> dict[str, Any]:
     item = SCENARIOS[key]
+    sections = _scenario_tracker_sections(key, locale, generated_at, news_items, macro_tiles)
+    evidence_count = _scenario_evidence_count(sections)
     return {
         "key": key,
         "name": item[locale],
         "thesis": item[f"thesis_{locale}"],
-        "methodology": _t(locale, "Illustrative weights are equal-weight seed placeholders until editor-approved methodology data is ingested. Inclusion is based on thematic exposure and reviewed public facts.", "예시 비중은 편집 승인 방법론 데이터 수집 전까지 동일가중 시드 placeholder입니다. 포함 기준은 테마 노출과 검토된 공개 사실입니다."),
-        "included_objects": [
-            {
-                "name": name,
-                "object_key": name.upper().replace(" ", "_"),
-                "reason": _t(locale, "Thematic exposure under monitored scenario.", "모니터링 시나리오에 대한 테마 노출."),
-                "illustrative_weight": "equal-weight seed",
-            }
-            for name in item["objects"]
-        ],
-        "risk_summary": _t(locale, "Scenario can fail if source data is stale, policy risk reverses, or sector exposure is weaker than expected.", "출처 데이터가 오래되거나 정책 리스크가 반전되거나 섹터 노출이 예상보다 약하면 시나리오가 실패할 수 있습니다."),
+        "methodology": _t(
+            locale,
+            "Rows are rendered only from source-linked metrics, official pages, or recent news snapshots. Missing structured data is shown as an explicit coverage gap.",
+            "행은 출처 연결 지표, 공식 페이지, 최근 뉴스 스냅샷에서만 렌더링합니다. 구조화 데이터가 없으면 명시적 커버리지 공백으로 표시합니다.",
+        ),
+        "tracker_sections": sections,
+        "risk_summary": _scenario_risk_summary(key, locale),
         "freshness_timestamp": generated_at.isoformat().replace("+00:00", "Z"),
-        "data_delay_warning": _t(locale, "Uses delayed/reference indicators only; no brokerage connection or trade execution.", "지연/참조 지표만 사용하며 증권사 연결이나 주문 실행은 없습니다."),
+        "data_delay_warning": _t(
+            locale,
+            "Uses delayed/reference indicators and outbound source links only; no brokerage connection or trade execution.",
+            "지연/참조 지표와 외부 출처 링크만 사용하며 증권사 연결이나 주문 실행은 없습니다.",
+        ),
         "disclaimer": _t(locale, "Research only. Not personalized financial advice. Do not treat this as a buy, sell, or allocation recommendation.", "리서치 목적입니다. 개인화 금융 조언이 아니며 매수, 매도, 배분 추천으로 해석하지 마십시오."),
-        "approval_status": "approved",
+        "coverage_status": _scenario_coverage_status(sections, evidence_count),
+        "evidence_count": evidence_count,
+        "last_observed_at": _scenario_last_observed_at(sections, generated_at),
+        "primary_source_url": _scenario_primary_source_url(sections),
+        **_scenario_external_tracker_field(key),
     }
+
+
+def _scenario_tracker_sections(
+    key: str,
+    locale: str,
+    generated_at: datetime,
+    news_items: list[dict[str, Any]],
+    macro_tiles: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if key == "ai-infra-capex":
+        return _ai_infra_tracker_sections(locale, generated_at, news_items)
+    if key == "energy-supply-shock":
+        return _energy_supply_tracker_sections(locale, generated_at, news_items, macro_tiles)
+    if key == "asia-semiconductor-risk":
+        return _asia_semiconductor_tracker_sections(locale, generated_at, news_items)
+    return []
+
+
+def _ai_infra_tracker_sections(locale: str, generated_at: datetime, news_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    news = _recent_scenario_news(
+        news_items,
+        generated_at,
+        symbols={"NVDA", "AMD", "MSFT", "AAPL", "005930.KS"},
+        topics={"semiconductors", "trade_policy", "supply_chain"},
+        required_topics={"semiconductors", "trade_policy"},
+        limit=5,
+    )
+    rows = [
+        _scenario_metric_row(
+            "accelerator-news",
+            _t(locale, "Accelerator and memory evidence", "가속기 및 메모리 근거"),
+            _t(locale, f"{len(news)} recent source-linked items", f"최근 출처 연결 항목 {len(news)}개"),
+            _t(locale, "Counts recent semiconductor, AI infrastructure, and tracked-ticker news rows already admitted into snapshots.", "스냅샷에 이미 포함된 반도체, AI 인프라, 추적 티커 뉴스 행을 집계합니다."),
+            "Stonks Radar news snapshots",
+            news[0]["source_links"][0]["url"] if news else SCENARIO_SOURCE_URLS["bis"],
+            "fresh" if news else "watch",
+            _scenario_news_last_seen(news, generated_at),
+            "active" if news else "coverage_gap",
+        ),
+    ]
+    return [
+        _scenario_section(
+            "ai-infra-evidence",
+            _t(locale, "AI infrastructure evidence", "AI 인프라 근거"),
+            _t(locale, "Hyperscaler capex, accelerator supply, memory/HBM, and data-center power are shown only through source-linked rows.", "하이퍼스케일러 투자, 가속기 공급, 메모리/HBM, 데이터센터 전력은 출처 연결 행으로만 표시합니다."),
+            rows,
+            news,
+            [
+                _scenario_source_link("NextGig", SCENARIO_SOURCE_URLS["nextgig_ai_tracker"], "nextgig", 1),
+                _scenario_source_link("BIS", SCENARIO_SOURCE_URLS["bis"], "bis", 1),
+            ],
+            generated_at,
+        )
+    ]
+
+
+def _energy_supply_tracker_sections(
+    locale: str,
+    generated_at: datetime,
+    news_items: list[dict[str, Any]],
+    macro_tiles: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    news = _recent_scenario_news(
+        news_items,
+        generated_at,
+        topics={"energy", "geopolitics", "supply_chain"},
+        required_topics={"energy"},
+        limit=5,
+    )
+    wti = _tile_by_key(macro_tiles, "wti_crude")
+    rows = [
+        _scenario_metric_row(
+            "wti-reference",
+            _t(locale, "WTI crude reference", "WTI 원유 참고 지표"),
+            str(wti.get("value") or "coverage gap") if wti else _t(locale, "coverage gap", "커버리지 공백"),
+            _t(locale, "Delayed/reference market tile, shown as context rather than an inventory claim.", "재고 주장이 아니라 맥락 지표로 표시되는 지연/참조 시장 타일입니다."),
+            str(wti.get("source") or "market reference") if wti else "market reference",
+            str(wti.get("source_url") or SCENARIO_SOURCE_URLS["eia_weekly_petroleum"]) if wti else SCENARIO_SOURCE_URLS["eia_weekly_petroleum"],
+            str(wti.get("freshness") or "watch") if wti else "watch",
+            str(wti.get("updated_at") or generated_at.date().isoformat())[:10] if wti else generated_at.date().isoformat(),
+            "active" if wti and wti.get("source_url") else "coverage_gap",
+        ),
+        _scenario_metric_row(
+            "eia-weekly-stocks",
+            _t(locale, "US petroleum inventory source", "미국 석유 재고 출처"),
+            _t(locale, "official weekly report", "공식 주간 보고서"),
+            _t(locale, "Use EIA for weekly US stock trends; a numeric trend appears only when structured as-of data is ingested.", "미국 주간 재고 추세는 EIA를 사용하며 구조화된 기준일 데이터가 수집될 때만 수치 추세를 표시합니다."),
+            "EIA",
+            SCENARIO_SOURCE_URLS["eia_weekly_petroleum"],
+            "watch",
+            generated_at.date().isoformat(),
+            "coverage_gap",
+        ),
+        _scenario_metric_row(
+            "jodi-country-stocks",
+            _t(locale, "Country oil stock source", "국가별 석유 재고 출처"),
+            _t(locale, "monthly official dataset", "월간 공식 데이터셋"),
+            _t(locale, "JODI is linked for country-level oil stocks; this row stays a coverage gap until a monthly observation is parsed.", "JODI는 국가별 석유 재고 출처로 연결되며 월간 관측치가 파싱될 때까지 커버리지 공백으로 유지됩니다."),
+            "JODI",
+            SCENARIO_SOURCE_URLS["jodi_oil"],
+            "watch",
+            generated_at.date().isoformat(),
+            "coverage_gap",
+        ),
+    ]
+    return [
+        _scenario_section(
+            "energy-supply-evidence",
+            _t(locale, "Energy supply evidence", "에너지 공급 근거"),
+            _t(locale, "Inventories, oil-reference tiles, chokepoints, and official market reports are separated so gaps stay visible.", "재고, 원유 참고 지표, 해상 요충지, 공식 시장 보고서를 분리해 공백이 보이도록 합니다."),
+            rows,
+            news,
+            [
+                _scenario_source_link("EIA", SCENARIO_SOURCE_URLS["eia_weekly_petroleum"], "eia", 1),
+                _scenario_source_link("JODI", SCENARIO_SOURCE_URLS["jodi_oil"], "jodi", 1),
+                _scenario_source_link("IEA", SCENARIO_SOURCE_URLS["iea_oil_market_report"], "iea", 1),
+            ],
+            generated_at,
+        )
+    ]
+
+
+def _asia_semiconductor_tracker_sections(locale: str, generated_at: datetime, news_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    news = _recent_scenario_news(
+        news_items,
+        generated_at,
+        symbols={"NVDA", "AMD", "005930.KS"},
+        regions={"CHN", "TWN", "KOR", "JPN", "USA"},
+        topics={"semiconductors", "trade_policy", "supply_chain", "geopolitics"},
+        required_topics={"semiconductors", "trade_policy"},
+        limit=7,
+    )
+    rows = [
+        _scenario_metric_row(
+            "seven-day-news",
+            _t(locale, "Seven-day source-linked news", "7일 출처 연결 뉴스"),
+            _t(locale, f"{len(news)} items", f"{len(news)}개 항목"),
+            _t(locale, "Only semiconductor, export-control, and Asia-region news observed inside the last seven days is counted.", "최근 7일 내 관측된 반도체, 수출통제, 아시아 지역 뉴스만 집계합니다."),
+            "Stonks Radar news snapshots",
+            news[0]["source_links"][0]["url"] if news else SCENARIO_SOURCE_URLS["bis"],
+            "fresh" if news else "watch",
+            _scenario_news_last_seen(news, generated_at),
+            "active" if news else "coverage_gap",
+        ),
+        _scenario_metric_row(
+            "bis-policy-source",
+            _t(locale, "Official export-control source", "공식 수출통제 출처"),
+            _t(locale, "linked source", "출처 링크"),
+            _t(locale, "BIS remains the official policy source; news analysis is not treated as policy confirmation.", "BIS는 공식 정책 출처이며 뉴스 분석은 정책 확인으로 취급하지 않습니다."),
+            "BIS",
+            SCENARIO_SOURCE_URLS["bis"],
+            "watch",
+            generated_at.date().isoformat(),
+            "active",
+        ),
+    ]
+    return [
+        _scenario_section(
+            "asia-semis-evidence",
+            _t(locale, "Asia semiconductor evidence", "아시아 반도체 근거"),
+            _t(locale, "Export controls, Taiwan/Korea/Japan exposure, and tracked semiconductor tickers are summarized from recent source-linked news.", "수출통제, 대만/한국/일본 노출, 추적 반도체 티커를 최근 출처 연결 뉴스에서 요약합니다."),
+            rows,
+            news,
+            [
+                _scenario_source_link("BIS", SCENARIO_SOURCE_URLS["bis"], "bis", 1),
+                _scenario_source_link("TSMC", SCENARIO_SOURCE_URLS["tsmc_results"], "tsmc_ir", 1),
+            ],
+            generated_at,
+        )
+    ]
+
+
+def _scenario_section(
+    key: str,
+    title: str,
+    summary: str,
+    rows: list[dict[str, Any]],
+    news: list[dict[str, Any]],
+    source_links: list[dict[str, Any]],
+    generated_at: datetime,
+) -> dict[str, Any]:
+    evidence_count = sum(1 for row in rows if row["coverage_status"] != "coverage_gap") + len(news)
+    return {
+        "key": key,
+        "title": title,
+        "summary": summary,
+        "coverage_status": _section_coverage_status(rows, evidence_count),
+        "evidence_count": evidence_count,
+        "last_observed_at": _section_last_observed_at(rows, news, generated_at),
+        "metric_rows": rows,
+        "news_events": news,
+        "source_links": source_links,
+    }
+
+
+def _scenario_metric_row(
+    key: str,
+    label: str,
+    value: str,
+    detail: str,
+    source: str,
+    source_url: str,
+    freshness: str,
+    as_of_date: str,
+    coverage_status: str,
+) -> dict[str, Any]:
+    return {
+        "key": key,
+        "label": label,
+        "value": value,
+        "detail": detail,
+        "source": source,
+        "source_url": source_url,
+        "freshness": freshness,
+        "as_of_date": as_of_date,
+        "coverage_status": coverage_status,
+    }
+
+
+def _scenario_source_link(label: str, url: str, source_key: str, policy_version: int) -> dict[str, Any]:
+    return {
+        "label": label,
+        "url": url,
+        "source_key": source_key,
+        "policy_version": policy_version,
+    }
+
+
+def _recent_scenario_news(
+    news_items: list[dict[str, Any]],
+    generated_at: datetime,
+    *,
+    symbols: set[str] | None = None,
+    regions: set[str] | None = None,
+    topics: set[str] | None = None,
+    required_topics: set[str] | None = None,
+    limit: int,
+) -> list[dict[str, Any]]:
+    cutoff = generated_at - timedelta(days=7)
+    selected = [
+        item
+        for item in news_items
+        if _news_item_observed_at(item, generated_at) >= cutoff
+        and _news_item_has_topic(item, required_topics)
+        and _news_item_matches(item, symbols=symbols, regions=regions, topics=topics)
+    ]
+    selected.sort(key=lambda item: str(item.get("last_seen_at") or item.get("published_at") or ""), reverse=True)
+    return selected[:limit]
+
+
+def _news_item_has_topic(item: dict[str, Any], topics: set[str] | None) -> bool:
+    if not topics:
+        return True
+    return any(str(topic.get("key") or "") in topics for topic in item.get("topics", []))
+
+
+def _news_item_matches(
+    item: dict[str, Any],
+    *,
+    symbols: set[str] | None,
+    regions: set[str] | None,
+    topics: set[str] | None,
+) -> bool:
+    if symbols and any(str(ticker.get("symbol") or "").upper() in symbols for ticker in item.get("tickers", [])):
+        return True
+    if regions and any(str(region.get("key") or "").upper() in regions for region in item.get("regions", [])):
+        return True
+    if topics and any(str(topic.get("key") or "") in topics for topic in item.get("topics", [])):
+        return True
+    return False
+
+
+def _news_item_observed_at(item: dict[str, Any], generated_at: datetime) -> datetime:
+    for key in ("last_seen_at", "published_at", "first_seen_at"):
+        value = str(item.get(key) or "")
+        if not value:
+            continue
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+    return generated_at
+
+
+def _scenario_news_last_seen(news: list[dict[str, Any]], generated_at: datetime) -> str:
+    if not news:
+        return generated_at.date().isoformat()
+    return max(str(item.get("last_seen_at") or item.get("published_at") or generated_at.date().isoformat()) for item in news)
+
+
+def _tile_by_key(tiles: list[dict[str, Any]], key: str) -> dict[str, Any] | None:
+    return next((tile for tile in tiles if str(tile.get("key") or "") == key), None)
+
+
+def _section_coverage_status(rows: list[dict[str, Any]], evidence_count: int) -> str:
+    if evidence_count == 0:
+        return "coverage_gap"
+    if any(row["coverage_status"] == "coverage_gap" for row in rows):
+        return "partial"
+    return "active"
+
+
+def _scenario_evidence_count(sections: list[dict[str, Any]]) -> int:
+    return sum(int(section.get("evidence_count") or 0) for section in sections)
+
+
+def _scenario_coverage_status(sections: list[dict[str, Any]], evidence_count: int) -> str:
+    if evidence_count == 0:
+        return "coverage_gap"
+    statuses = {str(section.get("coverage_status") or "coverage_gap") for section in sections}
+    if statuses == {"active"}:
+        return "active"
+    return "partial"
+
+
+def _scenario_freshness(sections: list[dict[str, Any]], evidence_count: int) -> str:
+    if evidence_count == 0:
+        return "unsupported"
+    row_states = [
+        str(row.get("freshness") or "watch")
+        for section in sections
+        for row in section.get("metric_rows", [])
+        if row.get("coverage_status") != "coverage_gap"
+    ]
+    if row_states and all(state == "fresh" for state in row_states):
+        return "fresh"
+    return "watch"
+
+
+def _scenario_last_observed_at(sections: list[dict[str, Any]], generated_at: datetime) -> str:
+    values = [str(section.get("last_observed_at") or "") for section in sections if section.get("last_observed_at")]
+    return max(values) if values else generated_at.isoformat().replace("+00:00", "Z")
+
+
+def _section_last_observed_at(
+    rows: list[dict[str, Any]],
+    news: list[dict[str, Any]],
+    generated_at: datetime,
+) -> str:
+    values = [str(row.get("as_of_date") or "") for row in rows if row.get("coverage_status") != "coverage_gap"]
+    values.extend(str(item.get("last_seen_at") or item.get("published_at") or "") for item in news)
+    values = [value for value in values if value]
+    return max(values) if values else generated_at.isoformat().replace("+00:00", "Z")
+
+
+def _scenario_primary_source_url(sections: list[dict[str, Any]]) -> str:
+    for section in sections:
+        for row in section.get("metric_rows", []):
+            if row.get("coverage_status") != "coverage_gap" and row.get("source_url"):
+                return str(row["source_url"])
+        source_links = section.get("source_links") or []
+        if source_links:
+            return str(source_links[0].get("url") or "")
+    return SCENARIO_SOURCE_URLS["bis"]
+
+
+def _scenario_external_tracker_field(key: str) -> dict[str, str]:
+    if key == "ai-infra-capex":
+        return {"external_tracker_url": SCENARIO_SOURCE_URLS["nextgig_ai_tracker"]}
+    return {}
+
+
+def _scenario_risk_summary(key: str, locale: str) -> str:
+    summaries = {
+        "ai-infra-capex": (
+            "AI capex can reverse if source data lags, power constraints intensify, or hyperscaler spending guidance weakens.",
+            "출처 데이터가 지연되거나 전력 제약이 커지거나 하이퍼스케일러 투자 가이던스가 약화되면 AI 투자 시나리오가 반전될 수 있습니다.",
+        ),
+        "energy-supply-shock": (
+            "Energy supply risk can fade if inventories rebuild, chokepoints stay open, or demand weakens faster than supply.",
+            "재고가 재축적되고 해상 요충지가 열려 있으며 수요가 공급보다 빠르게 약해지면 에너지 공급 리스크는 완화될 수 있습니다.",
+        ),
+        "asia-semiconductor-risk": (
+            "Asia semiconductor risk can change quickly when export rules, Taiwan/Korea/Japan headlines, or company guidance diverge.",
+            "수출 규정, 대만/한국/일본 헤드라인, 기업 가이던스가 엇갈리면 아시아 반도체 리스크는 빠르게 바뀔 수 있습니다.",
+        ),
+    }
+    en, ko = summaries.get(key, ("Source coverage can be incomplete or delayed.", "출처 커버리지는 불완전하거나 지연될 수 있습니다."))
+    return _t(locale, en, ko)
 
 
 def _source_status() -> dict[str, Any]:

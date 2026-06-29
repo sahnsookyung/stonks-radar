@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
-  Activity,
   ArrowRight,
   CalendarDays,
   DatabaseZap,
@@ -12,9 +11,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { AlternativeSignalLane, BreakingMarketEvent, BreakingMarketMapData, CalendarItem, PublicEvent } from "@frw/shared-types";
+import type { AlternativeSignalLane, BreakingMarketEvent, BreakingMarketMapData, CalendarItem, ScenarioBasketSummary } from "@frw/shared-types";
 import { FreshnessBadge, SeverityBadge, SourceBadge } from "../components/Badge";
-import { EventList } from "../components/EventList";
 import { EventMap } from "../components/EventMap";
 import { ErrorState, LoadingState } from "../components/LoadingState";
 import { MarketPulseTickerBar, sortMarketTiles } from "../components/MarketPulse";
@@ -39,14 +37,12 @@ export function HomePage() {
   const snapshot = query.data;
   const data = snapshot.data;
   const marketTiles = sortMarketTiles(data.macro_tiles);
-  const policyCalendar = sortCalendarItems(
-    data.calendar_preview.filter((item) => item.release_type === "central_bank")
-  );
+  const calendarPreview = sortCalendarItems(data.calendar_preview);
   const dashboardSignals = data.alternative_signals.filter((lane) => dashboardSignalKeys.has(lane.key));
   const breakingMarketMap = data.breaking_market_map;
   const breakingEvents = data.breaking_market_events ?? breakingMarketMap?.events ?? [];
   const newsMapPoints = breakingMarketMap?.map_points ?? [];
-  const priorityEvent = data.top_events[0];
+  const scenarioBaskets = data.scenario_baskets.filter((basket) => basket.evidence_count > 0);
 
   return (
     <div className="grid min-w-0 gap-7">
@@ -64,7 +60,7 @@ export function HomePage() {
         <div className="flex min-w-0 flex-wrap gap-2.5">
           <FreshnessBadge value={data.snapshot_health.status} />
           <SourceBadge label={t("snapshotFirst")} />
-          <SourceBadge label={t("approvedPublicData")} />
+          <SourceBadge label={t("sourceLinkedData")} />
         </div>
       </section>
 
@@ -100,20 +96,23 @@ export function HomePage() {
         />
       </section>
 
-      <section className="grid min-w-0 gap-5 lg:grid-cols-[1fr_0.6fr]">
-        {priorityEvent ? <PriorityEvent event={priorityEvent} /> : null}
+      <section className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)]">
         <div className="panel p-5">
           <div className="flex items-center gap-2 font-semibold">
             <CalendarDays className="h-4 w-4" />
             {t("calendar")}
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            {policyCalendar.slice(0, 4).map((item) => (
+            {calendarPreview.slice(0, 6).map((item) => (
               <div key={item.id} className="rounded-md border border-line bg-panelAlt px-4 py-3">
                 <div className="text-sm font-semibold leading-5">{item.title}</div>
                 <div className="mt-1.5 text-xs leading-5 text-muted">
                   {item.scheduled_local_date} · {item.source} · {calendarExpectationLabel(item.expectation_type, locale)}
                 </div>
+                <a href={item.source_url} target={item.source_url.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="focus-ring mt-2 inline-flex min-h-8 items-center gap-1 rounded text-xs font-semibold text-accent hover:text-accentSoft">
+                  {t("source")}
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
               </div>
             ))}
           </div>
@@ -122,64 +121,75 @@ export function HomePage() {
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-      </section>
-
-      <section className="grid min-w-0 gap-4 lg:grid-cols-[1fr_0.55fr]">
-        <div className="min-w-0">
-          <h2 className="mb-3 text-xl font-bold">{t("approvedEvents")}</h2>
-          <EventList events={data.top_events} />
-        </div>
-        <div className="min-w-0">
-          <h2 className="mb-3 text-xl font-bold">{t("scenarioBaskets")}</h2>
-          <div className="grid gap-3">
-            {data.scenario_baskets.map((basket) => (
-              <Link
-                key={basket.key}
-                to="/$locale/scenario-baskets/$basketKey"
-                params={{ locale, basketKey: basket.key }}
-                className="panel focus-ring block p-5 hover:border-accent"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="font-semibold">{basket.name}</h3>
-                  <FreshnessBadge value={basket.freshness} />
-                </div>
-                <p className="mt-2 text-sm leading-6 text-muted">{basket.thesis}</p>
-                <p className="mt-2 text-xs text-muted">{basket.risk_summary}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
+        <ScenarioTrackerCards baskets={scenarioBaskets} locale={locale} />
       </section>
     </div>
   );
 }
 
 function sortCalendarItems(items: CalendarItem[]) {
-  return [...items].sort((left, right) => left.scheduled_local_date.localeCompare(right.scheduled_local_date));
+  return [...items].sort((left, right) => calendarSortKey(left).localeCompare(calendarSortKey(right)));
+}
+
+function calendarSortKey(item: CalendarItem) {
+  const dateText = item.scheduled_local_date || item.scheduled_at?.slice(0, 10) || "9999-12-31";
+  const timeText = item.scheduled_at?.includes("T") ? item.scheduled_at.slice(11, 19) : "23:59:59";
+  return `${dateText}T${timeText}:${item.id}`;
 }
 
 function calendarExpectationLabel(expectationType: string, locale: "en" | "ko") {
   if (expectationType === "official_projection") return locale === "ko" ? "공식 전망" : "official projections";
   if (expectationType === "official_calendar") return locale === "ko" ? "공식 일정" : "official calendar";
   if (expectationType === "manual_estimate") return locale === "ko" ? "수동 추정" : "manual estimate";
+  if (expectationType === "provider_calendar") return locale === "ko" ? "제공사 일정" : "provider calendar";
+  if (expectationType === "manual_watch") return locale === "ko" ? "수동 감시" : "manual watch";
   return locale === "ko" ? "감시" : "watch";
 }
 
-function PriorityEvent({ event }: Readonly<{ event: PublicEvent }>) {
+function ScenarioTrackerCards({ baskets, locale }: Readonly<{ baskets: ScenarioBasketSummary[]; locale: "en" | "ko" }>) {
   const { t } = useTranslation();
+  if (baskets.length === 0) return null;
   return (
-    <section className="panel-raised p-5">
-      <div className="flex items-center gap-2 text-sm font-semibold text-warning">
-        <Activity className="h-4 w-4" />
-        {t("priorityEvent")}
+    <div className="min-w-0">
+      <h2 className="mb-3 text-xl font-bold">{t("scenarioTrackers")}</h2>
+      <div className="grid gap-3">
+        {baskets.map((basket) => (
+          <article key={basket.key} className="panel p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="safe-text font-semibold">{basket.name}</h3>
+                <p className="mt-1 text-xs font-semibold uppercase text-accent">
+                  {basket.evidence_count} {locale === "ko" ? "근거 행" : "evidence rows"}
+                </p>
+              </div>
+              <FreshnessBadge value={basket.freshness} />
+            </div>
+            <p className="safe-text mt-2 text-sm leading-6 text-muted">{basket.thesis}</p>
+            <p className="safe-text mt-2 text-xs leading-5 text-muted">{basket.risk_summary}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <SourceBadge label={basket.coverage_status.replace("_", " ")} />
+              <SourceBadge label={`${locale === "ko" ? "관측" : "observed"} ${basket.last_observed_at.slice(0, 10)}`} />
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                to="/$locale/scenario-baskets/$basketKey"
+                params={{ locale, basketKey: basket.key }}
+                className="primary-action"
+              >
+                {t("openScenarioEvidence")}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              {basket.external_tracker_url ? (
+                <a href={basket.external_tracker_url} target="_blank" rel="noreferrer" className="secondary-action">
+                  {t("openExternalTracker")}
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              ) : null}
+            </div>
+          </article>
+        ))}
       </div>
-      <h2 className="mt-2 text-xl font-semibold leading-7">{event.title}</h2>
-      <p className="mt-2 text-sm leading-6 text-muted">{event.why_it_matters}</p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <SourceBadge label={event.source_strength} />
-        <SourceBadge label={t("evidenceItems", { count: event.evidence_count })} />
-      </div>
-    </section>
+    </div>
   );
 }
 

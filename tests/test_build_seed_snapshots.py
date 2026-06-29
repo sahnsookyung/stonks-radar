@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from urllib import error, parse
 
@@ -86,13 +86,41 @@ def test_calendar_uses_live_official_dates_and_sorts_chronologically(monkeypatch
     items = build_seed_snapshots._calendar("en", datetime(2026, 6, 11, 12, tzinfo=timezone.utc))
     ids_by_date = [(item["id"], item["scheduled_local_date"], item["freshness"]) for item in items]
 
-    assert ids_by_date == sorted(ids_by_date, key=lambda row: (row[1], row[0]))
+    assert [item["id"] for item in items] == [
+        item["id"] for item in build_seed_snapshots._sort_calendar_items(items)
+    ]
+    assert all(item["source_url"] for item in items)
     assert all(item["scheduled_local_date"] >= "2026-06-11" for item in items)
     assert ("cal_fomc", "2026-06-17", "fresh") in ids_by_date
     assert ("cal_boj", "2026-06-16", "fresh") in ids_by_date
     assert ("cal_bok", "2026-07-09", "fresh") in ids_by_date
     assert ("cal_us_jobs", "2026-07-02", "fresh") in ids_by_date
     assert ("cal_us_cpi", "2026-06-11", "fresh") in ids_by_date
+
+
+def test_calendar_uses_provider_earnings_date_when_available(monkeypatch):
+    monkeypatch.setattr(build_seed_snapshots, "_runtime_env", lambda: {"FMP_API_KEY": "token"})
+
+    def http_json(url, **_kwargs):
+        parsed = parse.urlparse(url)
+        query = parse.parse_qs(parsed.query)
+        if query.get("symbol") == ["NVDA"]:
+            return [{"symbol": "NVDA", "date": "2026-07-22"}]
+        return []
+
+    monkeypatch.setattr(build_seed_snapshots, "_http_json", http_json)
+
+    items = build_seed_snapshots._calendar("en", datetime(2026, 6, 11, 12, tzinfo=timezone.utc))
+    nvda = next(item for item in items if item["id"] == "cal_earnings_NVDA")
+    samsung = next(item for item in items if item["id"] == "cal_earnings_005930_KS")
+
+    assert nvda["scheduled_local_date"] == "2026-07-22"
+    assert nvda["expectation_type"] == "provider_calendar"
+    assert nvda["freshness"] == "fresh"
+    assert nvda["source"].startswith("FMP /")
+    assert nvda["source_url"].startswith("https://investor.nvidia.com")
+    assert samsung["expectation_type"] == "manual_watch"
+    assert samsung["freshness"] == "watch"
 
 
 def test_calendar_drops_past_static_fallbacks_when_live_source_is_unavailable():
@@ -102,6 +130,7 @@ def test_calendar_drops_past_static_fallbacks_when_live_source_is_unavailable():
     assert "cal_bok" not in ids
     assert "cal_us_jobs" not in ids
     assert "cal_us_cpi" not in ids
+    assert "cal_earnings_NVDA" in ids
     assert all(item["scheduled_local_date"] >= "2026-06-11" for item in items)
 
 
@@ -759,6 +788,85 @@ def test_build_snapshots_writes_news_seed_snapshots(tmp_path, monkeypatch):
     source_urls = {source["url"] for source in semiconductor_event["source_links"]}
     assert "https://www.bis.gov/ear" not in source_urls
     assert "https://www.bis.gov/regulations/ear/table-of-contents" in source_urls
+
+    home = json.loads((tmp_path / "v1" / "en" / "home.json").read_text())
+    home_payload = json.dumps(home["data"])
+    assert "Priority Event" not in home_payload
+    assert "Approved Events" not in home_payload
+    assert "Illustrative methodology" not in home_payload
+    assert "equal-weight seed" not in home_payload
+    assert "approval_status" not in home_payload
+    assert "included_objects" not in home_payload
+    assert all(item["source_url"] for item in home["data"]["calendar_preview"])
+    assert home["data"]["scenario_baskets"]
+    for basket in home["data"]["scenario_baskets"]:
+        assert basket["coverage_status"] in {"active", "partial"}
+        assert basket["evidence_count"] > 0
+        assert basket["last_observed_at"]
+        assert basket["primary_source_url"].startswith("https://")
+
+    scenario_paths = {
+        key: tmp_path / "v1" / "en" / "scenario-baskets" / f"{key}.json"
+        for key in ("ai-infra-capex", "energy-supply-shock", "asia-semiconductor-risk")
+    }
+    scenarios = {key: json.loads(path.read_text()) for key, path in scenario_paths.items()}
+    for scenario in scenarios.values():
+        payload = json.dumps(scenario["data"])
+        assert "tracker_sections" in scenario["data"]
+        assert "included_objects" not in scenario["data"]
+        assert "approval_status" not in scenario["data"]
+        assert "Illustrative methodology" not in payload
+        assert "equal-weight seed" not in payload
+        assert scenario["data"]["evidence_count"] > 0
+        assert scenario["data"]["primary_source_url"].startswith("https://")
+
+    ai_data = scenarios["ai-infra-capex"]["data"]
+    assert ai_data["external_tracker_url"] == build_seed_snapshots.SCENARIO_SOURCE_URLS["nextgig_ai_tracker"]
+    ai_source_urls = {
+        source["url"]
+        for section in ai_data["tracker_sections"]
+        for source in section["source_links"]
+    }
+    ai_metric_urls = {
+        row["source_url"]
+        for section in ai_data["tracker_sections"]
+        for row in section["metric_rows"]
+    }
+    assert build_seed_snapshots.SCENARIO_SOURCE_URLS["nextgig_ai_tracker"] in ai_source_urls
+    assert build_seed_snapshots.SCENARIO_SOURCE_URLS["eia_weekly_petroleum"] not in ai_metric_urls
+    assert build_seed_snapshots.SCENARIO_SOURCE_URLS["jodi_oil"] not in ai_metric_urls
+
+    energy_rows = [
+        row
+        for section in scenarios["energy-supply-shock"]["data"]["tracker_sections"]
+        for row in section["metric_rows"]
+    ]
+    assert any(row["source_url"] == build_seed_snapshots.SCENARIO_SOURCE_URLS["eia_weekly_petroleum"] for row in energy_rows)
+    assert any(row["source_url"] == build_seed_snapshots.SCENARIO_SOURCE_URLS["jodi_oil"] for row in energy_rows)
+    assert any(row["coverage_status"] == "coverage_gap" for row in energy_rows)
+
+    asia_data = scenarios["asia-semiconductor-risk"]["data"]
+    generated_at = datetime.fromisoformat(asia_data["freshness_timestamp"].replace("Z", "+00:00"))
+    cutoff = generated_at - timedelta(days=7)
+    asia_news = [
+        event
+        for section in asia_data["tracker_sections"]
+        for event in section["news_events"]
+    ]
+    for event in asia_news:
+        observed_at = datetime.fromisoformat(
+            str(event.get("last_seen_at") or event["published_at"]).replace("Z", "+00:00")
+        )
+        assert observed_at >= cutoff
+        event_topics = {topic["key"] for topic in event["topics"]}
+        assert event_topics & {"semiconductors", "trade_policy"}
+    asia_metric_urls = {
+        row["source_url"]
+        for section in asia_data["tracker_sections"]
+        for row in section["metric_rows"]
+    }
+    assert build_seed_snapshots.SCENARIO_SOURCE_URLS["eia_weekly_petroleum"] not in asia_metric_urls
+    assert build_seed_snapshots.SCENARIO_SOURCE_URLS["jodi_oil"] not in asia_metric_urls
 
     semiconductor = json.loads((tmp_path / "v1" / "en" / "sectors" / "semiconductors.json").read_text())
     semiconductor_data = semiconductor["data"]
