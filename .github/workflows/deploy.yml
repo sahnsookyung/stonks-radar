@@ -157,6 +157,7 @@ jobs:
               /opt/stonks-radar/apps/web/.generated-public \
               /opt/stonks-radar/apps/backend_elixir/deps \
               /opt/stonks-radar/apps/backend_elixir/_build \
+              /opt/stonks-radar/apps/backend_elixir/.elixir_ls \
               /opt/stonks-radar/.pytest_cache
             docker container prune -f || true
             docker builder prune -af || true
@@ -173,6 +174,9 @@ jobs:
             --exclude '.env' \
             --exclude '.env.*' \
             --exclude 'node_modules' \
+            --exclude 'apps/backend_elixir/deps' \
+            --exclude 'apps/backend_elixir/_build' \
+            --exclude 'apps/backend_elixir/.elixir_ls' \
             --exclude 'artifacts' \
             --exclude 'playwright-report' \
             --exclude 'test-results' \

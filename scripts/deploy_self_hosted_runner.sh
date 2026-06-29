@@ -53,6 +53,7 @@ rm -rf \
   "$deploy_dir/apps/web/.generated-public" \
   "$deploy_dir/apps/backend_elixir/deps" \
   "$deploy_dir/apps/backend_elixir/_build" \
+  "$deploy_dir/apps/backend_elixir/.elixir_ls" \
   "$deploy_dir/.pytest_cache"
 
 old_assets_dir="${STONKS_DEPLOY_OLD_ASSETS_DIR:-${deploy_dir%/}/.deploy-old-assets}"
@@ -76,6 +77,9 @@ if [[ "$(cd "$source_dir" && pwd -P)" != "$(cd "$deploy_dir" && pwd -P)" ]]; the
     --exclude '.env' \
     --exclude '.env.*' \
     --exclude 'node_modules' \
+    --exclude 'apps/backend_elixir/deps' \
+    --exclude 'apps/backend_elixir/_build' \
+    --exclude 'apps/backend_elixir/.elixir_ls' \
     --exclude 'artifacts' \
     --exclude 'playwright-report' \
     --exclude 'test-results' \

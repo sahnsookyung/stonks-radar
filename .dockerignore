@@ -22,6 +22,9 @@ __pycache__
 .secrets
 .DS_Store
 apps/web/.generated-public
+apps/backend_elixir/deps
+apps/backend_elixir/_build
+apps/backend_elixir/.elixir_ls
 .pytest_cache
 .ruff_cache
 .mypy_cache
