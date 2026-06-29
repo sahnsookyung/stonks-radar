@@ -42,6 +42,7 @@ services:
     restart: "no"
 
   web:
+    profiles: ["prod-web-image"]
     mem_limit: 256m
     cpus: 0.25
     restart: unless-stopped

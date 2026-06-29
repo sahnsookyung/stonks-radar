@@ -50,23 +50,12 @@ docker image prune -af || true
 rm -rf \
   "$deploy_dir/node_modules" \
   "$deploy_dir/apps/web/node_modules" \
+  "$deploy_dir/apps/web/dist" \
   "$deploy_dir/apps/web/.generated-public" \
   "$deploy_dir/apps/backend_elixir/deps" \
   "$deploy_dir/apps/backend_elixir/_build" \
   "$deploy_dir/apps/backend_elixir/.elixir_ls" \
   "$deploy_dir/.pytest_cache"
-
-old_assets_dir="${STONKS_DEPLOY_OLD_ASSETS_DIR:-${deploy_dir%/}/.deploy-old-assets}"
-rm -rf "$old_assets_dir"
-mkdir -p "$old_assets_dir"
-cleanup() {
-  rm -rf "$old_assets_dir"
-}
-trap cleanup EXIT
-
-if [[ -d "$deploy_dir/apps/web/dist/assets" ]]; then
-  cp -a "$deploy_dir/apps/web/dist/assets/." "$old_assets_dir/" || true
-fi
 
 if [[ "$(cd "$source_dir" && pwd -P)" != "$(cd "$deploy_dir" && pwd -P)" ]]; then
   rsync -az --delete \
@@ -87,28 +76,29 @@ if [[ "$(cd "$source_dir" && pwd -P)" != "$(cd "$deploy_dir" && pwd -P)" ]]; the
 fi
 
 mkdir -p "$deploy_dir/apps/web/dist/assets" "$deploy_dir/.secrets"
-cp -an "$old_assets_dir/." "$deploy_dir/apps/web/dist/assets/" || true
 install -m 600 "$env_file" "$deploy_dir/.env"
 install -m 600 "$env_file" "$deploy_dir/.secrets/stonks-radar.production.env"
 
 cd "$deploy_dir"
-docker compose "${compose_files[@]}" down --remove-orphans
-docker image rm -f stonks-radar-api stonks-radar-worker stonks-radar-fetch-sandbox stonks-radar-web || true
+docker compose "${compose_files[@]}" down --remove-orphans || true
+for volume in stonks-radar_snapshot-artifacts stonks-radar_published-snapshots; do
+  mountpoint="$(docker volume inspect "$volume" --format "{{ .Mountpoint }}" 2>/dev/null || true)"
+  if [[ -n "$mountpoint" && -d "$mountpoint" ]]; then
+    "${sudo_cmd[@]}" find "$mountpoint" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+  fi
+done
+docker image rm -f stonks-radar-api || true
 docker container prune -f || true
 docker builder prune -af || true
 docker image prune -f || true
 df -h / /opt /tmp || true
 
-for service in api worker fetch-sandbox web; do
-  COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 docker compose "${compose_files[@]}" build "$service"
-  docker builder prune -af || true
-done
-
-COMPOSE_PARALLEL_LIMIT=1 docker compose "${compose_files[@]}" up -d
+COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 docker compose "${compose_files[@]}" build api
 docker builder prune -af || true
+COMPOSE_PARALLEL_LIMIT=1 docker compose "${compose_files[@]}" up -d postgres valkey api caddy
 docker image prune -f || true
 df -h / /opt /tmp || true
-docker compose "${compose_files[@]}" run --rm -e PYTHONPATH=/app worker \
+docker compose "${compose_files[@]}" run --rm -e PYTHONPATH=/app/apps/api/src api \
   python scripts/publish_runtime_snapshots.py --generated-by github-actions-self-hosted
 
 public_hostname="$(awk -F= '$1=="PUBLIC_HOSTNAME"{print $2}' .env)"
