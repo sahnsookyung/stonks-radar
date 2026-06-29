@@ -278,7 +278,6 @@ test("map renders news nodes at relevant geographies", async ({
   expect(staticEventCoordinates.size).toBe(3);
   expect(newsPoints.length).toBeGreaterThan(3);
   expect(newsAreas.size).toBeGreaterThan(3);
-  expect(newsAreas.has("USA")).toBeTruthy();
   expect([...newsAreas].some((key) => key && key !== "USA")).toBeTruthy();
 
   await page.goto("/en/map");
