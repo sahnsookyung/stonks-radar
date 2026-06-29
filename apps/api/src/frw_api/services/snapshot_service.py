@@ -659,7 +659,7 @@ def _write_snapshot(
     snapshot["content_hash"] = _payload_hash(snapshot["data"])
     target = _safe_snapshot_write_path(output_root, rel)
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False) + "\n")
+    target.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False) + "\n")  # NOSONAR - target is root-checked.
     _validate_snapshot_file(target)
     manifest["objects"].setdefault(object_key, {})[locale] = f"public/{rel.as_posix()}"
     files.append(target)
