@@ -36,6 +36,11 @@ jobs:
         with:
           python-version: "3.12"
 
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "29.0"
+          elixir-version: "1.20.2"
+
       - uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
@@ -89,6 +94,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "29.0"
+          elixir-version: "1.20.2"
 
       - uses: astral-sh/setup-uv@v5
 
