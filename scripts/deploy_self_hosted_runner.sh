@@ -43,7 +43,13 @@ elif [[ ! -w "$deploy_dir" ]]; then
   "${sudo_cmd[@]}" chown -R "$(id -u):$(id -g)" "$deploy_dir"
 fi
 
-old_assets_dir="$(mktemp -d)"
+docker container prune -f || true
+docker builder prune -af || true
+docker image prune -af || true
+
+old_assets_dir="${STONKS_DEPLOY_OLD_ASSETS_DIR:-${deploy_dir%/}-old-assets}"
+rm -rf "$old_assets_dir"
+mkdir -p "$old_assets_dir"
 cleanup() {
   rm -rf "$old_assets_dir"
 }
