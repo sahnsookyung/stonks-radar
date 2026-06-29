@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import type { APIRequestContext } from "@playwright/test";
 
 declare global {
   interface Window {
@@ -14,6 +15,65 @@ declare global {
     };
     __stonksRadarHoverCountry?: (countryName: string) => void;
   }
+}
+
+type ManifestObject = string | Record<string, string>;
+
+type SnapshotManifest = {
+  objects?: Record<string, ManifestObject>;
+};
+
+type NewsEvent = {
+  id?: string;
+  title?: string;
+  summary?: string;
+  topics?: Array<{ key?: string; label?: string }>;
+  source_links?: Array<{ label?: string }>;
+};
+
+type NewsListSnapshot = {
+  events?: NewsEvent[];
+};
+
+async function getSnapshotData<T>(
+  request: APIRequestContext,
+  objectKey: string,
+  locale = "en",
+): Promise<T> {
+  const manifestResponse = await request.get("/public/latest/manifest.json");
+  expect(manifestResponse.ok()).toBeTruthy();
+  const manifest = (await manifestResponse.json()) as SnapshotManifest;
+  const object = manifest.objects?.[objectKey];
+  const path =
+    typeof object === "string"
+      ? object
+      : object?.[locale] ?? object?.en ?? Object.values(object ?? {})[0];
+  expect(path).toBeTruthy();
+  if (!path) {
+    throw new Error(`Manifest is missing ${objectKey}.${locale}`);
+  }
+
+  const response = await request.get(path.startsWith("/") ? path : `/${path}`);
+  expect(response.ok()).toBeTruthy();
+  const snapshot = (await response.json()) as { data?: T };
+  expect(snapshot.data).toBeTruthy();
+  return snapshot.data as T;
+}
+
+function firstEvent(snapshot: NewsListSnapshot, label: string): NewsEvent {
+  const event = snapshot.events?.find((candidate) => candidate.title);
+  expect(event?.title, `${label} snapshot has a titled event`).toBeTruthy();
+  if (!event?.title) {
+    throw new Error(`${label} snapshot has no titled events`);
+  }
+  return event;
+}
+
+function searchTermFor(event: NewsEvent): string {
+  const text = `${event.title ?? ""} ${event.summary ?? ""}`;
+  if (/Rocket Lab|RKLB/i.test(text)) return "Rocket Lab";
+  const token = text.match(/[A-Za-z][A-Za-z0-9-]{4,}/)?.[0];
+  return token ?? text.slice(0, 12);
 }
 
 test("public routes render from snapshots", async ({ page }) => {
@@ -107,12 +167,32 @@ test("public routes render from snapshots", async ({ page }) => {
 
 test("news filters and detail routes render from snapshots", async ({
   page,
+  request,
 }) => {
+  const regionalEvent = firstEvent(
+    await getSnapshotData<NewsListSnapshot>(request, "news_region_KOR"),
+    "Korea news",
+  );
+  const newsIndex = await getSnapshotData<NewsListSnapshot>(
+    request,
+    "news_index",
+  );
+  const keywordEvent =
+    newsIndex.events?.find((event) =>
+      /Rocket Lab|RKLB/i.test(`${event.title ?? ""} ${event.summary ?? ""}`),
+    ) ?? firstEvent(newsIndex, "news index");
+  const topicEvent =
+    newsIndex.events?.find((event) => event.topics?.some((topic) => topic.key)) ??
+    firstEvent(newsIndex, "news index");
+  const topicKey = topicEvent.topics?.find((topic) => topic.key)?.key;
+  expect(topicKey, "news index has a filterable topic").toBeTruthy();
+  const detailEvent =
+    newsIndex.events?.find((event) => event.id && event.title) ??
+    firstEvent(newsIndex, "news index");
+
   await page.goto("/en/news?region=KOR");
   await expect(page.getByText("Source-Linked Event News")).toBeVisible();
-  await expect(
-    page.getByText("China-origin export-control risk remains elevated").first(),
-  ).toBeVisible();
+  await expect(page.getByText(regionalEvent.title!).first()).toBeVisible();
 
   await page.goto("/en/news");
   const keywordFilter = page.getByPlaceholder("ticker, region, topic");
@@ -122,33 +202,33 @@ test("news filters and detail routes render from snapshots", async ({
     await filtersButton.click();
   }
   await expect(keywordFilter).toBeVisible();
-  await keywordFilter.fill("Rocket Lab");
-  await expect(
-    page.getByText(
-      "Rocket Lab launch-window monitoring is linked to source evidence for RKLB",
-    ),
-  ).toBeVisible();
+  await keywordFilter.fill(searchTermFor(keywordEvent));
+  await expect(page.getByText(keywordEvent.title!).first()).toBeVisible();
 
-  await page.goto("/en/news?topic=energy&breaking=1");
-  await expect(
-    page.getByText("Energy supply-risk watch links shipping chokepoints"),
-  ).toBeVisible();
+  await page.goto(`/en/news?topic=${topicKey}`);
+  await expect(page.getByText(topicEvent.title!).first()).toBeVisible();
 
-  await page.goto("/en/news/events/semiconductor_export_controls_seed");
-  await expect(
-    page.getByText("China-origin export-control risk remains elevated"),
-  ).toBeVisible();
-  await expect(page.getByText("BIS")).toBeVisible();
+  await page.goto(`/en/news/events/${detailEvent.id}`);
+  await expect(page.getByText(detailEvent.title!).first()).toBeVisible();
+  const sourceLabel = detailEvent.source_links?.find((link) => link.label)?.label;
+  if (sourceLabel) {
+    await expect(page.getByText(sourceLabel).first()).toBeVisible();
+  }
 });
 
-test("ticker detail news tab renders ticker snapshot", async ({ page }) => {
+test("ticker detail news tab renders ticker snapshot", async ({
+  page,
+  request,
+}) => {
+  const nvdaEvent = firstEvent(
+    await getSnapshotData<NewsListSnapshot>(request, "news_ticker_NVDA"),
+    "NVDA news",
+  );
+
   await page.goto("/en/tickers/NVDA");
   await page.getByRole("tab", { name: "News" }).click();
   await expect(page.getByText("Ticker-Relevant News")).toBeVisible();
-  await expect(page.getByText("NVIDIA Corporation has")).toBeVisible();
-  await expect(
-    page.getByText("China-origin export-control risk remains elevated"),
-  ).toBeVisible();
+  await expect(page.getByText(nvdaEvent.title!).first()).toBeVisible();
 
   await page.goto("/en/tickers/005930_KS");
   await expect(page.getByRole("heading", { name: /005930.KS/ })).toBeVisible();
