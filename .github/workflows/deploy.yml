@@ -164,6 +164,10 @@ jobs:
             docker container prune -f || true
             docker builder prune -af || true
             docker image prune -af || true
+            sudo apt-get clean || true
+            sudo journalctl --vacuum-size=100M || true
+            sudo find /var/log -type f \( -name "*.gz" -o -name "*.1" -o -name "*.old" \) -delete || true
+            sudo find /tmp -mindepth 1 -maxdepth 1 -exec rm -rf {} + || true
             for volume in stonks-radar_snapshot-artifacts stonks-radar_published-snapshots; do
               mountpoint=$(docker volume inspect "$volume" --format "{{ .Mountpoint }}" 2>/dev/null || true)
               if [ -n "$mountpoint" ] && [ -d "$mountpoint" ]; then
@@ -220,7 +224,11 @@ jobs:
              docker image rm -f stonks-radar-api || true
              docker container prune -f || true
              docker builder prune -af || true
-             docker image prune -f || true
+             docker image prune -af || true
+             sudo apt-get clean || true
+             sudo journalctl --vacuum-size=100M || true
+             sudo find /var/log -type f \( -name "*.gz" -o -name "*.1" -o -name "*.old" \) -delete || true
+             sudo find /tmp -mindepth 1 -maxdepth 1 -exec rm -rf {} + || true
              df -h / /opt /tmp || true
              COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml build api
              docker builder prune -af || true
