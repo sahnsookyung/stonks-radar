@@ -198,35 +198,19 @@ export function EventMap({
         (globalThis.window as EventMapDebugWindow).__stonksRadarMap = mapRef.current;
       }
       mapRef.current.on("load", () => {
-        mapRef.current?.fitBounds(
-          [
-            [-180, -58],
-            [180, 78]
-          ],
-          { padding: 24, duration: 0 }
-        );
-        mapRef.current?.resize();
-        wireCountryHover(mapRef.current, setHoveredCountry, hoveredCountryRef);
-        if (shouldExposeMapDebugHook()) {
-          (globalThis.window as EventMapDebugWindow).__stonksRadarHoverCountry = (countryName: string) => {
-            const debugMap = mapRef.current;
-            if (!debugMap || !countryName) return;
-            applyCountryHover(debugMap, setHoveredCountry, hoveredCountryRef, countryName, [
-              Math.round(debugMap.getCanvas().clientWidth * 0.5),
-              Math.round(debugMap.getCanvas().clientHeight * 0.5)
-            ]);
-          };
-        }
-        syncNewsMapPoints(maplibre, mapRef.current, mapPointsRef.current, onMapPointSelectRef);
-        syncMarkers(maplibre, mapRef.current, markerRefs, mapPointsRef.current.length ? [] : eventsRef.current);
-        const readyMap = mapRef.current;
-        const markReady = () => {
-          if (disposed || !readyMap || readyMap !== mapRef.current) return;
-          readyMap.resize();
-          setIsReady(true);
-        };
-        readyMap?.once("idle", markReady);
-        readyFallbackTimer = globalThis.window.setTimeout(markReady, 1200);
+        readyFallbackTimer = handleInitialMapLoad({
+          maplibre,
+          map: mapRef.current,
+          mapRef,
+          markerRefs,
+          eventsRef,
+          mapPointsRef,
+          onMapPointSelectRef,
+          hoveredCountryRef,
+          setHoveredCountry,
+          setIsReady,
+          isDisposed: () => disposed
+        });
       });
     });
     return () => {
@@ -327,6 +311,23 @@ type HoveredCountry = {
   y: number;
 };
 
+type HoveredCountrySetter = (country: HoveredCountry | null) => void;
+type ReadySetter = (ready: boolean) => void;
+
+type InitialMapLoadOptions = Readonly<{
+  maplibre: typeof maplibregl;
+  map: maplibregl.Map | null;
+  mapRef: MutableRef<maplibregl.Map | null>;
+  markerRefs: MutableRef<maplibregl.Marker[]>;
+  eventsRef: MutableRef<PublicEvent[]>;
+  mapPointsRef: MutableRef<NewsMapPoint[]>;
+  onMapPointSelectRef: MutableRef<((eventId: string) => void) | undefined>;
+  hoveredCountryRef: MutableRef<string | null>;
+  setHoveredCountry: HoveredCountrySetter;
+  setIsReady: ReadySetter;
+  isDisposed: () => boolean;
+}>;
+
 const NEWS_SOURCE_ID = "breaking-news-points";
 const NEWS_CLUSTER_LAYER_ID = "breaking-news-clusters";
 const NEWS_CLUSTER_COUNT_LAYER_ID = "breaking-news-cluster-count";
@@ -342,6 +343,66 @@ function cancelDeferredLoad(handle: number) {
     return;
   }
   globalThis.clearTimeout(handle);
+}
+
+function handleInitialMapLoad({
+  maplibre,
+  map,
+  mapRef,
+  markerRefs,
+  eventsRef,
+  mapPointsRef,
+  onMapPointSelectRef,
+  hoveredCountryRef,
+  setHoveredCountry,
+  setIsReady,
+  isDisposed
+}: InitialMapLoadOptions) {
+  if (!map) return null;
+  map.fitBounds(
+    [
+      [-180, -58],
+      [180, 78]
+    ],
+    { padding: 24, duration: 0 }
+  );
+  map.resize();
+  wireCountryHover(map, setHoveredCountry, hoveredCountryRef);
+  exposeDebugCountryHover(mapRef, setHoveredCountry, hoveredCountryRef);
+  syncNewsMapPoints(maplibre, map, mapPointsRef.current, onMapPointSelectRef);
+  syncMarkers(maplibre, map, markerRefs, mapPointsRef.current.length ? [] : eventsRef.current);
+  return scheduleMapReady(map, mapRef, setIsReady, isDisposed);
+}
+
+function exposeDebugCountryHover(
+  mapRef: MutableRef<maplibregl.Map | null>,
+  setHoveredCountry: HoveredCountrySetter,
+  hoveredCountryRef: MutableRef<string | null>
+) {
+  if (!shouldExposeMapDebugHook()) return;
+  (globalThis.window as EventMapDebugWindow).__stonksRadarHoverCountry = (countryName: string) => {
+    const debugMap = mapRef.current;
+    if (!debugMap || !countryName) return;
+    applyCountryHover(debugMap, setHoveredCountry, hoveredCountryRef, countryName, [
+      Math.round(debugMap.getCanvas().clientWidth * 0.5),
+      Math.round(debugMap.getCanvas().clientHeight * 0.5)
+    ]);
+  };
+}
+
+function scheduleMapReady(
+  readyMap: maplibregl.Map,
+  mapRef: MutableRef<maplibregl.Map | null>,
+  setIsReady: ReadySetter,
+  isDisposed: () => boolean
+) {
+  const markReady = () => {
+    if (isDisposed() || readyMap !== mapRef.current) return;
+    readyMap.resize();
+    setIsReady(true);
+  };
+  readyMap.once("idle", markReady);
+  return globalThis.window.setTimeout(markReady, 1200);
 }
 
 function wireCountryHover(
@@ -466,7 +527,7 @@ function syncNewsMapPoints(
   mapPoints: NewsMapPoint[],
   onMapPointSelectRef: MutableRef<((eventId: string) => void) | undefined>
 ) {
-  if (!map || !map.isStyleLoaded()) return;
+  if (!map?.isStyleLoaded()) return;
   ensureNewsPointLayers(maplibre, map, onMapPointSelectRef);
   const source = map.getSource(NEWS_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
   source?.setData(createNewsFeatureCollection(mapPoints));

@@ -107,37 +107,9 @@ def _alias_matches(text: str, alias: str) -> bool:
 def _validate_registry(payload: dict[str, Any]) -> dict[str, Any]:
     areas = []
     for raw in payload.get("areas", []):
-        if not isinstance(raw, dict):
-            continue
-        key = str(raw.get("key") or "").upper().strip()
-        name = str(raw.get("name") or "").strip()
-        kind = str(raw.get("kind") or "country")
-        aliases = [str(alias).lower().strip() for alias in raw.get("aliases", []) if str(alias).strip()]
-        themes = [str(theme).strip() for theme in raw.get("market_themes", []) if str(theme).strip()]
-        try:
-            latitude = float(raw.get("latitude"))
-            longitude = float(raw.get("longitude"))
-            weight = int(raw.get("base_market_weight") or 50)
-        except (TypeError, ValueError):
-            continue
-        if not key or not name or not aliases:
-            continue
-        if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
-            continue
-        if abs(latitude) < 0.0001 and abs(longitude) < 0.0001:
-            continue
-        areas.append(
-            {
-                "key": key,
-                "kind": "chokepoint" if kind == "chokepoint" else "country",
-                "name": name,
-                "aliases": aliases,
-                "latitude": latitude,
-                "longitude": longitude,
-                "base_market_weight": max(0, min(100, weight)),
-                "market_themes": themes,
-            }
-        )
+        area = _validated_registry_area(raw)
+        if area is not None:
+            areas.append(area)
     return {
         "version": int(payload.get("version") or 1),
         "scoring_version": str(payload.get("scoring_version") or "geo-priority-v1"),
@@ -145,6 +117,44 @@ def _validate_registry(payload: dict[str, Any]) -> dict[str, Any]:
         "areas": areas,
         "query_packs": payload.get("query_packs", []),
     }
+
+
+def _validated_registry_area(raw: Any) -> dict[str, Any] | None:
+    if not isinstance(raw, dict):
+        return None
+    key = str(raw.get("key") or "").upper().strip()
+    name = str(raw.get("name") or "").strip()
+    aliases = [str(alias).lower().strip() for alias in raw.get("aliases", []) if str(alias).strip()]
+    if not key or not name or not aliases:
+        return None
+    coordinates = _registry_coordinates(raw)
+    if coordinates is None:
+        return None
+    latitude, longitude, weight = coordinates
+    return {
+        "key": key,
+        "kind": "chokepoint" if str(raw.get("kind") or "country") == "chokepoint" else "country",
+        "name": name,
+        "aliases": aliases,
+        "latitude": latitude,
+        "longitude": longitude,
+        "base_market_weight": max(0, min(100, weight)),
+        "market_themes": [str(theme).strip() for theme in raw.get("market_themes", []) if str(theme).strip()],
+    }
+
+
+def _registry_coordinates(raw: dict[str, Any]) -> tuple[float, float, int] | None:
+    try:
+        latitude = float(raw.get("latitude"))
+        longitude = float(raw.get("longitude"))
+        weight = int(raw.get("base_market_weight") or 50)
+    except (TypeError, ValueError):
+        return None
+    if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+        return None
+    if abs(latitude) < 0.0001 and abs(longitude) < 0.0001:
+        return None
+    return latitude, longitude, weight
 
 
 def _empty_registry() -> dict[str, Any]:

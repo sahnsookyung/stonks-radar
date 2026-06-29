@@ -28,6 +28,7 @@ BREAKING_MARKET_OBSERVED_MAX_AGE = timedelta(minutes=20)
 BREAKING_MARKET_FUTURE_SKEW = timedelta(minutes=10)
 BREAKING_MARKET_MAX_POINTS = 250
 BREAKING_MARKET_MAX_JSON_BYTES = 250_000
+UTC_OFFSET_SUFFIX = "+00:00"
 
 
 def news_symbol_key(symbol: str) -> str:
@@ -423,15 +424,10 @@ def _breaking_market_projection(items: list[dict[str, Any]], *, generated_label:
 
 
 def _breaking_market_event(item: dict[str, Any], now: datetime) -> dict[str, Any] | None:
-    source_published_at = _parse_iso(str(item.get("source_published_at") or item.get("published_at") or ""))
-    observed_at = _parse_iso(str(item.get("observed_at") or item.get("last_seen_at") or ""))
-    if source_published_at is None or observed_at is None:
+    timestamps = _breaking_event_timestamps(item, now)
+    if timestamps is None:
         return None
-    if source_published_at - now > BREAKING_MARKET_FUTURE_SKEW or observed_at - now > BREAKING_MARKET_FUTURE_SKEW:
-        return None
-    age = now - source_published_at
-    if age < timedelta(0) or age > BREAKING_MARKET_MAX_AGE:
-        return None
+    source_published_at, observed_at = timestamps
     label = _breaking_label(item, now, source_published_at, observed_at)
     if label == "stale":
         return None
@@ -444,14 +440,9 @@ def _breaking_market_event(item: dict[str, Any], now: datetime) -> dict[str, Any
     source_url = _primary_source_url(item)
     event_id = str(item["id"])
     geo_confidence = max(point["geo_confidence"] for point in geo_points)
-    score_reason_codes = sorted(
-        {
-            *[code for point in geo_points for code in point["score_reason_codes"]],
-            *_urgency_reason_codes(item, label),
-        }
-    )
-    source_published_iso = source_published_at.isoformat().replace("+00:00", "Z")
-    observed_iso = observed_at.isoformat().replace("+00:00", "Z")
+    score_reason_codes = _breaking_score_reason_codes(item, geo_points, label)
+    source_published_iso = _utc_iso_z(source_published_at)
+    observed_iso = _utc_iso_z(observed_at)
     severity = _severity(item.get("severity"))
     event = {
         "event_id": event_id,
@@ -515,6 +506,36 @@ def _breaking_market_event(item: dict[str, Any], now: datetime) -> dict[str, Any
         event_points.append(event_point)
     event["geo_points"] = event_points
     return event
+
+
+def _breaking_event_timestamps(item: dict[str, Any], now: datetime) -> tuple[datetime, datetime] | None:
+    source_published_at = _parse_iso(str(item.get("source_published_at") or item.get("published_at") or ""))
+    observed_at = _parse_iso(str(item.get("observed_at") or item.get("last_seen_at") or ""))
+    if source_published_at is None or observed_at is None:
+        return None
+    if source_published_at - now > BREAKING_MARKET_FUTURE_SKEW or observed_at - now > BREAKING_MARKET_FUTURE_SKEW:
+        return None
+    age = now - source_published_at
+    if age < timedelta(0) or age > BREAKING_MARKET_MAX_AGE:
+        return None
+    return source_published_at, observed_at
+
+
+def _breaking_score_reason_codes(
+    item: dict[str, Any],
+    geo_points: list[dict[str, Any]],
+    label: str,
+) -> list[str]:
+    return sorted(
+        {
+            *[code for point in geo_points for code in point["score_reason_codes"]],
+            *_urgency_reason_codes(item, label),
+        }
+    )
+
+
+def _utc_iso_z(value: datetime) -> str:
+    return value.isoformat().replace(UTC_OFFSET_SUFFIX, "Z")
 
 
 def _breaking_geo_points(item: dict[str, Any]) -> list[dict[str, Any]]:

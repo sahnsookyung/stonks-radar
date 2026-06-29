@@ -42,6 +42,7 @@ from frw_api.services.fetch_policy import is_blocked_ip
 from frw_api.services.safe_fetch import SafeFetchError, safe_fetch_bytes
 
 SHA256_PREFIX = "sha256:"
+NEWS_DEDUPE_PREFIX = "news:"
 GDELT_LASTUPDATE_URL = "http://data.gdeltproject.org/gdeltv2/lastupdate.txt"
 GDELT_DATA_HOST_ALLOWLIST = frozenset({"data.gdeltproject.org"})
 GDELT_EXPORT_SUFFIX = ".export.CSV.zip"
@@ -495,17 +496,7 @@ def _parse_gdelt_event_rows(
                     "gdelt_event_code": event_code,
                     "gdelt_quad_class": quad_class,
                     "geo_points": geo_points,
-                    "dedupe_key": "news:"
-                    + hashlib.sha256(
-                        "|".join(
-                            [
-                                profile.source_key,
-                                row[0].strip(),
-                                source_url,
-                                selected["timestamp"],
-                            ]
-                        ).encode()
-                    ).hexdigest(),
+                    "dedupe_key": _news_dedupe_key(profile.source_key, row[0].strip(), source_url, selected["timestamp"]),
                 },
             )
         )
@@ -523,46 +514,55 @@ def _parse_gdelt_gkg_rows(
     for row in rows:
         if len(documents) >= max_documents:
             break
-        if len(row) < 16:
-            continue
-        record_id = row[0].strip()
-        source_domain = row[3].strip()
-        document_url = row[4].strip()
-        if not _is_public_http_url(document_url):
-            continue
-        themes = _gdelt_gkg_values(row[7] if len(row) > 7 else "")
-        locations = _gdelt_gkg_locations(row[9] if len(row) > 9 else "")
-        text_blob = " ".join([document_url, source_domain, " ".join(themes), " ".join(locations)])
-        if not _gdelt_bulk_relevant(text_blob):
-            continue
-        geo_points = match_geo_points(texts=(text_blob,))
-        if not geo_points:
-            continue
-        title = _gdelt_gkg_title(themes, locations, source_domain)
-        documents.append(
-            _normalized_document_dict(
-                profile,
-                {
-                    "title": title,
-                    "url": document_url,
-                    "canonical_url": document_url,
-                    "snippet": _gdelt_gkg_snippet(themes, locations),
-                    "published_at": _gdelt_file_datetime(_first_nonempty(row[1], selected["timestamp"])),
-                    "source_region": locations[0] if locations else None,
-                    "language": "en",
-                    "gdelt_file_url": selected["url"],
-                    "gdelt_file_timestamp": selected["timestamp"],
-                    "gdelt_record_id": record_id,
-                    "gdelt_source_domain": source_domain,
-                    "geo_points": geo_points,
-                    "dedupe_key": "news:"
-                    + hashlib.sha256(
-                        "|".join([profile.source_key, record_id, document_url]).encode()
-                    ).hexdigest(),
-                },
-            )
-        )
+        document = _gdelt_gkg_document(profile, row, selected=selected)
+        if document is not None:
+            documents.append(document)
     return documents
+
+
+def _gdelt_gkg_document(
+    profile: SourceProfile,
+    row: list[str],
+    *,
+    selected: dict[str, str],
+) -> dict[str, Any] | None:
+    if len(row) < 16:
+        return None
+    record_id = row[0].strip()
+    source_domain = row[3].strip()
+    document_url = row[4].strip()
+    if not _is_public_http_url(document_url):
+        return None
+    themes = _gdelt_gkg_values(row[7] if len(row) > 7 else "")
+    locations = _gdelt_gkg_locations(row[9] if len(row) > 9 else "")
+    text_blob = " ".join([document_url, source_domain, " ".join(themes), " ".join(locations)])
+    if not _gdelt_bulk_relevant(text_blob):
+        return None
+    geo_points = match_geo_points(texts=(text_blob,))
+    if not geo_points:
+        return None
+    return _normalized_document_dict(
+        profile,
+        {
+            "title": _gdelt_gkg_title(themes, locations, source_domain),
+            "url": document_url,
+            "canonical_url": document_url,
+            "snippet": _gdelt_gkg_snippet(themes, locations),
+            "published_at": _gdelt_file_datetime(_first_nonempty(row[1], selected["timestamp"])),
+            "source_region": locations[0] if locations else None,
+            "language": "en",
+            "gdelt_file_url": selected["url"],
+            "gdelt_file_timestamp": selected["timestamp"],
+            "gdelt_record_id": record_id,
+            "gdelt_source_domain": source_domain,
+            "geo_points": geo_points,
+            "dedupe_key": _news_dedupe_key(profile.source_key, record_id, document_url),
+        },
+    )
+
+
+def _news_dedupe_key(*parts: str) -> str:
+    return NEWS_DEDUPE_PREFIX + hashlib.sha256("|".join(parts).encode()).hexdigest()
 
 
 def _parse_sec_submissions_json(  # NOSONAR - SEC recent-filings arrays are parsed in one aligned pass.
@@ -755,17 +755,12 @@ def _normalized_document_dict(profile: SourceProfile, payload: dict[str, Any]) -
         "entity_type": profile.entity_type,
         "fetch_profile": profile.fetch_profile,
         "dedupe_key": str(payload.get("dedupe_key") or "")
-        or "news:"
-        + hashlib.sha256(
-            "|".join(
-                [
-                    profile.source_key,
-                    normalized.canonical_url,
-                    normalized.title,
-                    normalized.published_at.isoformat() if normalized.published_at else "",
-                ]
-            ).encode()
-        ).hexdigest(),
+        or _news_dedupe_key(
+            profile.source_key,
+            normalized.canonical_url,
+            normalized.title,
+            normalized.published_at.isoformat() if normalized.published_at else "",
+        ),
         **preserved_metadata,
     }
 

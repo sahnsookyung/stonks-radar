@@ -13,9 +13,12 @@ COPY apps/backend_elixir ./
 RUN mix deps.compile && mix compile && mix release
 
 FROM alpine:3.20 AS app
-RUN apk add --no-cache libstdc++ openssl ncurses-libs
+RUN apk add --no-cache libstdc++ ncurses-libs openssl \
+    && addgroup -S stonks \
+    && adduser -S -G stonks -h /app -s /sbin/nologin stonks
 WORKDIR /app
-COPY --from=build /app/apps/backend_elixir/_build/prod/rel/stonks_backend ./
+COPY --from=build --chown=stonks:stonks /app/apps/backend_elixir/_build/prod/rel/stonks_backend ./
 
 ENV HOME=/app
+USER stonks
 CMD ["bin/stonks_backend", "start"]

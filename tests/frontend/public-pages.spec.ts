@@ -154,8 +154,8 @@ test("portfolio ticker autocomplete resolves identifiers locally and exposes hel
 
   const search = page.getByRole("combobox", { name: "Add holding" });
   await search.fill("US67066G1040");
-  await expect(page.getByRole("option", { name: /NVDA/ })).toBeVisible();
-  await page.getByRole("option", { name: /NVDA/ }).click();
+  await expect(page.getByRole("button", { name: /NVDA/ })).toBeVisible();
+  await page.getByRole("button", { name: /NVDA/ }).click();
   await expect(page.getByText("NVDA").first()).toBeVisible();
 
   await search.fill("AAPL");

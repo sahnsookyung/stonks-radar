@@ -1675,8 +1675,8 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
     loading: boolean;
     results: InstrumentSearchResult[];
     error: string | null;
-    freshness?: InstrumentSearchApiResponse["dataFreshness"];
-  }>({ query: "", loading: false, results: [], error: null });
+    freshness: InstrumentSearchApiResponse["dataFreshness"];
+  }>({ query: "", loading: false, results: [], error: null, freshness: undefined });
   const [manualDraft, setManualDraft] = useState<ManualHoldingDraft | null>(null);
   const trimmedQuery = searchTerm.trim();
   const isSymbolLikeQuery = /^[-.A-Za-z0-9]+$/.test(trimmedQuery);
@@ -1706,7 +1706,7 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
 
   useEffect(() => {
     if (!isSearchReady || !debouncedSearchTerm) {
-      setApiSearch({ query: "", loading: false, results: [], error: null });
+      setApiSearch({ query: "", loading: false, results: [], error: null, freshness: undefined });
       return;
     }
     const controller = new AbortController();
@@ -1879,7 +1879,6 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
   const canRequestReview = isSearchReady && !searchError && !isSearching && !isApiSearching && !hasSearchResults && !hasHeldSearchResults && trimmedQuery.length > 0;
   const shouldShowNoResults = canRequestReview;
   const manualDraftErrors = manualDraft ? validateManualDraft(manualDraft) : [];
-  const activeResultId = activeResult ? `${resultListId}-option-${activeResultIndex}` : undefined;
   const requestCurrentSelectionForReview = () => {
     if (!canRequestReview) return;
     requestInstrumentReview(trimmedQuery);
@@ -2062,7 +2061,6 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
               aria-autocomplete="list"
               aria-expanded={hasSearchResults}
               aria-controls={hasSearchResults ? resultListId : undefined}
-              aria-activedescendant={activeResultId}
               placeholder="AAPL / Apple / US0378331005"
               maxLength={INSTRUMENT_SEARCH_QUERY_MAX_LENGTH}
               value={searchTerm}
@@ -2087,7 +2085,6 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
           {hasSearchResults && (
             <div
               id={resultListId}
-              role="listbox"
               className="mt-2 max-h-80 overflow-auto rounded-md border border-line bg-panelAlt"
               aria-label="Instrument search results"
               aria-live="polite"
@@ -2097,8 +2094,7 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
                   id={`${resultListId}-option-${index}`}
                   key={`${result.instrumentId}-${result.listingId}`}
                   type="button"
-                  role="option"
-                  aria-selected={index === activeResultIndex}
+                  aria-current={index === activeResultIndex ? "true" : undefined}
                   className={`block w-full border-b border-line px-3 py-3 text-left text-sm last:border-b-0 ${
                     index === activeResultIndex ? "bg-accentSoft text-ink" : "hover:bg-panel"
                   }`}

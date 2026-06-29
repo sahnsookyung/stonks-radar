@@ -59,6 +59,7 @@ PROHIBITED_PUBLIC_FIELDS = {
 MANIFEST_FILENAME = "manifest.json"
 JSON_FILE_GLOB = "*.json"
 SHA256_PREFIX = "sha256:"
+PUBLIC_SNAPSHOT_PREFIX = "public/"
 PUBLIC_LATEST_MANIFEST_KEY = f"public/latest/{MANIFEST_FILENAME}"
 LATEST_MANIFEST_PATH = Path("latest") / MANIFEST_FILENAME
 
@@ -152,27 +153,44 @@ def _preserve_packaged_breaking_market_seed(public_root: Path, generated_at: dat
     for locale in locales:
         if not isinstance(locale, str):
             continue
-        packaged_breaking = _breaking_market_projection_from_seed(WEB_PUBLIC, packaged_manifest, "home", locale)
-        fresh_packaged = (
-            _fresh_breaking_market_projection(packaged_breaking, generated_at)
-            if isinstance(packaged_breaking, dict)
-            else None
+        _preserve_packaged_breaking_market_locale(
+            public_root,
+            runtime_manifest=runtime_manifest,
+            packaged_manifest=packaged_manifest,
+            locale=locale,
+            generated_at=generated_at,
         )
-        if fresh_packaged is None:
+
+
+def _preserve_packaged_breaking_market_locale(
+    public_root: Path,
+    *,
+    runtime_manifest: dict[str, Any],
+    packaged_manifest: dict[str, Any],
+    locale: str,
+    generated_at: datetime,
+) -> None:
+    packaged_breaking = _breaking_market_projection_from_seed(WEB_PUBLIC, packaged_manifest, "home", locale)
+    fresh_packaged = (
+        _fresh_breaking_market_projection(packaged_breaking, generated_at)
+        if isinstance(packaged_breaking, dict)
+        else None
+    )
+    if fresh_packaged is None:
+        return
+    for object_key in ("home", "map_events"):
+        runtime_path = _seed_manifest_path(public_root, runtime_manifest, object_key, locale)
+        if runtime_path is None or not runtime_path.exists():
             continue
-        for object_key in ("home", "map_events"):
-            runtime_path = _seed_manifest_path(public_root, runtime_manifest, object_key, locale)
-            if runtime_path is None or not runtime_path.exists():
-                continue
-            snapshot = json.loads(runtime_path.read_text())
-            data = snapshot.get("data")
-            if not isinstance(data, dict):
-                continue
-            current_breaking = data.get("breaking_market_map")
-            if isinstance(current_breaking, dict) and _fresh_breaking_market_projection(current_breaking, generated_at):
-                continue
-            _set_breaking_market_projection(snapshot, fresh_packaged)
-            runtime_path.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False) + "\n")
+        snapshot = json.loads(runtime_path.read_text())
+        data = snapshot.get("data")
+        if not isinstance(data, dict):
+            continue
+        current_breaking = data.get("breaking_market_map")
+        if isinstance(current_breaking, dict) and _fresh_breaking_market_projection(current_breaking, generated_at):
+            continue
+        _set_breaking_market_projection(snapshot, fresh_packaged)
+        runtime_path.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False) + "\n")
 
 
 def _breaking_market_projection_from_seed(
@@ -207,7 +225,11 @@ def _seed_manifest_path(
     raw_path = locale_paths.get(locale)
     if not isinstance(raw_path, str) or not raw_path:
         return None
-    return public_root / raw_path.removeprefix("public/")
+    return _public_snapshot_path(public_root, raw_path)
+
+
+def _public_snapshot_path(root: Path, raw_path: str) -> Path:
+    return root / raw_path.removeprefix(PUBLIC_SNAPSHOT_PREFIX)
 
 
 def list_snapshot_candidates(db: Session) -> list[dict[str, Any]]:
@@ -356,7 +378,7 @@ def _snapshot_tree_context(
 
 
 def _seed_snapshot(seed_public_root: Path, source_path: str, context: SnapshotTreeContext) -> dict[str, Any]:
-    seed_path = seed_public_root / source_path.removeprefix("public/")
+    seed_path = _public_snapshot_path(seed_public_root, source_path)
     snapshot = json.loads(seed_path.read_text())
     snapshot["snapshot_version"] = context.version
     snapshot["generated_at"] = _iso(context.generated_at)
@@ -671,25 +693,8 @@ def _write_news_event_snapshots(
 
 
 def _published_home_macro_tiles() -> dict[str, dict[str, dict[str, Any]]]:
-    manifest_path = PUBLISHED_ROOT / LATEST_MANIFEST_PATH
-    if not manifest_path.exists():
-        return {}
-    try:
-        manifest = json.loads(manifest_path.read_text())
-    except json.JSONDecodeError:
-        return {}
-    home_paths = manifest.get("objects", {}).get("home", {})
     previous: dict[str, dict[str, dict[str, Any]]] = {}
-    for locale, home_path in home_paths.items():
-        if not isinstance(home_path, str):
-            continue
-        snapshot_path = PUBLISHED_ROOT / home_path.removeprefix("public/")
-        if not snapshot_path.exists():
-            continue
-        try:
-            snapshot = json.loads(snapshot_path.read_text())
-        except json.JSONDecodeError:
-            continue
+    for locale, snapshot in _published_home_snapshots():
         tiles = snapshot.get("data", {}).get("macro_tiles", [])
         if not isinstance(tiles, list):
             continue
@@ -702,36 +707,51 @@ def _published_home_macro_tiles() -> dict[str, dict[str, dict[str, Any]]]:
 
 
 def _published_home_breaking_market() -> dict[str, dict[str, Any]]:
+    previous: dict[str, dict[str, Any]] = {}
+    for locale, snapshot in _published_home_snapshots():
+        breaking = _home_breaking_market(snapshot)
+        if breaking is not None and _has_breaking_market_content(breaking):
+            previous[locale] = breaking
+    return previous
+
+
+def _published_home_snapshots() -> list[tuple[str, dict[str, Any]]]:
     manifest_path = PUBLISHED_ROOT / LATEST_MANIFEST_PATH
     if not manifest_path.exists():
-        return {}
+        return []
     try:
         manifest = json.loads(manifest_path.read_text())
     except json.JSONDecodeError:
-        return {}
+        return []
     home_paths = manifest.get("objects", {}).get("home", {})
-    previous: dict[str, dict[str, Any]] = {}
+    if not isinstance(home_paths, dict):
+        return []
+    snapshots: list[tuple[str, dict[str, Any]]] = []
     for locale, home_path in home_paths.items():
         if not isinstance(home_path, str):
             continue
-        snapshot_path = PUBLISHED_ROOT / home_path.removeprefix("public/")
+        snapshot_path = _public_snapshot_path(PUBLISHED_ROOT, home_path)
         if not snapshot_path.exists():
             continue
         try:
             snapshot = json.loads(snapshot_path.read_text())
         except json.JSONDecodeError:
             continue
-        data = snapshot.get("data", {})
-        if not isinstance(data, dict):
-            continue
-        breaking = data.get("breaking_market_map")
-        if not isinstance(breaking, dict):
-            continue
-        if not isinstance(breaking.get("events"), list) and isinstance(data.get("breaking_market_events"), list):
-            breaking = {**breaking, "events": data["breaking_market_events"]}
-        if _has_breaking_market_content(breaking):
-            previous[str(locale)] = breaking
-    return previous
+        if isinstance(snapshot, dict):
+            snapshots.append((str(locale), snapshot))
+    return snapshots
+
+
+def _home_breaking_market(snapshot: dict[str, Any]) -> dict[str, Any] | None:
+    data = snapshot.get("data", {})
+    if not isinstance(data, dict):
+        return None
+    breaking = data.get("breaking_market_map")
+    if not isinstance(breaking, dict):
+        return None
+    if not isinstance(breaking.get("events"), list) and isinstance(data.get("breaking_market_events"), list):
+        return {**breaking, "events": data["breaking_market_events"]}
+    return breaking
 
 
 def _apply_refresh_deltas(tiles: list[Any], previous_tiles: dict[str, dict[str, Any]]) -> None:

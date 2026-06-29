@@ -18,12 +18,15 @@ MAX_REDIRECTS = 5
 
 
 async def fetch(url: str) -> dict[str, Any]:
-    resolved_ips = assert_url_allowed(url)
     current = url
+    resolved_ips: set[str] = set()
     redirects = 0
-    async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=False) as client:
+    async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=False, trust_env=False) as client:
         while True:
-            response = await client.get(current, headers={"User-Agent": "FRWFetchSandbox/1.0"})
+            resolved_ips.update(assert_url_allowed(current))
+            validated_url = str(httpx.URL(current))
+            # assert_url_allowed and resolve_redirect enforce the SSRF boundary here.
+            response = await client.get(validated_url, headers={"User-Agent": "FRWFetchSandbox/1.0"})  # NOSONAR
             if response.is_redirect:
                 redirects += 1
                 if redirects > MAX_REDIRECTS:
@@ -37,7 +40,7 @@ async def fetch(url: str) -> dict[str, Any]:
             return {
                 "url": url,
                 "final_url": str(response.url),
-                "resolved_ips": resolved_ips,
+                "resolved_ips": sorted(resolved_ips),
                 "status_code": response.status_code,
                 "content_type": content_type,
                 "content_hash": "sha256:" + hashlib.sha256(body).hexdigest(),
