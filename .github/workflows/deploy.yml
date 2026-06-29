@@ -147,7 +147,8 @@ jobs:
           STONKS_USER: ${{ secrets.STONKS_USER }}
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" '
+          SSH_OPTS="-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes"
+          ssh $SSH_OPTS -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" '
             set -euo pipefail
             rm -rf \
               /tmp/stonks-radar-old-assets \
@@ -185,7 +186,7 @@ jobs:
             --exclude 'artifacts' \
             --exclude 'playwright-report' \
             --exclude 'test-results' \
-            -e "ssh -i ~/.ssh/stonks_deploy_key" \
+            -e "ssh $SSH_OPTS -i ~/.ssh/stonks_deploy_key" \
             ./ "$STONKS_USER@$STONKS_HOST:/opt/stonks-radar/"
 
       - name: Write production env
@@ -194,8 +195,9 @@ jobs:
           STONKS_USER: ${{ secrets.STONKS_USER }}
         run: |
           set -euo pipefail
-          scp -i ~/.ssh/stonks_deploy_key /tmp/stonks-production.env "$STONKS_USER@$STONKS_HOST:/tmp/stonks-production.env"
-          ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+          SSH_OPTS="-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes"
+          scp $SSH_OPTS -i ~/.ssh/stonks_deploy_key /tmp/stonks-production.env "$STONKS_USER@$STONKS_HOST:/tmp/stonks-production.env"
+          ssh $SSH_OPTS -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
             'sudo install -m 600 -o ubuntu -g ubuntu /tmp/stonks-production.env /opt/stonks-radar/.env && rm /tmp/stonks-production.env'
 
       - name: Deploy compose stack
@@ -204,7 +206,8 @@ jobs:
           STONKS_USER: ${{ secrets.STONKS_USER }}
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+          SSH_OPTS="-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes"
+          ssh $SSH_OPTS -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
             'set -euo pipefail
              cd /opt/stonks-radar
              docker compose -f compose.yaml -f infra/docker-compose.prod.yml down --remove-orphans || true
@@ -231,7 +234,8 @@ jobs:
           STONKS_USER: ${{ secrets.STONKS_USER }}
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+          SSH_OPTS="-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes"
+          ssh $SSH_OPTS -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
             'cd /opt/stonks-radar && docker compose -f compose.yaml -f infra/docker-compose.prod.yml run --rm -e PYTHONPATH=/app/apps/api/src api python scripts/publish_runtime_snapshots.py --generated-by github-actions-deploy'
 
       - name: Verify origin health
@@ -240,5 +244,6 @@ jobs:
           STONKS_USER: ${{ secrets.STONKS_USER }}
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+          SSH_OPTS="-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes"
+          ssh $SSH_OPTS -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
             'cd /opt/stonks-radar && PUBLIC_HOSTNAME=$(awk -F= '\''$1=="PUBLIC_HOSTNAME"{print $2}'\'' .env) && test -n "$PUBLIC_HOSTNAME" && curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/api/public/health" >/dev/null && curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/public/latest/manifest.json" | python3 -c "import json, sys; data=json.load(sys.stdin); assert data.get(\"current_version\") and data.get(\"objects\")"'
