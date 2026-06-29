@@ -4,6 +4,13 @@ declare global {
   interface Window {
     __stonksRadarMap?: {
       project(lngLat: [number, number]): { x: number; y: number };
+      queryRenderedFeatures(
+        geometry?: unknown,
+        options?: { layers?: string[] },
+      ): Array<{
+        properties?: Record<string, unknown>;
+        geometry?: { type?: string; coordinates?: unknown };
+      }>;
     };
     __stonksRadarHoverCountry?: (countryName: string) => void;
   }
@@ -223,6 +230,56 @@ test("map countries expose hover feedback", async ({ page }) => {
     }
   }
   await expect(tooltip).toBeVisible();
+});
+
+test("map renders news nodes at relevant geographies", async ({
+  page,
+  request,
+}) => {
+  const response = await request.get("/public/v1/en/map/events.json");
+  expect(response.ok()).toBeTruthy();
+  const snapshot = (await response.json()) as {
+    data?: {
+      events?: Array<{ latitude: number; longitude: number }>;
+      breaking_market_map?: {
+        map_points?: Array<{
+          area_key?: string;
+          latitude?: number;
+          longitude?: number;
+        }>;
+      };
+    };
+  };
+  const staticEventCoordinates = new Set(
+    (snapshot.data?.events ?? []).map(
+      (event) => `${event.latitude.toFixed(1)},${event.longitude.toFixed(1)}`,
+    ),
+  );
+  const newsPoints = snapshot.data?.breaking_market_map?.map_points ?? [];
+  const newsAreas = new Set(newsPoints.map((point) => point.area_key));
+
+  expect(staticEventCoordinates.size).toBe(3);
+  expect(newsPoints.length).toBeGreaterThan(3);
+  expect(newsAreas.size).toBeGreaterThan(3);
+  expect(newsAreas.has("USA")).toBeTruthy();
+  expect([...newsAreas].some((key) => key && key !== "USA")).toBeTruthy();
+
+  await page.goto("/en/map");
+  await page.waitForFunction(() => Boolean(window.__stonksRadarMap), null, {
+    timeout: 15000,
+  });
+  await page.waitForFunction(
+    () => {
+      const map = window.__stonksRadarMap;
+      if (!map) return false;
+      const features = map.queryRenderedFeatures(undefined, {
+        layers: ["breaking-news-clusters", "breaking-news-unclustered"],
+      });
+      return features.length > 0;
+    },
+    null,
+    { timeout: 15000 },
+  );
 });
 
 test("map data does not render antimeridian-spanning country rings", async ({

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-10T13:38:42Z",
-  "stale_after": "2026-06-11T01:38:42Z",
-  "hard_expires_at": "2026-06-17T13:38:42Z",
+  "generated_at": "2026-06-29T05:27:58Z",
+  "stale_after": "2026-06-29T17:27:58Z",
+  "hard_expires_at": "2026-07-06T05:27:58Z",
   "object_type": "news_topic",
   "object_key": "news_topic_central_banks",
-  "content_hash": "sha256:d0a6de3cfaf795fd86355b75bda8084afae853ec1f41334167938698eb044c19",
+  "content_hash": "sha256:92e17bb74a62c7c00e7ebebce8c77594f828e94b72302948e614fd862e00e2f9",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "central_banks",
     "label": "Central banks",
-    "generated_label": "2026-06-10T13:38:42Z",
+    "generated_label": "2026-06-29T05:27:58Z",
     "topic_brief": "Central banks includes 1 approved event cluster(s) built from source-linked public metadata.",
     "events": [
       {
@@ -121,9 +121,9 @@
         "title": "Central-bank decision calendar clusters FOMC, BoJ, BoK, ECB, and Brazil COPOM risk",
         "summary": "Official calendars are grouped into one policy-event watch so users can scan rate dates without leaving the app.",
         "event_type": "central_bank_calendar",
-        "first_seen_at": "2026-06-08T13:38:42Z",
-        "last_seen_at": "2026-06-10T13:38:42Z",
-        "published_at": "2026-06-10T13:38:42Z",
+        "first_seen_at": "2026-06-27T05:27:58Z",
+        "last_seen_at": "2026-06-29T05:27:58Z",
+        "published_at": "2026-06-29T05:27:58Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.86,
@@ -203,7 +203,7 @@
             "source_key": "federal_reserve",
             "policy_version": 1,
             "title": "FOMC calendars",
-            "published_at": "2026-06-09T19:38:42Z",
+            "published_at": "2026-06-28T11:27:58Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -213,7 +213,7 @@
             "source_key": "bank_of_korea",
             "policy_version": 1,
             "title": "Monetary policy schedule",
-            "published_at": "2026-06-09T19:38:42Z",
+            "published_at": "2026-06-28T11:27:58Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -223,7 +223,7 @@
             "source_key": "bank_of_japan",
             "policy_version": 1,
             "title": "Monetary policy meetings",
-            "published_at": "2026-06-09T19:38:42Z",
+            "published_at": "2026-06-28T11:27:58Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -233,7 +233,7 @@
             "source_key": "ecb",
             "policy_version": 1,
             "title": "Governing Council calendars",
-            "published_at": "2026-06-09T19:38:42Z",
+            "published_at": "2026-06-28T11:27:58Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -243,7 +243,7 @@
             "source_key": "bcb",
             "policy_version": 1,
             "title": "COPOM calendar",
-            "published_at": "2026-06-09T19:38:42Z",
+            "published_at": "2026-06-28T11:27:58Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           }

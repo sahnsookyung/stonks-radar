@@ -12,6 +12,11 @@ def _disable_boj_rate(monkeypatch):
     monkeypatch.setattr(build_seed_snapshots, "_boj_daily_rate_series", lambda *_args, **_kwargs: None)
 
 
+@pytest.fixture(autouse=True)
+def _disable_live_calendar_fetch(monkeypatch):
+    monkeypatch.setattr(build_seed_snapshots, "_official_calendar_text", lambda *_args, **_kwargs: None)
+
+
 def test_preserve_previous_active_macro_tile_when_refresh_source_is_unavailable(tmp_path, monkeypatch):
     home_path = tmp_path / "v1" / "en" / "home.json"
     home_path.parent.mkdir(parents=True)
@@ -60,6 +65,76 @@ def test_preserve_previous_active_macro_tile_when_refresh_source_is_unavailable(
     assert tile["coverage_status"] == "active"
     assert tile["updated_at"] == "2026-05-26T01:00:50Z"
     assert "Using last published value" in tile["delay_label"]
+
+
+def test_calendar_uses_live_official_dates_and_sorts_chronologically(monkeypatch):
+    def official_text(url):
+        if url == build_seed_snapshots.OFFICIAL_POLICY_CALENDAR_URLS["federal_reserve"]:
+            return "<h4>2026 FOMC Meetings</h4><div>June</div><div>16-17</div>"
+        if url == build_seed_snapshots.OFFICIAL_POLICY_CALENDAR_URLS["bank_of_japan"]:
+            return "<h2>2026</h2><table><tr><td>June 15 (Mon.), 16 (Tues.)</td></tr></table>"
+        if url == build_seed_snapshots.OFFICIAL_POLICY_CALENDAR_URLS["bank_of_korea"]:
+            return "<html>Monetary Policy Board meeting 2026.07.09</html>"
+        if url == build_seed_snapshots.OFFICIAL_MACRO_CALENDAR_URLS["bls_jobs"]:
+            return "<html>Employment Situation Thursday, July 2, 2026</html>"
+        if url == build_seed_snapshots.OFFICIAL_MACRO_CALENDAR_URLS["bls_cpi"]:
+            return "<html>CPI Wednesday, June 11, 2026</html>"
+        return None
+
+    monkeypatch.setattr(build_seed_snapshots, "_official_calendar_text", official_text)
+
+    items = build_seed_snapshots._calendar("en", datetime(2026, 6, 11, 12, tzinfo=timezone.utc))
+    ids_by_date = [(item["id"], item["scheduled_local_date"], item["freshness"]) for item in items]
+
+    assert ids_by_date == sorted(ids_by_date, key=lambda row: (row[1], row[0]))
+    assert all(item["scheduled_local_date"] >= "2026-06-11" for item in items)
+    assert ("cal_fomc", "2026-06-17", "fresh") in ids_by_date
+    assert ("cal_boj", "2026-06-16", "fresh") in ids_by_date
+    assert ("cal_bok", "2026-07-09", "fresh") in ids_by_date
+    assert ("cal_us_jobs", "2026-07-02", "fresh") in ids_by_date
+    assert ("cal_us_cpi", "2026-06-11", "fresh") in ids_by_date
+
+
+def test_calendar_drops_past_static_fallbacks_when_live_source_is_unavailable():
+    items = build_seed_snapshots._calendar("en", datetime(2026, 6, 11, 12, tzinfo=timezone.utc))
+    ids = {item["id"] for item in items}
+
+    assert "cal_bok" not in ids
+    assert "cal_us_jobs" not in ids
+    assert "cal_us_cpi" not in ids
+    assert all(item["scheduled_local_date"] >= "2026-06-11" for item in items)
+
+
+def test_calendar_prefers_near_term_fallback_over_implausible_far_future_parse(monkeypatch):
+    def official_text(url):
+        if url == build_seed_snapshots.OFFICIAL_POLICY_CALENDAR_URLS["federal_reserve"]:
+            return "<html>Archive date January 26, 2028</html>"
+        return None
+
+    monkeypatch.setattr(build_seed_snapshots, "_official_calendar_text", official_text)
+
+    items = build_seed_snapshots._calendar("en", datetime(2026, 6, 11, tzinfo=timezone.utc))
+    fomc = next(item for item in items if item["id"] == "cal_fomc")
+
+    assert fomc["scheduled_local_date"] == "2026-06-17"
+    assert fomc["freshness"] == "watch"
+    assert fomc["expectation_type"] == "manual_estimate"
+
+
+def test_calendar_uses_plausible_live_date_even_when_it_is_later_than_fallback(monkeypatch):
+    def official_text(url):
+        if url == build_seed_snapshots.OFFICIAL_POLICY_CALENDAR_URLS["federal_reserve"]:
+            return "<html>Updated FOMC decision July 29, 2026</html>"
+        return None
+
+    monkeypatch.setattr(build_seed_snapshots, "_official_calendar_text", official_text)
+
+    items = build_seed_snapshots._calendar("en", datetime(2026, 6, 11, tzinfo=timezone.utc))
+    fomc = next(item for item in items if item["id"] == "cal_fomc")
+
+    assert fomc["scheduled_local_date"] == "2026-07-29"
+    assert fomc["freshness"] == "fresh"
+    assert fomc["expectation_type"] == "official_calendar"
 
 
 def test_seed_events_do_not_use_build_time_as_publication_time():
@@ -665,6 +740,19 @@ def test_build_snapshots_writes_news_seed_snapshots(tmp_path, monkeypatch):
     }.issubset(event_ids)
     assert index["data"]["filters"]["regions"]
     assert index["data"]["filters"]["topics"]
+
+    map_snapshot = json.loads((tmp_path / "v1" / "en" / "map" / "events.json").read_text())
+    map_points = map_snapshot["data"]["breaking_market_map"]["map_points"]
+    assert len(map_points) > 3
+    assert len({point["area_key"] for point in map_points}) > 3
+    assert {(event["latitude"], event["longitude"]) for event in map_snapshot["data"]["events"]} == {
+        (23.7, 121.0),
+        (38.9, -77.0),
+        (51.5, 0.0),
+    }
+    assert any(point["area_key"] != "USA" for point in map_points)
+    assert all(point["latitude"] != 0 and point["longitude"] != 0 for point in map_points)
+
     semiconductor_event = next(
         event for event in index["data"]["events"] if event["id"] == "semiconductor_export_controls_seed"
     )

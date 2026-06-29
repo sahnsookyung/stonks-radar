@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-10T13:38:42Z",
-  "stale_after": "2026-06-11T01:38:42Z",
-  "hard_expires_at": "2026-06-17T13:38:42Z",
+  "generated_at": "2026-06-29T05:27:58Z",
+  "stale_after": "2026-06-29T17:27:58Z",
+  "hard_expires_at": "2026-07-06T05:27:58Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_QBTS",
-  "content_hash": "sha256:a4b8019dcacb1972f5b196f57ccb07a8eae401d492b31da1b8fb02fe7bd5e67e",
+  "content_hash": "sha256:cf715006313ce4cc4129ec5be0826b9c09bc6a7a0e6acae38e4dc897125c39f1",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "QBTS",
     "name": "디웨이브 퀀텀",
-    "generated_label": "2026-06-10T13:38:42Z",
+    "generated_label": "2026-06-29T05:27:58Z",
     "summary": "QBTS에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
     "events": []
   },

@@ -40,6 +40,37 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  api-elixir:
+    profiles: ["elixir-backend"]
+    build:
+      context: .
+      dockerfile: apps/backend_elixir/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-frw}:${POSTGRES_PASSWORD:-frw}@postgres:5432/${POSTGRES_DB:-frw}
+      REDIS_URL: redis://valkey:6379/0
+      SNAPSHOT_ARTIFACT_DIR: /app/artifacts/snapshots
+      PUBLISHED_SNAPSHOT_DIR: /app/published-public
+      PORT: 8000
+    volumes:
+      - snapshot-artifacts:/app/artifacts/snapshots
+      - published-snapshots:/app/published-public
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:$${PORT:-8000}/api/public/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+
   worker:
     build:
       context: .

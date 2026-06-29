@@ -9,7 +9,7 @@ import re
 import time
 import zipfile
 from base64 import b64encode
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from html import unescape
 from pathlib import Path
@@ -101,6 +101,10 @@ OFFICIAL_POLICY_CALENDAR_URLS = {
     "bank_of_korea": "https://www.bok.or.kr/eng/main/contents.do?menuNo=400020",
     "bcb": "https://www.bcb.gov.br/detalhenoticia/20739/nota",
 }
+OFFICIAL_MACRO_CALENDAR_URLS = {
+    "bls_cpi": "https://www.bls.gov/schedule/news_release/cpi.htm",
+    "bls_jobs": "https://www.bls.gov/schedule/news_release/empsit.htm",
+}
 KRX_DOC_URLS = {
     "index_daily": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES001_S2.cmd?BO_ID=SsgXTEspyJESKvyXZtCU",
     "etf_daily": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES003_S2.cmd?BO_ID=nrEpCLaZpoLCTzPUMxuF",
@@ -117,6 +121,7 @@ _SEC_SUBMISSIONS_CACHE: dict[str, dict[str, Any] | None] = {}
 _SEC_FUND_PORTFOLIO_CACHE: dict[str, dict[str, Any] | None] = {}
 _CUSIP_TICKER_OVERRIDES_CACHE: dict[str, str | None] | None = None
 _WEB_METADATA_CACHE: dict[str, dict[str, str] | None] = {}
+_POLICY_CALENDAR_TEXT_CACHE: dict[str, str | None] = {}
 _ISHARES_FUND_CACHE: dict[str, dict[str, Any] | None] = {}
 _BOJ_SERIES_CACHE: dict[tuple[str, str, str], dict[str, Any] | None] = {}
 _PENTAGON_PIZZA_CACHE: dict[str, dict[str, Any] | None] = {}
@@ -149,6 +154,7 @@ HTTP_PROVIDER_MIN_INTERVAL_SECONDS = {
     "ishares_ewy": 1.0,
     "boj_timeseries": 0.5,
     "gdelt_doc": 6.0,
+    "policy_calendar": 0.75,
 }
 
 SECTORS = {
@@ -367,7 +373,7 @@ def build_snapshots() -> None:
 
     for locale in LOCALES:
         events = _events(locale, generated_at)
-        calendar = _calendar(locale)
+        calendar = _calendar(locale, generated_at)
         news_events = _news_event_details(locale, generated_at)
         news_list_items = [_news_list_item(event) for event in news_events]
         news_list_items.sort(key=lambda event: (event["breaking_score"], event["last_seen_at"]), reverse=True)
@@ -573,6 +579,7 @@ def _reset_runtime_caches() -> None:
     _SEC_FUND_PORTFOLIO_CACHE.clear()
     _CUSIP_TICKER_OVERRIDES_CACHE = None
     _WEB_METADATA_CACHE.clear()
+    _POLICY_CALENDAR_TEXT_CACHE.clear()
     _ISHARES_FUND_CACHE.clear()
     _BOJ_SERIES_CACHE.clear()
     _PENTAGON_PIZZA_CACHE.clear()
@@ -1856,7 +1863,7 @@ def _pentagon_pizza_points(summary: dict[str, Any], generated_at: datetime) -> l
             "date": (generated_at - timedelta(minutes=offset)).isoformat().replace("+00:00", "Z"),
             "value": round(value, 1),
         }
-        for offset, value in zip((45, 30, 15, 0), chart_values, strict=True)
+        for offset, value in zip((45, 30, 15, 0), chart_values)
     ]
 
 
@@ -3385,6 +3392,363 @@ def _news_disclaimer(locale: str) -> str:
     )
 
 
+_MONTH_ALIASES = {
+    "jan": 1,
+    "january": 1,
+    "feb": 2,
+    "february": 2,
+    "mar": 3,
+    "march": 3,
+    "apr": 4,
+    "april": 4,
+    "may": 5,
+    "jun": 6,
+    "june": 6,
+    "jul": 7,
+    "july": 7,
+    "aug": 8,
+    "august": 8,
+    "sep": 9,
+    "sept": 9,
+    "september": 9,
+    "oct": 10,
+    "october": 10,
+    "nov": 11,
+    "november": 11,
+    "dec": 12,
+    "december": 12,
+    "janeiro": 1,
+    "fevereiro": 2,
+    "marco": 3,
+    "março": 3,
+    "abril": 4,
+    "maio": 5,
+    "junho": 6,
+    "julho": 7,
+    "agosto": 8,
+    "setembro": 9,
+    "outubro": 10,
+    "novembro": 11,
+    "dezembro": 12,
+}
+
+
+def _official_calendar_definitions() -> list[dict[str, Any]]:
+    return [
+        {
+            "item_id": "cal_fomc",
+            "title_en": "FOMC policy decision",
+            "title_ko": "FOMC 정책 결정",
+            "country": "USA",
+            "release_type": "central_bank",
+            "fallback_date": "2026-06-17",
+            "timezone": "America/New_York",
+            "expectation_value": "Federal Reserve FOMC calendar",
+            "source": "Federal Reserve",
+            "source_url": OFFICIAL_POLICY_CALENDAR_URLS["federal_reserve"],
+            "prefer_range_end": True,
+        },
+        {
+            "item_id": "cal_ecb",
+            "title_en": "ECB monetary-policy decision",
+            "title_ko": "ECB 통화정책 결정",
+            "country": "EUROZONE",
+            "release_type": "central_bank",
+            "fallback_date": "2026-06-11",
+            "timezone": "Europe/Frankfurt",
+            "expectation_value": "ECB Governing Council calendar",
+            "source": "ECB",
+            "source_url": OFFICIAL_POLICY_CALENDAR_URLS["ecb"],
+            "prefer_range_end": False,
+        },
+        {
+            "item_id": "cal_boe",
+            "title_en": "BoE MPC decision",
+            "title_ko": "영란은행 MPC 결정",
+            "country": "GBR",
+            "release_type": "central_bank",
+            "fallback_date": "2026-06-18",
+            "timezone": "Europe/London",
+            "expectation_value": "MPC announcement and minutes",
+            "source": "BoE",
+            "source_url": OFFICIAL_POLICY_CALENDAR_URLS["bank_of_england"],
+            "prefer_range_end": False,
+        },
+        {
+            "item_id": "cal_boj",
+            "title_en": "BoJ monetary-policy meeting",
+            "title_ko": "일본은행 통화정책회의",
+            "country": "JPN",
+            "release_type": "central_bank",
+            "fallback_date": "2026-06-16",
+            "timezone": "Asia/Tokyo",
+            "expectation_value": "Bank of Japan MPM calendar",
+            "source": "BoJ",
+            "source_url": OFFICIAL_POLICY_CALENDAR_URLS["bank_of_japan"],
+            "prefer_range_end": True,
+        },
+        {
+            "item_id": "cal_bok",
+            "title_en": "Bank of Korea decision",
+            "title_ko": "한국은행 기준금리 결정",
+            "country": "KOR",
+            "release_type": "central_bank",
+            "fallback_date": "2026-05-28",
+            "timezone": "Asia/Seoul",
+            "expectation_value": "Bank of Korea policy-setting meeting",
+            "source": "BoK",
+            "source_url": OFFICIAL_POLICY_CALENDAR_URLS["bank_of_korea"],
+            "prefer_range_end": False,
+        },
+        {
+            "item_id": "cal_copom",
+            "title_en": "Brazil COPOM decision",
+            "title_ko": "브라질 COPOM 결정",
+            "country": "BRA",
+            "release_type": "central_bank",
+            "fallback_date": "2026-06-17",
+            "timezone": "America/Sao_Paulo",
+            "expectation_value": "BCB COPOM decision day",
+            "source": "BCB",
+            "source_url": OFFICIAL_POLICY_CALENDAR_URLS["bcb"],
+            "prefer_range_end": True,
+        },
+        {
+            "item_id": "cal_us_cpi",
+            "title_en": "US CPI release",
+            "title_ko": "미국 CPI 발표",
+            "country": "USA",
+            "release_type": "macro_release",
+            "fallback_date": "2026-06-10",
+            "timezone": "America/New_York",
+            "expectation_value": "BLS CPI release schedule",
+            "source": "BLS",
+            "source_url": OFFICIAL_MACRO_CALENDAR_URLS["bls_cpi"],
+            "prefer_range_end": False,
+        },
+        {
+            "item_id": "cal_us_jobs",
+            "title_en": "US employment situation",
+            "title_ko": "미국 고용보고서",
+            "country": "USA",
+            "release_type": "macro_release",
+            "fallback_date": "2026-06-05",
+            "timezone": "America/New_York",
+            "expectation_value": "BLS Employment Situation release schedule",
+            "source": "BLS",
+            "source_url": OFFICIAL_MACRO_CALENDAR_URLS["bls_jobs"],
+            "prefer_range_end": False,
+        },
+        {
+            "item_id": "cal_earnings_ai",
+            "title_en": "Monitored AI infrastructure earnings window",
+            "title_ko": "AI 인프라 모니터링 기업 실적 구간",
+            "country": "USA",
+            "release_type": "earnings_window",
+            "fallback_date": "2026-06-30",
+            "timezone": "UTC",
+            "expectation_value": None,
+            "source": "SEC/company IR",
+            "source_url": None,
+            "prefer_range_end": False,
+        },
+    ]
+
+
+def _calendar(locale: str, generated_at: datetime | None = None) -> list[dict[str, Any]]:
+    observed_at = generated_at or datetime.now(timezone.utc).replace(microsecond=0)
+    items = [
+        item
+        for definition in _official_calendar_definitions()
+        if (item := _calendar_item_from_definition(definition, locale, observed_at)) is not None
+    ]
+    return _sort_calendar_items(items)
+
+
+def _calendar_item_from_definition(
+    definition: dict[str, Any],
+    locale: str,
+    generated_at: datetime,
+) -> dict[str, Any] | None:
+    today = _calendar_today(generated_at, str(definition.get("timezone") or "UTC"))
+    parsed_date = _next_official_calendar_date(definition, today)
+    fallback_date = _parse_calendar_date(str(definition.get("fallback_date") or ""))
+    selected_date, live_source = _select_calendar_date(parsed_date, fallback_date, today)
+    if selected_date is None or selected_date < today:
+        return None
+    release_type = str(definition["release_type"])
+    local_date = selected_date.isoformat()
+    return {
+        "id": str(definition["item_id"]),
+        "title": _t(locale, str(definition["title_en"]), str(definition["title_ko"])),
+        "country_region_key": str(definition["country"]),
+        "release_type": release_type,
+        "scheduled_at": f"{local_date}T12:00:00Z" if release_type != "earnings_window" else None,
+        "scheduled_local_date": local_date,
+        "timezone": str(definition["timezone"]),
+        "time_precision": "time_estimated" if release_type == "central_bank" else "date_only",
+        "status": "scheduled",
+        "expectation_type": "official_calendar" if live_source else "manual_estimate",
+        "expectation_value": definition.get("expectation_value"),
+        "actual_value": None,
+        "previous_value": None,
+        "surprise": None,
+        "source": str(definition["source"]),
+        "freshness": "fresh" if live_source else "watch",
+    }
+
+
+def _calendar_today(generated_at: datetime, timezone_name: str) -> date:
+    try:
+        zone = ZoneInfo(timezone_name)
+    except Exception:
+        zone = timezone.utc
+    return generated_at.astimezone(zone).date()
+
+
+def _select_calendar_date(
+    parsed_date: date | None,
+    fallback_date: date | None,
+    today: date,
+) -> tuple[date | None, bool]:
+    if parsed_date and fallback_date and fallback_date >= today:
+        if parsed_date > fallback_date + timedelta(days=90):
+            return fallback_date, False
+        return parsed_date, True
+    if parsed_date:
+        return parsed_date, True
+    if fallback_date and fallback_date >= today:
+        return fallback_date, False
+    return None, False
+
+
+def _next_official_calendar_date(definition: dict[str, Any], today: date) -> date | None:
+    source_url = definition.get("source_url")
+    if not isinstance(source_url, str) or not source_url:
+        return None
+    html = _official_calendar_text(source_url)
+    if not html:
+        return None
+    dates = _extract_calendar_dates(
+        html,
+        prefer_range_end=bool(definition.get("prefer_range_end")),
+        min_date=today,
+    )
+    return dates[0] if dates else None
+
+
+def _official_calendar_text(url: str) -> str | None:
+    if url in _POLICY_CALENDAR_TEXT_CACHE:
+        return _POLICY_CALENDAR_TEXT_CACHE[url]
+    user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
+    text = _http_text(
+        url,
+        headers={"User-Agent": user_agent, "Accept": "text/html,application/xhtml+xml,text/plain,*/*"},
+        timeout=12,
+        max_bytes=1_200_000,
+        throttle_key="policy_calendar",
+        max_attempts=1,
+    )
+    _POLICY_CALENDAR_TEXT_CACHE[url] = text
+    return text
+
+
+def _extract_calendar_dates(html: str, *, prefer_range_end: bool, min_date: date) -> list[date]:
+    text = _html_to_search_text(html)
+    found: set[date] = set()
+    found.update(_extract_year_section_calendar_dates(html, prefer_range_end=prefer_range_end, min_date=min_date))
+    for year_text, month_text, day_text in re.findall(r"\b(20\d{2})[-/.](\d{1,2})[-/.](\d{1,2})\b", text):
+        _add_valid_date(found, int(year_text), int(month_text), int(day_text), min_date)
+    for year_text, month_text, day_text in re.findall(r"\b(20\d{2})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일?\b", text):
+        _add_valid_date(found, int(year_text), int(month_text), int(day_text), min_date)
+    month_pattern = "|".join(sorted(re.escape(month) for month in _MONTH_ALIASES))
+    month_first = re.compile(
+        rf"\b({month_pattern})\.?\s+(\d{{1,2}})(?:\s*(?:-|–|—|to|and|&)\s*(\d{{1,2}}))?(?:,)?\s+(20\d{{2}})\b",
+        re.IGNORECASE,
+    )
+    day_first = re.compile(
+        rf"\b(\d{{1,2}})(?:\s*(?:-|–|—|to|and|&)\s*(\d{{1,2}}))?\s+({month_pattern})\.?(?:,)?\s+(20\d{{2}})\b",
+        re.IGNORECASE,
+    )
+    for month_name, start_day, end_day, year_text in month_first.findall(text):
+        month = _month_number(month_name)
+        if month is None:
+            continue
+        day = int(end_day or start_day) if prefer_range_end else int(start_day)
+        _add_valid_date(found, int(year_text), month, day, min_date)
+    for start_day, end_day, month_name, year_text in day_first.findall(text):
+        month = _month_number(month_name)
+        if month is None:
+            continue
+        day = int(end_day or start_day) if prefer_range_end else int(start_day)
+        _add_valid_date(found, int(year_text), month, day, min_date)
+    return sorted(found)
+
+
+def _extract_year_section_calendar_dates(html: str, *, prefer_range_end: bool, min_date: date) -> set[date]:
+    month_pattern = "|".join(sorted(re.escape(month) for month in _MONTH_ALIASES))
+    heading_pattern = re.compile(r"(?is)<h[1-4][^>]*>.*?(20\d{2}).*?</h[1-4]>")
+    date_pattern = re.compile(
+        rf"\b({month_pattern})\.?\s+(\d{{1,2}})(?:\s*\([^)]+\))?"
+        rf"(?:\s*(?:-|–|—|to|and|&|,)\s*(\d{{1,2}})(?:\s*\([^)]+\))?)?",
+        re.IGNORECASE,
+    )
+    matches = list(heading_pattern.finditer(html))
+    found: set[date] = set()
+    for index, match in enumerate(matches):
+        year = int(match.group(1))
+        if year < min_date.year:
+            continue
+        section_end = matches[index + 1].start() if index + 1 < len(matches) else len(html)
+        section_text = _html_to_search_text(html[match.end() : section_end])
+        for month_name, start_day, end_day in date_pattern.findall(section_text):
+            month = _month_number(month_name)
+            if month is None:
+                continue
+            day = int(end_day or start_day) if prefer_range_end else int(start_day)
+            _add_valid_date(found, year, month, day, min_date)
+    return found
+
+
+def _html_to_search_text(html: str) -> str:
+    text = re.sub(r"(?is)<(script|style).*?</\1>", " ", html)
+    text = re.sub(r"(?s)<[^>]+>", " ", text)
+    return re.sub(r"\s+", " ", unescape(text)).strip()
+
+
+def _month_number(month_name: str) -> int | None:
+    return _MONTH_ALIASES.get(month_name.strip(".").lower())
+
+
+def _add_valid_date(found: set[date], year: int, month: int, day: int, min_date: date) -> None:
+    try:
+        value = date(year, month, day)
+    except ValueError:
+        return
+    if value >= min_date:
+        found.add(value)
+
+
+def _parse_calendar_date(value: str) -> date | None:
+    try:
+        return date.fromisoformat(value[:10])
+    except ValueError:
+        return None
+
+
+def _sort_calendar_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return sorted(items, key=_calendar_sort_key)
+
+
+def _calendar_sort_key(item: dict[str, Any]) -> tuple[str, str]:
+    date_text = str(item.get("scheduled_local_date") or "")
+    if not date_text and isinstance(item.get("scheduled_at"), str):
+        date_text = str(item["scheduled_at"])[:10]
+    scheduled_at = str(item.get("scheduled_at") or "")
+    time_text = scheduled_at[11:19] if "T" in scheduled_at else ""
+    return (date_text or "9999-12-31", time_text or "23:59:59", str(item.get("id") or ""))
+
+
 def _preserve_previous_active_macro_tiles(locale: str, tiles: list[dict[str, Any]]) -> list[dict[str, Any]]:
     previous = _previous_macro_tiles(locale)
     if not previous:
@@ -3436,41 +3800,6 @@ def _is_metric_tile_unavailable(tile: dict[str, Any]) -> bool:
     )
 
 
-def _calendar(locale: str) -> list[dict[str, Any]]:
-    items = [
-        ("cal_fomc", "FOMC policy decision", "FOMC 정책 결정", "USA", "central_bank", "2026-06-17", "America/New_York", "official_projection", "Summary of Economic Projections meeting", "Federal Reserve"),
-        ("cal_ecb", "ECB monetary-policy decision", "ECB 통화정책 결정", "EUROZONE", "central_bank", "2026-06-11", "Europe/Frankfurt", "official_calendar", "day 2 with press conference", "ECB"),
-        ("cal_boe", "BoE MPC decision", "영란은행 MPC 결정", "GBR", "central_bank", "2026-06-18", "Europe/London", "official_calendar", "MPC announcement and minutes", "BoE"),
-        ("cal_boj", "BoJ monetary-policy meeting", "일본은행 통화정책회의", "JPN", "central_bank", "2026-06-16", "Asia/Tokyo", "official_calendar", "meeting day 2", "BoJ"),
-        ("cal_bok", "Bank of Korea decision", "한국은행 기준금리 결정", "KOR", "central_bank", "2026-05-28", "Asia/Seoul", "official_calendar", "policy-setting meeting", "BoK"),
-        ("cal_copom", "Brazil COPOM decision", "브라질 COPOM 결정", "BRA", "central_bank", "2026-06-17", "America/Sao_Paulo", "official_calendar", "decision day", "BCB"),
-        ("cal_us_cpi", "US CPI release", "미국 CPI 발표", "USA", "macro_release", "2026-06-10", "America/New_York", "manual_estimate", "manual estimate visible", "BLS"),
-        ("cal_us_jobs", "US employment situation", "미국 고용보고서", "USA", "macro_release", "2026-06-05", "America/New_York", "unknown", None, "BLS"),
-        ("cal_earnings_ai", "Monitored AI infrastructure earnings window", "AI 인프라 모니터링 기업 실적 구간", "USA", "earnings_window", "2026-06-30", "UTC", "unknown", None, "SEC/company IR"),
-    ]
-    return [
-        {
-            "id": item_id,
-            "title": _t(locale, title_en, title_ko),
-            "country_region_key": country,
-            "release_type": release_type,
-            "scheduled_at": f"{date}T12:00:00Z" if release_type != "earnings_window" else None,
-            "scheduled_local_date": date,
-            "timezone": timezone,
-            "time_precision": "time_estimated" if release_type == "central_bank" else "date_only",
-            "status": "scheduled",
-            "expectation_type": expectation_type,
-            "expectation_value": expectation_value,
-            "actual_value": None,
-            "previous_value": None,
-            "surprise": None,
-            "source": source,
-            "freshness": "watch" if expectation_type == "unknown" else "fresh",
-        }
-        for item_id, title_en, title_ko, country, release_type, date, timezone, expectation_type, expectation_value, source in items
-    ]
-
-
 def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
     updated = generated_at.isoformat().replace("+00:00", "Z")
     env = _runtime_env()
@@ -3478,22 +3807,20 @@ def _macro_tiles(locale: str, generated_at: datetime) -> list[dict[str, Any]]:
     pizza_metadata = _web_metadata(pizza_url)
     pizza_summary = _pentagon_pizza_summary(_pentagon_pizza_payload(pizza_url))
 
-    def rate_event(region: str) -> dict[str, str]:
-        events = {
-            "us": {
-                "title": _t(locale, "FOMC policy decision", "FOMC 정책 결정"),
-                "date": "2026-06-17",
-                "timezone": "America/New_York",
-                "source": "Federal Reserve FOMC calendar",
-            },
-            "japan": {
-                "title": _t(locale, "BoJ monetary-policy meeting", "일본은행 통화정책회의"),
-                "date": "2026-06-16",
-                "timezone": "Asia/Tokyo",
-                "source": "Bank of Japan MPM calendar",
-            },
-        }
-        return events[region]
+    def rate_event(region: str) -> dict[str, str] | None:
+        item_id = {"us": "cal_fomc", "japan": "cal_boj"}.get(region)
+        if not item_id:
+            return None
+        for item in _calendar(locale, generated_at):
+            if item.get("id") != item_id:
+                continue
+            return {
+                "title": str(item["title"]),
+                "date": str(item["scheduled_local_date"]),
+                "timezone": str(item["timezone"]),
+                "source": str(item["source"]),
+            }
+        return None
 
     def tile(
         key: str,
@@ -4274,13 +4601,15 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
             )
     ticker_watchlist = ",".join(_symbol_list(env.get("NEWS_TICKER_WATCHLIST") or DEFAULT_NEWS_TICKERS))
     yahoo_url = f"{YAHOO_FINANCE_RSS_URL}?{parse.urlencode({'s': ticker_watchlist, 'region': 'US', 'lang': 'en-US'})}"
+    google_geopolitical_query = '(Iran OR Hormuz OR Taiwan OR "Red Sea") (oil OR shipping OR markets) when:1d'
+    google_geopolitical_url = f"{GOOGLE_NEWS_RSS_URL}?{parse.urlencode({'q': google_geopolitical_query, 'hl': 'en-US', 'gl': 'US', 'ceid': 'US:en'})}"
     rss_sources = [
         (
             "google_geopolitical",
             "Geopolitical market risk",
             "지정학 시장 리스크",
             "Google News RSS",
-            f"{GOOGLE_NEWS_RSS_URL}?{parse.urlencode({'q': '(Iran OR Hormuz OR Taiwan OR \"Red Sea\") (oil OR shipping OR markets) when:1d', 'hl': 'en-US', 'gl': 'US', 'ceid': 'US:en'})}",
+            google_geopolitical_url,
             "high",
         ),
         (

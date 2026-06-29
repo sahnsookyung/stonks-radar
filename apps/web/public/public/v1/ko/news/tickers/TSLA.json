@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-10T13:38:42Z",
-  "stale_after": "2026-06-11T01:38:42Z",
-  "hard_expires_at": "2026-06-17T13:38:42Z",
+  "generated_at": "2026-06-29T05:27:58Z",
+  "stale_after": "2026-06-29T17:27:58Z",
+  "hard_expires_at": "2026-07-06T05:27:58Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_TSLA",
-  "content_hash": "sha256:67ca4f974d1dcb3fd2f722169d7499ad21098082d3eac9827cb183d369c38e7e",
+  "content_hash": "sha256:5108a958005e100eb25d185cc2635bd2a9b097e8c0fdc2be5e15d235fe432501",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "TSLA",
     "name": "테슬라",
-    "generated_label": "2026-06-10T13:38:42Z",
+    "generated_label": "2026-06-29T05:27:58Z",
     "summary": "TSLA에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
     "events": []
   },

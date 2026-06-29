@@ -29,5 +29,7 @@ test-results/
 apps/api/.python-version
 apps/web/.env.local
 apps/web/.generated-public/
+apps/backend_elixir/_build/
+apps/backend_elixir/deps/
 .agents/
 .gitnexus

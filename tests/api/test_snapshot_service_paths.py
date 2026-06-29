@@ -316,6 +316,88 @@ def test_stale_seed_breaking_market_is_cleared_when_no_fresh_runtime_or_fallback
     }
 
 
+def test_runtime_calendar_is_sorted_for_home_preview_and_calendar_page() -> None:
+    now = datetime(2026, 6, 10, 6, 0, tzinfo=timezone.utc)
+    calendar = [
+        {
+            "id": "cal_late",
+            "title": "Late",
+            "release_type": "macro_release",
+            "scheduled_local_date": "2026-06-18",
+            "scheduled_at": "2026-06-18T12:00:00Z",
+        },
+        {
+            "id": "cal_zzz_early",
+            "title": "Early same day",
+            "release_type": "macro_release",
+            "scheduled_local_date": "2026-06-11",
+            "scheduled_at": "2026-06-11T08:00:00Z",
+        },
+        {
+            "id": "cal_bank",
+            "title": "Bank",
+            "release_type": "central_bank",
+            "scheduled_local_date": "2026-06-11",
+            "scheduled_at": "2026-06-11T12:00:00Z",
+        },
+        {
+            "id": "cal_same_day_a",
+            "title": "Same day A",
+            "release_type": "macro_release",
+            "scheduled_local_date": "2026-06-11",
+            "scheduled_at": "2026-06-11T14:00:00Z",
+        },
+        {
+            "id": "cal_aaa_late_same_day",
+            "title": "Late same day",
+            "release_type": "macro_release",
+            "scheduled_local_date": "2026-06-11",
+            "scheduled_at": "2026-06-11T18:00:00Z",
+        },
+    ]
+    context = snapshot_service.SnapshotTreeContext(
+        version=1,
+        generated_at=now,
+        corrections=[],
+        db_events={},
+        db_calendar=calendar,
+        previous_macro_tiles={},
+        previous_breaking_market={},
+        db_news_by_locale={"en": {"breaking_market": {"events": [], "map_points": []}}},
+        news_event_templates={},
+    )
+    home_snapshot = {
+        "data": {
+            "breaking_market_events": [],
+            "breaking_market_map": {"events": [], "map_points": []},
+            "generated_label": "",
+            "snapshot_health": {},
+            "macro_tiles": [],
+        },
+        "stale_after": "2026-06-10T18:00:00Z",
+    }
+    calendar_snapshot = {"data": {"items": [], "central_banks": []}}
+
+    snapshot_service._apply_home_snapshot_data(home_snapshot, "en", context)
+    snapshot_service._apply_calendar_snapshot_data(calendar_snapshot, context)
+
+    assert [item["id"] for item in home_snapshot["data"]["calendar_preview"]] == [
+        "cal_zzz_early",
+        "cal_bank",
+        "cal_same_day_a",
+        "cal_aaa_late_same_day",
+        "cal_late",
+    ]
+    assert [item["id"] for item in calendar_snapshot["data"]["items"]] == [
+        "cal_zzz_early",
+        "cal_bank",
+        "cal_same_day_a",
+        "cal_aaa_late_same_day",
+        "cal_late",
+    ]
+    assert [item["id"] for item in calendar_snapshot["data"]["central_banks"]] == ["cal_bank"]
+
+
 def test_previous_breaking_market_rejects_zero_coordinate_map_points() -> None:
     now = datetime(2026, 6, 10, 6, 0, tzinfo=timezone.utc)
     previous_breaking = {

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-10T13:38:42Z",
-  "stale_after": "2026-06-11T01:38:42Z",
-  "hard_expires_at": "2026-06-17T13:38:42Z",
+  "generated_at": "2026-06-29T05:27:58Z",
+  "stale_after": "2026-06-29T17:27:58Z",
+  "hard_expires_at": "2026-07-06T05:27:58Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_TLT",
-  "content_hash": "sha256:78860ff533a7eb25ac9c0986cc9475c6b888c80e4419c40cf08b61e64acf1a09",
+  "content_hash": "sha256:8cd26d137f89a6868d13dbcebb0e53900cb179b54af56561721b246d09d43b87",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "TLT",
     "name": "iShares 20+ Year Treasury Bond ETF",
-    "generated_label": "2026-06-10T13:38:42Z",
+    "generated_label": "2026-06-29T05:27:58Z",
     "summary": "No approved news events are currently linked to TLT.",
     "events": []
   },

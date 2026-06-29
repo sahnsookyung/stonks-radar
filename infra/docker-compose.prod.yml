@@ -20,6 +20,14 @@ services:
     cpus: 0.75
     restart: unless-stopped
 
+  api-elixir:
+    env_file:
+      - path: .secrets/stonks-radar.production.env
+        required: false
+    mem_limit: 1536m
+    cpus: 0.75
+    restart: unless-stopped
+
   worker:
     env_file:
       - path: .secrets/stonks-radar.production.env

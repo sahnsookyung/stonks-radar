@@ -392,9 +392,10 @@ def _apply_runtime_snapshot_data(
 def _apply_calendar_snapshot_data(snapshot: dict[str, Any], context: SnapshotTreeContext) -> None:
     if not context.db_calendar:
         return
-    snapshot["data"]["items"] = context.db_calendar
+    items = _sort_calendar_items(context.db_calendar)
+    snapshot["data"]["items"] = items
     snapshot["data"]["central_banks"] = [
-        item for item in context.db_calendar if "bank" in item["release_type"]
+        item for item in items if "bank" in item["release_type"]
     ]
 
 
@@ -424,7 +425,7 @@ def _apply_home_snapshot_data(
         snapshot["data"]["top_events"] = localized_events + snapshot["data"].get("top_events", [])
     _apply_breaking_market_data(snapshot, locale, context)
     if context.db_calendar:
-        snapshot["data"]["calendar_preview"] = context.db_calendar[:6]
+        snapshot["data"]["calendar_preview"] = _sort_calendar_items(context.db_calendar)[:6]
     snapshot["data"]["generated_label"] = _iso(context.generated_at)
     snapshot["data"]["snapshot_health"]["age_minutes"] = 0
     snapshot["data"]["snapshot_health"]["stale_after"] = snapshot["stale_after"]
@@ -835,6 +836,10 @@ def _calendar_items(db: Session) -> list[dict[str, Any]]:
                    timezone, time_precision, status
             from economic_release
             where status in ('scheduled','released','estimated')
+              and (
+                scheduled_local_date is null
+                or scheduled_local_date >= current_date
+              )
             order by scheduled_local_date nulls last, scheduled_at nulls last
             limit 200
             """
@@ -861,6 +866,19 @@ def _calendar_items(db: Session) -> list[dict[str, Any]]:
         }
         for row in rows
     ]
+
+
+def _sort_calendar_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return sorted(items, key=_calendar_sort_key)
+
+
+def _calendar_sort_key(item: dict[str, Any]) -> tuple[str, str]:
+    date_text = str(item.get("scheduled_local_date") or "")
+    if not date_text and isinstance(item.get("scheduled_at"), str):
+        date_text = str(item["scheduled_at"])[:10]
+    scheduled_at = str(item.get("scheduled_at") or "")
+    time_text = scheduled_at[11:19] if "T" in scheduled_at else ""
+    return (date_text or "9999-12-31", time_text or "23:59:59", str(item.get("id") or ""))
 
 
 def _source_status_data(db: Session, *, seed_status: dict[str, Any] | None = None) -> dict[str, Any]:

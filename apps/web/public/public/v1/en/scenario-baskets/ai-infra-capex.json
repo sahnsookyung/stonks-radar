@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-10T13:38:42Z",
-  "stale_after": "2026-06-11T01:38:42Z",
-  "hard_expires_at": "2026-06-17T13:38:42Z",
+  "generated_at": "2026-06-29T05:27:58Z",
+  "stale_after": "2026-06-29T17:27:58Z",
+  "hard_expires_at": "2026-07-06T05:27:58Z",
   "object_type": "scenario_basket",
   "object_key": "ai-infra-capex",
-  "content_hash": "sha256:4bbcc70aaa9e2ba4ac1770fb5be78d0aaf5a182825f4876a3d74362917c1d32c",
+  "content_hash": "sha256:2a56406070d625f218643b21c8e0c3e43fac1d4c4512278c60e3e3eca1e9b06e",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -154,7 +154,7 @@
       }
     ],
     "risk_summary": "Scenario can fail if source data is stale, policy risk reverses, or sector exposure is weaker than expected.",
-    "freshness_timestamp": "2026-06-10T13:38:42Z",
+    "freshness_timestamp": "2026-06-29T05:27:58Z",
     "data_delay_warning": "Uses delayed/reference indicators only; no brokerage connection or trade execution.",
     "disclaimer": "Research only. Not personalized financial advice. Do not treat this as a buy, sell, or allocation recommendation.",
     "approval_status": "approved"
