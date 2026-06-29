@@ -96,10 +96,9 @@ export function EventMap({
 
   useEffect(() => {
     if (!shouldLoad || !containerRef.current || mapRef.current) return;
-    let disposed = false;
-    let readyFallbackTimer: number | null = null;
+    const lifecycle: MapLifecycle = { disposed: false, readyFallbackTimer: null };
     void Promise.all([import("maplibre-gl"), import("maplibre-gl/dist/maplibre-gl.css")]).then(([module]) => {
-      if (disposed || !containerRef.current) return;
+      if (lifecycle.disposed || !containerRef.current) return;
       const maplibre = module.default;
       maplibreRef.current = maplibre;
       mapRef.current = new maplibre.Map({
@@ -197,8 +196,9 @@ export function EventMap({
       if (shouldExposeMapDebugHook()) {
         (globalThis.window as EventMapDebugWindow).__stonksRadarMap = mapRef.current;
       }
-      mapRef.current.on("load", () => {
-        readyFallbackTimer = handleInitialMapLoad({
+      mapRef.current.on(
+        "load",
+        createInitialMapLoadHandler({
           maplibre,
           map: mapRef.current,
           mapRef,
@@ -209,14 +209,14 @@ export function EventMap({
           hoveredCountryRef,
           setHoveredCountry,
           setIsReady,
-          isDisposed: () => disposed
-        });
-      });
+          lifecycle
+        })
+      );
     });
     return () => {
-      disposed = true;
-      if (readyFallbackTimer !== null) {
-        globalThis.window.clearTimeout(readyFallbackTimer);
+      lifecycle.disposed = true;
+      if (lifecycle.readyFallbackTimer !== null) {
+        globalThis.window.clearTimeout(lifecycle.readyFallbackTimer);
       }
       if (shouldExposeMapDebugHook()) {
         delete (globalThis.window as EventMapDebugWindow).__stonksRadarMap;
@@ -313,6 +313,7 @@ type HoveredCountry = {
 
 type HoveredCountrySetter = (country: HoveredCountry | null) => void;
 type ReadySetter = (ready: boolean) => void;
+type MapLifecycle = { disposed: boolean; readyFallbackTimer: number | null };
 
 type InitialMapLoadOptions = Readonly<{
   maplibre: typeof maplibregl;
@@ -325,7 +326,7 @@ type InitialMapLoadOptions = Readonly<{
   hoveredCountryRef: MutableRef<string | null>;
   setHoveredCountry: HoveredCountrySetter;
   setIsReady: ReadySetter;
-  isDisposed: () => boolean;
+  lifecycle: MapLifecycle;
 }>;
 
 const NEWS_SOURCE_ID = "breaking-news-points";
@@ -345,6 +346,12 @@ function cancelDeferredLoad(handle: number) {
   globalThis.clearTimeout(handle);
 }
 
+function createInitialMapLoadHandler(options: InitialMapLoadOptions) {
+  return () => {
+    options.lifecycle.readyFallbackTimer = handleInitialMapLoad(options);
+  };
+}
+
 function handleInitialMapLoad({
   maplibre,
   map,
@@ -356,7 +363,7 @@ function handleInitialMapLoad({
   hoveredCountryRef,
   setHoveredCountry,
   setIsReady,
-  isDisposed
+  lifecycle
 }: InitialMapLoadOptions) {
   if (!map) return null;
   map.fitBounds(
@@ -371,7 +378,7 @@ function handleInitialMapLoad({
   exposeDebugCountryHover(mapRef, setHoveredCountry, hoveredCountryRef);
   syncNewsMapPoints(maplibre, map, mapPointsRef.current, onMapPointSelectRef);
   syncMarkers(maplibre, map, markerRefs, mapPointsRef.current.length ? [] : eventsRef.current);
-  return scheduleMapReady(map, mapRef, setIsReady, isDisposed);
+  return scheduleMapReady(map, mapRef, setIsReady, lifecycle);
 }
 
 function exposeDebugCountryHover(
@@ -394,10 +401,10 @@ function scheduleMapReady(
   readyMap: maplibregl.Map,
   mapRef: MutableRef<maplibregl.Map | null>,
   setIsReady: ReadySetter,
-  isDisposed: () => boolean
+  lifecycle: MapLifecycle
 ) {
   const markReady = () => {
-    if (isDisposed() || readyMap !== mapRef.current) return;
+    if (lifecycle.disposed || readyMap !== mapRef.current) return;
     readyMap.resize();
     setIsReady(true);
   };

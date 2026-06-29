@@ -657,12 +657,24 @@ def _write_snapshot(
     rel: Path,
 ) -> None:
     snapshot["content_hash"] = _payload_hash(snapshot["data"])
-    target = output_root / rel
+    target = _safe_snapshot_write_path(output_root, rel)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False) + "\n")
     _validate_snapshot_file(target)
     manifest["objects"].setdefault(object_key, {})[locale] = f"public/{rel.as_posix()}"
     files.append(target)
+
+
+def _safe_snapshot_write_path(output_root: Path, rel: Path) -> Path:
+    if rel.is_absolute() or any(part == ".." for part in rel.parts):
+        raise ValueError(f"Unsafe snapshot path: {rel}")
+    root = output_root.resolve()
+    target = (root / rel).resolve()
+    try:
+        target.relative_to(root)
+    except ValueError as exc:
+        raise ValueError(f"Snapshot path escapes output root: {rel}") from exc
+    return target
 
 
 def _write_news_event_snapshots(
