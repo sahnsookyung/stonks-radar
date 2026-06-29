@@ -12,7 +12,10 @@ RUN addgroup --system frw && adduser --system --ingroup frw frw \
 COPY apps/api/pyproject.toml apps/api/pyproject.toml
 COPY apps/api/src apps/api/src
 COPY apps/web/public/public apps/web/public/public
-RUN python -m pip install --no-cache-dir --only-binary=:all: /app/apps/api
+RUN python -m pip install --no-cache-dir --no-compile --only-binary=:all: /app/apps/api \
+    && find /usr/local/lib/python3.12/site-packages \
+      \( -type d -name tests -o -type d -name __pycache__ \) \
+      -prune -exec rm -rf {} +
 COPY apps/api apps/api
 COPY apps/worker apps/worker
 COPY packages packages
