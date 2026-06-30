@@ -98,7 +98,7 @@ export function Shell({ children }: Readonly<{ children: React.ReactNode }>) {
             </div>
           </Link>
           <nav
-            className="scroll-fade-x -mr-3 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto py-1 pr-3 text-sm [contain:paint] md:mr-0 md:pr-0"
+            className="scroll-fade-x-end -mr-3 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto py-1 pr-3 text-sm [contain:paint] md:mr-0 md:pr-0"
             data-allow-horizontal-scroll
             aria-label={locale === "ko" ? "기본 탐색" : "Primary navigation"}
           >

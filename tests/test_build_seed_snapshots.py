@@ -623,6 +623,186 @@ def test_http_json_retries_retryable_status(monkeypatch):
     assert sleeps == [0.0]
 
 
+def test_gdelt_bulk_event_uses_linked_article_title(monkeypatch):
+    build_seed_snapshots._reset_runtime_caches()
+    calls = []
+
+    def fake_source_page_text(url, *, user_agent):
+        calls.append((url, user_agent))
+        return """
+        <html>
+          <head>
+            <meta property="og:title" content="Middle East tensions rise after US, Iran exchange strikes - Arab News">
+            <title>Fallback title</title>
+          </head>
+        </html>
+        """
+
+    monkeypatch.setattr(build_seed_snapshots, "_gdelt_source_page_text", fake_source_page_text)
+    row = [""] * 61
+    row[0] = "1234567890"
+    row[6] = "IRAN"
+    row[16] = "ISRAEL"
+    row[26] = "194"
+    row[29] = "4"
+    row[53] = "LE"
+    row[59] = "20260629152531"
+    row[60] = "https://www.arabnews.com/node/2648994/middle-east"
+
+    parsed = build_seed_snapshots._gdelt_export_row(
+        row,
+        selected={"url": "http://data.gdeltproject.org/gdeltv2/20260629152500.export.CSV.zip"},
+        generated_at=datetime(2026, 6, 29, 15, 35, tzinfo=timezone.utc),
+        max_age_hours=24,
+    )
+
+    assert parsed is not None
+    assert parsed["title"] == "Middle East tensions rise after US, Iran exchange strikes - Arab News"
+    assert not parsed["title"].startswith("GDELT event")
+    assert calls[0][0] == "https://www.arabnews.com/node/2648994/middle-east"
+    assert calls[0][1] == "StonksRadar contact@example.com"
+
+
+def test_gdelt_source_title_fetch_rejects_private_dns_targets(monkeypatch):
+    def fake_getaddrinfo(host, port):
+        assert host == "metadata.example"
+        return [(None, None, None, "", ("169.254.169.254", port))]
+
+    monkeypatch.setattr(build_seed_snapshots.socket, "getaddrinfo", fake_getaddrinfo)
+
+    assert build_seed_snapshots._safe_fetchable_news_url("https://metadata.example/story") == ""
+
+
+def test_gdelt_source_title_fetch_revalidates_redirect_targets(monkeypatch):
+    opened = []
+
+    def fake_getaddrinfo(host, port):
+        assert host == "news.example"
+        return [(None, None, None, "", ("8.8.8.8", port))]
+
+    class FakeOpener:
+        def open(self, req, timeout):
+            opened.append((req.full_url, timeout))
+            raise error.HTTPError(
+                req.full_url,
+                302,
+                "Found",
+                {"Location": "http://169.254.169.254/latest/meta-data"},
+                BytesIO(),
+            )
+
+    monkeypatch.setattr(build_seed_snapshots.socket, "getaddrinfo", fake_getaddrinfo)
+    monkeypatch.setattr(build_seed_snapshots, "_NEWS_FETCH_OPENER", FakeOpener())
+
+    assert build_seed_snapshots._safe_news_page_text(
+        "https://news.example/story",
+        headers={"User-Agent": "test"},
+        timeout=1,
+        max_bytes=1024,
+    ) is None
+    assert opened == [("https://news.example/story", 1)]
+
+
+def test_gdelt_bulk_event_uses_url_slug_when_article_fetch_fails(monkeypatch):
+    build_seed_snapshots._reset_runtime_caches()
+    monkeypatch.setattr(build_seed_snapshots, "_gdelt_source_page_text", lambda *_args, **_kwargs: None)
+    row = [""] * 61
+    row[0] = "1234567890"
+    row[6] = "IRAN"
+    row[16] = "ISRAEL"
+    row[26] = "194"
+    row[29] = "4"
+    row[53] = "LE"
+    row[59] = "20260629152531"
+    row[60] = "https://www.example.com/news/oil-prices-rise-again-after-us-iran-exchange-strikes.html"
+
+    parsed = build_seed_snapshots._gdelt_export_row(
+        row,
+        selected={"url": "http://data.gdeltproject.org/gdeltv2/20260629152500.export.CSV.zip"},
+        generated_at=datetime(2026, 6, 29, 15, 35, tzinfo=timezone.utc),
+        max_age_hours=24,
+    )
+
+    assert parsed is not None
+    assert parsed["title"] == "Oil Prices Rise Again After US Iran Exchange Strikes"
+    assert not parsed["title"].startswith("GDELT event")
+
+
+def test_gdelt_bulk_event_falls_back_to_source_report_title(monkeypatch):
+    build_seed_snapshots._reset_runtime_caches()
+    monkeypatch.setattr(build_seed_snapshots, "_gdelt_source_page_text", lambda *_args, **_kwargs: None)
+    row = [""] * 61
+    row[0] = "1234567890"
+    row[6] = "IRAN"
+    row[16] = "ISRAEL"
+    row[26] = "194"
+    row[29] = "4"
+    row[53] = "LE"
+    row[59] = "20260629152531"
+    row[60] = "https://www.arabnews.com/node/2648994/middle-east"
+
+    parsed = build_seed_snapshots._gdelt_export_row(
+        row,
+        selected={"url": "http://data.gdeltproject.org/gdeltv2/20260629152500.export.CSV.zip"},
+        generated_at=datetime(2026, 6, 29, 15, 35, tzinfo=timezone.utc),
+        max_age_hours=24,
+    )
+
+    assert parsed is not None
+    assert parsed["title"] == "Arab News source report: Iran / Israel"
+    assert not parsed["title"].startswith("GDELT event")
+
+
+def test_seed_geo_alias_does_not_match_short_alias_inside_url_slug():
+    points = build_seed_snapshots.match_geo_points(
+        texts=[
+            "Ukraine https://www.justiceinfo.net/en/160970-ukraines-battered-energy-grid-buckles-under-intense-heat.html"
+        ],
+        max_points=4,
+    )
+
+    area_keys = {point["area_key"] for point in points}
+    assert "UKR" in area_keys
+    assert "GBR" not in area_keys
+
+
+def test_alternative_signals_labels_gdelt_bulk_as_source_linked_report(monkeypatch):
+    generated_at = datetime(2026, 6, 29, 15, 35, tzinfo=timezone.utc)
+    monkeypatch.setattr(build_seed_snapshots, "_runtime_env", lambda: {})
+    monkeypatch.setattr(build_seed_snapshots, "_finra_short_interest_rows", lambda _symbols: [])
+    monkeypatch.setattr(build_seed_snapshots, "_finra_short_volume_rows", lambda _symbols: [])
+    monkeypatch.setattr(build_seed_snapshots, "_latest_short_interest", lambda *_args: [])
+    monkeypatch.setattr(build_seed_snapshots, "_latest_short_volume", lambda *_args: [])
+    monkeypatch.setattr(build_seed_snapshots, "_recent_sec_documents", lambda _ciks: [])
+    monkeypatch.setattr(build_seed_snapshots, "_gdelt_articles", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(build_seed_snapshots, "_rss_articles", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(
+        build_seed_snapshots,
+        "_gdelt_bulk_articles",
+        lambda *_args, **_kwargs: [
+            {
+                "key": "bulk_title",
+                "title": "Oil prices rise as US, Iranian strikes threaten Strait of Hormuz reopening",
+                "url": "https://www.example.com/news/oil-prices-rise.html",
+                "domain": "www.example.com",
+                "seen_date": "20260629152531",
+                "seen_at": "2026-06-29T15:25:31Z",
+                "severity": "high",
+            }
+        ],
+    )
+
+    lanes = build_seed_snapshots._alternative_signals("en", generated_at)
+    news_lane = next(lane for lane in lanes if lane["key"] == "breaking_market_news")
+    item = news_lane["items"][0]
+
+    assert item["label"] == "Oil prices rise as US, Iranian strikes threaten Strait of Hormuz reopening"
+    assert item["value"] == "source-linked report"
+    assert item["detail"] == "Source-linked report; www.example.com; seen 20260629152531"
+    assert item["source"] == "GDELT linked sources"
+    assert "GDELT event file" not in json.dumps(item)
+
+
 def test_twelve_data_quote_series_treats_date_only_payload_as_daily(monkeypatch):
     build_seed_snapshots._reset_runtime_caches()
     monkeypatch.setattr(build_seed_snapshots, "_runtime_env", lambda: {"TWELVE_DATA_API_KEY": "test-key"})
@@ -707,6 +887,22 @@ def test_build_snapshots_writes_news_seed_snapshots(tmp_path, monkeypatch):
     monkeypatch.setattr(build_seed_snapshots, "_ishares_ewy_nav_series", lambda: None)
     monkeypatch.setattr(build_seed_snapshots, "_yahoo_chart_series", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(build_seed_snapshots, "_stooq_quote_series", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        build_seed_snapshots,
+        "_gdelt_articles",
+        lambda query, *, generated_at=None, **_kwargs: [
+            {
+                "key": f"deterministic_{sum(ord(ch) for ch in query) % 100000}",
+                "title": "Oil and chip supply risks rise across Iran, Israel, Taiwan, and the Red Sea",
+                "url": f"https://example.com/news/{sum(ord(ch) for ch in query) % 100000}",
+                "domain": "example.com",
+                "seen_date": (generated_at or datetime.now(timezone.utc)).strftime("%Y%m%d%H%M%S"),
+                "seen_at": (generated_at or datetime.now(timezone.utc)).isoformat().replace("+00:00", "Z"),
+            }
+        ],
+    )
+    monkeypatch.setattr(build_seed_snapshots, "_rss_articles", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(build_seed_snapshots, "_gdelt_bulk_articles", lambda *_args, **_kwargs: [])
     monkeypatch.setattr(
         build_seed_snapshots,
         "_sec_13f_portfolio",

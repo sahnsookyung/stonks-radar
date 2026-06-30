@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-29T13:35:27Z",
-  "stale_after": "2026-06-30T01:35:27Z",
-  "hard_expires_at": "2026-07-06T13:35:27Z",
+  "generated_at": "2026-06-30T08:52:42Z",
+  "stale_after": "2026-06-30T20:52:42Z",
+  "hard_expires_at": "2026-07-07T08:52:42Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_IONQ",
-  "content_hash": "sha256:dad82128f73d452fca3939dc434b52054e418aaf04288ced2efdfd0131e16244",
+  "content_hash": "sha256:04d0a3b79ea40395c30a6a6bf5ba15bac29f84aaa9318423a3b8ec7f0b595daf",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "IONQ",
     "name": "아이온큐",
-    "generated_label": "2026-06-29T13:35:27Z",
+    "generated_label": "2026-06-30T08:52:42Z",
     "summary": "아이온큐에 대해 공개 스냅샷에 승인·출처 연결 뉴스 이벤트 1건이 있습니다.",
     "events": [
       {
@@ -121,9 +121,9 @@
         "title": "아이온큐 계약 및 자금 뉴스가 양자 섹터 티커 맥락으로 분류",
         "summary": "IONQ는 회사, 공시, 섹터 맥락 근거가 있을 때만 티커 뉴스 레이어에 표시됩니다.",
         "event_type": "company_update",
-        "first_seen_at": "2026-06-28T19:35:27Z",
-        "last_seen_at": "2026-06-29T09:35:27Z",
-        "published_at": "2026-06-29T09:35:27Z",
+        "first_seen_at": "2026-06-29T14:52:42Z",
+        "last_seen_at": "2026-06-30T04:52:42Z",
+        "published_at": "2026-06-30T04:52:42Z",
         "freshness": "watch",
         "severity": "medium",
         "confidence": 0.76,
@@ -185,7 +185,7 @@
             "source_key": "ionq_ir",
             "policy_version": 1,
             "title": "아이온큐 뉴스",
-            "published_at": "2026-06-28T19:35:27Z",
+            "published_at": "2026-06-29T14:52:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -195,7 +195,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "아이온큐 SEC 공시",
-            "published_at": "2026-06-28T19:35:27Z",
+            "published_at": "2026-06-29T14:52:42Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           }

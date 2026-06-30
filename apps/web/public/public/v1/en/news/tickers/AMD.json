@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-29T13:35:27Z",
-  "stale_after": "2026-06-30T01:35:27Z",
-  "hard_expires_at": "2026-07-06T13:35:27Z",
+  "generated_at": "2026-06-30T08:52:42Z",
+  "stale_after": "2026-06-30T20:52:42Z",
+  "hard_expires_at": "2026-07-07T08:52:42Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_AMD",
-  "content_hash": "sha256:71d71086f6801ebfe50c4e937abaa4351fd4facf0cc398c60e19756799aa9593",
+  "content_hash": "sha256:34910c03443bffe959f6a69bcd0245a1c796ea0930c1b0a7df438beb56fd7c41",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "AMD",
     "name": "Advanced Micro Devices, Inc.",
-    "generated_label": "2026-06-29T13:35:27Z",
+    "generated_label": "2026-06-30T08:52:42Z",
     "summary": "No approved news events are currently linked to AMD.",
     "events": []
   },

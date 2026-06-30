@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-29T13:35:27Z",
-  "stale_after": "2026-06-30T01:35:27Z",
-  "hard_expires_at": "2026-07-06T13:35:27Z",
+  "generated_at": "2026-06-30T08:52:42Z",
+  "stale_after": "2026-06-30T20:52:42Z",
+  "hard_expires_at": "2026-07-07T08:52:42Z",
   "object_type": "sector_page",
   "object_key": "big-tech",
-  "content_hash": "sha256:f0732440babca51ff182add64d1536272e96e7d100b24cfddcf03240aaf863df",
+  "content_hash": "sha256:520e10a6cc5cb450b08e2dccddb4d2d887e41ca4777f8586d5f8ae5656bd6249",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -302,8 +302,8 @@
         "symbol": "005930.KS",
         "title": "005930.KS: 중국발 수출통제 리스크가 AI 반도체 공급망에 높은 상태로 유지",
         "catalyst_type": "source_review",
-        "scheduled_at": "2026-06-29T13:35:27Z",
-        "scheduled_local_date": "2026-06-29",
+        "scheduled_at": "2026-06-30T08:52:42Z",
+        "scheduled_local_date": "2026-06-30",
         "timezone": "UTC",
         "source": "BIS",
         "source_url": "https://www.bis.gov/",
@@ -316,8 +316,8 @@
         "symbol": "NVDA",
         "title": "NVDA: 중국발 수출통제 리스크가 AI 반도체 공급망에 높은 상태로 유지",
         "catalyst_type": "source_review",
-        "scheduled_at": "2026-06-29T13:35:27Z",
-        "scheduled_local_date": "2026-06-29",
+        "scheduled_at": "2026-06-30T08:52:42Z",
+        "scheduled_local_date": "2026-06-30",
         "timezone": "UTC",
         "source": "BIS",
         "source_url": "https://www.bis.gov/",
@@ -331,9 +331,9 @@
         "title": "중국발 수출통제 리스크가 AI 반도체 공급망에 높은 상태로 유지",
         "summary": "공식 정책 모니터링은 수출통제를 엔비디아, 삼성전자, 일본 장비 업체, 유럽 장비 노출과 연결합니다.",
         "event_type": "trade_policy",
-        "first_seen_at": "2026-06-27T13:35:27Z",
-        "last_seen_at": "2026-06-29T13:35:27Z",
-        "published_at": "2026-06-29T13:35:27Z",
+        "first_seen_at": "2026-06-28T08:52:42Z",
+        "last_seen_at": "2026-06-30T08:52:42Z",
+        "published_at": "2026-06-30T08:52:42Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.78,
@@ -430,7 +430,7 @@
             "source_key": "bis",
             "policy_version": 1,
             "title": "미 산업안보국 수출통제",
-            "published_at": "2026-06-28T19:35:27Z",
+            "published_at": "2026-06-29T14:52:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -440,7 +440,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "영향 기업 공시",
-            "published_at": "2026-06-28T19:35:27Z",
+            "published_at": "2026-06-29T14:52:42Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           },
@@ -450,7 +450,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "수출관리규정 참고",
-            "published_at": "2026-06-28T19:35:27Z",
+            "published_at": "2026-06-29T14:52:42Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }
@@ -461,9 +461,9 @@
         "title": "FOMC, 일본은행, 한국은행, ECB, 브라질 COPOM 결정 일정 리스크",
         "summary": "공식 일정을 하나의 정책 이벤트 워치로 묶어 앱을 벗어나지 않고 금리 결정일을 확인할 수 있습니다.",
         "event_type": "central_bank_calendar",
-        "first_seen_at": "2026-06-27T13:35:27Z",
-        "last_seen_at": "2026-06-29T13:35:27Z",
-        "published_at": "2026-06-29T13:35:27Z",
+        "first_seen_at": "2026-06-28T08:52:42Z",
+        "last_seen_at": "2026-06-30T08:52:42Z",
+        "published_at": "2026-06-30T08:52:42Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.86,
@@ -543,7 +543,7 @@
             "source_key": "federal_reserve",
             "policy_version": 1,
             "title": "FOMC 일정",
-            "published_at": "2026-06-28T19:35:27Z",
+            "published_at": "2026-06-29T14:52:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -553,7 +553,7 @@
             "source_key": "bank_of_korea",
             "policy_version": 1,
             "title": "통화정책 일정",
-            "published_at": "2026-06-28T19:35:27Z",
+            "published_at": "2026-06-29T14:52:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -563,7 +563,7 @@
             "source_key": "bank_of_japan",
             "policy_version": 1,
             "title": "통화정책회의",
-            "published_at": "2026-06-28T19:35:27Z",
+            "published_at": "2026-06-29T14:52:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -573,7 +573,7 @@
             "source_key": "ecb",
             "policy_version": 1,
             "title": "ECB 정책위원회 일정",
-            "published_at": "2026-06-28T19:35:27Z",
+            "published_at": "2026-06-29T14:52:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -583,7 +583,7 @@
             "source_key": "bcb",
             "policy_version": 1,
             "title": "COPOM 일정",
-            "published_at": "2026-06-28T19:35:27Z",
+            "published_at": "2026-06-29T14:52:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           }
@@ -602,134 +602,146 @@
       {
         "key": "nasdaq_composite",
         "label": "나스닥 종합",
-        "value": "25,615.87",
+        "value": "25,820.15",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote 관측 2026-06-29T13:35:55Z; 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-06-29T13:35:55Z",
+        "freshness": "watch",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-29T21:15:59Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-29T21:15:59Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 43200,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EIXIC?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-29T13:30:00Z",
-            "value": 25522.435546875
+            "date": "2026-06-29T15:06:00Z",
+            "value": 25585.359375
           },
           {
-            "date": "2026-06-29T13:31:00Z",
-            "value": 25564.775390625
+            "date": "2026-06-29T15:54:00Z",
+            "value": 25639.74609375
           },
           {
-            "date": "2026-06-29T13:32:00Z",
-            "value": 25618.28515625
+            "date": "2026-06-29T16:42:00Z",
+            "value": 25642.0703125
           },
           {
-            "date": "2026-06-29T13:33:00Z",
-            "value": 25623.888671875
+            "date": "2026-06-29T17:30:00Z",
+            "value": 25765.7265625
           },
           {
-            "date": "2026-06-29T13:34:00Z",
-            "value": 25641.482421875
+            "date": "2026-06-29T18:18:00Z",
+            "value": 25760.228515625
           },
           {
-            "date": "2026-06-29T13:35:55Z",
-            "value": 25615.873046875
+            "date": "2026-06-29T19:06:00Z",
+            "value": 25792.98828125
+          },
+          {
+            "date": "2026-06-29T19:54:00Z",
+            "value": 25792.25
+          },
+          {
+            "date": "2026-06-29T20:00:00Z",
+            "value": 25820.14453125
           }
         ],
-        "refresh_delta": 318.2560000000012,
-        "refresh_delta_percent": 1.2580473488866608
+        "refresh_delta": 522.5280000000021,
+        "refresh_delta_percent": 2.0655226142446623
       },
       {
         "key": "nasdaq_100",
         "label": "나스닥 100",
-        "value": "29,445.35",
+        "value": "29,774.75",
         "source": "Yahoo Finance delayed quote",
-        "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote 관측 2026-06-29T13:35:53Z; 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-06-29T13:35:53Z",
+        "freshness": "watch",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-29T21:15:59Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-29T21:15:59Z",
         "coverage_status": "active",
-        "refresh_seconds": 900,
+        "refresh_seconds": 43200,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-29T13:30:00Z",
-            "value": 29335.3515625
+            "date": "2026-06-29T15:06:00Z",
+            "value": 29416.24609375
           },
           {
-            "date": "2026-06-29T13:31:00Z",
-            "value": 29369.0234375
+            "date": "2026-06-29T15:54:00Z",
+            "value": 29538.03515625
           },
           {
-            "date": "2026-06-29T13:32:00Z",
-            "value": 29435.333984375
+            "date": "2026-06-29T16:42:00Z",
+            "value": 29617.12109375
           },
           {
-            "date": "2026-06-29T13:33:00Z",
-            "value": 29439.78125
+            "date": "2026-06-29T17:30:00Z",
+            "value": 29731.333984375
           },
           {
-            "date": "2026-06-29T13:34:00Z",
-            "value": 29475.197265625
+            "date": "2026-06-29T18:18:00Z",
+            "value": 29732.486328125
           },
           {
-            "date": "2026-06-29T13:35:00Z",
-            "value": 29445.353515625
+            "date": "2026-06-29T19:06:00Z",
+            "value": 29734.875
           },
           {
-            "date": "2026-06-29T13:35:53Z",
-            "value": 29445.353515625
+            "date": "2026-06-29T19:54:00Z",
+            "value": 29708.666015625
+          },
+          {
+            "date": "2026-06-29T20:00:00Z",
+            "value": 29774.751953125
           }
         ],
-        "refresh_delta": 327.11599999999817,
-        "refresh_delta_percent": 1.1234058874029333
+        "refresh_delta": 656.5139999999992,
+        "refresh_delta_percent": 2.2546487874712717
       },
       {
         "key": "vix",
         "label": "VIX",
-        "value": "18.23",
+        "value": "17.64",
         "source": "Yahoo Finance delayed quote",
         "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote 관측 2026-06-29T13:21:01Z; 실시간 거래소 시세를 보장하지 않습니다.",
-        "updated_at": "2026-06-29T13:21:01Z",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-06-30T08:38:01Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-30T08:38:01Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-29T08:45:00Z",
-            "value": 18.40999984741211
+            "date": "2026-06-30T07:35:00Z",
+            "value": 17.489999771118164
           },
           {
-            "date": "2026-06-29T09:30:00Z",
-            "value": 18.360000610351562
+            "date": "2026-06-30T07:45:00Z",
+            "value": 17.540000915527344
           },
           {
-            "date": "2026-06-29T10:15:00Z",
-            "value": 18.43000030517578
+            "date": "2026-06-30T07:55:00Z",
+            "value": 17.59000015258789
           },
           {
-            "date": "2026-06-29T11:00:00Z",
-            "value": 18.229999542236328
+            "date": "2026-06-30T08:05:00Z",
+            "value": 17.549999237060547
           },
           {
-            "date": "2026-06-29T11:45:00Z",
-            "value": 18.299999237060547
+            "date": "2026-06-30T08:15:00Z",
+            "value": 17.610000610351562
           },
           {
-            "date": "2026-06-29T12:30:00Z",
-            "value": 18.280000686645508
+            "date": "2026-06-30T08:25:00Z",
+            "value": 17.530000686645508
           },
           {
-            "date": "2026-06-29T13:15:00Z",
-            "value": 18.170000076293945
+            "date": "2026-06-30T08:35:00Z",
+            "value": 17.610000610351562
           },
           {
-            "date": "2026-06-29T13:21:01Z",
-            "value": 18.229999542236328
+            "date": "2026-06-30T08:38:01Z",
+            "value": 17.639999389648438
           }
         ],
-        "refresh_delta": -0.17999999999999972,
-        "refresh_delta_percent": -0.9777294948397593
+        "refresh_delta": -0.00999999999999801,
+        "refresh_delta_percent": -0.056657223796022727
       }
     ],
     "scenario_baskets": [
@@ -741,7 +753,7 @@
         "freshness": "fresh",
         "coverage_status": "active",
         "evidence_count": 2,
-        "last_observed_at": "2026-06-29T13:35:27Z",
+        "last_observed_at": "2026-06-30T08:52:42Z",
         "primary_source_url": "https://www.bis.gov/",
         "external_tracker_url": "https://www.nextgig.rocks/dash/ai-tracker/"
       },
@@ -753,7 +765,7 @@
         "freshness": "unsupported",
         "coverage_status": "coverage_gap",
         "evidence_count": 0,
-        "last_observed_at": "2026-06-29T13:35:27Z",
+        "last_observed_at": "2026-06-30T08:52:42Z",
         "primary_source_url": "https://www.eia.gov/petroleum/supply/weekly/"
       }
     ],

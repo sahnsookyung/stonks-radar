@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import hashlib
 import csv
+import ipaddress
 import io
 import json
 import os
 import re
+import socket
 import time
 import zipfile
 from base64 import b64encode
@@ -33,6 +35,8 @@ BREAKING_MARKET_DOC_QUERY_RECORDS = 24
 BREAKING_MARKET_RSS_RECORDS = 16
 BREAKING_MARKET_BULK_MIN_ITEMS = 96
 BREAKING_MARKET_BULK_RECORDS = 180
+GDELT_BULK_TITLE_FETCH_LIMIT = 48
+GDELT_SOURCE_TITLE_MAX_REDIRECTS = 3
 BREAKING_MARKET_LANE_ITEM_LIMIT = 160
 GOOGLE_NEWS_RSS_URL = "https://news.google.com/rss/search"
 YAHOO_FINANCE_RSS_URL = "https://feeds.finance.yahoo.com/rss/2.0/headline"
@@ -134,6 +138,8 @@ _EARNINGS_CALENDAR_CACHE: dict[tuple[str, str, str], dict[str, Any] | None] = {}
 _TWELVE_DATA_QUOTE_CACHE: dict[str, dict[str, Any] | None] = {}
 _TREASURY_YIELD_CACHE: dict[str, Any] | None = None
 _GDELT_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
+_GDELT_SOURCE_TITLE_CACHE: dict[str, str | None] = {}
+_GDELT_SOURCE_TITLE_FETCH_COUNT = 0
 _RSS_ARTICLE_CACHE: dict[str, list[dict[str, str]]] = {}
 _TRACKED_ENTITY_CACHE: list[dict[str, Any]] | None = None
 _GEOPOLITICAL_REGISTRY_CACHE: dict[str, Any] | None = None
@@ -142,6 +148,14 @@ _LAST_FRED_REQUEST_AT = 0.0
 _LAST_KRX_REQUEST_AT = 0.0
 _LAST_FINRA_REQUEST_AT = 0.0
 _LAST_HTTP_PROVIDER_REQUEST_AT: dict[str, float] = {}
+
+
+class _NoRedirectHandler(request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ANN001
+        return None
+
+
+_NEWS_FETCH_OPENER = request.build_opener(request.ProxyHandler({}), _NoRedirectHandler)
 
 HTTP_RETRY_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 HTTP_DEFAULT_MAX_ATTEMPTS = 2
@@ -601,7 +615,7 @@ def build_snapshots() -> None:
 
 
 def _reset_runtime_caches() -> None:
-    global _RUNTIME_ENV, _MOF_JGB_CACHE, _TREASURY_YIELD_CACHE, _LAST_FRED_REQUEST_AT, _LAST_KRX_REQUEST_AT, _LAST_FINRA_REQUEST_AT, _CUSIP_TICKER_OVERRIDES_CACHE, _GEOPOLITICAL_REGISTRY_CACHE
+    global _RUNTIME_ENV, _MOF_JGB_CACHE, _TREASURY_YIELD_CACHE, _LAST_FRED_REQUEST_AT, _LAST_KRX_REQUEST_AT, _LAST_FINRA_REQUEST_AT, _CUSIP_TICKER_OVERRIDES_CACHE, _GEOPOLITICAL_REGISTRY_CACHE, _GDELT_SOURCE_TITLE_FETCH_COUNT
     _RUNTIME_ENV = None
     _FRED_CACHE.clear()
     _MOF_JGB_CACHE = None
@@ -625,6 +639,8 @@ def _reset_runtime_caches() -> None:
     _TWELVE_DATA_QUOTE_CACHE.clear()
     _TREASURY_YIELD_CACHE = None
     _GDELT_ARTICLE_CACHE.clear()
+    _GDELT_SOURCE_TITLE_CACHE.clear()
+    _GDELT_SOURCE_TITLE_FETCH_COUNT = 0
     _RSS_ARTICLE_CACHE.clear()
     _GEOPOLITICAL_REGISTRY_CACHE = None
     _SECTOR_SHORT_FACT_CACHE.clear()
@@ -2073,6 +2089,280 @@ def _gdelt_bulk_articles(
     return rows
 
 
+def _gdelt_source_article_title(url: str) -> str | None:
+    global _GDELT_SOURCE_TITLE_FETCH_COUNT
+    safe_url = _safe_fetchable_news_url(url)
+    if not safe_url:
+        return None
+    if safe_url in _GDELT_SOURCE_TITLE_CACHE:
+        return _GDELT_SOURCE_TITLE_CACHE[safe_url]
+    title_hint = _article_title_from_url_path(safe_url)
+    if _GDELT_SOURCE_TITLE_FETCH_COUNT >= GDELT_BULK_TITLE_FETCH_LIMIT:
+        _GDELT_SOURCE_TITLE_CACHE[safe_url] = title_hint
+        return title_hint
+    user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
+    _GDELT_SOURCE_TITLE_FETCH_COUNT += 1
+    html = _gdelt_source_page_text(safe_url, user_agent=user_agent)
+    title = _article_title_from_html(html or "") or title_hint
+    _GDELT_SOURCE_TITLE_CACHE[safe_url] = title
+    return title
+
+
+def _gdelt_source_page_text(url: str, *, user_agent: str) -> str | None:
+    return _safe_news_page_text(
+        url,
+        headers={
+            "User-Agent": user_agent,
+            "Accept": "text/html,application/xhtml+xml,text/plain;q=0.8,*/*;q=0.5",
+            "Range": "bytes=0-179999",
+        },
+        timeout=3,
+        max_bytes=180_000,
+    )
+
+
+def _safe_news_page_text(
+    url: str,
+    *,
+    headers: dict[str, str],
+    timeout: int,
+    max_bytes: int,
+    max_redirects: int = GDELT_SOURCE_TITLE_MAX_REDIRECTS,
+) -> str | None:
+    current_url = _safe_fetchable_news_url(url)
+    redirects = 0
+    while current_url:
+        try:
+            req = request.Request(current_url, headers=headers)
+            with _NEWS_FETCH_OPENER.open(req, timeout=timeout) as response:
+                body = response.read(max_bytes + 1)
+            if len(body) > max_bytes:
+                return None
+            return body.decode("utf-8", errors="ignore")
+        except error.HTTPError as exc:
+            if exc.code < 300 or exc.code >= 400:
+                return None
+            if redirects >= max_redirects:
+                return None
+            location = exc.headers.get("Location")
+            if not location:
+                return None
+            redirects += 1
+            current_url = _safe_fetchable_news_url(parse.urljoin(current_url, location))
+        except (TimeoutError, ValueError, error.URLError):
+            return None
+    return None
+
+
+def _safe_fetchable_news_url(value: str) -> str:
+    parsed = parse.urlparse(value.strip())
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return ""
+    host = parsed.hostname.lower().strip("[]")
+    if host in {"localhost", "localhost.localdomain"} or host.endswith(".localhost"):
+        return ""
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        address = None
+    if address and (
+        address.is_private
+        or address.is_loopback
+        or address.is_link_local
+        or address.is_multicast
+        or address.is_reserved
+        or address.is_unspecified
+    ):
+        return ""
+    try:
+        parsed.port
+    except ValueError:
+        return ""
+    if host == "gdeltproject.org" or host.endswith(".gdeltproject.org") or parsed.path.endswith(".zip"):
+        return ""
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    if not _news_host_resolves_publicly(host, port):
+        return ""
+    return parsed.geturl()
+
+
+def _news_host_resolves_publicly(host: str, port: int) -> bool:
+    try:
+        infos = socket.getaddrinfo(host, port)
+    except socket.gaierror:
+        return False
+    if not infos:
+        return False
+    for info in infos:
+        try:
+            address = ipaddress.ip_address(info[4][0])
+        except (IndexError, ValueError):
+            return False
+        if _blocked_news_ip(address):
+            return False
+    return True
+
+
+def _blocked_news_ip(address: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    return (
+        not address.is_global
+        or address.is_private
+        or address.is_loopback
+        or address.is_link_local
+        or address.is_multicast
+        or address.is_reserved
+        or address.is_unspecified
+    )
+
+
+def _article_title_from_html(html: str) -> str | None:
+    for pattern in (
+        r"<meta[^>]+property=[\"']og:title[\"'][^>]+content=[\"']([^\"']+)[\"']",
+        r"<meta[^>]+content=[\"']([^\"']+)[\"'][^>]+property=[\"']og:title[\"']",
+        r"<meta[^>]+name=[\"']twitter:title[\"'][^>]+content=[\"']([^\"']+)[\"']",
+        r"<meta[^>]+content=[\"']([^\"']+)[\"'][^>]+name=[\"']twitter:title[\"']",
+        r"<title[^>]*>(.*?)</title>",
+    ):
+        title = _clean_article_title(_html_field(html, pattern) or "")
+        if title:
+            return title
+    return None
+
+
+def _article_title_from_url_path(url: str) -> str | None:
+    parsed = parse.urlparse(url)
+    candidates: list[tuple[int, str]] = []
+    for raw_segment in parsed.path.split("/"):
+        segment = parse.unquote(raw_segment).strip()
+        segment = re.sub(r"\.(html?|amp|php|aspx?)$", "", segment, flags=re.IGNORECASE)
+        if not segment or segment.isdigit():
+            continue
+        words = [word for word in re.split(r"[-_\s]+", segment) if re.search(r"[A-Za-z]", word)]
+        if len(words) < 3:
+            continue
+        score = len(words) * 10 + len(segment)
+        candidates.append((score, segment))
+    if not candidates:
+        return None
+    segment = max(candidates)[1]
+    words = [word for word in re.split(r"[-_\s]+", segment) if word]
+    title = " ".join(_title_word(word) for word in words)
+    return _clean_article_title(title)
+
+
+def _gdelt_metadata_fallback_title(source_url: str, actors: str) -> str:
+    source = _source_domain_display_name(source_url)
+    subject = _actor_title(actors)
+    if source and subject:
+        return f"{source} source report: {subject}"
+    if source:
+        return f"{source} source report"
+    if subject:
+        return f"Source report: {subject}"
+    return "Source-linked market event"
+
+
+def _source_domain_display_name(url: str) -> str | None:
+    host = parse.urlparse(url).hostname or ""
+    labels = [
+        label
+        for label in host.lower().split(".")
+        if label and label not in {"www", "m", "mobile", "en", "eng", "news"}
+    ]
+    common_tld_labels = {
+        "com",
+        "co",
+        "net",
+        "org",
+        "eu",
+        "pk",
+        "uk",
+        "jp",
+        "kr",
+        "au",
+        "ca",
+        "in",
+    }
+    while labels and labels[-1] in common_tld_labels:
+        labels.pop()
+    if not labels:
+        return None
+    core = labels[-1]
+    known = {
+        "aljazeera": "Al Jazeera",
+        "arabnews": "Arab News",
+        "hindustantimes": "Hindustan Times",
+        "kavkaz-uzel": "Kavkaz Uzel",
+        "radiofreeeurope": "Radio Free Europe",
+        "rferl": "Radio Free Europe",
+        "themoscowtimes": "The Moscow Times",
+        "wsj": "WSJ",
+    }
+    if core in known:
+        return known[core]
+    words = [word for word in re.split(r"[-_]+", core) if word]
+    if not words:
+        return None
+    return " ".join(_title_word(word) for word in words)
+
+
+def _actor_title(actors: str) -> str:
+    parts = [part.strip() for part in actors.split("/") if part.strip()]
+    return " / ".join(_title_word(part.lower()) for part in parts)
+
+
+def _title_word(value: str) -> str:
+    upper = value.upper()
+    acronyms = {
+        "AI",
+        "API",
+        "BIS",
+        "CEO",
+        "CPI",
+        "ECB",
+        "EU",
+        "FBI",
+        "FOMC",
+        "GDP",
+        "IEA",
+        "IPO",
+        "LNG",
+        "NASA",
+        "OPEC",
+        "SEC",
+        "TSMC",
+        "UAE",
+        "UK",
+        "UN",
+        "US",
+        "USA",
+        "WTI",
+    }
+    if upper in acronyms:
+        return upper
+    if value.isupper() and len(value) <= 5:
+        return value
+    return value[:1].upper() + value[1:].lower()
+
+
+def _clean_article_title(value: str) -> str | None:
+    text = _safe_display_text(re.sub(r"\s+", " ", unescape(value)).strip(), 180)
+    if not text:
+        return None
+    lower = text.lower()
+    blocked_titles = {
+        "access denied",
+        "attention required!",
+        "403 forbidden",
+        "404 not found",
+        "just a moment...",
+        "service unavailable",
+    }
+    if lower in blocked_titles or lower.startswith("gdelt event"):
+        return None
+    return text
+
+
 def _select_gdelt_bulk_file(text: str, *, suffix: str) -> dict[str, str] | None:
     for raw_line in text.splitlines():
         parts = raw_line.split()
@@ -2151,9 +2441,8 @@ def _gdelt_export_row(
     if not match_geo_points(texts=[text_blob], max_points=1):
         return None
     actors = " / ".join(value for value in (actor1, actor2) if value) or "reported actors"
-    title = f"GDELT event {event_code or 'update'}: {actors}"
-    if place:
-        title = f"{title} near {place}"
+    metadata_title = _gdelt_metadata_fallback_title(source_url, actors)
+    title = _gdelt_source_article_title(source_url) or metadata_title
     return {
         "key": hashlib.sha1(f"{row[0]}:{source_url}:{seen_at}".encode()).hexdigest()[:12],
         "title": _safe_display_text(title, 140),
@@ -4815,10 +5104,10 @@ def _alternative_signals(locale: str, generated_at: datetime) -> list[dict[str, 
                     f"gdelt_bulk_{article['key']}",
                     article["title"],
                     article["title"],
-                    _t(locale, "event metadata", "이벤트 메타데이터"),
-                    f"GDELT event file; {article['domain']}; seen {article['seen_date']}",
-                    f"GDELT 이벤트 파일; {article['domain']}; 관측 {article['seen_date']}",
-                    "GDELT Event Files",
+                    _t(locale, "source-linked report", "출처 연결 기사"),
+                    f"Source-linked report; {article['domain']}; seen {article['seen_date']}",
+                    f"출처 연결 기사; {article['domain']}; 관측 {article['seen_date']}",
+                    "GDELT linked sources",
                     article.get("severity") or "medium",
                     "fresh",
                     article["url"],
@@ -5199,7 +5488,7 @@ def _geo_area_score(area: dict[str, Any], text: str, region_keys: set[str], topi
         score += 0.85
         reason_codes.append("explicit_region")
     for alias in area["aliases"]:
-        if alias in text:
+        if _geo_alias_matches(text, alias):
             score += 0.82 if area["kind"] == "chokepoint" else 0.72
             reason_codes.append("alias_match")
             break
@@ -5211,6 +5500,14 @@ def _geo_area_score(area: dict[str, Any], text: str, region_keys: set[str], topi
         score += 0.08
         reason_codes.append("chokepoint_context")
     return min(1.0, score), reason_codes
+
+
+def _geo_alias_matches(text: str, alias: str) -> bool:
+    if not alias:
+        return False
+    if re.fullmatch(r"[a-z0-9 ]+", alias):
+        return re.search(rf"(?<![a-z0-9]){re.escape(alias)}(?![a-z0-9])", text) is not None
+    return alias in text
 
 
 def _breaking_market_projection_from_signals(lanes: list[dict[str, Any]], *, generated_at: datetime) -> dict[str, Any]:

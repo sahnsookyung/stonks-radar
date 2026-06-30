@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-29T13:35:27Z",
-  "stale_after": "2026-06-30T01:35:27Z",
-  "hard_expires_at": "2026-07-06T13:35:27Z",
+  "generated_at": "2026-06-30T08:52:42Z",
+  "stale_after": "2026-06-30T20:52:42Z",
+  "hard_expires_at": "2026-07-07T08:52:42Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_NVDA",
-  "content_hash": "sha256:2d1cb8570c9375849603137c49618c0b5d7a66ef028d38c6d5ff3c743219b211",
+  "content_hash": "sha256:be97f5322ac7ec80743f031e8ad19a8051a24d01c7a9a5d4a77606dc8dd75145",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "NVDA",
     "name": "엔비디아",
-    "generated_label": "2026-06-29T13:35:27Z",
+    "generated_label": "2026-06-30T08:52:42Z",
     "summary": "엔비디아에 대해 공개 스냅샷에 승인·출처 연결 뉴스 이벤트 1건이 있습니다.",
     "events": [
       {
@@ -121,9 +121,9 @@
         "title": "중국발 수출통제 리스크가 AI 반도체 공급망에 높은 상태로 유지",
         "summary": "공식 정책 모니터링은 수출통제를 엔비디아, 삼성전자, 일본 장비 업체, 유럽 장비 노출과 연결합니다.",
         "event_type": "trade_policy",
-        "first_seen_at": "2026-06-27T13:35:27Z",
-        "last_seen_at": "2026-06-29T13:35:27Z",
-        "published_at": "2026-06-29T13:35:27Z",
+        "first_seen_at": "2026-06-28T08:52:42Z",
+        "last_seen_at": "2026-06-30T08:52:42Z",
+        "published_at": "2026-06-30T08:52:42Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.78,
@@ -220,7 +220,7 @@
             "source_key": "bis",
             "policy_version": 1,
             "title": "미 산업안보국 수출통제",
-            "published_at": "2026-06-28T19:35:27Z",
+            "published_at": "2026-06-29T14:52:42Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -230,7 +230,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "영향 기업 공시",
-            "published_at": "2026-06-28T19:35:27Z",
+            "published_at": "2026-06-29T14:52:42Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           },
@@ -240,7 +240,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "수출관리규정 참고",
-            "published_at": "2026-06-28T19:35:27Z",
+            "published_at": "2026-06-29T14:52:42Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }

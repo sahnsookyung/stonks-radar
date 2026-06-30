@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-29T13:35:27Z",
-  "stale_after": "2026-06-30T01:35:27Z",
-  "hard_expires_at": "2026-07-06T13:35:27Z",
+  "generated_at": "2026-06-30T08:52:42Z",
+  "stale_after": "2026-06-30T20:52:42Z",
+  "hard_expires_at": "2026-07-07T08:52:42Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_MSFT",
-  "content_hash": "sha256:0676d4cfc24393ef53d2b499f69b9b51313b63ff45e5e650324d822bcade6256",
+  "content_hash": "sha256:acf3774da99c06cfa22194cf265544d8e17cc26d53aa9f08f581ff440e3eea63",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "MSFT",
     "name": "마이크로소프트",
-    "generated_label": "2026-06-29T13:35:27Z",
+    "generated_label": "2026-06-30T08:52:42Z",
     "summary": "MSFT에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
     "events": []
   },

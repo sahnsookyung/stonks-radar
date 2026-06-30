@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { HomeSnapshotData, SnapshotEnvelope } from "@frw/shared-types";
 import { YieldCurvesPage } from "./YieldCurvesPage";
@@ -78,12 +78,23 @@ describe("YieldCurvesPage", () => {
     );
 
     expect(await screen.findByText("Government Yield Curves")).toBeInTheDocument();
-    expect(screen.getByText("US Treasury")).toBeInTheDocument();
-    expect(screen.getByText("Japan Government Bonds")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Compare countries" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("img", { name: "Yield curve comparison chart" })).toBeInTheDocument();
+    expect(screen.getByText("Snapshot curve table")).toBeInTheDocument();
+    expect(screen.getByText("US Treasury observations")).toBeInTheDocument();
+    expect(screen.getByText("Japan government bond observations")).toBeInTheDocument();
     expect(screen.getByText("US 10Y-2Y")).toBeInTheDocument();
     expect(screen.getByText("50 bp")).toBeInTheDocument();
     expect(screen.getByText("Japan 10Y-2Y")).toBeInTheDocument();
     expect(screen.getByText("86 bp")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open global curves" })).toHaveAttribute(
+      "href",
+      "https://www.tradingview.com/markets/bonds/yield-curve-all/"
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "US recent range" }));
+    expect(screen.getAllByText("USA Latest")).toHaveLength(2);
+    expect(screen.getAllByText("USA Previous obs.")).toHaveLength(2);
   });
 });
 

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-29T13:35:27Z",
-  "stale_after": "2026-06-30T01:35:27Z",
-  "hard_expires_at": "2026-07-06T13:35:27Z",
+  "generated_at": "2026-06-30T08:52:42Z",
+  "stale_after": "2026-06-30T20:52:42Z",
+  "hard_expires_at": "2026-07-07T08:52:42Z",
   "object_type": "fund_portfolio",
   "object_key": "situational-awareness",
-  "content_hash": "sha256:04d63c88c1412eabab62347b2dc9bfc2fdf7321e9888c9f97321ea9b988bbdef",
+  "content_hash": "sha256:656bf4f34b93ef990fdf8b5bfcda4d479f55c8537f89b6f78df9b1105954f066",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -116,7 +116,7 @@
     "manager_name": "Leopold Aschenbrenner",
     "fund_name": "Situational Awareness LP",
     "cik": "0002045724",
-    "generated_label": "2026-06-29T13:35:27Z",
+    "generated_label": "2026-06-30T08:52:42Z",
     "source_url": "https://www.sec.gov/edgar/browse/?CIK=0002045724",
     "filing": {
       "source": "SEC_EDGAR_13F",

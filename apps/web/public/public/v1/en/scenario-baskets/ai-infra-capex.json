@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-29T13:35:27Z",
-  "stale_after": "2026-06-30T01:35:27Z",
-  "hard_expires_at": "2026-07-06T13:35:27Z",
+  "generated_at": "2026-06-30T08:52:42Z",
+  "stale_after": "2026-06-30T20:52:42Z",
+  "hard_expires_at": "2026-07-07T08:52:42Z",
   "object_type": "scenario_basket",
   "object_key": "ai-infra-capex",
-  "content_hash": "sha256:1eab97e12be6df73fdd5b851ccb077bbe8ba8d4307b56ff3e7c40cb076f706e8",
+  "content_hash": "sha256:e514f7abf49a1b5e7eadd3478993c0e2c6dce7e454026cbabe0300e3a4e9fed2",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -122,7 +122,7 @@
         "summary": "Hyperscaler capex, accelerator supply, memory/HBM, and data-center power are shown only through source-linked rows.",
         "coverage_status": "active",
         "evidence_count": 2,
-        "last_observed_at": "2026-06-29T13:35:27Z",
+        "last_observed_at": "2026-06-30T08:52:42Z",
         "metric_rows": [
           {
             "key": "accelerator-news",
@@ -132,7 +132,7 @@
             "source": "Stonks Radar news snapshots",
             "source_url": "https://www.bis.gov/",
             "freshness": "fresh",
-            "as_of_date": "2026-06-29T13:35:27Z",
+            "as_of_date": "2026-06-30T08:52:42Z",
             "coverage_status": "active"
           }
         ],
@@ -142,9 +142,9 @@
             "title": "China-origin export-control risk remains elevated for AI-chip supply chains",
             "summary": "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.",
             "event_type": "trade_policy",
-            "first_seen_at": "2026-06-27T13:35:27Z",
-            "last_seen_at": "2026-06-29T13:35:27Z",
-            "published_at": "2026-06-29T13:35:27Z",
+            "first_seen_at": "2026-06-28T08:52:42Z",
+            "last_seen_at": "2026-06-30T08:52:42Z",
+            "published_at": "2026-06-30T08:52:42Z",
             "freshness": "fresh",
             "severity": "high",
             "confidence": 0.78,
@@ -241,7 +241,7 @@
                 "source_key": "bis",
                 "policy_version": 1,
                 "title": "Bureau of Industry and Security export controls",
-                "published_at": "2026-06-28T19:35:27Z",
+                "published_at": "2026-06-29T14:52:42Z",
                 "trust_tier": "T0_OFFICIAL",
                 "is_primary": true
               },
@@ -251,7 +251,7 @@
                 "source_key": "sec_edgar",
                 "policy_version": 1,
                 "title": "Issuer filings for affected companies",
-                "published_at": "2026-06-28T19:35:27Z",
+                "published_at": "2026-06-29T14:52:42Z",
                 "trust_tier": "T1_REGULATED_FILING",
                 "is_primary": false
               },
@@ -261,7 +261,7 @@
                 "source_key": "source_policy",
                 "policy_version": 1,
                 "title": "Export Administration Regulations reference",
-                "published_at": "2026-06-28T19:35:27Z",
+                "published_at": "2026-06-29T14:52:42Z",
                 "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
                 "is_primary": false
               }
@@ -285,12 +285,12 @@
       }
     ],
     "risk_summary": "AI capex can reverse if source data lags, power constraints intensify, or hyperscaler spending guidance weakens.",
-    "freshness_timestamp": "2026-06-29T13:35:27Z",
+    "freshness_timestamp": "2026-06-30T08:52:42Z",
     "data_delay_warning": "Uses delayed/reference indicators and outbound source links only; no brokerage connection or trade execution.",
     "disclaimer": "Research only. Not personalized financial advice. Do not treat this as a buy, sell, or allocation recommendation.",
     "coverage_status": "active",
     "evidence_count": 2,
-    "last_observed_at": "2026-06-29T13:35:27Z",
+    "last_observed_at": "2026-06-30T08:52:42Z",
     "primary_source_url": "https://www.bis.gov/",
     "external_tracker_url": "https://www.nextgig.rocks/dash/ai-tracker/"
   },

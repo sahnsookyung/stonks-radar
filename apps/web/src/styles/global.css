@@ -159,6 +159,19 @@ textarea {
     mask-image: none;
   }
 
+  .scroll-fade-x-end {
+    scrollbar-width: thin;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 18px), transparent 100%);
+    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 18px), transparent 100%);
+  }
+
+  .scroll-fade-x-end:focus-within {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
   [data-allow-horizontal-scroll] {
     max-width: 100%;
     overscroll-behavior-inline: contain;
