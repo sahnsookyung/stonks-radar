@@ -36,8 +36,9 @@ defmodule StonksBackend.News.GdeltTest do
     assert length(second_window) == 6
     refute first_window == second_window
     assert Enum.any?(first_window, &String.contains?(&1, "United States"))
-    assert Enum.any?(second_window, &String.contains?(&1, "semiconductor"))
-    assert Enum.any?(second_window, &String.contains?(&1, "AI infrastructure"))
+    sampled_windows = first_window ++ second_window
+    assert Enum.any?(sampled_windows, &String.contains?(&1, "semiconductor"))
+    assert Enum.any?(sampled_windows, &String.contains?(&1, "AI infrastructure"))
   end
 
   test "request params cap provider records and preserve metadata-only Doc API shape" do

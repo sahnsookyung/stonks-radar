@@ -3,27 +3,15 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-snapshot_env_file="${STONKS_SNAPSHOT_ENV_FILE:-}"
-if [[ -z "$snapshot_env_file" && -f ".secrets/stonks-radar.production.env" ]]; then
-  snapshot_env_file=".secrets/stonks-radar.production.env"
-fi
-
-compose_env_args=()
-if [[ -n "$snapshot_env_file" ]]; then
-  compose_env_args=(--env-file "$snapshot_env_file")
-fi
 compose_files=(-f compose.yaml -f infra/docker-compose.prod.yml)
 
-if [[ -n "$snapshot_env_file" ]]; then
-  STONKS_SNAPSHOT_ENV_FILE="$snapshot_env_file" npm run deploy:preflight
-else
-  npm run deploy:preflight
-fi
-if [[ -n "$snapshot_env_file" ]]; then
-  STONKS_SNAPSHOT_ENV_FILE="$snapshot_env_file" npm run build
-else
-  npm run build
-fi
-docker compose "${compose_env_args[@]}" "${compose_files[@]}" build --pull
-docker compose "${compose_env_args[@]}" "${compose_files[@]}" up -d
+npm run web:test
+npm run backend:check
+npm run build
+
+docker compose "${compose_files[@]}" build --pull api-elixir
+docker compose "${compose_files[@]}" up -d postgres valkey
+docker compose "${compose_files[@]}" run --rm --no-deps api-elixir \
+  /app/bin/stonks_backend eval 'StonksBackend.Release.migrate()'
+docker compose "${compose_files[@]}" up -d api-elixir caddy
 docker builder prune -af

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_region",
   "object_key": "news_region_ZAF",
-  "content_hash": "sha256:e0035e0f8ea4eca19acd3c8b423f25275312a9f09659486566a45a2e551d35a3",
+  "content_hash": "sha256:4738b0fc5cf64a30f8f1c3009ce7b65f9dd43b06ac808767b45ef984538ddf90",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "ZAF",
     "name": "South Africa",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "regional_brief": "South Africa has 0 source-linked news event(s), with relation labels separating event location, affected region, and market region.",
     "events": []
   },

@@ -54,8 +54,7 @@ rm -rf \
   "$deploy_dir/apps/web/.generated-public" \
   "$deploy_dir/apps/backend_elixir/deps" \
   "$deploy_dir/apps/backend_elixir/_build" \
-  "$deploy_dir/apps/backend_elixir/.elixir_ls" \
-  "$deploy_dir/.pytest_cache"
+  "$deploy_dir/apps/backend_elixir/.elixir_ls"
 
 if [[ "$(cd "$source_dir" && pwd -P)" != "$(cd "$deploy_dir" && pwd -P)" ]]; then
   rsync -az --delete \
@@ -87,19 +86,25 @@ for volume in stonks-radar_snapshot-artifacts stonks-radar_published-snapshots; 
     "${sudo_cmd[@]}" find "$mountpoint" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
   fi
 done
-docker image rm -f stonks-radar-api || true
+docker image rm -f stonks-radar-api-elixir || true
 docker container prune -f || true
 docker builder prune -af || true
 docker image prune -f || true
 df -h / /opt /tmp || true
 
-COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 docker compose "${compose_files[@]}" build api
+COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 docker compose "${compose_files[@]}" build api-elixir
 docker builder prune -af || true
-COMPOSE_PARALLEL_LIMIT=1 docker compose "${compose_files[@]}" up -d postgres valkey api caddy
+COMPOSE_PARALLEL_LIMIT=1 docker compose "${compose_files[@]}" up -d postgres valkey
+docker compose "${compose_files[@]}" run --rm --no-deps api-elixir \
+  /app/bin/stonks_backend eval 'StonksBackend.Release.migrate()'
+COMPOSE_PARALLEL_LIMIT=1 docker compose "${compose_files[@]}" up -d api-elixir caddy
 docker image prune -f || true
 df -h / /opt /tmp || true
-docker compose "${compose_files[@]}" run --rm -e PYTHONPATH=/app/apps/api/src api \
-  python scripts/publish_runtime_snapshots.py --generated-by github-actions-self-hosted
+docker run --rm \
+  -v stonks-radar_published-snapshots:/dest \
+  -v "$deploy_dir/apps/web/public/public:/src:ro" \
+  alpine:3.24 \
+  sh -lc 'set -e; rm -rf /dest/* /dest/.[!.]* /dest/..?* 2>/dev/null || true; cp -a /src/. /dest/; test -s /dest/latest/manifest.json'
 
 public_hostname="$(awk -F= '$1=="PUBLIC_HOSTNAME"{print $2}' .env)"
 public_hostname="$(printf '%s' "$public_hostname" | tr -d '[:space:]"')"
@@ -111,4 +116,6 @@ fi
 
 curl -fsS --resolve "$public_hostname:443:127.0.0.1" "https://$public_hostname/api/public/health" >/dev/null
 curl -fsS --resolve "$public_hostname:443:127.0.0.1" "https://$public_hostname/public/latest/manifest.json" \
-  | python3 -c 'import json, sys; data=json.load(sys.stdin); assert data.get("current_version") and data.get("objects")'
+  | tee /tmp/stonks-manifest.json >/dev/null
+grep -q '"current_version"' /tmp/stonks-manifest.json
+grep -q '"objects"' /tmp/stonks-manifest.json

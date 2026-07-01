@@ -338,6 +338,9 @@
       "required": [
         "events",
         "map_points",
+        "watched_regions",
+        "coverage_gaps",
+        "regional_briefs",
         "shown_count",
         "total_count",
         "ranking_cutoff",
@@ -349,6 +352,18 @@
       "properties": {
         "events": { "type": "array", "items": { "$ref": "#/$defs/breakingMarketEvent" } },
         "map_points": { "type": "array", "items": { "$ref": "#/$defs/newsMapPoint" } },
+        "watched_regions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/watchedRegionCoverage" }
+        },
+        "coverage_gaps": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/watchedRegionCoverageGap" }
+        },
+        "regional_briefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/regionalBrief" }
+        },
         "shown_count": { "type": "integer", "minimum": 0 },
         "total_count": { "type": "integer", "minimum": 0 },
         "ranking_cutoff": { "type": ["integer", "null"], "minimum": 0 },
@@ -356,6 +371,108 @@
         "scoring_version": { "type": "string" },
         "thinning_version": { "type": "string" },
         "generated_at": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "watchedRegionCoverage": {
+      "type": "object",
+      "required": [
+        "key",
+        "type",
+        "label",
+        "iso3",
+        "natural_earth_names",
+        "groups",
+        "priority",
+        "gdp_rank",
+        "gather_news",
+        "render_on_map",
+        "nav_visible",
+        "coverage_status",
+        "coverage_window_days",
+        "event_count",
+        "map_point_count",
+        "newest_source_published_at",
+        "quiet_reason"
+      ],
+      "properties": {
+        "key": { "type": "string" },
+        "type": { "enum": ["country", "region", "chokepoint"] },
+        "label": { "type": "string" },
+        "iso3": { "type": ["string", "null"] },
+        "natural_earth_names": { "type": "array", "items": { "type": "string" } },
+        "groups": { "type": "array", "items": { "type": "string" } },
+        "priority": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "gdp_rank": { "type": ["integer", "null"], "minimum": 1 },
+        "gather_news": { "type": "boolean" },
+        "render_on_map": { "type": "boolean" },
+        "nav_visible": { "type": "boolean" },
+        "coverage_status": { "enum": ["active", "quiet", "coverage_gap"] },
+        "coverage_window_days": { "type": "integer", "minimum": 1 },
+        "event_count": { "type": "integer", "minimum": 0 },
+        "map_point_count": { "type": "integer", "minimum": 0 },
+        "newest_source_published_at": { "type": ["string", "null"] },
+        "quiet_reason": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "watchedRegionCoverageGap": {
+      "type": "object",
+      "required": [
+        "region_key",
+        "label",
+        "reason",
+        "coverage_window_days",
+        "newest_source_published_at"
+      ],
+      "properties": {
+        "region_key": { "type": "string" },
+        "label": { "type": "string" },
+        "reason": { "enum": ["no_recent_evidence", "not_geocoded", "not_reviewed", "source_disabled"] },
+        "coverage_window_days": { "type": "integer", "minimum": 1 },
+        "newest_source_published_at": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "regionalBrief": {
+      "type": "object",
+      "required": [
+        "region_key",
+        "label",
+        "coverage_window_days",
+        "generated_at",
+        "summary",
+        "event_count",
+        "source_count",
+        "newest_source_published_at",
+        "evidence",
+        "confidence"
+      ],
+      "properties": {
+        "region_key": { "type": "string" },
+        "label": { "type": "string" },
+        "coverage_window_days": { "type": "integer", "minimum": 1 },
+        "generated_at": { "type": "string" },
+        "summary": { "type": "string" },
+        "event_count": { "type": "integer", "minimum": 0 },
+        "source_count": { "type": "integer", "minimum": 0 },
+        "newest_source_published_at": { "type": ["string", "null"] },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["event_id", "title", "source_published_at", "severity"],
+            "properties": {
+              "event_id": { "type": "string" },
+              "title": { "type": "string" },
+              "source_url": { "type": "string" },
+              "source_published_at": { "type": "string" },
+              "severity": { "enum": ["low", "medium", "high", "critical"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "confidence": { "enum": ["metadata_only", "source_linked", "official_corroborated"] }
       },
       "additionalProperties": false
     }

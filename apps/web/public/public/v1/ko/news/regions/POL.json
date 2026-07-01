@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_region",
   "object_key": "news_region_POL",
-  "content_hash": "sha256:c389a3b36bdd349adbf69b55e553152b9603a2c9952d994d5c9e70f09e8a40eb",
+  "content_hash": "sha256:a011d4ca8ccf3265544278cf5291717faac261ea5d3ddd6d187f0c482c888315",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "POL",
     "name": "폴란드",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "regional_brief": "폴란드 관련 출처 연결 뉴스 이벤트 0건이 있으며 발생지, 영향 지역, 시장 지역 라벨을 분리합니다.",
     "events": []
   },

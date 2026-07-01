@@ -17,6 +17,7 @@ import {
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { alternateLocale, asLocale, useLocale } from "../lib/locale";
+import { navVisibleRegions } from "../lib/watchedRegions";
 
 const sectorLinks = [
   ["space", "Space", "우주"],
@@ -27,17 +28,10 @@ const sectorLinks = [
   ["big-tech", "Big Tech", "빅테크"],
 ];
 
-const countryLinks = [
-  ["USA", "US", "미국"],
-  ["KOR", "Korea", "한국"],
-  ["JPN", "Japan", "일본"],
-  ["CHN", "China", "중국"],
-  ["EUROZONE", "Eurozone", "유로존"],
-];
-
 export function Shell({ children }: Readonly<{ children: React.ReactNode }>) {
   const locale = useLocale();
   const { t } = useTranslation();
+  const coverageLinks = navVisibleRegions();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -251,19 +245,16 @@ export function Shell({ children }: Readonly<{ children: React.ReactNode }>) {
           <span className="ml-1 inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-md px-1 font-semibold text-muted">
             {locale === "ko" ? "지역" : "Regions"}
           </span>
-          {countryLinks.map(([key, labelEn, labelKo]) => {
-            const route =
-              key === "EUROZONE"
-                ? "/$locale/regions/$objectKey"
-                : "/$locale/countries/$objectKey";
+          {coverageLinks.map((region) => {
+            const route = region.type === "country" ? "/$locale/countries/$objectKey" : "/$locale/regions/$objectKey";
             return (
               <Link
-                key={key}
+                key={region.key}
                 to={route}
-                params={{ locale: asLocale(locale), objectKey: key }}
+                params={{ locale: asLocale(locale), objectKey: region.key }}
                 className="focus-ring inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap rounded-md px-2.5 hover:bg-panelAlt hover:text-accent"
               >
-                {locale === "ko" ? labelKo : labelEn}
+                {region.display_names[asLocale(locale)] ?? region.display_names.en}
               </Link>
             );
           })}

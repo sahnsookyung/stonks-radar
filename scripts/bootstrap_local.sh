@@ -8,5 +8,6 @@ if [[ -f package-lock.json ]]; then
 else
   npm install --ignore-scripts
 fi
-npm run seed:snapshots
-docker compose -f compose.yaml -f compose.dev.yaml up --build
+npm run build:map-assets
+npm run backend:deps
+docker compose -f compose.yaml -f compose.dev.yaml up --build postgres valkey api-elixir web

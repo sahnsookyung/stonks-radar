@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "scenario_basket",
   "object_key": "asia-semiconductor-risk",
-  "content_hash": "sha256:df7ca207de462ee80ff92500b8ee88f5dba231b588031d3313cac8b8f79eac41",
+  "content_hash": "sha256:e7a2d8e509c6409e06acb801612b5ff7802e71960b48853677a505c450b04129",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -122,7 +122,7 @@
         "summary": "수출통제, 대만/한국/일본 노출, 추적 반도체 티커를 최근 출처 연결 뉴스에서 요약합니다.",
         "coverage_status": "active",
         "evidence_count": 3,
-        "last_observed_at": "2026-06-30T13:19:11Z",
+        "last_observed_at": "2026-07-01T12:08:56Z",
         "metric_rows": [
           {
             "key": "seven-day-news",
@@ -132,7 +132,7 @@
             "source": "Stonks Radar news snapshots",
             "source_url": "https://www.bis.gov/",
             "freshness": "fresh",
-            "as_of_date": "2026-06-30T13:19:11Z",
+            "as_of_date": "2026-07-01T12:08:56Z",
             "coverage_status": "active"
           },
           {
@@ -143,7 +143,7 @@
             "source": "BIS",
             "source_url": "https://www.bis.gov/",
             "freshness": "watch",
-            "as_of_date": "2026-06-30",
+            "as_of_date": "2026-07-01",
             "coverage_status": "active"
           }
         ],
@@ -153,9 +153,9 @@
             "title": "중국발 수출통제 리스크가 AI 반도체 공급망에 높은 상태로 유지",
             "summary": "공식 정책 모니터링은 수출통제를 엔비디아, 삼성전자, 일본 장비 업체, 유럽 장비 노출과 연결합니다.",
             "event_type": "trade_policy",
-            "first_seen_at": "2026-06-28T13:19:11Z",
-            "last_seen_at": "2026-06-30T13:19:11Z",
-            "published_at": "2026-06-30T13:19:11Z",
+            "first_seen_at": "2026-06-29T12:08:56Z",
+            "last_seen_at": "2026-07-01T12:08:56Z",
+            "published_at": "2026-07-01T12:08:56Z",
             "freshness": "fresh",
             "severity": "high",
             "confidence": 0.78,
@@ -252,7 +252,7 @@
                 "source_key": "bis",
                 "policy_version": 1,
                 "title": "미 산업안보국 수출통제",
-                "published_at": "2026-06-29T19:19:11Z",
+                "published_at": "2026-06-30T18:08:56Z",
                 "trust_tier": "T0_OFFICIAL",
                 "is_primary": true
               },
@@ -262,7 +262,7 @@
                 "source_key": "sec_edgar",
                 "policy_version": 1,
                 "title": "영향 기업 공시",
-                "published_at": "2026-06-29T19:19:11Z",
+                "published_at": "2026-06-30T18:08:56Z",
                 "trust_tier": "T1_REGULATED_FILING",
                 "is_primary": false
               },
@@ -272,7 +272,7 @@
                 "source_key": "source_policy",
                 "policy_version": 1,
                 "title": "수출관리규정 참고",
-                "published_at": "2026-06-29T19:19:11Z",
+                "published_at": "2026-06-30T18:08:56Z",
                 "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
                 "is_primary": false
               }
@@ -296,12 +296,12 @@
       }
     ],
     "risk_summary": "수출 규정, 대만/한국/일본 헤드라인, 기업 가이던스가 엇갈리면 아시아 반도체 리스크는 빠르게 바뀔 수 있습니다.",
-    "freshness_timestamp": "2026-06-30T13:19:11Z",
+    "freshness_timestamp": "2026-07-01T12:08:56Z",
     "data_delay_warning": "지연/참조 지표와 외부 출처 링크만 사용하며 증권사 연결이나 주문 실행은 없습니다.",
     "disclaimer": "리서치 목적입니다. 개인화 금융 조언이 아니며 매수, 매도, 배분 추천으로 해석하지 마십시오.",
     "coverage_status": "active",
     "evidence_count": 3,
-    "last_observed_at": "2026-06-30T13:19:11Z",
+    "last_observed_at": "2026-07-01T12:08:56Z",
     "primary_source_url": "https://www.bis.gov/"
   },
   "warnings": [

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_topic",
   "object_key": "news_topic_drones",
-  "content_hash": "sha256:8e7156eba0cfad8da7479034c90ce9357a4ee8be8baef53b4e1e116fd1ad2850",
+  "content_hash": "sha256:21bb6677c88846464d0a90ae8cee28a974c40a0e466291b8ebbbccb9e6c492e3",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "drones",
     "label": "드론",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "topic_brief": "드론에는 공개 메타데이터에서 만든 검토된 출처 연결 이벤트 클러스터 0건이 포함됩니다.",
     "events": []
   },

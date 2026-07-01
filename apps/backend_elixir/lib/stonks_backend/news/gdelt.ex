@@ -1,47 +1,12 @@
 defmodule StonksBackend.News.Gdelt do
   @moduledoc "GDELT discovery query-pack logic ported from the Python news ingestion path."
 
+  alias StonksBackend.WatchedRegions
+
   @doc_provider_cap 250
   @country_chunk_size 6
   @diversified_floor 25
   @doc_api_url "https://api.gdeltproject.org/api/v2/doc/doc"
-
-  @tracked_country_terms [
-    ~s("United States"),
-    "China",
-    "Germany",
-    "Japan",
-    "India",
-    ~s("United Kingdom"),
-    "France",
-    "Italy",
-    "Canada",
-    "Brazil",
-    "Russia",
-    ~s("South Korea"),
-    "Mexico",
-    "Australia",
-    "Spain",
-    "Indonesia",
-    "Turkiye",
-    "Turkey",
-    ~s("Saudi Arabia"),
-    "Netherlands",
-    "Switzerland",
-    "Poland",
-    "Belgium",
-    "Argentina",
-    "Ireland",
-    "Sweden",
-    ~s("United Arab Emirates"),
-    "UAE",
-    "Singapore",
-    "Israel",
-    "Austria",
-    "Thailand",
-    "Norway",
-    ~s("South Africa")
-  ]
 
   @theme_queries [
     ~s|(markets OR stocks OR energy OR commodities OR rates OR sanctions OR trade)|,
@@ -49,7 +14,7 @@ defmodule StonksBackend.News.Gdelt do
     ~s|(oil OR gas OR lng OR shipping OR chokepoint OR refinery OR pipeline)|
   ]
 
-  def tracked_country_terms, do: @tracked_country_terms
+  def tracked_country_terms, do: WatchedRegions.tracked_country_terms()
   def theme_queries, do: @theme_queries
 
   def doc_queries(cycle_budget), do: doc_queries("market_watch", cycle_budget, [])
@@ -423,26 +388,65 @@ defmodule StonksBackend.News.Gdelt do
   end
 
   defp market_watch_pack do
-    country_theme_queries([Enum.at(@theme_queries, 0)]) ++
-      [
-        ~s|(hormuz OR "red sea" OR oil OR lng OR pipeline OR refinery OR shipping)|,
-        ~s|(semiconductor OR chip OR "export control" OR BIS OR Taiwan OR Korea OR Japan)|,
-        ~s|("AI infrastructure" OR datacenter OR "data center" OR capex OR HBM OR accelerator)|,
-        ~s|("central bank" OR rates OR inflation OR treasury OR yen OR dollar)|
-      ] ++
-      country_theme_queries(Enum.drop(@theme_queries, 1)) ++
-      [
-        ~s|(sanctions OR tariff OR "trade war" OR blockade OR missile OR conflict)|,
-        ~s|(outbreak OR pandemic OR WHO OR avian OR vaccine OR public health)|,
-        ~s|(NVDA OR AMD OR MSFT OR AAPL OR TSMC OR Samsung OR ASML OR RKLB OR IONQ OR RGTI OR QBTS OR LUNR OR ASTS OR RDW OR DJT)|
-      ]
+    country_market_queries = country_theme_queries([Enum.at(@theme_queries, 0)])
+
+    thematic_queries = [
+      ~s|(hormuz OR "red sea" OR oil OR lng OR pipeline OR refinery OR shipping)|,
+      ~s|(semiconductor OR chip OR "export control" OR BIS OR Taiwan OR Korea OR Japan)|,
+      ~s|("AI infrastructure" OR datacenter OR "data center" OR capex OR HBM OR accelerator)|,
+      ~s|("central bank" OR rates OR inflation OR treasury OR yen OR dollar)|
+    ]
+
+    country_risk_queries = country_theme_queries(Enum.drop(@theme_queries, 1))
+
+    broad_risk_queries = [
+      ~s|(sanctions OR tariff OR "trade war" OR blockade OR missile OR conflict)|,
+      ~s|(outbreak OR pandemic OR WHO OR avian OR vaccine OR public health)|,
+      ~s|(NVDA OR AMD OR MSFT OR AAPL OR TSMC OR Samsung OR ASML OR RKLB OR IONQ OR RGTI OR QBTS OR LUNR OR ASTS OR RDW OR DJT)|
+    ]
+
+    interleave_query_groups([
+      country_market_queries,
+      thematic_queries,
+      country_risk_queries,
+      broad_risk_queries
+    ])
   end
 
   defp country_theme_queries(theme_queries) do
-    chunks = Enum.chunk_every(@tracked_country_terms, @country_chunk_size)
+    chunks = Enum.chunk_every(tracked_country_terms(), @country_chunk_size)
 
     for theme <- theme_queries, chunk <- chunks do
       "(#{Enum.join(chunk, " OR ")}) AND #{theme}"
+    end
+  end
+
+  defp interleave_query_groups(groups) do
+    groups
+    |> Enum.map(&List.wrap/1)
+    |> do_interleave_query_groups([])
+    |> Enum.reverse()
+  end
+
+  defp do_interleave_query_groups(groups, acc) do
+    {next_groups, acc} =
+      Enum.reduce(groups, {[], acc}, fn
+        [], {next_groups, acc} ->
+          {next_groups, acc}
+
+        [query | rest], {next_groups, acc} ->
+          {[rest | next_groups], [query | acc]}
+      end)
+
+    next_groups =
+      next_groups
+      |> Enum.reverse()
+      |> Enum.reject(&(&1 == []))
+
+    if next_groups == [] do
+      acc
+    else
+      do_interleave_query_groups(next_groups, acc)
     end
   end
 

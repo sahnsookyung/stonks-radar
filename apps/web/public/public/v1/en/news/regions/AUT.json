@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_region",
   "object_key": "news_region_AUT",
-  "content_hash": "sha256:5b9d7ecd751f6e1aa82fce3a46647ad1e8f443e1dd71c14d0c3bf22d367f53af",
+  "content_hash": "sha256:3d9360761db987f311adde4a0741b81d45843d3a20a2671f93e4cf1ce50a928d",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "AUT",
     "name": "Austria",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "regional_brief": "Austria has 0 source-linked news event(s), with relation labels separating event location, affected region, and market region.",
     "events": []
   },

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "sector_page",
   "object_key": "quantum",
-  "content_hash": "sha256:90bf77f019a4476e75c7d6b48f4083bf9eb247921f2aab61ce878c95f3f9be80",
+  "content_hash": "sha256:d2e02f9533d6ff988b045874cb81a5eadf754d27df27e50e561891e9ebbd4d0a",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -213,8 +213,8 @@
         "symbol": "IONQ",
         "title": "IONQ: IonQ contract and funding news is classified as quantum-sector ticker context",
         "catalyst_type": "company_event",
-        "scheduled_at": "2026-06-30T09:19:11Z",
-        "scheduled_local_date": "2026-06-30",
+        "scheduled_at": "2026-07-01T08:08:56Z",
+        "scheduled_local_date": "2026-07-01",
         "timezone": "UTC",
         "source": "IonQ",
         "source_url": "https://ionq.com/news",
@@ -228,9 +228,9 @@
         "title": "IonQ contract and funding news is classified as quantum-sector ticker context",
         "summary": "IONQ appears in the ticker news layer only when company, filing, or sector-context evidence is present.",
         "event_type": "company_update",
-        "first_seen_at": "2026-06-29T19:19:11Z",
-        "last_seen_at": "2026-06-30T09:19:11Z",
-        "published_at": "2026-06-30T09:19:11Z",
+        "first_seen_at": "2026-06-30T18:08:56Z",
+        "last_seen_at": "2026-07-01T08:08:56Z",
+        "published_at": "2026-07-01T08:08:56Z",
         "freshness": "watch",
         "severity": "medium",
         "confidence": 0.76,
@@ -292,7 +292,7 @@
             "source_key": "ionq_ir",
             "policy_version": 1,
             "title": "IonQ news",
-            "published_at": "2026-06-29T19:19:11Z",
+            "published_at": "2026-06-30T18:08:56Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -302,7 +302,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "IonQ SEC filings",
-            "published_at": "2026-06-29T19:19:11Z",
+            "published_at": "2026-06-30T18:08:56Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           }
@@ -319,98 +319,98 @@
       {
         "key": "nasdaq_composite",
         "label": "Nasdaq Composite",
-        "value": "25,820.15",
+        "value": "26,213.72",
         "source": "Yahoo Finance delayed quote",
         "freshness": "watch",
-        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-06-29T21:15:59Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-29T21:15:59Z",
+        "delay_label": "Latest available Yahoo Finance delayed quote observed at 2026-06-30T21:15:59Z; market may be closed or the public feed may be delayed; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-06-30T21:15:59Z",
         "coverage_status": "active",
         "refresh_seconds": 43200,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EIXIC?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-29T15:06:00Z",
-            "value": 25585.359375
+            "date": "2026-06-30T15:06:00Z",
+            "value": 26040.205078125
           },
           {
-            "date": "2026-06-29T15:54:00Z",
-            "value": 25639.74609375
+            "date": "2026-06-30T15:54:00Z",
+            "value": 26131.88671875
           },
           {
-            "date": "2026-06-29T16:42:00Z",
-            "value": 25642.0703125
+            "date": "2026-06-30T16:42:00Z",
+            "value": 26163.07421875
           },
           {
-            "date": "2026-06-29T17:30:00Z",
-            "value": 25765.7265625
+            "date": "2026-06-30T17:30:00Z",
+            "value": 26155.73046875
           },
           {
-            "date": "2026-06-29T18:18:00Z",
-            "value": 25760.228515625
+            "date": "2026-06-30T18:18:00Z",
+            "value": 26182.064453125
           },
           {
-            "date": "2026-06-29T19:06:00Z",
-            "value": 25792.98828125
+            "date": "2026-06-30T19:06:00Z",
+            "value": 26186.85546875
           },
           {
-            "date": "2026-06-29T19:54:00Z",
-            "value": 25792.25
+            "date": "2026-06-30T19:54:00Z",
+            "value": 26211.55859375
           },
           {
-            "date": "2026-06-29T20:00:00Z",
-            "value": 25820.14453125
+            "date": "2026-06-30T20:00:00Z",
+            "value": 26213.71875
           }
         ],
-        "refresh_delta": 522.5280000000021,
-        "refresh_delta_percent": 2.0655226142446623
+        "refresh_delta": 393.5740000000005,
+        "refresh_delta_percent": 1.5242904329158513
       },
       {
         "key": "vix",
         "label": "VIX",
-        "value": "17.67",
+        "value": "16.73",
         "source": "Yahoo Finance delayed quote",
         "freshness": "fresh",
-        "delay_label": "Yahoo Finance delayed quote observed at 2026-06-30T13:04:31Z; not guaranteed realtime exchange tape.",
-        "updated_at": "2026-06-30T13:04:31Z",
+        "delay_label": "Yahoo Finance delayed quote observed at 2026-07-01T11:54:16Z; not guaranteed realtime exchange tape.",
+        "updated_at": "2026-07-01T11:54:16Z",
         "coverage_status": "active",
         "refresh_seconds": 900,
         "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1d&interval=1m",
         "points": [
           {
-            "date": "2026-06-30T08:41:00Z",
-            "value": 17.700000762939453
+            "date": "2026-07-01T07:50:00Z",
+            "value": 17.100000381469727
           },
           {
-            "date": "2026-06-30T09:24:00Z",
-            "value": 17.6299991607666
+            "date": "2026-07-01T08:25:00Z",
+            "value": 16.959999084472656
           },
           {
-            "date": "2026-06-30T10:07:00Z",
-            "value": 17.56999969482422
+            "date": "2026-07-01T09:00:00Z",
+            "value": 16.920000076293945
           },
           {
-            "date": "2026-06-30T10:50:00Z",
-            "value": 17.530000686645508
+            "date": "2026-07-01T09:35:00Z",
+            "value": 16.90999984741211
           },
           {
-            "date": "2026-06-30T11:33:00Z",
-            "value": 17.479999542236328
+            "date": "2026-07-01T10:10:00Z",
+            "value": 16.899999618530273
           },
           {
-            "date": "2026-06-30T12:16:00Z",
-            "value": 17.600000381469727
+            "date": "2026-07-01T10:45:00Z",
+            "value": 16.739999771118164
           },
           {
-            "date": "2026-06-30T12:59:00Z",
-            "value": 17.639999389648438
+            "date": "2026-07-01T11:20:00Z",
+            "value": 16.670000076293945
           },
           {
-            "date": "2026-06-30T13:04:31Z",
-            "value": 17.670000076293945
+            "date": "2026-07-01T11:54:16Z",
+            "value": 16.729999542236328
           }
         ],
-        "refresh_delta": -0.7399999999999984,
-        "refresh_delta_percent": -4.019554589896787
+        "refresh_delta": 0.28000000000000114,
+        "refresh_delta_percent": 1.702127659574475
       }
     ],
     "scenario_baskets": [
@@ -422,7 +422,7 @@
         "freshness": "unsupported",
         "coverage_status": "coverage_gap",
         "evidence_count": 0,
-        "last_observed_at": "2026-06-30T13:19:11Z",
+        "last_observed_at": "2026-07-01T12:08:56Z",
         "primary_source_url": "https://www.nextgig.rocks/dash/ai-tracker/",
         "external_tracker_url": "https://www.nextgig.rocks/dash/ai-tracker/"
       },
@@ -434,7 +434,7 @@
         "freshness": "unsupported",
         "coverage_status": "coverage_gap",
         "evidence_count": 0,
-        "last_observed_at": "2026-06-30T13:19:11Z",
+        "last_observed_at": "2026-07-01T12:08:56Z",
         "primary_source_url": "https://www.eia.gov/petroleum/supply/weekly/"
       }
     ],

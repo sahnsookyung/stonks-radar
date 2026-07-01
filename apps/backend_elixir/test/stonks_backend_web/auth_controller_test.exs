@@ -17,7 +17,7 @@ defmodule StonksBackendWeb.AuthControllerTest do
     end)
   end
 
-  test "/api/auth/me returns FastAPI-compatible unauthenticated JSON" do
+  test "/api/auth/me returns legacy-compatible unauthenticated JSON" do
     conn =
       :get
       |> conn("/api/auth/me")
@@ -27,7 +27,7 @@ defmodule StonksBackendWeb.AuthControllerTest do
     assert Jason.decode!(conn.resp_body) == %{"detail" => "Not authenticated"}
   end
 
-  test "/api/auth/logout returns FastAPI-compatible unauthenticated JSON" do
+  test "/api/auth/logout returns legacy-compatible unauthenticated JSON" do
     conn =
       :post
       |> conn("/api/auth/logout")

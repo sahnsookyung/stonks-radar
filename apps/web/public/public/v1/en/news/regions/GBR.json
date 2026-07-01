@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_region",
   "object_key": "news_region_GBR",
-  "content_hash": "sha256:bed8f200b75ef5274cdcffaf785d4e1d32850267476c779e92d74f4177197bc6",
+  "content_hash": "sha256:75235f3b50f3eddc9448644df94419e3c5376fa322e25c997338be883cff90fd",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "GBR",
     "name": "United Kingdom",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "regional_brief": "United Kingdom has 0 source-linked news event(s), with relation labels separating event location, affected region, and market region.",
     "events": []
   },

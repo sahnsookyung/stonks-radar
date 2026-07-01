@@ -7,7 +7,7 @@ defmodule StonksBackendWeb.InstrumentsControllerTest do
 
   @opts StonksBackendWeb.Router.init([])
 
-  test "instrument search preserves FastAPI autocomplete result shape" do
+  test "instrument search preserves legacy autocomplete result shape" do
     conn =
       :get
       |> conn("/api/instruments/search?q=005930&limit=5")
@@ -31,7 +31,7 @@ defmodule StonksBackendWeb.InstrumentsControllerTest do
     assert List.first(visible.results)["instrumentId"] == "AAPL.WS"
   end
 
-  test "instrument search validates missing query like FastAPI" do
+  test "instrument search validates missing query with legacy-compatible shape" do
     conn =
       :get
       |> conn("/api/instruments/search")

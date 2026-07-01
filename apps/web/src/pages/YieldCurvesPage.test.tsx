@@ -37,6 +37,9 @@ const homeSnapshot: SnapshotEnvelope<HomeSnapshotData> = {
     breaking_market_map: {
       events: [],
       map_points: [],
+      watched_regions: [],
+      coverage_gaps: [],
+      regional_briefs: [],
       shown_count: 0,
       total_count: 0,
       ranking_cutoff: null,

@@ -1,5 +1,5 @@
 defmodule StonksBackend.Accounts.Crypto do
-  @moduledoc "Compatibility crypto for FastAPI sessions, PBKDF2 passwords, and TOTP."
+  @moduledoc "Compatibility crypto for legacy sessions, PBKDF2 passwords, and TOTP."
 
   import Bitwise
 

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_region",
   "object_key": "news_region_ISR",
-  "content_hash": "sha256:7a91a8f7b49b0f552fe03771f144a125db522804d4a67b99bcca297af24429c7",
+  "content_hash": "sha256:e3b702247947b5da41c760cf8fb1da2e0c5d7d835fa23b9f33bf330876044feb",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "ISR",
     "name": "Israel",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "regional_brief": "Israel has 0 source-linked news event(s), with relation labels separating event location, affected region, and market region.",
     "events": []
   },

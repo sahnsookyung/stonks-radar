@@ -39,12 +39,13 @@ policy changes explicitly.
 
 ## Runtime Behavior
 
-The executable source of truth is `frw_api.services.provider_limits`.
-Runtime provider calls must go through `provider_request`, which reserves quota
-before the network call, classifies upstream failures, and records usage/audit
-state when a database session is available. Production uses Valkey/Redis quota
-counters and fails closed if that store is unavailable. Development and tests
-use in-process counters.
+The executable source of truth is the Phoenix/Ecto provider runtime modules
+under `StonksBackend`, including source-health projection, provider budget
+state, and Oban workers. Runtime provider calls must reserve quota before the
+network call, classify upstream failures, and record usage/audit state when the
+database is available. Production uses database-backed provider runtime state
+plus Valkey/Redis where configured for counters and locks. Development and
+tests use deterministic fixtures or in-process counters.
 
 Failure classes are explicit: `rate_limited`, `quota_exhausted`,
 `auth_invalid`, `forbidden_scope`, `paid_not_allowed`, `upstream_5xx`,

@@ -14,7 +14,7 @@
 	}
 
 	handle /api/* {
-		reverse_proxy {$API_UPSTREAM:api:8000}
+		reverse_proxy {$API_UPSTREAM:api-elixir:8000}
 	}
 
 	handle /assets/* {

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_region",
   "object_key": "news_region_THA",
-  "content_hash": "sha256:5343a9b6dfd2d4d4c499053237c591ca47cdcefa1c5a4f52310ad880c5e9d50a",
+  "content_hash": "sha256:7d77851f3175eb9a550114eb16eba0169604acee78f4790bc60ff47145db9544",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "THA",
     "name": "Thailand",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "regional_brief": "Thailand has 0 source-linked news event(s), with relation labels separating event location, affected region, and market region.",
     "events": []
   },

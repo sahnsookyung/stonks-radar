@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_region",
   "object_key": "news_region_MEX",
-  "content_hash": "sha256:e027458d1dafe7810a71418346aef961faa4bbef1f9247c3bc9fb9e880126219",
+  "content_hash": "sha256:195169928f9eaee5a1cec340715832b6a9f193405d047d2376d504624bef685c",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "MEX",
     "name": "Mexico",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "regional_brief": "Mexico has 0 source-linked news event(s), with relation labels separating event location, affected region, and market region.",
     "events": []
   },

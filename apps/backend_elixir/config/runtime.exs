@@ -24,15 +24,29 @@ database_url = String.replace(database_url, "postgresql+psycopg://", "postgres:/
 port = String.to_integer(System.get_env("PORT", "8000"))
 pool_size = String.to_integer(System.get_env("POOL_SIZE", "10"))
 
+session_secret = runtime_env.("SESSION_SECRET", "dev-session-secret-change-me")
+
 secret_key_base =
-  runtime_env.("PHX_SECRET_KEY_BASE", String.duplicate("runtime-secret-key-base", 4))
+  case System.get_env("PHX_SECRET_KEY_BASE") do
+    value when is_binary(value) ->
+      trimmed = String.trim(value)
+
+      if trimmed == "" do
+        session_secret
+      else
+        trimmed
+      end
+
+    _ ->
+      session_secret
+  end
 
 config :stonks_backend, :settings,
   app_env: app_env,
   app_base_url: System.get_env("APP_BASE_URL", "http://localhost:8000"),
   public_base_url: System.get_env("PUBLIC_BASE_URL", "http://localhost:5173"),
   dev_cors_origins: System.get_env("DEV_CORS_ORIGINS", "http://localhost:5173"),
-  session_secret: runtime_env.("SESSION_SECRET", "dev-session-secret-change-me"),
+  session_secret: session_secret,
   password_pepper: runtime_env.("PASSWORD_PEPPER", "dev-password-pepper-change-me"),
   admin_email: System.get_env("ADMIN_EMAIL", "owner@example.com"),
   admin_bootstrap_password: System.get_env("ADMIN_BOOTSTRAP_PASSWORD"),
@@ -65,7 +79,6 @@ config :stonks_backend, :settings,
     System.get_env("NEWS_MAX_DOCUMENTS_PER_SOURCE_PER_RUN", "100"),
   news_processing_batch_limit: System.get_env("NEWS_PROCESSING_BATCH_LIMIT", "500"),
   news_page_read_batch_limit: System.get_env("NEWS_PAGE_READ_BATCH_LIMIT", "25"),
-  fetch_sandbox_url: System.get_env("FETCH_SANDBOX_URL", "http://fetch-sandbox:8080/fetch"),
   source_fetch_timeout_seconds: System.get_env("SOURCE_FETCH_TIMEOUT_SECONDS", "20"),
   source_fetch_max_bytes: System.get_env("SOURCE_FETCH_MAX_BYTES", "5000000"),
   sec_user_agent:
