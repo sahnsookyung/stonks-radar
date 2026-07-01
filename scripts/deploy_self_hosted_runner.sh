@@ -80,7 +80,8 @@ install -m 600 "$env_file" "$deploy_dir/.env"
 install -m 600 "$env_file" "$deploy_dir/.secrets/stonks-radar.production.env"
 
 cd "$deploy_dir"
-docker compose "${compose_files[@]}" down --remove-orphans || true
+docker compose "${compose_files[@]}" --profile python-legacy down --remove-orphans || true
+docker rm -f stonks-radar-api-1 stonks-radar-worker-1 stonks-radar-fetch-sandbox-1 || true
 for volume in stonks-radar_snapshot-artifacts stonks-radar_published-snapshots; do
   mountpoint="$(docker volume inspect "$volume" --format "{{ .Mountpoint }}" 2>/dev/null || true)"
   if [[ -n "$mountpoint" && -d "$mountpoint" ]]; then

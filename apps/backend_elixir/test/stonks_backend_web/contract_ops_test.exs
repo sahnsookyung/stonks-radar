@@ -50,10 +50,14 @@ defmodule StonksBackendWeb.ContractOpsTest do
     refute compose_prod =~ "depends_on:\n      - api"
     refute compose_prod =~ "FETCH_SANDBOX_URL"
 
-    refute deploy_script =~ "python-legacy"
     refute deploy_script =~ "publish_runtime_snapshots.py"
     refute deploy_script =~ " up -d postgres valkey fetch-sandbox"
     refute deploy_script =~ "python3 -c"
+    assert deploy_script =~ "--profile python-legacy down --remove-orphans"
+
+    assert deploy_script =~
+             "docker rm -f stonks-radar-api-1 stonks-radar-worker-1 stonks-radar-fetch-sandbox-1"
+
     assert deploy_script =~ "StonksBackend.Release.migrate()"
     assert deploy_script =~ "stonks-radar_published-snapshots"
 
@@ -65,6 +69,11 @@ defmodule StonksBackendWeb.ContractOpsTest do
     refute deploy_workflow =~ "seed:snapshots"
     refute deploy_workflow =~ "test:all"
     refute deploy_workflow =~ "STONKS_SNAPSHOT_ENV_FILE"
+    assert deploy_workflow =~ "--profile python-legacy down --remove-orphans"
+
+    assert deploy_workflow =~
+             "docker rm -f stonks-radar-api-1 stonks-radar-worker-1 stonks-radar-fetch-sandbox-1"
+
     assert deploy_workflow =~ "StonksBackend.Release.migrate()"
     assert deploy_workflow =~ "stonks-radar_published-snapshots"
 

@@ -146,6 +146,7 @@ jobs:
                 sudo find "$mountpoint" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
               fi
             done
+            docker rm -f stonks-radar-api-1 stonks-radar-worker-1 stonks-radar-fetch-sandbox-1 || true
             df -h / /opt /tmp || true
           '
           rsync -az --delete \
@@ -186,7 +187,8 @@ jobs:
           ssh $SSH_OPTS -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
             'set -euo pipefail
              cd /opt/stonks-radar
-             docker compose -f compose.yaml -f infra/docker-compose.prod.yml down --remove-orphans || true
+             docker compose -f compose.yaml -f infra/docker-compose.prod.yml --profile python-legacy down --remove-orphans || true
+             docker rm -f stonks-radar-api-1 stonks-radar-worker-1 stonks-radar-fetch-sandbox-1 || true
              for volume in stonks-radar_snapshot-artifacts stonks-radar_published-snapshots; do
                mountpoint=$(docker volume inspect "$volume" --format "{{ .Mountpoint }}" 2>/dev/null || true)
                if [ -n "$mountpoint" ] && [ -d "$mountpoint" ]; then
