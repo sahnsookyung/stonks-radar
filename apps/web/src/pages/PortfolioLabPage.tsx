@@ -659,7 +659,7 @@ export function PortfolioLabPage() { // NOSONAR - route-level state orchestratio
   }
 
   return (
-    <div className="grid min-w-0 gap-6">
+    <div className="grid min-w-0 gap-4 md:gap-6">
       <PortfolioHeader
         portfolio={portfolio}
         section={section}
@@ -1406,8 +1406,8 @@ function EditablePortfolioWorkspace({
     setAssumptions
   };
   return (
-    <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_390px]">
-      <div className="grid min-w-0 gap-4">
+    <section className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_390px] xl:gap-4">
+      <div className="grid min-w-0 gap-3 xl:gap-4">
         <details className="panel p-4 xl:hidden">
           <summary className="focus-ring flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md text-sm font-bold text-accent">
             <span className="inline-flex items-center gap-2">
