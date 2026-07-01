@@ -60,6 +60,11 @@ defmodule StonksBackendWeb.ContractOpsTest do
     refute deploy_workflow =~ "publish_runtime_snapshots.py"
     refute deploy_workflow =~ " up -d postgres valkey fetch-sandbox"
     refute deploy_workflow =~ "python3 -c"
+    refute deploy_workflow =~ "actions/setup-python"
+    refute deploy_workflow =~ "setup-uv"
+    refute deploy_workflow =~ "seed:snapshots"
+    refute deploy_workflow =~ "test:all"
+    refute deploy_workflow =~ "STONKS_SNAPSHOT_ENV_FILE"
     assert deploy_workflow =~ "StonksBackend.Release.migrate()"
     assert deploy_workflow =~ "stonks-radar_published-snapshots"
 

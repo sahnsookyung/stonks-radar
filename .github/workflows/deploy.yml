@@ -32,16 +32,10 @@ jobs:
           node-version: 22
           cache: npm
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
       - uses: erlef/setup-beam@v1
         with:
           otp-version: "29.0"
           elixir-version: "1.20.2"
-
-      - uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
         run: npm install
@@ -50,26 +44,18 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Verify
-        run: npm run seed:snapshots && npm run test:all
+        run: npm run web:test && npm run backend:check
 
-      - name: Prepare production snapshot env
+      - name: Build web assets
+        run: npm run build:map-assets && npm run web:build
+
+      - name: Prepare production env
         env:
           STONKS_PRODUCTION_ENV_B64: ${{ secrets.STONKS_PRODUCTION_ENV_B64 }}
         run: |
           set -euo pipefail
           printf '%s' "$STONKS_PRODUCTION_ENV_B64" | base64 -d > /tmp/stonks-production.env
           chmod 600 /tmp/stonks-production.env
-
-      - name: Build web assets
-        run: STONKS_SNAPSHOT_ENV_FILE=/tmp/stonks-production.env npm run build
-
-      - name: Promote generated snapshots for runtime seed
-        run: |
-          set -euo pipefail
-          test -f apps/web/.generated-public/public/latest/manifest.json
-          rm -rf apps/web/public/public
-          mkdir -p apps/web/public
-          cp -a apps/web/.generated-public/public apps/web/public/public
 
       - name: Deploy local OCI compose stack
         env:
@@ -91,16 +77,10 @@ jobs:
           node-version: 22
           cache: npm
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
       - uses: erlef/setup-beam@v1
         with:
           otp-version: "29.0"
           elixir-version: "1.20.2"
-
-      - uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
         run: npm install
@@ -109,26 +89,18 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Verify
-        run: npm run seed:snapshots && npm run test:all
+        run: npm run web:test && npm run backend:check
 
-      - name: Prepare production snapshot env
+      - name: Build web assets
+        run: npm run build:map-assets && npm run web:build
+
+      - name: Prepare production env
         env:
           STONKS_PRODUCTION_ENV_B64: ${{ secrets.STONKS_PRODUCTION_ENV_B64 }}
         run: |
           set -euo pipefail
           printf '%s' "$STONKS_PRODUCTION_ENV_B64" | base64 -d > /tmp/stonks-production.env
           chmod 600 /tmp/stonks-production.env
-
-      - name: Build web assets
-        run: STONKS_SNAPSHOT_ENV_FILE=/tmp/stonks-production.env npm run build
-
-      - name: Promote generated snapshots for runtime seed
-        run: |
-          set -euo pipefail
-          test -f apps/web/.generated-public/public/latest/manifest.json
-          rm -rf apps/web/public/public
-          mkdir -p apps/web/public
-          cp -a apps/web/.generated-public/public apps/web/public/public
 
       - name: Prepare SSH
         env:
