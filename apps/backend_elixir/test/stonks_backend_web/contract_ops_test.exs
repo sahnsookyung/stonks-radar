@@ -28,6 +28,7 @@ defmodule StonksBackendWeb.ContractOpsTest do
     compose = read_repo_file("compose.yaml")
     compose_dev = read_repo_file("compose.dev.yaml")
     compose_prod = read_repo_file("infra/docker-compose.prod.yml")
+    ci_workflow = read_repo_file(".github/workflows/ci.yml")
     deploy_script = read_repo_file("scripts/deploy_self_hosted_runner.sh")
     deploy_workflow = read_repo_file(".github/workflows/deploy.yml")
 
@@ -79,6 +80,16 @@ defmodule StonksBackendWeb.ContractOpsTest do
 
     caddyfile = read_repo_file("infra/Caddyfile")
     assert caddyfile =~ "reverse_proxy {$API_UPSTREAM:api-elixir:8000}"
+
+    refute ci_workflow =~ "actions/setup-python"
+    refute ci_workflow =~ "setup-uv"
+    refute ci_workflow =~ "api:test"
+    refute ci_workflow =~ "api:compile"
+    refute ci_workflow =~ "apps/api/Dockerfile"
+    refute ci_workflow =~ "apps/worker/Dockerfile"
+    refute ci_workflow =~ "apps/fetch-sandbox/Dockerfile"
+    assert ci_workflow =~ "backend:check"
+    assert ci_workflow =~ "apps/backend_elixir/Dockerfile"
   end
 
   test "production runtime cannot bypass required secrets by downgrading APP_ENV" do
