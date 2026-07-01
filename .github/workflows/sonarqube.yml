@@ -69,34 +69,30 @@ jobs:
             echo "Using SonarQube Cloud organization ${SONAR_ORGANIZATION}"
           fi
 
-      - name: Set up Python
+      - name: Set up Node
         if: ${{ steps.sonar-config.outputs.configured == 'true' }}
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.12"
+          node-version: "24"
+          cache: npm
 
-      - name: Install uv
+      - name: Set up Elixir
         if: ${{ steps.sonar-config.outputs.configured == 'true' }}
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+        uses: erlef/setup-beam@v1
         with:
-          version: "0.11.2"
+          otp-version: "28.2"
+          elixir-version: "1.20.1"
 
       - name: Install Node dependencies
         if: ${{ steps.sonar-config.outputs.configured == 'true' }}
         run: npm ci
 
-      - name: Run backend tests with coverage
+      - name: Run Elixir backend tests
         if: ${{ steps.sonar-config.outputs.configured == 'true' }}
-        env:
-          PYTHONPATH: apps/api/src:apps/worker/src:apps/fetch-sandbox/src
         run: |
-          uv run --project apps/api --extra dev --with ./apps/fetch-sandbox --with pytest-cov \
-            python -m pytest -q tests \
-              --cov=apps/api/src \
-              --cov=apps/worker/src \
-              --cov=apps/fetch-sandbox/src \
-              --cov=scripts \
-              --cov-report=xml:coverage.xml
+          cd apps/backend_elixir
+          mix deps.get
+          mix test
 
       - name: Run frontend tests with coverage
         if: ${{ steps.sonar-config.outputs.configured == 'true' }}
@@ -106,7 +102,6 @@ jobs:
         if: ${{ steps.sonar-config.outputs.configured == 'true' }}
         run: |
           set -euo pipefail
-          test -s coverage.xml
           test -s apps/web/coverage/lcov.info
 
       - name: SonarQube Server scan
@@ -159,24 +154,22 @@ jobs:
           fi
 
           response="$(curl -fsS -u "${SONAR_TOKEN}:" "$ce_task_url")"
-          RESPONSE="$response" python3 - <<'PY'
-          import json
-          import os
-          import sys
+          RESPONSE="$response" node - <<'JS'
+          const data = JSON.parse(process.env.RESPONSE || "{}");
+          const task = data.task || {};
+          console.log("=== Sonar CE task ===");
+          for (const key of ["id", "type", "componentKey", "componentName", "status", "submittedAt", "startedAt", "executedAt", "executionTimeMs", "analysisId", "errorMessage"]) {
+            if (task[key] !== undefined && task[key] !== null) {
+              console.log(`${key}: ${task[key]}`);
+            }
+          }
+          if (task.errorStacktrace) {
+            console.log("errorStacktrace:");
+            console.log(task.errorStacktrace);
+          }
+          JS
 
-          data = json.loads(os.environ["RESPONSE"])
-          task = data.get("task", {})
-          print("=== Sonar CE task ===")
-          for key in ("id", "type", "componentKey", "componentName", "status", "submittedAt", "startedAt", "executedAt", "executionTimeMs", "analysisId", "errorMessage"):
-              value = task.get(key)
-              if value is not None:
-                  print(f"{key}: {value}")
-          if task.get("errorStacktrace"):
-              print("errorStacktrace:")
-              print(task["errorStacktrace"])
-          PY
-
-          status="$(RESPONSE="$response" python3 -c 'import json,os; print(json.loads(os.environ["RESPONSE"]).get("task", {}).get("status", ""))')"
+          status="$(RESPONSE="$response" node -e 'const data = JSON.parse(process.env.RESPONSE || "{}"); console.log((data.task || {}).status || "");')"
           if [ "$status" != "SUCCESS" ]; then
             echo "::error::SonarQube Cloud analysis processing failed: scan outcome=${SCAN_OUTCOME}, CE status=${status}."
             exit 1
@@ -210,7 +203,7 @@ jobs:
           set -euo pipefail
           for attempt in $(seq 1 120); do
             status="$(curl -fsS http://localhost:9000/api/system/status 2>/dev/null \
-              | python3 -c 'import json,sys; print(json.load(sys.stdin).get("status",""))' 2>/dev/null || true)"
+              | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{console.log(JSON.parse(s).status || "")}catch{}})' 2>/dev/null || true)"
             if [ "$status" = "UP" ]; then
               echo "SonarQube is UP"
               exit 0
@@ -229,7 +222,7 @@ jobs:
             curl -fsS -u admin:admin -X POST \
               --data-urlencode "name=github-actions-smoke-${GITHUB_RUN_ID}" \
               http://localhost:9000/api/user_tokens/generate \
-              | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])'
+              | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).token))'
           )"
           echo "::add-mask::$token"
           echo "token=$token" >> "$GITHUB_OUTPUT"
