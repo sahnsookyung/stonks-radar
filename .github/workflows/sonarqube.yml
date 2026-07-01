@@ -98,11 +98,23 @@ jobs:
         if: ${{ steps.sonar-config.outputs.configured == 'true' }}
         run: npm --workspace apps/web run test:coverage
 
+      - name: Normalize frontend coverage paths
+        if: ${{ steps.sonar-config.outputs.configured == 'true' }}
+        run: |
+          node - <<'JS'
+          const fs = require("fs");
+          const reportPath = "apps/web/coverage/lcov.info";
+          const report = fs.readFileSync(reportPath, "utf8");
+          const normalized = report.replace(/^SF:(?!\/|apps\/web\/)(.+)$/gm, "SF:apps/web/$1");
+          fs.writeFileSync(reportPath, normalized);
+          JS
+
       - name: Verify coverage reports exist
         if: ${{ steps.sonar-config.outputs.configured == 'true' }}
         run: |
           set -euo pipefail
           test -s apps/web/coverage/lcov.info
+          grep -q '^SF:apps/web/src/' apps/web/coverage/lcov.info
 
       - name: SonarQube Server scan
         if: ${{ steps.sonar-config.outputs.target == 'server' }}
