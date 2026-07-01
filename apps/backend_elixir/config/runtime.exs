@@ -42,11 +42,73 @@ config :stonks_backend, :settings,
   google_oauth_client_secret: System.get_env("GOOGLE_OAUTH_CLIENT_SECRET"),
   google_oauth_redirect_path:
     System.get_env("GOOGLE_OAUTH_REDIRECT_PATH", "/api/auth/google/callback"),
+  google_oauth_token_url:
+    System.get_env("GOOGLE_OAUTH_TOKEN_URL", "https://oauth2.googleapis.com/token"),
+  google_oauth_tokeninfo_url:
+    System.get_env("GOOGLE_OAUTH_TOKENINFO_URL", "https://oauth2.googleapis.com/tokeninfo"),
   google_oauth_allowed_emails: System.get_env("GOOGLE_OAUTH_ALLOWED_EMAILS", ""),
   google_oauth_allowed_domains: System.get_env("GOOGLE_OAUTH_ALLOWED_DOMAINS", ""),
   yahoo_admin_enabled: System.get_env("YAHOO_ADMIN_ENABLED", "false"),
   published_snapshot_dir: System.get_env("PUBLISHED_SNAPSHOT_DIR", "apps/web/public/public"),
   snapshot_artifact_dir: System.get_env("SNAPSHOT_ARTIFACT_DIR", "artifacts/snapshots"),
+  snapshot_schema_dir: System.get_env("SNAPSHOT_SCHEMA_DIR"),
+  worker_scheduler_enabled: System.get_env("WORKER_SCHEDULER_ENABLED", "true"),
+  worker_scheduler_tick_seconds: System.get_env("WORKER_SCHEDULER_TICK_SECONDS", "60"),
+  snapshot_refresh_seconds: System.get_env("SNAPSHOT_REFRESH_SECONDS", "900"),
+  news_rss_enabled: System.get_env("NEWS_RSS_ENABLED", "true"),
+  news_gdelt_enabled: System.get_env("NEWS_GDELT_ENABLED", "false"),
+  news_public_health_enabled: System.get_env("NEWS_PUBLIC_HEALTH_ENABLED", "true"),
+  news_source_refresh_seconds: System.get_env("NEWS_SOURCE_REFRESH_SECONDS", "900"),
+  news_publication_interval_seconds: System.get_env("NEWS_PUBLICATION_INTERVAL_SECONDS", "300"),
+  news_pipeline_runtime_enabled: System.get_env("NEWS_PIPELINE_RUNTIME_ENABLED", "true"),
+  news_max_documents_per_source_per_run:
+    System.get_env("NEWS_MAX_DOCUMENTS_PER_SOURCE_PER_RUN", "100"),
+  news_processing_batch_limit: System.get_env("NEWS_PROCESSING_BATCH_LIMIT", "500"),
+  news_page_read_batch_limit: System.get_env("NEWS_PAGE_READ_BATCH_LIMIT", "25"),
+  fetch_sandbox_url: System.get_env("FETCH_SANDBOX_URL", "http://fetch-sandbox:8080/fetch"),
+  source_fetch_timeout_seconds: System.get_env("SOURCE_FETCH_TIMEOUT_SECONDS", "20"),
+  source_fetch_max_bytes: System.get_env("SOURCE_FETCH_MAX_BYTES", "5000000"),
+  sec_user_agent:
+    System.get_env("SEC_USER_AGENT", "StonksRadar/1.0 research contact=admin@example.com"),
+  gdelt_doc_cycle_budget: System.get_env("GDELT_DOC_CYCLE_BUDGET", "10"),
+  gdelt_doc_max_records: System.get_env("GDELT_DOC_MAX_RECORDS", "250"),
+  gdelt_doc_query_pack: System.get_env("GDELT_DOC_QUERY_PACK", "market_watch"),
+  gdelt_doc_api_url:
+    System.get_env("GDELT_DOC_API_URL", "https://api.gdeltproject.org/api/v2/doc/doc"),
+  gdelt_runtime_fetch_enabled:
+    System.get_env(
+      "GDELT_RUNTIME_FETCH_ENABLED",
+      if(config_env() == :test, do: "false", else: "true")
+    ),
+  gdelt_title_fetch_limit: System.get_env("GDELT_TITLE_FETCH_LIMIT", "20"),
+  gdelt_title_fetch_timeout_seconds: System.get_env("GDELT_TITLE_FETCH_TIMEOUT_SECONDS", "8"),
+  gdelt_title_fetch_max_bytes: System.get_env("GDELT_TITLE_FETCH_MAX_BYTES", "131072"),
+  gdelt_title_per_host_interval_seconds:
+    System.get_env("GDELT_TITLE_PER_HOST_INTERVAL_SECONDS", "2"),
+  gdelt_bulk_max_documents: System.get_env("GDELT_BULK_MAX_DOCUMENTS", "500"),
+  gdelt_bulk_runtime_enabled: System.get_env("GDELT_BULK_RUNTIME_ENABLED", "false"),
+  news_ticker_watchlist_path: System.get_env("NEWS_TICKER_WATCHLIST_PATH"),
+  trump_disclosure_sec_poll_seconds: System.get_env("TRUMP_DISCLOSURE_SEC_POLL_SECONDS", "1800"),
+  trump_disclosure_oge_poll_seconds: System.get_env("TRUMP_DISCLOSURE_OGE_POLL_SECONDS", "86400"),
+  trump_disclosure_oge_pdf_limit: System.get_env("TRUMP_DISCLOSURE_OGE_PDF_LIMIT", "12"),
+  market_data_scheduled_refresh_enabled:
+    System.get_env("MARKET_DATA_SCHEDULED_REFRESH_ENABLED", "true"),
+  market_data_provider_order:
+    System.get_env("MARKET_DATA_PROVIDER_ORDER", "twelve_data,alpha_vantage,fmp"),
+  market_data_api_key: System.get_env("MARKET_DATA_API_KEY"),
+  twelve_data_api_key: System.get_env("TWELVE_DATA_API_KEY"),
+  alpha_vantage_api_key: System.get_env("ALPHA_VANTAGE_API_KEY"),
+  fmp_api_key: System.get_env("FMP_API_KEY"),
+  market_data_public_display_allowlist:
+    System.get_env("MARKET_DATA_PUBLIC_DISPLAY_ALLOWLIST", ""),
+  market_data_fetch_timeout_seconds: System.get_env("MARKET_DATA_FETCH_TIMEOUT_SECONDS", "20"),
+  market_data_refresh_symbols: System.get_env("MARKET_DATA_REFRESH_SYMBOLS", ""),
+  market_data_refresh_spread_minutes: System.get_env("MARKET_DATA_REFRESH_SPREAD_MINUTES", "240"),
+  market_data_snapshot_window_days: System.get_env("MARKET_DATA_SNAPSHOT_WINDOW_DAYS", "1095"),
+  market_data_refresh_after_close_minutes:
+    System.get_env("MARKET_DATA_REFRESH_AFTER_CLOSE_MINUTES", "45"),
+  instrument_universe_refresh_seconds:
+    System.get_env("INSTRUMENT_UNIVERSE_REFRESH_SECONDS", "14400"),
   news_email_webhook_secret: System.get_env("NEWS_EMAIL_WEBHOOK_SECRET"),
   news_email_signature_max_skew_seconds:
     System.get_env("NEWS_EMAIL_SIGNATURE_MAX_SKEW_SECONDS", "300")

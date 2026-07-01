@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-30T08:52:42Z",
-  "stale_after": "2026-06-30T20:52:42Z",
-  "hard_expires_at": "2026-07-07T08:52:42Z",
+  "generated_at": "2026-06-30T13:19:11Z",
+  "stale_after": "2026-07-01T01:19:11Z",
+  "hard_expires_at": "2026-07-07T13:19:11Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_TLT",
-  "content_hash": "sha256:4ac7ea933105eab367a2310f95f1d489b019a9af65d7bcbf35dc47c8f4ef98fd",
+  "content_hash": "sha256:2bc1d26ce3d84623d70239271cfea28acc8cd3fbdaec150714b49c179c193679",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "TLT",
     "name": "아이셰어즈 장기 미국채 ETF",
-    "generated_label": "2026-06-30T08:52:42Z",
+    "generated_label": "2026-06-30T13:19:11Z",
     "summary": "TLT에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
     "events": []
   },

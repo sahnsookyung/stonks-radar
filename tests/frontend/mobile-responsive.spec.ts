@@ -60,6 +60,9 @@ test.describe("mobile responsive public routes", () => {
         await assertAllowedScrollers(page, route);
         await assertNoUnexpectedOverflow(page, route);
         await assertTapTargets(page, route);
+        if (route === "/en/portfolio") {
+          await assertPortfolioFirstViewport(page, route);
+        }
         if (route.endsWith("/map")) {
           await assertMapCanvas(page, viewport);
         }
@@ -196,6 +199,23 @@ async function assertTapTargets(page: Page, route: string) {
       .slice(0, 12);
   });
   expect(offenders, `${route} has tap targets below 44px`).toEqual([]);
+}
+
+async function assertPortfolioFirstViewport(page: Page, route: string) {
+  await expect(page.getByTestId("portfolio-cockpit")).toBeVisible();
+  await expect(page.getByText("Add / edit holdings")).toBeVisible();
+  const offenders = await page.evaluate(() => {
+    const viewportHeight = window.innerHeight;
+    const cockpit = document.querySelector("[data-testid='portfolio-cockpit']");
+    const editorSummary = Array.from(document.querySelectorAll("summary")).find((summary) =>
+      summary.textContent?.includes("Add / edit holdings")
+    );
+    return [
+      cockpit ? { label: "portfolio cockpit", top: cockpit.getBoundingClientRect().top } : { label: "portfolio cockpit missing", top: Number.POSITIVE_INFINITY },
+      editorSummary ? { label: "mobile editor", top: editorSummary.getBoundingClientRect().top } : { label: "mobile editor missing", top: Number.POSITIVE_INFINITY }
+    ].filter((item) => item.top < 0 || item.top > viewportHeight);
+  });
+  expect(offenders, `${route} should expose useful cockpit content and editor access in the first viewport`).toEqual([]);
 }
 
 async function assertMapCanvas(page: Page, viewport: { width: number; height: number }) {

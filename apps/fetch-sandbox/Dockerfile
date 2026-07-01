@@ -14,4 +14,5 @@ RUN python -m pip install --no-cache-dir --no-compile --only-binary=:all: /app/a
       -prune -exec rm -rf {} +
 COPY apps/fetch-sandbox apps/fetch-sandbox
 USER frw
+EXPOSE 8080
 CMD ["python", "-m", "fetch_sandbox.server"]

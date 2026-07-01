@@ -8,9 +8,10 @@ import { ErrorState, LoadingState } from "../components/LoadingState";
 import { SnapshotBanner } from "../components/SnapshotBanner";
 import { useLocale } from "../lib/locale";
 import { snapshotQueries } from "../lib/snapshots";
-import { trackedTickers } from "../lib/trackedTickers";
+import { entityDisplayName, trackedTickers } from "../lib/trackedTickers";
 
 const shortLaneKeys = new Set(["highest_short_interest", "short_volume_monitor"]);
+const excludedShortBoardSymbols = new Set(["DJT"]);
 
 function laneItemsForSymbol(symbol: string, shortLanes: AlternativeSignalLane[]) {
   return shortLanes.flatMap((lane) =>
@@ -34,12 +35,11 @@ export function ShortsPage() {
   const lanes = query.data.data.alternative_signals;
   const shortLanes = lanes.filter((lane) => shortLaneKeys.has(lane.key));
   const researchLane = lanes.find((lane) => lane.key === "short_research_reports");
-  const shortSymbols = trackedTickers
-    .filter((ticker) => ticker.tags.some((tag) => ["short", "politics", "meme", "semiconductors", "space", "quantum"].includes(tag)))
-    .map((ticker) => ticker.symbol);
-  const tickerRows = shortSymbols.map((symbol) => ({
-    symbol,
-    items: laneItemsForSymbol(symbol, shortLanes)
+  const shortTickers = trackedTickers.filter((ticker) => !excludedShortBoardSymbols.has(ticker.symbol));
+  const tickerRows = shortTickers.map((ticker) => ({
+    ticker,
+    symbol: ticker.symbol,
+    items: laneItemsForSymbol(ticker.symbol, shortLanes)
   }));
 
   return (
@@ -68,7 +68,12 @@ export function ShortsPage() {
                 <div className="text-xs font-semibold uppercase leading-5 text-muted">
                   {locale === "ko" ? "추적 티커" : "Tracked ticker"}
                 </div>
-                <EntityLink value={row.symbol} locale={locale} className="focus-ring mt-1 inline-flex min-h-11 items-center rounded-md text-2xl font-bold hover:text-accent" />
+                <EntityLink value={row.ticker} locale={locale} className="focus-ring mt-1 inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-1 text-2xl font-bold hover:text-accent">
+                  {row.ticker.displaySymbol}
+                </EntityLink>
+                <div className="safe-text text-xs leading-5 text-muted">
+                  {entityDisplayName(row.ticker, locale)} · {row.ticker.exchange}
+                </div>
               </div>
               <SeverityBadge value="medium" />
             </div>
@@ -78,9 +83,13 @@ export function ShortsPage() {
               )}
               {row.items.length === 0 && (
                   <div className="safe-text min-h-11 rounded-md border border-line bg-panelAlt px-3 py-2 text-xs leading-5 text-muted">
-                  {locale === "ko"
-                    ? "이번 스냅샷에는 이 티커의 공식 공매도 행이 없습니다."
-                    : "No official short row for this ticker in the current snapshot."}
+                  {row.ticker.country === "USA"
+                    ? locale === "ko"
+                      ? "이번 스냅샷에는 이 티커의 공식 공매도 행이 없습니다."
+                      : "No official short row for this ticker in the current snapshot."
+                    : locale === "ko"
+                      ? "이 비미국 상장 종목은 이번 스냅샷에 공식 FINRA 공매도 행이 없습니다."
+                      : "No official U.S. FINRA short row is available for this non-U.S. listing in the current snapshot."}
                 </div>
               )}
             </div>

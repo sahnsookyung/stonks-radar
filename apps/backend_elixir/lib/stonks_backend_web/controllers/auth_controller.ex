@@ -61,11 +61,45 @@ defmodule StonksBackendWeb.AuthController do
         send_resp(conn, 404, "Google OAuth admin login is not configured.")
 
       true ->
-        send_resp(
-          conn,
-          501,
-          "Google OAuth callback exchange is not enabled in this migration slice."
-        )
+        handle_google_callback(conn, params["code"], params["state"])
+    end
+  end
+
+  defp handle_google_callback(conn, code, state) do
+    with {:ok, state_row} <- Accounts.consume_google_state(state),
+         {:ok, profile} <- Accounts.fetch_google_profile(code, to_string(state_row["nonce_hash"])),
+         {:ok, user} <- Accounts.upsert_google_admin_user(profile),
+         {%Plug.Conn{} = conn, _csrf_token} <-
+           Accounts.create_session(conn, to_string(user["id"]), user["role"],
+             expose_csrf_cookie: true
+           ) do
+      redirect_to = Accounts.safe_admin_redirect_path(state_row["redirect_to"] || "/admin")
+
+      Audit.write("auth.google_login_succeeded",
+        target_table: "app_user",
+        target_pk: to_string(user["id"]),
+        after: %{role: user["role"]}
+      )
+
+      redirect(conn, to: redirect_to)
+    else
+      {:error, :invalid_oauth_state} ->
+        send_resp(conn, 400, "Invalid or expired OAuth state.")
+
+      {:error, :google_account_not_authorized} ->
+        send_resp(conn, 403, "Google account is not authorized for admin access.")
+
+      {:error, {:forbidden, detail}} ->
+        conn |> put_status(403) |> json(%{detail: detail})
+
+      {:error, {:bad_gateway, detail}} ->
+        conn |> put_status(502) |> json(%{detail: detail})
+
+      {:error, :session_unavailable} ->
+        conn |> put_status(503) |> json(%{detail: "Session storage unavailable"})
+
+      {:error, reason} ->
+        conn |> put_status(500) |> json(%{detail: to_string(reason)})
     end
   end
 

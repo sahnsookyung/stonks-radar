@@ -768,9 +768,19 @@ def test_seed_geo_alias_does_not_match_short_alias_inside_url_slug():
 
 def test_alternative_signals_labels_gdelt_bulk_as_source_linked_report(monkeypatch):
     generated_at = datetime(2026, 6, 29, 15, 35, tzinfo=timezone.utc)
+    seen_symbols = {}
     monkeypatch.setattr(build_seed_snapshots, "_runtime_env", lambda: {})
-    monkeypatch.setattr(build_seed_snapshots, "_finra_short_interest_rows", lambda _symbols: [])
-    monkeypatch.setattr(build_seed_snapshots, "_finra_short_volume_rows", lambda _symbols: [])
+
+    def short_interest_rows(symbols):
+        seen_symbols["short_interest"] = symbols
+        return []
+
+    def short_volume_rows(symbols):
+        seen_symbols["short_volume"] = symbols
+        return []
+
+    monkeypatch.setattr(build_seed_snapshots, "_finra_short_interest_rows", short_interest_rows)
+    monkeypatch.setattr(build_seed_snapshots, "_finra_short_volume_rows", short_volume_rows)
     monkeypatch.setattr(build_seed_snapshots, "_latest_short_interest", lambda *_args: [])
     monkeypatch.setattr(build_seed_snapshots, "_latest_short_volume", lambda *_args: [])
     monkeypatch.setattr(build_seed_snapshots, "_recent_sec_documents", lambda _ciks: [])
@@ -801,6 +811,11 @@ def test_alternative_signals_labels_gdelt_bulk_as_source_linked_report(monkeypat
     assert item["detail"] == "Source-linked report; www.example.com; seen 20260629152531"
     assert item["source"] == "GDELT linked sources"
     assert "GDELT event file" not in json.dumps(item)
+    assert "DJT" not in seen_symbols["short_interest"]
+    assert {"NVDA", "RKLB", "IONQ", "RGTI", "QBTS", "LUNR", "ASTS", "RDW", "AMD", "005930.KS"}.issubset(
+        set(seen_symbols["short_interest"])
+    )
+    assert seen_symbols["short_interest"] == seen_symbols["short_volume"]
 
 
 def test_twelve_data_quote_series_treats_date_only_payload_as_daily(monkeypatch):
@@ -932,11 +947,71 @@ def test_build_snapshots_writes_news_seed_snapshots(tmp_path, monkeypatch):
         "news_ticker_RKLB",
         "news_ticker_IONQ",
         "news_region_USA",
+        "news_region_CHN",
+        "news_region_DEU",
+        "news_region_IND",
+        "news_region_GBR",
+        "news_region_FRA",
+        "news_region_ITA",
+        "news_region_CAN",
+        "news_region_BRA",
+        "news_region_RUS",
         "news_region_KOR",
         "news_region_JPN",
-        "news_region_BRA",
+        "news_region_MEX",
+        "news_region_AUS",
+        "news_region_ESP",
+        "news_region_IDN",
+        "news_region_TUR",
+        "news_region_SAU",
+        "news_region_NLD",
+        "news_region_CHE",
+        "news_region_POL",
+        "news_region_BEL",
+        "news_region_ARG",
+        "news_region_IRL",
+        "news_region_SWE",
+        "news_region_ARE",
+        "news_region_SGP",
+        "news_region_ISR",
+        "news_region_AUT",
+        "news_region_THA",
+        "news_region_ZAF",
         "news_region_EU",
-        "news_region_CHN",
+        "news_region_NOR",
+        "country_USA",
+        "country_CHN",
+        "country_DEU",
+        "country_JPN",
+        "country_IND",
+        "country_GBR",
+        "country_FRA",
+        "country_ITA",
+        "country_CAN",
+        "country_BRA",
+        "country_RUS",
+        "country_KOR",
+        "country_MEX",
+        "country_AUS",
+        "country_ESP",
+        "country_IDN",
+        "country_TUR",
+        "country_SAU",
+        "country_NLD",
+        "country_CHE",
+        "country_POL",
+        "country_BEL",
+        "country_ARG",
+        "country_IRL",
+        "country_SWE",
+        "country_ARE",
+        "country_SGP",
+        "country_ISR",
+        "country_AUT",
+        "country_THA",
+        "country_ZAF",
+        "country_NOR",
+        "region_TOP30_GDP_2024_WORLD_BANK",
         "news_topic_semiconductors",
         "news_topic_space",
         "news_topic_quantum",
@@ -1080,7 +1155,7 @@ def test_build_snapshots_writes_news_seed_snapshots(tmp_path, monkeypatch):
 
     fund = json.loads((tmp_path / "v1" / "en" / "funds" / "situational-awareness.json").read_text())
     assert fund["data"]["manager_name"] == "Leopold Aschenbrenner"
-    assert fund["data"]["source_strength"] == "SEC EDGAR 13F XML"
+    assert fund["data"]["source_strength"] == "SEC EDGAR 13F + Schedule 13G XML"
 
 
 def test_fund_portfolio_snapshot_uses_sec_13f_payload(tmp_path, monkeypatch):
@@ -1143,6 +1218,80 @@ def test_fund_portfolio_snapshot_uses_sec_13f_payload(tmp_path, monkeypatch):
     assert output["data"]["summary_metrics"]["long_equity_value_usd"] == 497912
 
 
+def test_sec_13f_portfolio_merges_newer_schedule_13g_ownership(monkeypatch):
+    build_seed_snapshots._reset_runtime_caches()
+    info_url = "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml"
+    ownership_url = "https://www.sec.gov/Archives/edgar/data/2045724/000093583626000303/primary_doc.xml"
+    sec_13f_xml = """
+    <informationTable>
+      <infoTable>
+        <nameOfIssuer>BLOOM ENERGY CORP</nameOfIssuer>
+        <titleOfClass>COM CL A</titleOfClass>
+        <cusip>093712107</cusip>
+        <value>878707930</value>
+        <shrsOrPrnAmt><sshPrnamt>6485408</sshPrnamt><sshPrnamtType>SH</sshPrnamtType></shrsOrPrnAmt>
+      </infoTable>
+    </informationTable>
+    """
+    schedule_13g_xml = """
+    <edgarSubmission>
+      <formData>
+        <coverPageHeader>
+          <securitiesClassTitle>Class A Ordinary Shares</securitiesClassTitle>
+          <eventDateRequiresFilingThisStatement>05/19/2026</eventDateRequiresFilingThisStatement>
+          <issuerInfo>
+            <issuerName>Nebius Group N.V.</issuerName>
+            <issuerCusips><issuerCusipNumber>N97284108</issuerCusipNumber></issuerCusips>
+          </issuerInfo>
+        </coverPageHeader>
+        <coverPageHeaderReportingPersonDetails>
+          <reportingPersonName>Situational Awareness LP</reportingPersonName>
+          <reportingPersonBeneficiallyOwnedAggregateNumberOfShares>12410060.00</reportingPersonBeneficiallyOwnedAggregateNumberOfShares>
+        </coverPageHeaderReportingPersonDetails>
+      </formData>
+    </edgarSubmission>
+    """
+
+    def recent_filings(_cik, form_types, *, limit=6):
+        if "13F-HR" in form_types:
+            return [
+                {
+                    "form_type": "13F-HR",
+                    "accession_number": "0002045724-26-000008",
+                    "report_date": "2026-03-31",
+                    "filed_at": "2026-05-18",
+                    "archive_base_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008",
+                    "primary_document_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/primary_doc.xml",
+                }
+            ][:limit]
+        if "SCHEDULE 13G" in form_types:
+            return [
+                {
+                    "form_type": "SCHEDULE 13G",
+                    "accession_number": "0000935836-26-000303",
+                    "report_date": "",
+                    "filed_at": "2026-05-27",
+                    "archive_base_url": "https://www.sec.gov/Archives/edgar/data/2045724/000093583626000303",
+                    "primary_document_url": ownership_url,
+                }
+            ][:limit]
+        return []
+
+    monkeypatch.setattr(build_seed_snapshots, "_recent_sec_filings", recent_filings)
+    monkeypatch.setattr(build_seed_snapshots, "_find_13f_information_table_url", lambda _base_url: info_url)
+    monkeypatch.setattr(build_seed_snapshots, "_http_text", lambda url, **_kwargs: schedule_13g_xml if url == ownership_url else sec_13f_xml)
+    monkeypatch.setattr(build_seed_snapshots, "_yahoo_chart_series", lambda symbol: {"value": 200.0} if symbol == "NBIS" else None)
+
+    portfolio = build_seed_snapshots._sec_13f_portfolio("situational-awareness")
+
+    assert portfolio is not None
+    assert portfolio["top_equity_holdings"][0]["symbol"] == "NBIS"
+    assert portfolio["top_equity_holdings"][0]["issuer_name"] == "Nebius Group N.V."
+    assert portfolio["top_equity_holdings"][0]["value_usd"] == 2_482_012_000
+    assert portfolio["top_equity_holdings"][0]["shares"] == 12_410_060
+    assert portfolio["top_equity_holdings"][0]["source_lineage"].startswith("SEC EDGAR SCHEDULE 13G")
+
+
 def test_sector_short_facts_use_typed_finra_rows(monkeypatch):
     build_seed_snapshots._reset_runtime_caches()
     generated_at = datetime(2026, 5, 30, tzinfo=timezone.utc)
@@ -1168,6 +1317,28 @@ def test_sector_short_facts_use_typed_finra_rows(monkeypatch):
 
     assert by_id["short_interest_NVDA_2026-05-15"]["fact_type"] == "short_interest"
     assert by_id["short_interest_NVDA_2026-05-15"]["value"] == 296970000
+    assert by_id["short_interest_NVDA_2026-05-15"]["source"] == "FINRA"
+    assert by_id["short_interest_NVDA_2026-05-15"]["source_url"] == "https://fintel.io/ss/us/nvda"
+    assert "Data is sourced from FINRA" in by_id["short_interest_NVDA_2026-05-15"]["caveat"]
+    assert "Fintel" in by_id["short_interest_NVDA_2026-05-15"]["caveat"]
     assert by_id["short_interest_NVDA_2026-05-15"]["provider_observation_key"]
     assert by_id["short_volume_NVDA_2026-05-29"]["fact_type"] == "short_volume"
     assert all(fact["symbol"] == "NVDA" for fact in facts)
+
+
+def test_drone_sector_tracks_requested_tickers():
+    build_seed_snapshots._reset_runtime_caches()
+    generated_at = datetime(2026, 5, 30, tzinfo=timezone.utc)
+
+    sector = build_seed_snapshots.SECTORS["drones"]
+    entities = build_seed_snapshots._tracked_entities_for_sector("drones")
+    symbols = {str(entity["symbol"]).upper() for entity in entities}
+    refs = [build_seed_snapshots._tracked_entity_ref(entity, "en", generated_at) for entity in entities]
+    names = {ref["symbol"]: ref["name"] for ref in refs}
+
+    assert sector["en"] == "Drones"
+    assert {"ONDS", "UMAC", "AVAV", "RCAT"}.issubset(symbols)
+    assert names["ONDS"] == "Ondas"
+    assert names["UMAC"] == "Unusual Machines"
+    assert names["AVAV"] == "AeroVironment"
+    assert names["RCAT"] == "Red Cat Holdings"

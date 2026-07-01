@@ -30,7 +30,7 @@ export function EventMap({
   selectedMapPointId = null,
   onMapPointSelect,
   heightClass = "h-[540px] md:h-[680px]",
-  footer = "Static approved events only. Base boundaries: Natural Earth Admin 0, 1:110m, vendored as local GeoJSON.",
+  footer = "Source-linked events only. Base boundaries: Natural Earth Admin 0, 1:110m, vendored as local GeoJSON.",
   loadStrategy = "visible"
 }: EventMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);

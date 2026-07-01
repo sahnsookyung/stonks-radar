@@ -10,6 +10,7 @@ defmodule StonksBackend.Application do
         {Phoenix.PubSub, name: StonksBackend.PubSub},
         {Finch, name: StonksBackend.Finch},
         oban_child(),
+        scheduler_child(),
         StonksBackendWeb.Endpoint
       ]
       |> Enum.reject(&is_nil/1)
@@ -35,5 +36,11 @@ defmodule StonksBackend.Application do
 
   defp repo_child do
     if Application.get_env(:stonks_backend, :start_repo, true), do: StonksBackend.Repo
+  end
+
+  defp scheduler_child do
+    if Application.get_env(:stonks_backend, :start_scheduler, true) do
+      StonksBackend.Jobs.SchedulerRunner
+    end
   end
 end

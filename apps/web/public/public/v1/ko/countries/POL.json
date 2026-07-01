@@ -1,0 +1,1214 @@
+{
+  "schema_version": "1.0",
+  "snapshot_version": 1,
+  "locale": "ko",
+  "generated_at": "2026-06-30T13:19:11Z",
+  "stale_after": "2026-07-01T01:19:11Z",
+  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "object_type": "country_region",
+  "object_key": "POL",
+  "content_hash": "sha256:1b6f20776a375691e3aceeb0cfbcc41d5b0e9b4316f72f23e4be3e77acbac311",
+  "source_policy_versions": [
+    {
+      "source_key": "federal_reserve",
+      "policy_version": 1
+    },
+    {
+      "source_key": "sec_edgar",
+      "policy_version": 1
+    },
+    {
+      "source_key": "eia",
+      "policy_version": 1
+    },
+    {
+      "source_key": "world_bank",
+      "policy_version": 1
+    },
+    {
+      "source_key": "gdelt",
+      "policy_version": 1
+    },
+    {
+      "source_key": "google_news_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_rss",
+      "policy_version": 1
+    },
+    {
+      "source_key": "yahoo_finance_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "stooq_delayed_quote",
+      "policy_version": 1
+    },
+    {
+      "source_key": "treasury_xml_feed",
+      "policy_version": 1
+    },
+    {
+      "source_key": "krx_open_api",
+      "policy_version": 1
+    },
+    {
+      "source_key": "data_go_kr",
+      "policy_version": 1
+    },
+    {
+      "source_key": "japan_mof_jgb_csv",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bis",
+      "policy_version": 1
+    },
+    {
+      "source_key": "who",
+      "policy_version": 1
+    },
+    {
+      "source_key": "cdc",
+      "policy_version": 1
+    },
+    {
+      "source_key": "company_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ecb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_korea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bank_of_japan",
+      "policy_version": 1
+    },
+    {
+      "source_key": "bcb",
+      "policy_version": 1
+    },
+    {
+      "source_key": "rocket_lab_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "ionq_ir",
+      "policy_version": 1
+    },
+    {
+      "source_key": "iea",
+      "policy_version": 1
+    },
+    {
+      "source_key": "source_policy",
+      "policy_version": 1
+    }
+  ],
+  "data": {
+    "key": "POL",
+    "name": "폴란드",
+    "type": "country",
+    "overview": "폴란드 커버리지는 공식 거시 일정, 섹터 노출, 출처 강도 라벨, 출처 연결 이벤트를 결합합니다.",
+    "source_strength": "official_or_reviewed_seed",
+    "freshness": "fresh",
+    "monitored_sectors": [
+      {
+        "key": "space",
+        "name": "우주",
+        "summary": "레지스트리 기반 엔티티 4개를 출처 연결 섹터 이벤트와 함께 모니터링합니다.",
+        "source_strength": "tracked_entity_registry",
+        "freshness": "fresh",
+        "monitored_count": 4,
+        "event_count": 0
+      },
+      {
+        "key": "drones",
+        "name": "드론",
+        "summary": "레지스트리 기반 엔티티 4개를 출처 연결 섹터 이벤트와 함께 모니터링합니다.",
+        "source_strength": "tracked_entity_registry",
+        "freshness": "fresh",
+        "monitored_count": 4,
+        "event_count": 0
+      },
+      {
+        "key": "quantum",
+        "name": "양자",
+        "summary": "레지스트리 기반 엔티티 4개를 출처 연결 섹터 이벤트와 함께 모니터링합니다.",
+        "source_strength": "tracked_entity_registry",
+        "freshness": "fresh",
+        "monitored_count": 4,
+        "event_count": 0
+      },
+      {
+        "key": "semiconductors",
+        "name": "반도체",
+        "summary": "레지스트리 기반 엔티티 3개를 출처 연결 섹터 이벤트와 함께 모니터링합니다.",
+        "source_strength": "tracked_entity_registry",
+        "freshness": "fresh",
+        "monitored_count": 3,
+        "event_count": 2
+      },
+      {
+        "key": "oil-energy",
+        "name": "석유/에너지",
+        "summary": "레지스트리 기반 엔티티 0개를 출처 연결 섹터 이벤트와 함께 모니터링합니다.",
+        "source_strength": "tracked_entity_registry",
+        "freshness": "fresh",
+        "monitored_count": 0,
+        "event_count": 2
+      },
+      {
+        "key": "big-tech",
+        "name": "빅테크",
+        "summary": "레지스트리 기반 엔티티 6개를 출처 연결 섹터 이벤트와 함께 모니터링합니다.",
+        "source_strength": "tracked_entity_registry",
+        "freshness": "fresh",
+        "monitored_count": 6,
+        "event_count": 2
+      }
+    ],
+    "recent_events": [
+      {
+        "id": "event_semis_export_controls_seed",
+        "title": "반도체 수출통제 모니터링 강도 유지",
+        "summary": "출처 연결 이벤트 맥락이 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
+        "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다.",
+        "occurred_at": "2026-05-25T00:00:00Z",
+        "published_at": "2026-05-25T00:00:00Z",
+        "country_region_keys": [
+          "USA",
+          "TWN",
+          "KOR",
+          "CHN",
+          "JPN"
+        ],
+        "sector_keys": [
+          "semiconductors",
+          "big-tech"
+        ],
+        "event_type": "policy_risk",
+        "severity": "medium",
+        "confidence": 0.74,
+        "source_strength": "reviewed_structured_seed",
+        "freshness": "stale",
+        "evidence_count": 2,
+        "latitude": 23.7,
+        "longitude": 121.0,
+        "affected_objects": [
+          "NVIDIA",
+          "TSMC",
+          "Samsung Electronics",
+          "SK Hynix",
+          "ASML"
+        ],
+        "source_links": [
+          {
+            "label": "Source policy seed",
+            "url": "/en/source-policy",
+            "source_key": "sec_edgar",
+            "policy_version": 1
+          }
+        ],
+        "correction_status": "none"
+      }
+    ],
+    "calendar_items": [
+      {
+        "id": "cal_boe",
+        "title": "영란은행 MPC 결정",
+        "country_region_key": "GBR",
+        "release_type": "central_bank",
+        "scheduled_at": "2026-06-30T12:00:00Z",
+        "scheduled_local_date": "2026-06-30",
+        "timezone": "Europe/London",
+        "time_precision": "time_estimated",
+        "status": "scheduled",
+        "expectation_type": "official_calendar",
+        "expectation_value": "MPC announcement and minutes",
+        "actual_value": null,
+        "previous_value": null,
+        "surprise": null,
+        "source": "BoE",
+        "source_url": "https://www.bankofengland.co.uk/news/2025/september/monetary-policy-committee-dates-for-2026",
+        "freshness": "fresh"
+      },
+      {
+        "id": "cal_earnings_000660_KS",
+        "title": "SK Hynix 실적 캘린더",
+        "country_region_key": "KOR",
+        "release_type": "earnings_watch",
+        "scheduled_at": null,
+        "scheduled_local_date": "2026-06-30",
+        "timezone": "UTC",
+        "time_precision": "date_only",
+        "status": "monitoring",
+        "expectation_type": "manual_watch",
+        "expectation_value": "제공사 날짜 미확인; 다음 SK Hynix 실적일은 SK Hynix IR에서 확인하세요.",
+        "actual_value": null,
+        "previous_value": null,
+        "surprise": null,
+        "source": "SK Hynix IR",
+        "source_url": "https://www.skhynix.com/ir/UI-FR-IR04",
+        "freshness": "watch"
+      }
+    ],
+    "indicators": [
+      {
+        "key": "nasdaq_composite",
+        "label": "나스닥 종합",
+        "value": "25,820.15",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "watch",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-29T21:15:59Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-29T21:15:59Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EIXIC?range=1d&interval=1m",
+        "points": [
+          {
+            "date": "2026-06-29T15:06:00Z",
+            "value": 25585.359375
+          },
+          {
+            "date": "2026-06-29T15:54:00Z",
+            "value": 25639.74609375
+          },
+          {
+            "date": "2026-06-29T16:42:00Z",
+            "value": 25642.0703125
+          },
+          {
+            "date": "2026-06-29T17:30:00Z",
+            "value": 25765.7265625
+          },
+          {
+            "date": "2026-06-29T18:18:00Z",
+            "value": 25760.228515625
+          },
+          {
+            "date": "2026-06-29T19:06:00Z",
+            "value": 25792.98828125
+          },
+          {
+            "date": "2026-06-29T19:54:00Z",
+            "value": 25792.25
+          },
+          {
+            "date": "2026-06-29T20:00:00Z",
+            "value": 25820.14453125
+          }
+        ],
+        "refresh_delta": 522.5280000000021,
+        "refresh_delta_percent": 2.0655226142446623
+      },
+      {
+        "key": "nasdaq_100",
+        "label": "나스닥 100",
+        "value": "29,774.75",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "watch",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-29T21:15:59Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-29T21:15:59Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?range=1d&interval=1m",
+        "points": [
+          {
+            "date": "2026-06-29T15:06:00Z",
+            "value": 29416.24609375
+          },
+          {
+            "date": "2026-06-29T15:54:00Z",
+            "value": 29538.03515625
+          },
+          {
+            "date": "2026-06-29T16:42:00Z",
+            "value": 29617.12109375
+          },
+          {
+            "date": "2026-06-29T17:30:00Z",
+            "value": 29731.333984375
+          },
+          {
+            "date": "2026-06-29T18:18:00Z",
+            "value": 29732.486328125
+          },
+          {
+            "date": "2026-06-29T19:06:00Z",
+            "value": 29734.875
+          },
+          {
+            "date": "2026-06-29T19:54:00Z",
+            "value": 29708.666015625
+          },
+          {
+            "date": "2026-06-29T20:00:00Z",
+            "value": 29774.751953125
+          }
+        ],
+        "refresh_delta": 656.5139999999992,
+        "refresh_delta_percent": 2.2546487874712717
+      },
+      {
+        "key": "kospi",
+        "label": "코스피",
+        "value": "8,476.48",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "watch",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-30T09:05:40Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-30T09:05:40Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EKS11?range=1d&interval=1m",
+        "points": [
+          {
+            "date": "2026-06-30T00:45:00Z",
+            "value": 8232.330078125
+          },
+          {
+            "date": "2026-06-30T01:30:00Z",
+            "value": 8409.76953125
+          },
+          {
+            "date": "2026-06-30T02:15:00Z",
+            "value": 8378.7900390625
+          },
+          {
+            "date": "2026-06-30T03:00:00Z",
+            "value": 8507.6904296875
+          },
+          {
+            "date": "2026-06-30T03:45:00Z",
+            "value": 8503.490234375
+          },
+          {
+            "date": "2026-06-30T04:30:00Z",
+            "value": 8616.330078125
+          },
+          {
+            "date": "2026-06-30T05:15:00Z",
+            "value": 8625.2197265625
+          },
+          {
+            "date": "2026-06-30T06:00:00Z",
+            "value": 8476.48046875
+          }
+        ],
+        "refresh_delta": 81.82999999999993,
+        "refresh_delta_percent": 0.9747875134758438
+      },
+      {
+        "key": "kodex_200",
+        "label": "KODEX 200 ETF",
+        "value": "138,580",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "watch",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-30T06:30:13Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-30T06:30:13Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "KRW",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/069500.KS?range=1d&interval=1m",
+        "points": [
+          {
+            "date": "2026-06-30T00:45:00Z",
+            "value": 133670.0
+          },
+          {
+            "date": "2026-06-30T01:30:00Z",
+            "value": 136690.0
+          },
+          {
+            "date": "2026-06-30T02:15:00Z",
+            "value": 136095.0
+          },
+          {
+            "date": "2026-06-30T03:00:00Z",
+            "value": 138650.0
+          },
+          {
+            "date": "2026-06-30T03:45:00Z",
+            "value": 138305.0
+          },
+          {
+            "date": "2026-06-30T04:30:00Z",
+            "value": 140410.0
+          },
+          {
+            "date": "2026-06-30T05:15:00Z",
+            "value": 140415.0
+          },
+          {
+            "date": "2026-06-30T06:00:00Z",
+            "value": 138580.0
+          }
+        ],
+        "refresh_delta": 2165.0,
+        "refresh_delta_percent": 1.58706887072536
+      },
+      {
+        "key": "wti_crude",
+        "label": "WTI 원유 선물",
+        "value": "71.26",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-06-30T13:09:29Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-30T13:09:29Z",
+        "coverage_status": "active",
+        "refresh_seconds": 900,
+        "unit": "$",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/CL%3DF?range=1d&interval=1m",
+        "points": [
+          {
+            "date": "2026-06-30T06:19:00Z",
+            "value": 69.93000030517578
+          },
+          {
+            "date": "2026-06-30T07:27:00Z",
+            "value": 70.31999969482422
+          },
+          {
+            "date": "2026-06-30T08:35:00Z",
+            "value": 70.79000091552734
+          },
+          {
+            "date": "2026-06-30T09:43:00Z",
+            "value": 70.80000305175781
+          },
+          {
+            "date": "2026-06-30T10:51:00Z",
+            "value": 70.62000274658203
+          },
+          {
+            "date": "2026-06-30T11:59:00Z",
+            "value": 71.1500015258789
+          },
+          {
+            "date": "2026-06-30T13:07:00Z",
+            "value": 71.33000183105469
+          },
+          {
+            "date": "2026-06-30T13:09:29Z",
+            "value": 71.26000213623047
+          }
+        ],
+        "refresh_delta": 0.5100000000000051,
+        "refresh_delta_percent": 0.7208480565371097
+      },
+      {
+        "key": "gold_futures",
+        "label": "금 선물",
+        "value": "4,034.9",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-06-30T13:09:25Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-30T13:09:25Z",
+        "coverage_status": "active",
+        "refresh_seconds": 900,
+        "unit": "$",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?range=1d&interval=1m",
+        "points": [
+          {
+            "date": "2026-06-30T06:16:00Z",
+            "value": 3999.199951171875
+          },
+          {
+            "date": "2026-06-30T07:24:00Z",
+            "value": 4044.699951171875
+          },
+          {
+            "date": "2026-06-30T08:32:00Z",
+            "value": 4039.199951171875
+          },
+          {
+            "date": "2026-06-30T09:40:00Z",
+            "value": 4029.5
+          },
+          {
+            "date": "2026-06-30T10:48:00Z",
+            "value": 4043.5
+          },
+          {
+            "date": "2026-06-30T11:56:00Z",
+            "value": 4047.10009765625
+          },
+          {
+            "date": "2026-06-30T13:04:00Z",
+            "value": 4030.0
+          },
+          {
+            "date": "2026-06-30T13:09:25Z",
+            "value": 4034.89990234375
+          }
+        ],
+        "refresh_delta": -4.0,
+        "refresh_delta_percent": -0.09903686647354479
+      },
+      {
+        "key": "silver_futures",
+        "label": "은 선물",
+        "value": "59.415",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-06-30T13:09:28Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-30T13:09:28Z",
+        "coverage_status": "active",
+        "refresh_seconds": 900,
+        "unit": "$",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/SI%3DF?range=1d&interval=1m",
+        "points": [
+          {
+            "date": "2026-06-30T06:21:00Z",
+            "value": 58.13999938964844
+          },
+          {
+            "date": "2026-06-30T07:27:00Z",
+            "value": 59.46500015258789
+          },
+          {
+            "date": "2026-06-30T08:34:00Z",
+            "value": 59.119998931884766
+          },
+          {
+            "date": "2026-06-30T09:46:00Z",
+            "value": 59.17499923706055
+          },
+          {
+            "date": "2026-06-30T10:55:00Z",
+            "value": 59.46500015258789
+          },
+          {
+            "date": "2026-06-30T12:01:00Z",
+            "value": 59.45000076293945
+          },
+          {
+            "date": "2026-06-30T13:07:00Z",
+            "value": 59.290000915527344
+          },
+          {
+            "date": "2026-06-30T13:09:28Z",
+            "value": 59.415000915527344
+          }
+        ],
+        "refresh_delta": 0.7830000000000013,
+        "refresh_delta_percent": 1.3354482194023762
+      },
+      {
+        "key": "copper_futures",
+        "label": "구리 선물",
+        "value": "6.246",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-06-30T13:09:26Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-30T13:09:26Z",
+        "coverage_status": "active",
+        "refresh_seconds": 900,
+        "unit": "$",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/HG%3DF?range=1d&interval=1m",
+        "points": [
+          {
+            "date": "2026-06-30T06:35:00Z",
+            "value": 6.243500232696533
+          },
+          {
+            "date": "2026-06-30T07:40:00Z",
+            "value": 6.284999847412109
+          },
+          {
+            "date": "2026-06-30T08:45:00Z",
+            "value": 6.234000205993652
+          },
+          {
+            "date": "2026-06-30T09:50:00Z",
+            "value": 6.235000133514404
+          },
+          {
+            "date": "2026-06-30T10:55:00Z",
+            "value": 6.248499870300293
+          },
+          {
+            "date": "2026-06-30T12:01:00Z",
+            "value": 6.254000186920166
+          },
+          {
+            "date": "2026-06-30T13:06:00Z",
+            "value": 6.24399995803833
+          },
+          {
+            "date": "2026-06-30T13:09:26Z",
+            "value": 6.245999813079834
+          }
+        ],
+        "refresh_delta": 0.08250000000000046,
+        "refresh_delta_percent": 1.338525188610375
+      },
+      {
+        "key": "vix",
+        "label": "VIX",
+        "value": "17.67",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-06-30T13:04:31Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-30T13:04:31Z",
+        "coverage_status": "active",
+        "refresh_seconds": 900,
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1d&interval=1m",
+        "points": [
+          {
+            "date": "2026-06-30T08:41:00Z",
+            "value": 17.700000762939453
+          },
+          {
+            "date": "2026-06-30T09:24:00Z",
+            "value": 17.6299991607666
+          },
+          {
+            "date": "2026-06-30T10:07:00Z",
+            "value": 17.56999969482422
+          },
+          {
+            "date": "2026-06-30T10:50:00Z",
+            "value": 17.530000686645508
+          },
+          {
+            "date": "2026-06-30T11:33:00Z",
+            "value": 17.479999542236328
+          },
+          {
+            "date": "2026-06-30T12:16:00Z",
+            "value": 17.600000381469727
+          },
+          {
+            "date": "2026-06-30T12:59:00Z",
+            "value": 17.639999389648438
+          },
+          {
+            "date": "2026-06-30T13:04:31Z",
+            "value": 17.670000076293945
+          }
+        ],
+        "refresh_delta": -0.7399999999999984,
+        "refresh_delta_percent": -4.019554589896787
+      },
+      {
+        "key": "usd_krw",
+        "label": "달러/원",
+        "value": "1,551",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "watch",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-30T10:10:37Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-30T10:10:37Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "KRW",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/KRW%3DX?range=1d&interval=1m",
+        "points": [
+          {
+            "date": "2026-06-30T04:06:00Z",
+            "value": 1548.5
+          },
+          {
+            "date": "2026-06-30T05:09:00Z",
+            "value": 1546.300048828125
+          },
+          {
+            "date": "2026-06-30T06:06:00Z",
+            "value": 1548.0999755859375
+          },
+          {
+            "date": "2026-06-30T07:01:00Z",
+            "value": 1548.5
+          },
+          {
+            "date": "2026-06-30T08:13:00Z",
+            "value": 1553.0
+          },
+          {
+            "date": "2026-06-30T09:09:00Z",
+            "value": 1550.4000244140625
+          },
+          {
+            "date": "2026-06-30T10:10:00Z",
+            "value": 1551.0
+          },
+          {
+            "date": "2026-06-30T10:10:37Z",
+            "value": 1551.0
+          }
+        ],
+        "refresh_delta": 10.349999999999909,
+        "refresh_delta_percent": 0.6717943725051055
+      },
+      {
+        "key": "usd_jpy",
+        "label": "달러/엔",
+        "value": "162.34",
+        "source": "Yahoo Finance delayed quote",
+        "freshness": "fresh",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-06-30T13:19:37Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "updated_at": "2026-06-30T13:19:37Z",
+        "coverage_status": "active",
+        "refresh_seconds": 900,
+        "unit": "JPY",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/JPY%3DX?range=1d&interval=1m",
+        "points": [
+          {
+            "date": "2026-06-30T02:34:00Z",
+            "value": 162.11599731445312
+          },
+          {
+            "date": "2026-06-30T04:21:00Z",
+            "value": 162.15699768066406
+          },
+          {
+            "date": "2026-06-30T06:08:00Z",
+            "value": 162.32699584960938
+          },
+          {
+            "date": "2026-06-30T07:55:00Z",
+            "value": 162.23599243164062
+          },
+          {
+            "date": "2026-06-30T09:42:00Z",
+            "value": 162.3040008544922
+          },
+          {
+            "date": "2026-06-30T11:29:00Z",
+            "value": 162.3730010986328
+          },
+          {
+            "date": "2026-06-30T13:16:00Z",
+            "value": 162.3520050048828
+          },
+          {
+            "date": "2026-06-30T13:19:37Z",
+            "value": 162.33700561523438
+          }
+        ],
+        "refresh_delta": 0.4399999999999977,
+        "refresh_delta_percent": 0.27177773522671683
+      },
+      {
+        "key": "us_2y",
+        "label": "미국 국채 2년",
+        "value": "4.1",
+        "source": "U.S. Treasury XML feed",
+        "freshness": "fresh",
+        "delay_label": "Treasury 2Y 실제값, 2026-06-29까지",
+        "updated_at": "2026-06-29T21:00:00Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "%",
+        "source_url": "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed",
+        "points": [
+          {
+            "date": "2026-06-17",
+            "value": 4.2
+          },
+          {
+            "date": "2026-06-18",
+            "value": 4.19
+          },
+          {
+            "date": "2026-06-22",
+            "value": 4.24
+          },
+          {
+            "date": "2026-06-23",
+            "value": 4.16
+          },
+          {
+            "date": "2026-06-24",
+            "value": 4.11
+          },
+          {
+            "date": "2026-06-25",
+            "value": 4.09
+          },
+          {
+            "date": "2026-06-26",
+            "value": 4.07
+          },
+          {
+            "date": "2026-06-29",
+            "value": 4.1
+          }
+        ],
+        "next_event": {
+          "title": "FOMC 정책 결정",
+          "date": "2026-07-29",
+          "timezone": "America/New_York",
+          "source": "Federal Reserve"
+        }
+      },
+      {
+        "key": "us_3y",
+        "label": "미국 국채 3년",
+        "value": "4.1",
+        "source": "U.S. Treasury XML feed",
+        "freshness": "fresh",
+        "delay_label": "Treasury 3Y 실제값, 2026-06-29까지",
+        "updated_at": "2026-06-29T21:00:00Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "%",
+        "source_url": "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed",
+        "points": [
+          {
+            "date": "2026-06-17",
+            "value": 4.23
+          },
+          {
+            "date": "2026-06-18",
+            "value": 4.19
+          },
+          {
+            "date": "2026-06-22",
+            "value": 4.25
+          },
+          {
+            "date": "2026-06-23",
+            "value": 4.22
+          },
+          {
+            "date": "2026-06-24",
+            "value": 4.15
+          },
+          {
+            "date": "2026-06-25",
+            "value": 4.13
+          },
+          {
+            "date": "2026-06-26",
+            "value": 4.09
+          },
+          {
+            "date": "2026-06-29",
+            "value": 4.1
+          }
+        ],
+        "next_event": {
+          "title": "FOMC 정책 결정",
+          "date": "2026-07-29",
+          "timezone": "America/New_York",
+          "source": "Federal Reserve"
+        }
+      },
+      {
+        "key": "us_5y",
+        "label": "미국 국채 5년",
+        "value": "4.14",
+        "source": "U.S. Treasury XML feed",
+        "freshness": "fresh",
+        "delay_label": "Treasury 5Y 실제값, 2026-06-29까지",
+        "updated_at": "2026-06-29T21:00:00Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "%",
+        "source_url": "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed",
+        "points": [
+          {
+            "date": "2026-06-17",
+            "value": 4.27
+          },
+          {
+            "date": "2026-06-18",
+            "value": 4.23
+          },
+          {
+            "date": "2026-06-22",
+            "value": 4.29
+          },
+          {
+            "date": "2026-06-23",
+            "value": 4.27
+          },
+          {
+            "date": "2026-06-24",
+            "value": 4.17
+          },
+          {
+            "date": "2026-06-25",
+            "value": 4.15
+          },
+          {
+            "date": "2026-06-26",
+            "value": 4.12
+          },
+          {
+            "date": "2026-06-29",
+            "value": 4.14
+          }
+        ],
+        "next_event": {
+          "title": "FOMC 정책 결정",
+          "date": "2026-07-29",
+          "timezone": "America/New_York",
+          "source": "Federal Reserve"
+        }
+      },
+      {
+        "key": "us_10y",
+        "label": "미국 국채 10년",
+        "value": "4.38",
+        "source": "U.S. Treasury XML feed",
+        "freshness": "fresh",
+        "delay_label": "Treasury 10Y 실제값, 2026-06-29까지",
+        "updated_at": "2026-06-29T21:00:00Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "%",
+        "source_url": "https://home.treasury.gov/treasury-daily-interest-rate-xml-feed",
+        "points": [
+          {
+            "date": "2026-06-17",
+            "value": 4.49
+          },
+          {
+            "date": "2026-06-18",
+            "value": 4.46
+          },
+          {
+            "date": "2026-06-22",
+            "value": 4.51
+          },
+          {
+            "date": "2026-06-23",
+            "value": 4.5
+          },
+          {
+            "date": "2026-06-24",
+            "value": 4.41
+          },
+          {
+            "date": "2026-06-25",
+            "value": 4.4
+          },
+          {
+            "date": "2026-06-26",
+            "value": 4.38
+          },
+          {
+            "date": "2026-06-29",
+            "value": 4.38
+          }
+        ],
+        "next_event": {
+          "title": "FOMC 정책 결정",
+          "date": "2026-07-29",
+          "timezone": "America/New_York",
+          "source": "Federal Reserve"
+        }
+      },
+      {
+        "key": "japan_policy_rate",
+        "label": "일본은행 무담보 익일물 콜금리",
+        "value": "0.977",
+        "source": "BoJ Time-Series Data Search",
+        "freshness": "fresh",
+        "delay_label": "일본은행 FM01/STRDCLUCON 일일 평균 실제값, 2026-06-26까지; API 최종 갱신 2026-06-30.",
+        "updated_at": "2026-06-30T21:00:00Z",
+        "coverage_status": "active",
+        "refresh_seconds": 43200,
+        "unit": "%",
+        "source_url": "https://www.stat-search.boj.or.jp/api/v1/getDataCode?format=csv&lang=en&db=FM01&code=STRDCLUCON&startDate=202606&endDate=202606",
+        "points": [
+          {
+            "date": "2026-06-17",
+            "value": 0.978
+          },
+          {
+            "date": "2026-06-18",
+            "value": 0.977
+          },
+          {
+            "date": "2026-06-19",
+            "value": 0.977
+          },
+          {
+            "date": "2026-06-22",
+            "value": 0.977
+          },
+          {
+            "date": "2026-06-23",
+            "value": 0.976
+          },
+          {
+            "date": "2026-06-24",
+            "value": 0.977
+          },
+          {
+            "date": "2026-06-25",
+            "value": 0.978
+          },
+          {
+            "date": "2026-06-26",
+            "value": 0.977
+          }
+        ],
+        "next_event": {
+          "title": "일본은행 통화정책회의",
+          "date": "2026-07-31",
+          "timezone": "Asia/Tokyo",
+          "source": "BoJ"
+        }
+      },
+      {
+        "key": "japan_2y",
+        "label": "일본 국채 2년",
+        "value": "1.39",
+        "source": "Japan MOF JGB yield curve",
+        "freshness": "watch",
+        "delay_label": "MOF 2Y JGB 실제값, 2026-05-29까지",
+        "updated_at": "2026-05-29T21:00:00Z",
+        "coverage_status": "active",
+        "refresh_seconds": 2592000,
+        "unit": "%",
+        "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
+        "points": [
+          {
+            "date": "2026-05-26",
+            "value": 1.421
+          },
+          {
+            "date": "2026-05-27",
+            "value": 1.399
+          },
+          {
+            "date": "2026-05-28",
+            "value": 1.366
+          },
+          {
+            "date": "2026-05-29",
+            "value": 1.393
+          }
+        ],
+        "next_event": {
+          "title": "일본은행 통화정책회의",
+          "date": "2026-07-31",
+          "timezone": "Asia/Tokyo",
+          "source": "BoJ"
+        }
+      },
+      {
+        "key": "japan_5y",
+        "label": "일본 국채 5년",
+        "value": "1.92",
+        "source": "Japan MOF JGB yield curve",
+        "freshness": "watch",
+        "delay_label": "MOF 5Y JGB 실제값, 2026-05-29까지",
+        "updated_at": "2026-05-29T21:00:00Z",
+        "coverage_status": "active",
+        "refresh_seconds": 2592000,
+        "unit": "%",
+        "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
+        "points": [
+          {
+            "date": "2026-05-26",
+            "value": 1.995
+          },
+          {
+            "date": "2026-05-27",
+            "value": 1.963
+          },
+          {
+            "date": "2026-05-28",
+            "value": 1.94
+          },
+          {
+            "date": "2026-05-29",
+            "value": 1.919
+          }
+        ],
+        "next_event": {
+          "title": "일본은행 통화정책회의",
+          "date": "2026-07-31",
+          "timezone": "Asia/Tokyo",
+          "source": "BoJ"
+        }
+      },
+      {
+        "key": "japan_10y",
+        "label": "일본 국채 10년",
+        "value": "2.66",
+        "source": "Japan MOF JGB yield curve",
+        "freshness": "watch",
+        "delay_label": "MOF 10Y JGB 실제값, 2026-05-29까지",
+        "updated_at": "2026-05-29T21:00:00Z",
+        "coverage_status": "active",
+        "refresh_seconds": 2592000,
+        "unit": "%",
+        "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
+        "points": [
+          {
+            "date": "2026-05-26",
+            "value": 2.713
+          },
+          {
+            "date": "2026-05-27",
+            "value": 2.687
+          },
+          {
+            "date": "2026-05-28",
+            "value": 2.692
+          },
+          {
+            "date": "2026-05-29",
+            "value": 2.657
+          }
+        ],
+        "next_event": {
+          "title": "일본은행 통화정책회의",
+          "date": "2026-07-31",
+          "timezone": "Asia/Tokyo",
+          "source": "BoJ"
+        }
+      },
+      {
+        "key": "pentagon_pizza_index",
+        "label": "펜타곤 피자 지수",
+        "value": "19.9",
+        "source": "Pentagon.Pizza",
+        "freshness": "fresh",
+        "delay_label": "Pentagon.Pizza 모니터링 지점 18곳 평균 혼잡도; 이상치 1건, 2026-06-30까지",
+        "updated_at": "2026-06-30T13:19:25.318Z",
+        "coverage_status": "active",
+        "refresh_seconds": 300,
+        "unit": "/100",
+        "source_url": "https://pentagon.pizza/",
+        "points": [
+          {
+            "date": "2026-06-30T12:34:11Z",
+            "value": 5.0
+          },
+          {
+            "date": "2026-06-30T12:49:11Z",
+            "value": 17.0
+          },
+          {
+            "date": "2026-06-30T13:04:11Z",
+            "value": 26.0
+          },
+          {
+            "date": "2026-06-30T13:19:11Z",
+            "value": 30.0
+          }
+        ]
+      }
+    ]
+  },
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "시장 지표는 라이선스가 없는 한 지연/참조 데이터입니다.",
+      "severity": "info"
+    }
+  ],
+  "corrections": []
+}

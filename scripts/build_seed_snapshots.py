@@ -64,8 +64,8 @@ KRX_REQUEST_MIN_INTERVAL_SECONDS = 0.35
 FINRA_API_BASE_URL = "https://api.finra.org"
 FINRA_OAUTH_TOKEN_URL = "https://ews.fip.finra.org/fip/rest/ews/oauth2/access_token?grant_type=client_credentials"
 FINRA_REQUEST_MIN_INTERVAL_SECONDS = 0.25
-DEFAULT_SHORT_TICKERS = "DJT,TSLA,NVDA"
-DEFAULT_NEWS_TICKERS = "DJT,TSLA,NVDA,RKLB,IONQ,RGTI,QBTS,QUANTINUUM,LUNR,ASTS,RDW,AMD,AAPL,MSFT,TLT,005930.KS"
+DEFAULT_SHORT_TICKERS = "TSLA,NVDA,RKLB,IONQ,RGTI,QBTS,LUNR,ASTS,RDW,ONDS,UMAC,AVAV,RCAT,AMD,AAPL,MSFT,TLT,005930.KS"
+DEFAULT_NEWS_TICKERS = "DJT,TSLA,NVDA,RKLB,IONQ,RGTI,QBTS,QUANTINUUM,LUNR,ASTS,RDW,ONDS,UMAC,AVAV,RCAT,AMD,AAPL,MSFT,TLT,005930.KS"
 DEFAULT_TRUMP_CIKS = {"DJT": "0001849635"}
 TRACKED_ENTITY_REGISTRY_PATH = ROOT / "config" / "tracked_entities.json"
 GEOPOLITICAL_WATCH_REGISTRY_PATH = ROOT / "config" / "geopolitical_watch_registry.json"
@@ -183,6 +183,14 @@ SECTORS = {
         "drivers_en": ["Launch cadence", "defense demand", "cash runway", "government contracts"],
         "drivers_ko": ["발사 일정", "국방 수요", "현금 런웨이", "정부 계약"],
     },
+    "drones": {
+        "en": "Drones",
+        "ko": "드론",
+        "entities": ["Ondas", "Unusual Machines", "AeroVironment", "Red Cat Holdings"],
+        "exposure": ["USA", "EU", "MIDDLE_EAST_OPEC_GCC"],
+        "drivers_en": ["Defense procurement", "counter-UAS demand", "domestic manufacturing", "autonomy adoption"],
+        "drivers_ko": ["국방 조달", "대드론 수요", "국내 제조", "자율운항 도입"],
+    },
     "quantum": {
         "en": "Quantum",
         "ko": "양자",
@@ -219,13 +227,38 @@ SECTORS = {
 
 COUNTRIES = {
     "USA": ("United States", "미국", "country"),
-    "BRA": ("Brazil", "브라질", "country"),
-    "KOR": ("South Korea", "대한민국", "country"),
-    "GBR": ("United Kingdom", "영국", "country"),
-    "DEU": ("Germany", "독일", "country"),
     "CHN": ("China", "중국", "country"),
-    "TWN": ("Taiwan", "대만", "country"),
+    "DEU": ("Germany", "독일", "country"),
     "JPN": ("Japan", "일본", "country"),
+    "IND": ("India", "인도", "country"),
+    "GBR": ("United Kingdom", "영국", "country"),
+    "FRA": ("France", "프랑스", "country"),
+    "ITA": ("Italy", "이탈리아", "country"),
+    "CAN": ("Canada", "캐나다", "country"),
+    "BRA": ("Brazil", "브라질", "country"),
+    "RUS": ("Russia", "러시아", "country"),
+    "KOR": ("South Korea", "대한민국", "country"),
+    "MEX": ("Mexico", "멕시코", "country"),
+    "AUS": ("Australia", "호주", "country"),
+    "ESP": ("Spain", "스페인", "country"),
+    "IDN": ("Indonesia", "인도네시아", "country"),
+    "TUR": ("Turkiye", "튀르키예", "country"),
+    "SAU": ("Saudi Arabia", "사우디아라비아", "country"),
+    "NLD": ("Netherlands", "네덜란드", "country"),
+    "CHE": ("Switzerland", "스위스", "country"),
+    "POL": ("Poland", "폴란드", "country"),
+    "BEL": ("Belgium", "벨기에", "country"),
+    "ARG": ("Argentina", "아르헨티나", "country"),
+    "IRL": ("Ireland", "아일랜드", "country"),
+    "SWE": ("Sweden", "스웨덴", "country"),
+    "ARE": ("United Arab Emirates", "아랍에미리트", "country"),
+    "SGP": ("Singapore", "싱가포르", "country"),
+    "ISR": ("Israel", "이스라엘", "country"),
+    "AUT": ("Austria", "오스트리아", "country"),
+    "THA": ("Thailand", "태국", "country"),
+    "NOR": ("Norway", "노르웨이", "country"),
+    "ZAF": ("South Africa", "남아프리카공화국", "country"),
+    "TWN": ("Taiwan", "대만", "country"),
 }
 
 REGIONS = {
@@ -233,6 +266,7 @@ REGIONS = {
     "EU": ("European Union", "유럽연합", "region"),
     "MIDDLE_EAST_OPEC_GCC": ("Middle East / OPEC+ / GCC", "중동 / OPEC+ / GCC", "region"),
     "TOP10_GDP_2026_WORLD_BANK": ("Dynamic Top-10 Economies", "동적 GDP 상위 10개 경제권", "region"),
+    "TOP30_GDP_2024_WORLD_BANK": ("World Bank Top-30 GDP Economies", "세계은행 GDP 상위 30개 경제권", "region"),
 }
 
 SCENARIOS = {
@@ -301,6 +335,10 @@ NEWS_TICKER_KO_NAMES = {
     "LUNR": "인튜이티브 머신스",
     "ASTS": "AST 스페이스모바일",
     "RDW": "레드와이어",
+    "ONDS": "온다스",
+    "UMAC": "언유주얼 머신스",
+    "AVAV": "에어로바이런먼트",
+    "RCAT": "레드 캣 홀딩스",
     "AMD": "AMD",
     "AAPL": "애플",
     "MSFT": "마이크로소프트",
@@ -320,6 +358,10 @@ NEWS_TICKER_EXCHANGES = {
     "LUNR": "NASDAQ",
     "ASTS": "NASDAQ",
     "RDW": "NYSE",
+    "ONDS": "NASDAQ",
+    "UMAC": "NYSE American",
+    "AVAV": "NASDAQ",
+    "RCAT": "NASDAQ",
     "AMD": "NASDAQ",
     "AAPL": "NASDAQ",
     "MSFT": "NASDAQ",
@@ -378,8 +420,43 @@ def _tracked_entity_by_symbol() -> dict[str, dict[str, Any]]:
 def _tracked_entity_by_route_key() -> dict[str, dict[str, Any]]:
     return {str(entity.get("route_key") or _symbol_route_key(str(entity.get("symbol") or ""))).upper(): entity for entity in _tracked_entity_records()}
 
-NEWS_REGION_KEYS = ["USA", "KOR", "JPN", "BRA", "EU", "CHN"]
-NEWS_TOPIC_KEYS = ["semiconductors", "space", "quantum", "geopolitics", "public_health", "central_banks", "energy"]
+NEWS_REGION_KEYS = [
+    "USA",
+    "CHN",
+    "DEU",
+    "JPN",
+    "IND",
+    "GBR",
+    "FRA",
+    "ITA",
+    "CAN",
+    "BRA",
+    "RUS",
+    "KOR",
+    "MEX",
+    "AUS",
+    "ESP",
+    "IDN",
+    "TUR",
+    "SAU",
+    "NLD",
+    "CHE",
+    "POL",
+    "BEL",
+    "ARG",
+    "IRL",
+    "SWE",
+    "ARE",
+    "SGP",
+    "ISR",
+    "AUT",
+    "THA",
+    "NOR",
+    "ZAF",
+    "TWN",
+    "EU",
+]
+NEWS_TOPIC_KEYS = ["semiconductors", "space", "drones", "quantum", "geopolitics", "public_health", "central_banks", "energy"]
 
 NEWS_TOPIC_LABELS = {
     "semiconductors": ("Semiconductors", "반도체"),
@@ -388,6 +465,7 @@ NEWS_TOPIC_LABELS = {
     "central_banks": ("Central banks", "중앙은행"),
     "energy": ("Energy", "에너지"),
     "space": ("Space", "우주"),
+    "drones": ("Drones", "드론"),
     "quantum": ("Quantum", "양자"),
     "trade_policy": ("Trade policy", "무역 정책"),
     "supply_chain": ("Supply chain", "공급망"),
@@ -1168,31 +1246,40 @@ def _sec_archive_base_url(cik: str, accession_number: str) -> str:
     return f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/{accession_number.replace('-', '')}"
 
 
-def _latest_sec_13f_filing(cik: str) -> dict[str, Any] | None:
+def _recent_sec_filings(cik: str, form_types: set[str], *, limit: int = 6) -> list[dict[str, Any]]:
     submissions = _sec_submissions(cik)
     if not submissions:
-        return None
+        return []
     recent = submissions.get("filings", {}).get("recent", {})
     forms = recent.get("form") or []
     accessions = recent.get("accessionNumber") or []
     filing_dates = recent.get("filingDate") or []
     report_dates = recent.get("reportDate") or []
     primary_documents = recent.get("primaryDocument") or []
+    matches: list[dict[str, Any]] = []
     for index, form_type in enumerate(forms):
-        if str(form_type) not in {"13F-HR", "13F-HR/A"}:
+        normalized_form = str(form_type)
+        if normalized_form not in form_types:
             continue
         accession_number = str(accessions[index])
         primary_document = str(primary_documents[index] or "primary_doc.xml").split("/")[-1]
         base_url = _sec_archive_base_url(cik, accession_number)
-        return {
-            "form_type": str(form_type),
+        matches.append({
+            "form_type": normalized_form,
             "accession_number": accession_number,
             "filed_at": str(filing_dates[index]),
             "report_date": str(report_dates[index]),
             "archive_base_url": base_url,
             "primary_document_url": f"{base_url}/{primary_document}",
-        }
-    return None
+        })
+        if len(matches) >= limit:
+            break
+    return matches
+
+
+def _latest_sec_13f_filing(cik: str) -> dict[str, Any] | None:
+    filings = _recent_sec_filings(cik, {"13F-HR", "13F-HR/A"}, limit=1)
+    return filings[0] if filings else None
 
 
 def _sec_filing_index_items(base_url: str) -> list[dict[str, Any]]:
@@ -1283,6 +1370,104 @@ def _parse_sec_13f_information_table(xml_text: str, *, source_url: str) -> list[
     return rows
 
 
+def _parse_sec_schedule_13g_ownership(xml_text: str, *, filing: dict[str, Any]) -> dict[str, Any] | None:
+    overrides = _cusip_ticker_overrides()
+    root = ElementTree.fromstring(xml_text.encode())
+    issuer_name = _xml_child_text(root, "issuerName")
+    cusip = _xml_child_text(root, "issuerCusipNumber").upper()
+    shares = _parse_sec_number(_xml_child_text(root, "reportingPersonBeneficiallyOwnedAggregateNumberOfShares"))
+    if not issuer_name or not cusip or shares is None:
+        return None
+    symbol = overrides.get(cusip)
+    estimated_value = _estimated_public_ownership_value(symbol, shares)
+    event_date = _xml_child_text(root, "eventDateRequiresFilingThisStatement")
+    title = _xml_child_text(root, "securitiesClassTitle") or "Beneficial ownership"
+    if event_date:
+        title = f"{title} · event {event_date}"
+    source_url = str(filing["primary_document_url"])
+    return {
+        "id": hashlib.sha1(f"{source_url}:{cusip}:schedule13g".encode()).hexdigest()[:16],
+        "symbol": symbol,
+        "issuer_name": issuer_name,
+        "title_of_class": title,
+        "cusip": cusip,
+        "value_usd": estimated_value,
+        "shares": round(shares),
+        "share_type": "SH",
+        "put_call": None,
+        "holding_kind": "stock",
+        "portfolio_weight": 0.0,
+        "source_url": source_url,
+        "source_lineage": f"SEC EDGAR {filing['form_type']} beneficial ownership XML; value estimated from delayed quote",
+    }
+
+
+def _estimated_public_ownership_value(symbol: str | None, shares: float) -> int:
+    if not symbol or shares <= 0:
+        return 0
+    quote = _yahoo_chart_series(symbol)
+    price = _numeric_value(quote.get("value") if quote else None)
+    if price is None:
+        return 0
+    return round(shares * price)
+
+
+def _sec_schedule_13g_ownership_holdings(fund_key: str) -> list[dict[str, Any]]:
+    config = FUND_PORTFOLIOS.get(fund_key)
+    if not config:
+        return []
+    user_agent = _runtime_env().get("SEC_USER_AGENT") or "StonksRadar contact@example.com"
+    holdings: list[dict[str, Any]] = []
+    for filing in _recent_sec_filings(str(config["cik"]), {"SCHEDULE 13G"}, limit=6):
+        xml_text = _http_text(
+            str(filing["primary_document_url"]),
+            headers={"Accept": "application/xml,text/xml", "User-Agent": user_agent},
+            timeout=20,
+            max_bytes=1_000_000,
+            throttle_key="sec_edgar",
+        )
+        if not xml_text:
+            continue
+        try:
+            holding = _parse_sec_schedule_13g_ownership(xml_text, filing=filing)
+        except ElementTree.ParseError:
+            holding = None
+        if holding:
+            holdings.append(holding)
+    return holdings
+
+
+def _merge_public_fund_holdings(
+    sec_13f_holdings: list[dict[str, Any]],
+    ownership_holdings: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if not ownership_holdings:
+        return sec_13f_holdings
+    replacement_value_by_symbol = {
+        str(holding.get("symbol") or "").upper(): float(holding.get("value_usd") or 0)
+        for holding in ownership_holdings
+        if str(holding.get("symbol") or "").strip()
+    }
+    merged = [
+        holding
+        for holding in sec_13f_holdings
+        if holding.get("holding_kind") != "stock"
+        or replacement_value_by_symbol.get(str(holding.get("symbol") or "").upper(), 0) <= float(holding.get("value_usd") or 0)
+    ]
+    merged.extend(ownership_holdings)
+    merged.sort(key=lambda row: float(row.get("value_usd") or 0), reverse=True)
+    _reweight_fund_holdings(merged)
+    return merged
+
+
+def _reweight_fund_holdings(holdings: list[dict[str, Any]]) -> None:
+    total_value = sum(float(row.get("value_usd") or 0) for row in holdings)
+    if total_value <= 0:
+        return
+    for row in holdings:
+        row["portfolio_weight"] = round(float(row.get("value_usd") or 0) / total_value, 6)
+
+
 def _sec_13f_portfolio(fund_key: str) -> dict[str, Any] | None:
     if fund_key in _SEC_FUND_PORTFOLIO_CACHE:
         return _SEC_FUND_PORTFOLIO_CACHE[fund_key]
@@ -1311,7 +1496,8 @@ def _sec_13f_portfolio(fund_key: str) -> dict[str, Any] | None:
         _SEC_FUND_PORTFOLIO_CACHE[fund_key] = None
         return None
     holdings = _parse_sec_13f_information_table(xml_text, source_url=information_table_url)
-    holdings.sort(key=lambda row: float(row.get("value_usd") or 0), reverse=True)
+    ownership_holdings = _sec_schedule_13g_ownership_holdings(fund_key)
+    holdings = _merge_public_fund_holdings(holdings, ownership_holdings)
     stock_holdings = [holding for holding in holdings if holding["holding_kind"] == "stock"]
     option_holdings = [holding for holding in holdings if holding["holding_kind"] in {"call", "put"}]
     payload = {
@@ -3686,8 +3872,8 @@ def _news_region_brief(region_key: str, events: list[dict[str, Any]], locale: st
     name = _news_region_name(region_key, locale)
     return _t(
         locale,
-        f"{name} has {len(events)} approved news event(s), with relation labels separating event location, affected region, and market region.",
-        f"{name} 관련 승인 뉴스 이벤트 {len(events)}건이 있으며 발생지, 영향 지역, 시장 지역 라벨을 분리합니다.",
+        f"{name} has {len(events)} source-linked news event(s), with relation labels separating event location, affected region, and market region.",
+        f"{name} 관련 출처 연결 뉴스 이벤트 {len(events)}건이 있으며 발생지, 영향 지역, 시장 지역 라벨을 분리합니다.",
     )
 
 
@@ -3696,8 +3882,8 @@ def _news_topic_brief(topic_key: str, events: list[dict[str, Any]], locale: str)
     label = _t(locale, label_en, label_ko)
     return _t(
         locale,
-        f"{label} includes {len(events)} approved event cluster(s) built from source-linked public metadata.",
-        f"{label}에는 출처 연결 공개 메타데이터에서 만든 승인 이벤트 클러스터 {len(events)}건이 포함됩니다.",
+        f"{label} includes {len(events)} reviewed source-linked event cluster(s) built from public metadata.",
+        f"{label}에는 공개 메타데이터에서 만든 검토된 출처 연결 이벤트 클러스터 {len(events)}건이 포함됩니다.",
     )
 
 
@@ -5812,7 +5998,17 @@ def _safe_display_text(value: str, max_length: int) -> str:
 
 def _entity_name(entity: dict[str, Any], locale: str) -> str:
     name = entity.get("name") if isinstance(entity.get("name"), dict) else {}
-    return str(name.get(locale) or name.get("en") or entity.get("display_symbol") or entity.get("symbol") or "Tracked entity")
+    locale_key = f"name_{locale}"
+    return str(
+        name.get(locale)
+        or name.get("en")
+        or entity.get(locale_key)
+        or entity.get("name_en")
+        or entity.get("legal_name")
+        or entity.get("display_symbol")
+        or entity.get("symbol")
+        or "Tracked entity"
+    )
 
 
 def _tracked_entity_ref(entity: dict[str, Any], locale: str, generated_at: datetime) -> dict[str, Any]:
@@ -5991,12 +6187,12 @@ def _short_fact_from_row(
     value = float(row["value"])
     observed_key = _short_fact_observation_key(dataset, symbol, as_of_date, value)
     source_url = (
-        "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
+        f"https://fintel.io/ss/us/{symbol.lower()}"
         if fact_type == "short_interest"
         else "https://developer.finra.org/docs/api-explorer/query_api-equity-reg_sho_daily_short_sale_volume"
     )
     caveat = (
-        "Open short positions, not daily short-sale volume."
+        "Open short positions, not daily short-sale volume. Data is sourced from FINRA; link opens Fintel's short-interest page."
         if fact_type == "short_interest"
         else "Daily short-sale transaction flow, not outstanding short interest."
     )
@@ -6143,12 +6339,13 @@ def _write_fund_portfolio_snapshots(
                     "option_holdings": options,
                     "caveats": [
                         _t(locale, "SEC 13F is quarterly and delayed; it is not a real-time portfolio feed.", "SEC 13F는 분기별 지연 공시이며 실시간 포트폴리오 피드가 아닙니다."),
+                        _t(locale, "Recent Schedule 13G beneficial-ownership rows are merged when they are newer than the 13F row and can be valued from delayed public quotes.", "최신 Schedule 13G 수익소유 행은 13F 행보다 최신이고 지연 공개 시세로 가치 산정이 가능할 때 병합합니다."),
                         _t(locale, "13F excludes cash, many shorts, most non-U.S. holdings, and positions below reporting scope.", "13F는 현금, 다수의 숏, 대부분의 비미국 보유, 보고 범위 밖 포지션을 제외합니다."),
                         _t(locale, "Options are shown as disclosed put/call rows and should not be treated as simple long equity exposure.", "옵션은 공시된 풋/콜 행으로 표시되며 단순 롱 주식 노출로 해석하면 안 됩니다."),
                         _t(locale, "Ticker mapping comes from a maintained CUSIP override file; unmapped rows remain visible by issuer and CUSIP.", "티커 매핑은 유지관리되는 CUSIP 오버라이드 파일을 사용하며 미매핑 행은 발행사와 CUSIP로 표시합니다."),
                     ],
                     "freshness": freshness,
-                    "source_strength": "SEC EDGAR 13F XML",
+                    "source_strength": "SEC EDGAR 13F + Schedule 13G XML",
                 },
             ),
         )
@@ -6197,7 +6394,7 @@ def _sector_page(
     ticker_calendar_items = _ticker_calendar_items_for_sector(key, locale, sector_news, generated_at)
     short_facts = _sector_short_facts(key, generated_at)
     instrument_labels = [
-        _t(locale, f"{entity['display_symbol']} source-linked reference", f"{entity['display_symbol']} 출처 연결 참고")
+        _t(locale, f"{entity['name']} ({entity['display_symbol']}) source-linked reference", f"{entity['name']} ({entity['display_symbol']}) 출처 연결 참고")
         for entity in tracked_entities
         if entity["route_kind"] == "ticker"
     ][:8]
@@ -6239,6 +6436,7 @@ def _sector_reference_indicators(key: str, locale: str, generated_at: datetime) 
         "semiconductors": ("nasdaq_composite", "nasdaq_100", "kodex_200", "ewy_korea_proxy"),
         "big-tech": ("nasdaq_composite", "nasdaq_100", "vix"),
         "space": ("nasdaq_composite", "vix"),
+        "drones": ("nasdaq_composite", "vix"),
         "quantum": ("nasdaq_composite", "vix"),
     }
     wanted = preferred.get(key, ())
@@ -6259,7 +6457,7 @@ def _country_region_data(
         "key": key,
         "name": names[1 if locale == "ko" else 0],
         "type": names[2],
-        "overview": _t(locale, f"{names[0]} coverage combines official macro calendars, sector exposure, source-strength labels, and approved events.", f"{names[1]} 커버리지는 공식 거시 일정, 섹터 노출, 출처 강도 라벨, 승인 이벤트를 결합합니다."),
+        "overview": _t(locale, f"{names[0]} coverage combines official macro calendars, sector exposure, source-strength labels, and source-linked events.", f"{names[1]} 커버리지는 공식 거시 일정, 섹터 노출, 출처 강도 라벨, 출처 연결 이벤트를 결합합니다."),
         "source_strength": "official_or_reviewed_seed",
         "freshness": "fresh",
         "monitored_sectors": [_sector_tile(sector_key, locale, events) for sector_key in SECTORS],

@@ -31,6 +31,7 @@ def _settings(**overrides):
         "news_processing_batch_limit": 500,
         "news_page_read_batch_limit": 25,
         "gdelt_doc_max_records": 250,
+        "gdelt_bulk_max_documents": 500,
         "news_rss_enabled": True,
         "news_gdelt_enabled": False,
         "news_public_health_enabled": True,
@@ -127,8 +128,8 @@ def test_news_fetch_scheduler_applies_source_cadence_and_caps():
     assert source_max_documents(profiles["who"], settings) == 20
     assert source_max_documents(profiles["google_news_rss"], settings) == 20
     assert source_max_documents(profiles["gdelt"], _settings(news_max_documents_per_source_per_run=1000)) == 250
-    assert source_max_documents(profiles["gdelt_events"], _settings(news_max_documents_per_source_per_run=1000)) == 250
-    assert source_max_documents(profiles["gdelt_gkg"], _settings(news_max_documents_per_source_per_run=1000)) == 250
+    assert source_max_documents(profiles["gdelt_events"], _settings(news_max_documents_per_source_per_run=1000)) == 500
+    assert source_max_documents(profiles["gdelt_gkg"], _settings(news_max_documents_per_source_per_run=1000)) == 500
 
 
 def test_news_fetch_scheduler_respects_source_toggles():

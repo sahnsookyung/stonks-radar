@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-30T08:52:42Z",
-  "stale_after": "2026-06-30T20:52:42Z",
-  "hard_expires_at": "2026-07-07T08:52:42Z",
+  "generated_at": "2026-06-30T13:19:11Z",
+  "stale_after": "2026-07-01T01:19:11Z",
+  "hard_expires_at": "2026-07-07T13:19:11Z",
   "object_type": "sector_page",
   "object_key": "semiconductors",
-  "content_hash": "sha256:b7f6e5f0ffbdc6fe6dd3bbb51b9a8afd8461c7434e97330727bfd716521ad05a",
+  "content_hash": "sha256:dc64c173e24314ef23fc6b4539e09eef451094bb6e8daa968b6b00ec8f15c33d",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -119,7 +119,7 @@
         "entity_id": "005930_KS",
         "symbol": "005930.KS",
         "display_symbol": "005930.KS",
-        "name": "005930.KS",
+        "name": "삼성전자",
         "route_kind": "ticker",
         "route_key": "005930_KS",
         "sector_keys": [
@@ -156,7 +156,7 @@
         "entity_id": "NVDA",
         "symbol": "NVDA",
         "display_symbol": "NVDA",
-        "name": "NVDA",
+        "name": "엔비디아",
         "route_kind": "ticker",
         "route_key": "NVDA",
         "sector_keys": [
@@ -173,14 +173,14 @@
       }
     ],
     "monitored_entities": [
-      "005930.KS",
+      "삼성전자",
       "AMD",
-      "NVDA"
+      "엔비디아"
     ],
     "monitored_instruments": [
-      "005930.KS 출처 연결 참고",
-      "AMD 출처 연결 참고",
-      "NVDA 출처 연결 참고"
+      "삼성전자 (005930.KS) 출처 연결 참고",
+      "AMD (AMD) 출처 연결 참고",
+      "엔비디아 (NVDA) 출처 연결 참고"
     ],
     "country_region_exposure": [
       "USA",
@@ -242,7 +242,7 @@
         "symbol": "005930.KS",
         "title": "005930.KS: 중국발 수출통제 리스크가 AI 반도체 공급망에 높은 상태로 유지",
         "catalyst_type": "source_review",
-        "scheduled_at": "2026-06-30T08:52:42Z",
+        "scheduled_at": "2026-06-30T13:19:11Z",
         "scheduled_local_date": "2026-06-30",
         "timezone": "UTC",
         "source": "BIS",
@@ -256,7 +256,7 @@
         "symbol": "NVDA",
         "title": "NVDA: 중국발 수출통제 리스크가 AI 반도체 공급망에 높은 상태로 유지",
         "catalyst_type": "source_review",
-        "scheduled_at": "2026-06-30T08:52:42Z",
+        "scheduled_at": "2026-06-30T13:19:11Z",
         "scheduled_local_date": "2026-06-30",
         "timezone": "UTC",
         "source": "BIS",
@@ -271,9 +271,9 @@
         "title": "중국발 수출통제 리스크가 AI 반도체 공급망에 높은 상태로 유지",
         "summary": "공식 정책 모니터링은 수출통제를 엔비디아, 삼성전자, 일본 장비 업체, 유럽 장비 노출과 연결합니다.",
         "event_type": "trade_policy",
-        "first_seen_at": "2026-06-28T08:52:42Z",
-        "last_seen_at": "2026-06-30T08:52:42Z",
-        "published_at": "2026-06-30T08:52:42Z",
+        "first_seen_at": "2026-06-28T13:19:11Z",
+        "last_seen_at": "2026-06-30T13:19:11Z",
+        "published_at": "2026-06-30T13:19:11Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.78,
@@ -370,7 +370,7 @@
             "source_key": "bis",
             "policy_version": 1,
             "title": "미 산업안보국 수출통제",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -380,7 +380,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "영향 기업 공시",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           },
@@ -390,7 +390,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "수출관리규정 참고",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }
@@ -401,9 +401,9 @@
         "title": "FOMC, 일본은행, 한국은행, ECB, 브라질 COPOM 결정 일정 리스크",
         "summary": "공식 일정을 하나의 정책 이벤트 워치로 묶어 앱을 벗어나지 않고 금리 결정일을 확인할 수 있습니다.",
         "event_type": "central_bank_calendar",
-        "first_seen_at": "2026-06-28T08:52:42Z",
-        "last_seen_at": "2026-06-30T08:52:42Z",
-        "published_at": "2026-06-30T08:52:42Z",
+        "first_seen_at": "2026-06-28T13:19:11Z",
+        "last_seen_at": "2026-06-30T13:19:11Z",
+        "published_at": "2026-06-30T13:19:11Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.86,
@@ -483,7 +483,7 @@
             "source_key": "federal_reserve",
             "policy_version": 1,
             "title": "FOMC 일정",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -493,7 +493,7 @@
             "source_key": "bank_of_korea",
             "policy_version": 1,
             "title": "통화정책 일정",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -503,7 +503,7 @@
             "source_key": "bank_of_japan",
             "policy_version": 1,
             "title": "통화정책회의",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -513,7 +513,7 @@
             "source_key": "ecb",
             "policy_version": 1,
             "title": "ECB 정책위원회 일정",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -523,7 +523,7 @@
             "source_key": "bcb",
             "policy_version": 1,
             "title": "COPOM 일정",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           }
@@ -694,7 +694,7 @@
         "freshness": "fresh",
         "coverage_status": "active",
         "evidence_count": 2,
-        "last_observed_at": "2026-06-30T08:52:42Z",
+        "last_observed_at": "2026-06-30T13:19:11Z",
         "primary_source_url": "https://www.bis.gov/",
         "external_tracker_url": "https://www.nextgig.rocks/dash/ai-tracker/"
       },
@@ -706,7 +706,7 @@
         "freshness": "unsupported",
         "coverage_status": "coverage_gap",
         "evidence_count": 0,
-        "last_observed_at": "2026-06-30T08:52:42Z",
+        "last_observed_at": "2026-06-30T13:19:11Z",
         "primary_source_url": "https://www.eia.gov/petroleum/supply/weekly/"
       },
       {
@@ -717,7 +717,7 @@
         "freshness": "watch",
         "coverage_status": "active",
         "evidence_count": 3,
-        "last_observed_at": "2026-06-30T08:52:42Z",
+        "last_observed_at": "2026-06-30T13:19:11Z",
         "primary_source_url": "https://www.bis.gov/"
       }
     ],

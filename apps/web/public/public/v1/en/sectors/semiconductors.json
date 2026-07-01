@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T08:52:42Z",
-  "stale_after": "2026-06-30T20:52:42Z",
-  "hard_expires_at": "2026-07-07T08:52:42Z",
+  "generated_at": "2026-06-30T13:19:11Z",
+  "stale_after": "2026-07-01T01:19:11Z",
+  "hard_expires_at": "2026-07-07T13:19:11Z",
   "object_type": "sector_page",
   "object_key": "semiconductors",
-  "content_hash": "sha256:26fb316602464b761101229f7c721f6198e37a28674f4ccfcbbe5ef44026d516",
+  "content_hash": "sha256:9d532cba7c2cd0a83585a8a1efad7ff0603df1fd44fd14cf3fb774db6b70ee5f",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -119,7 +119,7 @@
         "entity_id": "005930_KS",
         "symbol": "005930.KS",
         "display_symbol": "005930.KS",
-        "name": "005930.KS",
+        "name": "Samsung Electronics",
         "route_kind": "ticker",
         "route_key": "005930_KS",
         "sector_keys": [
@@ -138,7 +138,7 @@
         "entity_id": "AMD",
         "symbol": "AMD",
         "display_symbol": "AMD",
-        "name": "AMD",
+        "name": "Advanced Micro Devices",
         "route_kind": "ticker",
         "route_key": "AMD",
         "sector_keys": [
@@ -156,7 +156,7 @@
         "entity_id": "NVDA",
         "symbol": "NVDA",
         "display_symbol": "NVDA",
-        "name": "NVDA",
+        "name": "NVIDIA",
         "route_kind": "ticker",
         "route_key": "NVDA",
         "sector_keys": [
@@ -173,14 +173,14 @@
       }
     ],
     "monitored_entities": [
-      "005930.KS",
-      "AMD",
-      "NVDA"
+      "Samsung Electronics",
+      "Advanced Micro Devices",
+      "NVIDIA"
     ],
     "monitored_instruments": [
-      "005930.KS source-linked reference",
-      "AMD source-linked reference",
-      "NVDA source-linked reference"
+      "Samsung Electronics (005930.KS) source-linked reference",
+      "Advanced Micro Devices (AMD) source-linked reference",
+      "NVIDIA (NVDA) source-linked reference"
     ],
     "country_region_exposure": [
       "USA",
@@ -242,7 +242,7 @@
         "symbol": "005930.KS",
         "title": "005930.KS: China-origin export-control risk remains elevated for AI-chip supply chains",
         "catalyst_type": "source_review",
-        "scheduled_at": "2026-06-30T08:52:42Z",
+        "scheduled_at": "2026-06-30T13:19:11Z",
         "scheduled_local_date": "2026-06-30",
         "timezone": "UTC",
         "source": "BIS",
@@ -256,7 +256,7 @@
         "symbol": "NVDA",
         "title": "NVDA: China-origin export-control risk remains elevated for AI-chip supply chains",
         "catalyst_type": "source_review",
-        "scheduled_at": "2026-06-30T08:52:42Z",
+        "scheduled_at": "2026-06-30T13:19:11Z",
         "scheduled_local_date": "2026-06-30",
         "timezone": "UTC",
         "source": "BIS",
@@ -271,9 +271,9 @@
         "title": "China-origin export-control risk remains elevated for AI-chip supply chains",
         "summary": "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.",
         "event_type": "trade_policy",
-        "first_seen_at": "2026-06-28T08:52:42Z",
-        "last_seen_at": "2026-06-30T08:52:42Z",
-        "published_at": "2026-06-30T08:52:42Z",
+        "first_seen_at": "2026-06-28T13:19:11Z",
+        "last_seen_at": "2026-06-30T13:19:11Z",
+        "published_at": "2026-06-30T13:19:11Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.78,
@@ -370,7 +370,7 @@
             "source_key": "bis",
             "policy_version": 1,
             "title": "Bureau of Industry and Security export controls",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -380,7 +380,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "Issuer filings for affected companies",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           },
@@ -390,7 +390,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "Export Administration Regulations reference",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }
@@ -401,9 +401,9 @@
         "title": "Central-bank decision calendar clusters FOMC, BoJ, BoK, ECB, and Brazil COPOM risk",
         "summary": "Official calendars are grouped into one policy-event watch so users can scan rate dates without leaving the app.",
         "event_type": "central_bank_calendar",
-        "first_seen_at": "2026-06-28T08:52:42Z",
-        "last_seen_at": "2026-06-30T08:52:42Z",
-        "published_at": "2026-06-30T08:52:42Z",
+        "first_seen_at": "2026-06-28T13:19:11Z",
+        "last_seen_at": "2026-06-30T13:19:11Z",
+        "published_at": "2026-06-30T13:19:11Z",
         "freshness": "fresh",
         "severity": "medium",
         "confidence": 0.86,
@@ -483,7 +483,7 @@
             "source_key": "federal_reserve",
             "policy_version": 1,
             "title": "FOMC calendars",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -493,7 +493,7 @@
             "source_key": "bank_of_korea",
             "policy_version": 1,
             "title": "Monetary policy schedule",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -503,7 +503,7 @@
             "source_key": "bank_of_japan",
             "policy_version": 1,
             "title": "Monetary policy meetings",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -513,7 +513,7 @@
             "source_key": "ecb",
             "policy_version": 1,
             "title": "Governing Council calendars",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -523,7 +523,7 @@
             "source_key": "bcb",
             "policy_version": 1,
             "title": "COPOM calendar",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           }
@@ -694,7 +694,7 @@
         "freshness": "fresh",
         "coverage_status": "active",
         "evidence_count": 2,
-        "last_observed_at": "2026-06-30T08:52:42Z",
+        "last_observed_at": "2026-06-30T13:19:11Z",
         "primary_source_url": "https://www.bis.gov/",
         "external_tracker_url": "https://www.nextgig.rocks/dash/ai-tracker/"
       },
@@ -706,7 +706,7 @@
         "freshness": "unsupported",
         "coverage_status": "coverage_gap",
         "evidence_count": 0,
-        "last_observed_at": "2026-06-30T08:52:42Z",
+        "last_observed_at": "2026-06-30T13:19:11Z",
         "primary_source_url": "https://www.eia.gov/petroleum/supply/weekly/"
       },
       {
@@ -717,7 +717,7 @@
         "freshness": "watch",
         "coverage_status": "active",
         "evidence_count": 3,
-        "last_observed_at": "2026-06-30T08:52:42Z",
+        "last_observed_at": "2026-06-30T13:19:11Z",
         "primary_source_url": "https://www.bis.gov/"
       }
     ],

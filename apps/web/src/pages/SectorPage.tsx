@@ -44,7 +44,12 @@ export function SectorPage() {
         <div className="mt-3 flex flex-wrap gap-2">
           {data.tracked_entities.length > 0 && (
             data.tracked_entities.map((entity) => (
-              <EntityLink key={entity.entity_id} value={entity.route_key} locale={locale} className="badge min-h-11 border-line bg-panelAlt text-ink hover:border-accent hover:text-accent" />
+              <EntityLink key={entity.entity_id} value={entity.route_key} locale={locale} className="badge min-h-11 max-w-full border-line bg-panelAlt text-ink hover:border-accent hover:text-accent">
+                <span className="flex min-w-0 flex-col items-start gap-0.5 leading-tight">
+                  <span className="font-semibold">{entity.display_symbol}</span>
+                  <span className="safe-text text-[11px] font-medium text-muted">{entity.name}</span>
+                </span>
+              </EntityLink>
             ))
           )}
           {data.tracked_entities.length === 0 && (
@@ -58,9 +63,11 @@ export function SectorPage() {
         <InfoList title="Sector drivers" items={data.macro_geopolitical_drivers} />
       </section>
       <section>
-        <h2 className="mb-3 text-2xl font-bold">Recent approved events</h2>
+        <h2 className="mb-3 text-2xl font-bold">
+          {locale === "ko" ? "최근 출처 연결 이벤트" : "Recent source-linked events"}
+        </h2>
         {data.recent_events.length > 0 && <EventList events={data.recent_events} />}
-        {data.recent_events.length === 0 && <EmptyState text={locale === "ko" ? "현재 이 섹터 전용 승인 이벤트가 없습니다." : "No sector-specific approved events are available in this snapshot."} />}
+        {data.recent_events.length === 0 && <EmptyState text={locale === "ko" ? "현재 이 섹터 전용 출처 연결 이벤트가 없습니다." : "No sector-specific source-linked events are available in this snapshot."} />}
       </section>
       <section className="grid gap-4 lg:grid-cols-[0.42fr_0.58fr]">
         <div className="panel min-w-0 p-4">
@@ -162,6 +169,7 @@ function TickerCalendarCard({ item, locale }: Readonly<{ item: TickerCalendarIte
 
 function ShortFactCard({ fact, locale }: Readonly<{ fact: ShortFact; locale: "en" | "ko" }>) {
   const label = shortFactLabel(fact.fact_type, locale);
+  const sourceLabel = shortFactSourceLabel(fact, locale);
   return (
     <div className="grid min-h-11 gap-1 rounded-md border border-line bg-panelAlt px-3 py-2">
       <div className="flex items-start justify-between gap-3">
@@ -178,11 +186,17 @@ function ShortFactCard({ fact, locale }: Readonly<{ fact: ShortFact; locale: "en
         </div>
       </div>
       <a className="focus-ring inline-flex min-h-11 w-fit items-center gap-1 rounded-md text-xs font-semibold text-accent hover:underline" href={fact.source_url} target="_blank" rel="noreferrer">
-        {locale === "ko" ? "FINRA 원문" : "FINRA source"}
+        {sourceLabel}
         <ExternalLink className="h-4 w-4" />
       </a>
     </div>
   );
+}
+
+function shortFactSourceLabel(fact: ShortFact, locale: "en" | "ko") {
+  const isFintelShortInterestLink = fact.fact_type === "short_interest" && fact.source_url.includes("fintel.io/ss/us/");
+  if (isFintelShortInterestLink) return locale === "ko" ? "FINRA 데이터 / Fintel 링크" : "FINRA data / Fintel link";
+  return locale === "ko" ? "FINRA 원문" : "FINRA source";
 }
 
 function shortFactLabel(factType: string, locale: "en" | "ko") {

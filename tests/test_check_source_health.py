@@ -246,3 +246,8 @@ def test_korea_market_data_requirement_accepts_ewy_proxy():
 def test_source_list_can_disable_required_ready():
     assert check_source_health._source_list("none") == ()
     assert check_source_health._source_list("fred, krx") == ("fred", "krx")
+
+
+def test_source_health_includes_gdelt_probes():
+    assert {"gdelt", "gdelt_events", "gdelt_gkg"}.issubset(check_source_health.SOURCES)
+    assert check_source_health.SOURCES["gdelt_events"].api_key_param is None

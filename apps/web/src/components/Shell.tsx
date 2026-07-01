@@ -20,6 +20,7 @@ import { alternateLocale, asLocale, useLocale } from "../lib/locale";
 
 const sectorLinks = [
   ["space", "Space", "우주"],
+  ["drones", "Drones", "드론"],
   ["quantum", "Quantum", "양자"],
   ["semiconductors", "Semiconductors", "반도체"],
   ["oil-energy", "Oil/Energy", "석유/에너지"],

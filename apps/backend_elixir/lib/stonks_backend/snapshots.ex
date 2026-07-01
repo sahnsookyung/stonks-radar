@@ -2,10 +2,12 @@ defmodule StonksBackend.Snapshots do
   @moduledoc "Snapshot candidate/publish compatibility for the local OCI volume model."
 
   alias StonksBackend.{Repo, Settings, Sql}
+  alias StonksBackend.Snapshots.SchemaResolver
 
   @manifest_filename "manifest.json"
   @latest_manifest_path Path.join(["latest", @manifest_filename])
   @public_manifest_key "public/latest/manifest.json"
+  @schema_dir "packages/schemas/snapshots"
   @json_file_glob "**/*.json"
   @default_publish_max_files 50_000
   @default_publish_max_bytes 2_000_000_000
@@ -52,6 +54,249 @@ defmodule StonksBackend.Snapshots do
   end
 
   def build_candidate(payload \\ %{}) do
+    if copy_published_tree_requested?(payload) do
+      build_published_tree_candidate(payload)
+    else
+      build_template_snapshot_candidate(payload)
+    end
+  end
+
+  defp build_template_snapshot_candidate(payload) do
+    version = next_snapshot_version()
+    generated_at = DateTime.utc_now()
+    candidate_root = candidate_root(version)
+
+    File.rm_rf!(candidate_root)
+    File.mkdir_p!(candidate_root)
+
+    with :ok <- require_manifest(published_root()),
+         {:ok, seed_manifest} <- read_snapshot(published_manifest_path()),
+         {:ok, files, manifest} <-
+           write_template_snapshot_tree(candidate_root, seed_manifest, version, generated_at),
+         :ok <- write_manifest(candidate_root, manifest),
+         :ok <- validate_snapshot_tree(candidate_root),
+         :ok <-
+           record_candidate_rows(candidate_root, version, "candidate", payload["requested_by"]) do
+      {:ok,
+       %{
+         files: files ++ [Path.join(candidate_root, @latest_manifest_path)],
+         uploaded: false,
+         destination: candidate_root,
+         manifest_path: @public_manifest_key,
+         snapshot_version: version
+       }}
+    end
+  end
+
+  defp write_template_snapshot_tree(candidate_root, seed_manifest, version, generated_at) do
+    manifest = %{
+      "current_version" => version,
+      "generated_at" => iso8601(generated_at),
+      "locales" => seed_manifest["locales"] || [],
+      "objects" => %{}
+    }
+
+    context = %{
+      corrections: corrections(),
+      generated_at: generated_at,
+      hard_expires_at: DateTime.add(generated_at, 7, :day),
+      stale_after: DateTime.add(generated_at, 12, :hour),
+      version: version
+    }
+
+    (seed_manifest["objects"] || %{})
+    |> Enum.reduce_while({:ok, [], manifest}, fn {object_key, locale_paths},
+                                                 {:ok, files, manifest} ->
+      case write_template_locale_snapshots(
+             candidate_root,
+             object_key,
+             locale_paths,
+             context,
+             files,
+             manifest
+           ) do
+        {:ok, files, manifest} -> {:cont, {:ok, files, manifest}}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+  end
+
+  defp write_template_locale_snapshots(
+         candidate_root,
+         object_key,
+         locale_paths,
+         context,
+         files,
+         manifest
+       )
+       when is_map(locale_paths) do
+    Enum.reduce_while(locale_paths, {:ok, files, manifest}, fn {locale, source_path},
+                                                               {:ok, files, manifest} ->
+      with {:ok, snapshot} <- seed_snapshot(source_path, context),
+           {:ok, relative} <-
+             versioned_snapshot_relative_path(context.version, locale, source_path),
+           snapshot <- apply_template_runtime_data(snapshot, object_key, locale, context),
+           {:ok, target} <- write_snapshot(candidate_root, relative, snapshot),
+           manifest <-
+             put_manifest_object_path(manifest, object_key, locale, "public/#{relative}") do
+        {:cont, {:ok, [target | files], manifest}}
+      else
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+    |> case do
+      {:ok, files, manifest} ->
+        {:ok, Enum.reverse(files), manifest}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp write_template_locale_snapshots(
+         _candidate_root,
+         object_key,
+         _locale_paths,
+         _context,
+         _files,
+         _manifest
+       ),
+       do: {:error, "Snapshot manifest object #{object_key} must map locales to snapshot paths"}
+
+  defp put_manifest_object_path(manifest, object_key, locale, public_path) do
+    update_in(manifest, ["objects"], fn objects ->
+      objects
+      |> ensure_map()
+      |> Map.update(object_key, %{locale => public_path}, fn locale_paths ->
+        locale_paths
+        |> ensure_map()
+        |> Map.put(locale, public_path)
+      end)
+    end)
+  end
+
+  defp seed_snapshot(source_path, context) do
+    with {:ok, relative} <- manifest_snapshot_relative_path(source_path),
+         seed_path = Path.join(published_root(), relative),
+         {:ok, snapshot} <- read_snapshot(seed_path) do
+      {:ok,
+       snapshot
+       |> Map.put("snapshot_version", context.version)
+       |> Map.put("generated_at", iso8601(context.generated_at))
+       |> Map.put("stale_after", iso8601(context.stale_after))
+       |> Map.put("hard_expires_at", iso8601(context.hard_expires_at))
+       |> Map.put("corrections", context.corrections)
+       |> Map.put_new("warnings", [])
+       |> Map.put_new("source_policy_versions", [])}
+    end
+  end
+
+  defp versioned_snapshot_relative_path(version, locale, source_path) do
+    with {:ok, source_relative} <- manifest_snapshot_relative_path(source_path),
+         {:ok, suffix} <- snapshot_suffix(source_relative, locale) do
+      {:ok, Path.join(["v#{version}", locale, suffix])}
+    end
+  end
+
+  defp snapshot_suffix(source_relative, locale) do
+    case Path.split(source_relative) do
+      ["v" <> _seed_version, ^locale | suffix] when suffix != [] ->
+        {:ok, Path.join(suffix)}
+
+      [^locale | suffix] when suffix != [] ->
+        {:ok, Path.join(suffix)}
+
+      parts when parts != [] ->
+        {:ok, Path.basename(source_relative)}
+
+      _ ->
+        {:error, "Snapshot path #{source_relative} has no writable filename"}
+    end
+  end
+
+  defp apply_template_runtime_data(
+         %{"object_type" => "home"} = snapshot,
+         _object_key,
+         _locale,
+         context
+       ) do
+    update_in(snapshot, ["data"], fn data ->
+      data
+      |> ensure_map()
+      |> maybe_put_existing("generated_label", iso8601(context.generated_at))
+      |> update_snapshot_health(context)
+    end)
+  end
+
+  defp apply_template_runtime_data(
+         %{"object_type" => "source_status"} = snapshot,
+         _object_key,
+         _locale,
+         _context
+       ) do
+    seed_status = if is_map(snapshot["data"]), do: snapshot["data"], else: %{}
+    Map.put(snapshot, "data", source_status_data(seed_status))
+  end
+
+  defp apply_template_runtime_data(
+         %{"object_type" => "correction_log"} = snapshot,
+         _object_key,
+         _locale,
+         context
+       ) do
+    put_in(snapshot, ["data", "entries"], context.corrections)
+  end
+
+  defp apply_template_runtime_data(snapshot, _object_key, _locale, _context), do: snapshot
+
+  defp write_snapshot(candidate_root, relative, snapshot) do
+    snapshot = Map.put(snapshot, "content_hash", payload_hash(snapshot["data"]))
+    target = safe_snapshot_write_path(candidate_root, relative)
+
+    with :ok <- File.mkdir_p(Path.dirname(target)),
+         :ok <- File.write(target, Jason.encode!(snapshot, pretty: true) <> "\n"),
+         :ok <- validate_snapshot_file(target) do
+      {:ok, target}
+    else
+      {:error, reason} when is_binary(reason) -> {:error, reason}
+      {:error, reason} -> {:error, "Could not write snapshot #{target}: #{inspect(reason)}"}
+    end
+  end
+
+  defp write_manifest(candidate_root, manifest) do
+    manifest_path = Path.join(candidate_root, @latest_manifest_path)
+
+    with :ok <- File.mkdir_p(Path.dirname(manifest_path)),
+         :ok <- File.write(manifest_path, Jason.encode!(manifest, pretty: true) <> "\n") do
+      :ok
+    else
+      {:error, reason} ->
+        {:error, "Could not write snapshot manifest #{manifest_path}: #{inspect(reason)}"}
+    end
+  end
+
+  defp safe_snapshot_write_path(root, relative) do
+    root = Path.expand(root)
+    target = Path.expand(Path.join(root, relative))
+
+    if Path.type(relative) == :relative and ".." not in Path.split(relative) and
+         String.starts_with?(target, root <> "/") do
+      target
+    else
+      raise ArgumentError, "Unsafe snapshot path: #{relative}"
+    end
+  end
+
+  defp record_candidate_rows(candidate_root, version, status, generated_by) do
+    if snapshot_db_recording_enabled?() do
+      record_manifest(candidate_root, version, status, generated_by)
+      record_publication_rows(candidate_root, version, status, generated_by)
+    end
+
+    :ok
+  end
+
+  defp build_published_tree_candidate(payload) do
     version = next_snapshot_version()
     candidate_root = candidate_root(version)
     File.rm_rf!(candidate_root)
@@ -101,6 +346,22 @@ defmodule StonksBackend.Snapshots do
       {:ok, published}
     end
   end
+
+  defp copy_published_tree_requested?(payload) when is_map(payload) do
+    payload_value(payload, "mode") in ["copy_published_tree", "compatibility_copy"] or
+      truthy?(payload_value(payload, "copy_published_tree"))
+  end
+
+  defp copy_published_tree_requested?(_), do: false
+
+  defp payload_value(payload, key) do
+    Map.get(payload, key) || Map.get(payload, String.to_atom(key))
+  end
+
+  defp truthy?(value) when is_binary(value),
+    do: String.downcase(value) in ["1", "true", "yes", "on"]
+
+  defp truthy?(value), do: value in [true, 1]
 
   def publish(version) do
     candidate_root = candidate_root(version)
@@ -294,8 +555,8 @@ defmodule StonksBackend.Snapshots do
     else
       with {:ok, snapshot} <- read_snapshot(path),
            :ok <- validate_snapshot_envelope(snapshot, path),
-           :ok <- validate_snapshot_schema_placeholder(snapshot),
-           :ok <- assert_no_public_raw_private(snapshot, path) do
+           :ok <- assert_no_public_raw_private(snapshot, path),
+           :ok <- validate_snapshot_schema(snapshot, path) do
         :ok
       end
     end
@@ -449,12 +710,289 @@ defmodule StonksBackend.Snapshots do
     end
   end
 
-  defp validate_snapshot_schema_placeholder(snapshot) do
-    if Map.has_key?(@schema_by_object_type, snapshot["object_type"]) do
+  defp validate_snapshot_schema(snapshot, path) do
+    with {:ok, schema_filename} <- schema_filename(snapshot),
+         {:ok, schema} <- build_snapshot_schema(schema_filename),
+         {:ok, _validated} <- JSV.validate(snapshot, schema) do
       :ok
     else
-      {:error, "Unknown snapshot object_type: #{inspect(snapshot["object_type"])}"}
+      {:error, {:unknown_object_type, object_type}} ->
+        {:error, "Unknown snapshot object_type: #{inspect(object_type)}"}
+
+      {:error, {:schema_dir_missing, schema_root}} ->
+        {:error, "Snapshot schema directory is missing: #{schema_root}"}
+
+      {:error, %JSV.ValidationError{} = error} ->
+        {:error, "#{path} failed snapshot schema validation: #{format_schema_error(error)}"}
+
+      {:error, reason} ->
+        {:error, "#{path} failed snapshot schema validation: #{inspect(reason)}"}
     end
+  end
+
+  defp schema_filename(snapshot) do
+    case Map.fetch(@schema_by_object_type, snapshot["object_type"]) do
+      {:ok, schema_filename} -> {:ok, schema_filename}
+      :error -> {:error, {:unknown_object_type, snapshot["object_type"]}}
+    end
+  end
+
+  defp build_snapshot_schema(schema_filename) do
+    with {:ok, schema_root} <- snapshot_schema_root(),
+         schema_path = Path.join(schema_root, schema_filename),
+         true <- File.regular?(schema_path),
+         {:ok, content} <- File.read(schema_path),
+         {:ok, raw_schema} <- Jason.decode(content) do
+      schema =
+        raw_schema
+        |> Map.put("$id", SchemaResolver.schema_base() <> schema_filename)
+        |> JSV.build!(resolver: {SchemaResolver, schema_root})
+
+      {:ok, schema}
+    else
+      false -> {:error, {:schema_missing, schema_filename}}
+      {:error, reason} -> {:error, reason}
+    end
+  rescue
+    exception -> {:error, Exception.message(exception)}
+  end
+
+  defp snapshot_schema_root do
+    configured = Settings.get(:snapshot_schema_dir)
+
+    configured
+    |> configured_schema_root()
+    |> case do
+      nil -> discover_schema_root()
+      schema_root -> {:ok, schema_root}
+    end
+  end
+
+  defp configured_schema_root(value) when is_binary(value) do
+    value = String.trim(value)
+    if value == "", do: nil, else: Path.expand(value)
+  end
+
+  defp configured_schema_root(_), do: nil
+
+  defp discover_schema_root do
+    candidates =
+      [
+        Path.expand(@schema_dir, File.cwd!()),
+        Path.expand("../../#{@schema_dir}", File.cwd!()),
+        Path.expand("../../../#{@schema_dir}", File.cwd!()),
+        Path.join(["/app", @schema_dir])
+      ]
+      |> Enum.uniq()
+
+    case Enum.find(candidates, &File.dir?/1) do
+      nil -> {:error, {:schema_dir_missing, hd(candidates)}}
+      schema_root -> {:ok, schema_root}
+    end
+  end
+
+  defp format_schema_error(error) do
+    error
+    |> JSV.normalize_error()
+    |> collect_schema_messages()
+    |> Enum.uniq()
+    |> Enum.take(6)
+    |> Enum.join("; ")
+  end
+
+  defp collect_schema_messages(value), do: collect_schema_messages(value, nil)
+
+  defp collect_schema_messages(value, location) when is_map(value) do
+    location = Map.get(value, :instanceLocation) || location
+
+    message =
+      case Map.get(value, :message) do
+        nil -> []
+        text -> ["#{location || "#"} #{text}"]
+      end
+
+    nested =
+      value
+      |> Map.take([:details, :errors])
+      |> Map.values()
+      |> Enum.flat_map(&collect_schema_messages(&1, location))
+
+    message ++ nested
+  end
+
+  defp collect_schema_messages(value, location) when is_list(value) do
+    Enum.flat_map(value, &collect_schema_messages(&1, location))
+  end
+
+  defp collect_schema_messages(_value, _location), do: []
+
+  defp corrections do
+    """
+    select id, title, status, published_at, summary
+    from correction_log
+    order by published_at desc
+    limit 200
+    """
+    |> Sql.all()
+    |> Enum.map(fn row ->
+      %{
+        "id" => to_string(row["id"]),
+        "title" => to_string(row["title"] || ""),
+        "status" => to_string(row["status"] || "correction"),
+        "published_at" => to_string(row["published_at"] || iso8601(DateTime.utc_now())),
+        "summary" => to_string(row["summary"] || "")
+      }
+    end)
+  end
+
+  defp source_status_data(seed_status) do
+    providers_by_key =
+      seed_status
+      |> Map.get("providers", [])
+      |> Enum.reduce(provider_status_rows(), &merge_seed_provider_status/2)
+
+    operations = operation_status_rows()
+
+    %{
+      "snapshot_age_minutes" => 0,
+      "degraded_mode" => degraded_operations?(operations),
+      "backend_required_for_public_pages" => false,
+      "providers" =>
+        providers_by_key
+        |> Map.values()
+        |> Enum.sort_by(& &1["provider_key"]),
+      "operations" => %{
+        "disk_watermark" => Map.get(operations, "disk_watermark", "unknown_until_monitor_runs"),
+        "snapshot_storage_status" => Map.get(operations, "snapshot_storage", "local_oci"),
+        "backup_status" =>
+          Map.get(operations, "backup", "local_encrypted_backups_not_configured"),
+        "restore_drill_at" => Map.get(operations, "restore_drill_at")
+      }
+    }
+  end
+
+  defp provider_status_rows do
+    """
+    select provider_key, provider_type, routing_mode, kill_switch_enabled,
+           current_period_usage, hard_limit, last_verified_at
+    from provider_budget
+    order by provider_key
+    """
+    |> Sql.all()
+    |> Map.new(fn row ->
+      provider_key = to_string(row["provider_key"])
+
+      {provider_key,
+       %{
+         "provider_key" => provider_key,
+         "provider_type" => to_string(row["provider_type"] || "unknown"),
+         "status" => if(truthy?(row["kill_switch_enabled"]), do: "kill_switch", else: "ready"),
+         "mode" => to_string(row["routing_mode"] || "FREE_ONLY"),
+         "last_verified_at" => row["last_verified_at"],
+         "warning" => provider_warning(row)
+       }}
+    end)
+  end
+
+  defp merge_seed_provider_status(provider, providers_by_key) when is_map(provider) do
+    key = provider["provider_key"]
+
+    if is_binary(key) and key != "" do
+      Map.update(providers_by_key, key, seed_provider_status(provider), fn existing ->
+        existing
+        |> maybe_put_non_ready_status(provider["status"])
+        |> maybe_put_missing("warning", provider["warning"])
+        |> maybe_put_missing("provider_type", provider["provider_type"])
+      end)
+    else
+      providers_by_key
+    end
+  end
+
+  defp merge_seed_provider_status(_provider, providers_by_key), do: providers_by_key
+
+  defp seed_provider_status(provider) do
+    %{
+      "provider_key" => provider["provider_key"],
+      "provider_type" => provider["provider_type"] || "unknown",
+      "status" => provider["status"] || "ready",
+      "mode" => provider["mode"] || "FREE_ONLY",
+      "last_verified_at" => provider["last_verified_at"],
+      "warning" => provider["warning"]
+    }
+  end
+
+  defp provider_warning(row) do
+    usage = to_int(row["current_period_usage"], 0)
+    hard_limit = to_int(row["hard_limit"], 0)
+
+    cond do
+      hard_limit > 0 and usage >= hard_limit -> "quota_exhausted"
+      hard_limit > 0 and usage / hard_limit >= 0.8 -> "quota_near_limit"
+      true -> nil
+    end
+  end
+
+  defp operation_status_rows do
+    "select status_key, status_value from operation_status"
+    |> Sql.all()
+    |> Map.new(fn row -> {to_string(row["status_key"]), row["status_value"]} end)
+  end
+
+  defp degraded_operations?(operations) do
+    Enum.any?(operations, fn {_key, value} ->
+      value in ["critical_warning", "degraded_read_only", "failed"]
+    end)
+  end
+
+  defp maybe_put_non_ready_status(existing, status) when status in [nil, "", "ready"],
+    do: existing
+
+  defp maybe_put_non_ready_status(existing, status), do: Map.put(existing, "status", status)
+
+  defp maybe_put_missing(existing, _key, value) when value in [nil, ""], do: existing
+
+  defp maybe_put_missing(existing, key, value) do
+    if existing[key] in [nil, ""] do
+      Map.put(existing, key, value)
+    else
+      existing
+    end
+  end
+
+  defp ensure_map(value) when is_map(value), do: value
+  defp ensure_map(_value), do: %{}
+
+  defp maybe_put_existing(map, key, value) do
+    if Map.has_key?(map, key), do: Map.put(map, key, value), else: map
+  end
+
+  defp update_snapshot_health(data, context) do
+    case data["snapshot_health"] do
+      health when is_map(health) ->
+        Map.put(
+          data,
+          "snapshot_health",
+          Map.merge(health, %{
+            "age_minutes" => 0,
+            "stale_after" => iso8601(context.stale_after)
+          })
+        )
+
+      _ ->
+        data
+    end
+  end
+
+  defp payload_hash(payload) do
+    "sha256:" <>
+      (:crypto.hash(:sha256, Jason.encode!(payload || %{})) |> Base.encode16(case: :lower))
+  end
+
+  defp iso8601(%DateTime{} = value), do: DateTime.to_iso8601(value)
+
+  defp snapshot_db_recording_enabled? do
+    Settings.get(:snapshot_db_recording_enabled, true) |> truthy?()
   end
 
   defp copy_tree(source, dest) do

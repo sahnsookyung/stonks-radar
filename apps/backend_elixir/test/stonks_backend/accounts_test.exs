@@ -118,6 +118,82 @@ defmodule StonksBackend.AccountsTest do
     refute Accounts.google_allowed?("person@other.example")
   end
 
+  test "fetch_google_profile exchanges code and validates audience and nonce" do
+    bypass = Bypass.open()
+
+    Application.put_env(:stonks_backend, :settings,
+      public_base_url: "https://stonks.example",
+      google_oauth_client_id: "client-id",
+      google_oauth_client_secret: "client-secret",
+      google_oauth_token_url: "http://localhost:#{bypass.port}/token",
+      google_oauth_tokeninfo_url: "http://localhost:#{bypass.port}/tokeninfo"
+    )
+
+    Bypass.expect_once(bypass, "POST", "/token", fn conn ->
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+      params = URI.decode_query(body)
+
+      assert params["code"] == "auth-code"
+      assert params["client_id"] == "client-id"
+      assert params["client_secret"] == "client-secret"
+      assert params["redirect_uri"] == "https://stonks.example/api/auth/google/callback"
+      assert params["grant_type"] == "authorization_code"
+
+      conn
+      |> Plug.Conn.put_resp_content_type("application/json")
+      |> Plug.Conn.resp(200, Jason.encode!(%{id_token: "id-token"}))
+    end)
+
+    Bypass.expect_once(bypass, "GET", "/tokeninfo", fn conn ->
+      conn = Plug.Conn.fetch_query_params(conn)
+      assert conn.query_params["id_token"] == "id-token"
+
+      conn
+      |> Plug.Conn.put_resp_content_type("application/json")
+      |> Plug.Conn.resp(
+        200,
+        Jason.encode!(%{
+          aud: "client-id",
+          nonce: "nonce-value",
+          sub: "google-subject",
+          email: "owner@example.com",
+          email_verified: true
+        })
+      )
+    end)
+
+    assert {:ok, profile} =
+             Accounts.fetch_google_profile("auth-code", Crypto.hash_secret("nonce-value"))
+
+    assert profile["sub"] == "google-subject"
+  end
+
+  test "fetch_google_profile rejects audience and nonce mismatches" do
+    bypass = Bypass.open()
+
+    Application.put_env(:stonks_backend, :settings,
+      google_oauth_client_id: "client-id",
+      google_oauth_client_secret: "client-secret",
+      google_oauth_token_url: "http://localhost:#{bypass.port}/token",
+      google_oauth_tokeninfo_url: "http://localhost:#{bypass.port}/tokeninfo"
+    )
+
+    Bypass.expect(bypass, "POST", "/token", fn conn ->
+      conn
+      |> Plug.Conn.put_resp_content_type("application/json")
+      |> Plug.Conn.resp(200, Jason.encode!(%{id_token: "id-token"}))
+    end)
+
+    Bypass.expect(bypass, "GET", "/tokeninfo", fn conn ->
+      conn
+      |> Plug.Conn.put_resp_content_type("application/json")
+      |> Plug.Conn.resp(200, Jason.encode!(%{aud: "other-client", nonce: "bad-nonce"}))
+    end)
+
+    assert {:error, {:forbidden, "Google OAuth audience mismatch."}} =
+             Accounts.fetch_google_profile("auth-code", Crypto.hash_secret("nonce-value"))
+  end
+
   test "safe_admin_redirect_path only allows the admin root and descendants" do
     assert Accounts.safe_admin_redirect_path("/admin") == "/admin"
     assert Accounts.safe_admin_redirect_path("/admin/sources") == "/admin/sources"

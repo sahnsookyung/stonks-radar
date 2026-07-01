@@ -480,6 +480,180 @@ export const generatedTrackedEntities = [
     "tradingViewSymbol": "NYSE:RDW"
   },
   {
+    "entityId": "ONDS",
+    "symbol": "ONDS",
+    "displaySymbol": "ONDS",
+    "routeKey": "ONDS",
+    "routeKind": "ticker",
+    "name": "Ondas",
+    "nameKo": "온다스",
+    "exchange": "NASDAQ",
+    "assetType": "Equity",
+    "currency": "USD",
+    "country": "USA",
+    "sector": "Drones / autonomous systems",
+    "industry": "Aerospace and defense",
+    "sectorKeys": [
+      "drones"
+    ],
+    "tags": [
+      "drones",
+      "autonomous-systems",
+      "defense-tech",
+      "small-cap"
+    ],
+    "aliases": [
+      "Ondas",
+      "Ondas Holdings",
+      "Ondas Autonomous Systems"
+    ],
+    "related": [
+      "UMAC",
+      "AVAV",
+      "RCAT",
+      "RKLB"
+    ],
+    "officialDomains": [
+      "ondas.com",
+      "ondasnetworks.com"
+    ],
+    "sourcePolicy": "metadata_only_unless_terms_allow_display",
+    "thesisBull": "Autonomous systems, defense demand, and critical-network modernization can create high-impact contract catalysts.",
+    "thesisBear": "Small-cap liquidity, acquisition integration, and funding needs can dominate between contract milestones.",
+    "invalidation": "Watch backlog conversion, financing filings, and customer concentration risk.",
+    "secCik": "0001646188",
+    "tradingViewSymbol": "NASDAQ:ONDS"
+  },
+  {
+    "entityId": "UMAC",
+    "symbol": "UMAC",
+    "displaySymbol": "UMAC",
+    "routeKey": "UMAC",
+    "routeKind": "ticker",
+    "name": "Unusual Machines",
+    "nameKo": "언유주얼 머신스",
+    "exchange": "NYSE American",
+    "assetType": "Equity",
+    "currency": "USD",
+    "country": "USA",
+    "sector": "Drones / components",
+    "industry": "Drone components and manufacturing",
+    "sectorKeys": [
+      "drones"
+    ],
+    "tags": [
+      "drones",
+      "domestic-manufacturing",
+      "small-cap",
+      "high-volatility"
+    ],
+    "aliases": [
+      "Unusual Machines",
+      "Rotor Riot",
+      "Fat Shark"
+    ],
+    "related": [
+      "ONDS",
+      "AVAV",
+      "RCAT"
+    ],
+    "officialDomains": [
+      "unusualmachines.com"
+    ],
+    "sourcePolicy": "metadata_only_unless_terms_allow_display",
+    "thesisBull": "Domestic drone-component demand and FPV ecosystem exposure can support event-driven upside.",
+    "thesisBear": "Scale, working-capital needs, and speculative retail flow can make volatility extreme.",
+    "invalidation": "Watch supply-chain execution, dilution filings, and customer demand evidence.",
+    "secCik": "0001956955",
+    "tradingViewSymbol": "AMEX:UMAC"
+  },
+  {
+    "entityId": "AVAV",
+    "symbol": "AVAV",
+    "displaySymbol": "AVAV",
+    "routeKey": "AVAV",
+    "routeKind": "ticker",
+    "name": "AeroVironment",
+    "nameKo": "에어로바이런먼트",
+    "exchange": "NASDAQ",
+    "assetType": "Equity",
+    "currency": "USD",
+    "country": "USA",
+    "sector": "Drones / defense",
+    "industry": "Aerospace and defense",
+    "sectorKeys": [
+      "drones"
+    ],
+    "tags": [
+      "drones",
+      "defense",
+      "counter-uas",
+      "profitable-defense-tech"
+    ],
+    "aliases": [
+      "AeroVironment",
+      "AV"
+    ],
+    "related": [
+      "ONDS",
+      "UMAC",
+      "RCAT",
+      "RKLB"
+    ],
+    "officialDomains": [
+      "avinc.com"
+    ],
+    "sourcePolicy": "metadata_only_unless_terms_allow_display",
+    "thesisBull": "Defense procurement, loitering-munition demand, and counter-UAS adoption can support durable backlog growth.",
+    "thesisBear": "Program timing, budget cycles, and valuation sensitivity can pressure returns after sharp rallies.",
+    "invalidation": "Watch backlog quality, margin trend, and defense-budget procurement language.",
+    "secCik": "0001368622",
+    "tradingViewSymbol": "NASDAQ:AVAV"
+  },
+  {
+    "entityId": "RCAT",
+    "symbol": "RCAT",
+    "displaySymbol": "RCAT",
+    "routeKey": "RCAT",
+    "routeKind": "ticker",
+    "name": "Red Cat Holdings",
+    "nameKo": "레드 캣 홀딩스",
+    "exchange": "NASDAQ",
+    "assetType": "Equity",
+    "currency": "USD",
+    "country": "USA",
+    "sector": "Drones / defense",
+    "industry": "Drone systems",
+    "sectorKeys": [
+      "drones"
+    ],
+    "tags": [
+      "drones",
+      "defense",
+      "small-cap",
+      "contract-risk"
+    ],
+    "aliases": [
+      "Red Cat",
+      "Teal Drones"
+    ],
+    "related": [
+      "ONDS",
+      "UMAC",
+      "AVAV"
+    ],
+    "officialDomains": [
+      "redcatholdings.com",
+      "tealdrones.com"
+    ],
+    "sourcePolicy": "metadata_only_unless_terms_allow_display",
+    "thesisBull": "U.S. defense drone procurement and Blue UAS demand can produce step-change contract catalysts.",
+    "thesisBear": "Execution, production ramp, contract timing, and financing risk can drive large drawdowns.",
+    "invalidation": "Watch program award timing, delivery milestones, and dilution or debt filings.",
+    "secCik": "0000748268",
+    "tradingViewSymbol": "NASDAQ:RCAT"
+  },
+  {
     "entityId": "AMD",
     "symbol": "AMD",
     "displaySymbol": "AMD",

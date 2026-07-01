@@ -1,7 +1,7 @@
 defmodule StonksBackend.MarketData do
   @moduledoc "Public market history read path."
 
-  alias StonksBackend.Sql
+  alias StonksBackend.{Settings, Sql}
 
   @symbol_regex ~r/^[A-Z0-9][A-Z0-9.\-:]{0,19}$/
   @max_symbols 8
@@ -23,7 +23,461 @@ defmodule StonksBackend.MarketData do
     end
   end
 
-  def refresh_history(payload), do: {:ok, %{status: "queued_refresh", payload: payload}}
+  def refresh_history(payload) do
+    with {:ok, symbol} <- refresh_symbol(payload),
+         {:ok, {start_date, end_date}} <- refresh_window(payload) do
+      provider_order = market_provider_order()
+
+      provider_order
+      |> Enum.reduce_while([], fn provider_key, attempts ->
+        case fetch_provider_history(provider_key, symbol, start_date, end_date) do
+          {:ok, points} when points != [] ->
+            stored = store_refreshed_points(provider_key, symbol, start_date, end_date, points)
+
+            {:halt,
+             {:ok,
+              %{
+                status: "ready",
+                provider_key: provider_key,
+                symbol: symbol,
+                start: Date.to_iso8601(start_date),
+                end: Date.to_iso8601(end_date),
+                points: length(points),
+                stored: stored,
+                elixir_component: "market_history_refresh"
+              }}}
+
+          {:ok, []} ->
+            {:cont, [%{provider_key: provider_key, status: "empty"} | attempts]}
+
+          {:error, :missing_api_key} ->
+            {:cont, [%{provider_key: provider_key, status: "missing_api_key"} | attempts]}
+
+          {:error, reason} ->
+            {:cont,
+             [%{provider_key: provider_key, status: "failed", reason: inspect(reason)} | attempts]}
+        end
+      end)
+      |> case do
+        {:ok, result} ->
+          {:ok, result}
+
+        attempts ->
+          {:error,
+           %{
+             status: "provider_unavailable",
+             symbol: symbol,
+             start: Date.to_iso8601(start_date),
+             end: Date.to_iso8601(end_date),
+             attempts: Enum.reverse(attempts),
+             elixir_component: "market_history_refresh"
+           }}
+      end
+    end
+  end
+
+  def configured_provider_api_key(provider_key), do: provider_api_key(to_string(provider_key))
+
+  defp refresh_symbol(payload) do
+    symbol =
+      payload
+      |> Map.get("symbol")
+      |> to_string()
+      |> String.trim()
+      |> String.upcase()
+
+    if Regex.match?(@symbol_regex, symbol), do: {:ok, symbol}, else: {:error, :invalid_symbol}
+  end
+
+  defp refresh_window(payload) do
+    cond do
+      is_binary(payload["start"]) and is_binary(payload["end"]) ->
+        with {:ok, start_date} <- Date.from_iso8601(String.slice(payload["start"], 0, 10)),
+             {:ok, end_date} <- Date.from_iso8601(String.slice(payload["end"], 0, 10)),
+             :ok <- validate_window(start_date, end_date) do
+          {:ok, {start_date, end_date}}
+        end
+
+      true ->
+        end_date =
+          case payload["market_session_date"] do
+            value when is_binary(value) ->
+              case Date.from_iso8601(String.slice(value, 0, 10)) do
+                {:ok, date} -> date
+                _ -> Date.utc_today()
+              end
+
+            _ ->
+              Date.utc_today()
+          end
+
+        days =
+          payload
+          |> Map.get(
+            "window_days",
+            Map.get(payload, "days", Settings.get(:market_data_snapshot_window_days, 1_095))
+          )
+          |> normalize_int(1_095)
+          |> max(1)
+          |> min(@max_history_days)
+
+        start_date = Date.add(end_date, -days)
+        {:ok, {start_date, end_date}}
+    end
+  end
+
+  defp market_provider_order do
+    Settings.get(:market_data_provider_order, "twelve_data,alpha_vantage,fmp")
+    |> to_string()
+    |> String.split(",", trim: true)
+    |> Enum.map(&(&1 |> String.trim() |> String.downcase()))
+    |> Enum.filter(&(&1 in @provider_order))
+    |> case do
+      [] -> @provider_order
+      providers -> providers
+    end
+  end
+
+  defp fetch_provider_history(provider_key, symbol, start_date, end_date) do
+    with {:ok, api_key} <- provider_api_key(provider_key),
+         {:ok, payload} <- provider_request(provider_key, api_key, symbol, start_date, end_date) do
+      {:ok, parse_provider_points(provider_key, payload, start_date, end_date)}
+    end
+  end
+
+  defp provider_api_key("twelve_data") do
+    provider_api_key_with_fallback(:twelve_data_api_key)
+  end
+
+  defp provider_api_key("alpha_vantage") do
+    provider_api_key_with_fallback(:alpha_vantage_api_key)
+  end
+
+  defp provider_api_key("fmp") do
+    provider_api_key_with_fallback(:fmp_api_key)
+  end
+
+  defp provider_api_key(_), do: {:error, :missing_api_key}
+
+  defp provider_api_key_with_fallback(provider_key) do
+    case Settings.get(provider_key) |> present_api_key() do
+      {:ok, api_key} -> {:ok, api_key}
+      {:error, :missing_api_key} -> Settings.get(:market_data_api_key) |> present_api_key()
+    end
+  end
+
+  defp present_api_key(nil), do: {:error, :missing_api_key}
+
+  defp present_api_key(value) do
+    value = value |> to_string() |> String.trim()
+    if value == "", do: {:error, :missing_api_key}, else: {:ok, value}
+  end
+
+  defp provider_request("twelve_data", api_key, symbol, start_date, end_date) do
+    Req.get("https://api.twelvedata.com/time_series",
+      params: %{
+        "symbol" => symbol,
+        "interval" => "1day",
+        "start_date" => Date.to_iso8601(start_date),
+        "end_date" => Date.to_iso8601(end_date),
+        "order" => "ASC",
+        "outputsize" => "5000",
+        "apikey" => api_key
+      },
+      receive_timeout: market_timeout_ms()
+    )
+    |> json_response()
+    |> reject_twelve_data_errors()
+  end
+
+  defp provider_request("alpha_vantage", api_key, symbol, _start_date, _end_date) do
+    Req.get("https://www.alphavantage.co/query",
+      params: %{
+        "function" => "TIME_SERIES_DAILY",
+        "symbol" => symbol,
+        "outputsize" => "compact",
+        "apikey" => api_key
+      },
+      receive_timeout: market_timeout_ms()
+    )
+    |> json_response()
+    |> reject_alpha_vantage_errors()
+  end
+
+  defp provider_request("fmp", api_key, symbol, start_date, end_date) do
+    Req.get("https://financialmodelingprep.com/stable/historical-price-eod/full",
+      params: %{
+        "symbol" => symbol,
+        "from" => Date.to_iso8601(start_date),
+        "to" => Date.to_iso8601(end_date),
+        "apikey" => api_key
+      },
+      receive_timeout: market_timeout_ms()
+    )
+    |> json_response()
+  end
+
+  defp provider_request(_, _, _, _, _), do: {:error, :unsupported_provider}
+
+  defp json_response({:ok, %{status: status, body: body}})
+       when status in 200..299 and is_map(body),
+       do: {:ok, body}
+
+  defp json_response({:ok, %{status: status, body: body}})
+       when status in 200..299 and is_list(body),
+       do: {:ok, body}
+
+  defp json_response({:ok, %{status: status, body: body}}) when status in 200..299 do
+    case Jason.decode(to_string(body)) do
+      {:ok, payload} -> {:ok, payload}
+      _ -> {:error, :invalid_json}
+    end
+  end
+
+  defp json_response({:ok, %{status: status}}), do: {:error, {:http_status, status}}
+  defp json_response({:error, reason}), do: {:error, reason}
+
+  defp reject_twelve_data_errors({:ok, %{"status" => "error", "message" => message}}),
+    do: {:error, {:provider_error, message}}
+
+  defp reject_twelve_data_errors(result), do: result
+
+  defp reject_alpha_vantage_errors({:ok, payload}) when is_map(payload) do
+    message = payload["Note"] || payload["Information"] || payload["Error Message"]
+    if is_binary(message), do: {:error, {:provider_error, message}}, else: {:ok, payload}
+  end
+
+  defp reject_alpha_vantage_errors(result), do: result
+
+  defp parse_provider_points("twelve_data", %{"values" => values}, start_date, end_date)
+       when is_list(values) do
+    values
+    |> Enum.map(&point_from_map(&1, "datetime", close_fields: ["close"]))
+    |> filter_valid_points(start_date, end_date)
+  end
+
+  defp parse_provider_points(
+         "alpha_vantage",
+         %{"Time Series (Daily)" => rows},
+         start_date,
+         end_date
+       )
+       when is_map(rows) do
+    rows
+    |> Enum.map(fn {date, row} ->
+      %{
+        "date" => date,
+        "open" => row["1. open"],
+        "high" => row["2. high"],
+        "low" => row["3. low"],
+        "close" => row["4. close"],
+        "volume" => row["5. volume"]
+      }
+    end)
+    |> Enum.map(&point_from_map(&1, "date", close_fields: ["close"]))
+    |> filter_valid_points(start_date, end_date)
+  end
+
+  defp parse_provider_points("fmp", payload, start_date, end_date) do
+    rows = if is_map(payload), do: payload["historical"], else: payload
+
+    if is_list(rows) do
+      rows
+      |> Enum.map(
+        &point_from_map(&1, "date",
+          close_fields: ["adjClose", "close"],
+          adjusted_field: "adjClose"
+        )
+      )
+      |> filter_valid_points(start_date, end_date)
+    else
+      []
+    end
+  end
+
+  defp parse_provider_points(_, _, _, _), do: []
+
+  defp point_from_map(row, date_field, opts) when is_map(row) do
+    date = row[date_field] |> to_string() |> String.slice(0, 10)
+    close = first_decimal(row, Keyword.get(opts, :close_fields, ["close"]))
+    adjusted_field = Keyword.get(opts, :adjusted_field)
+
+    %{
+      date: date,
+      open: decimal_or_nil(row["open"]),
+      high: decimal_or_nil(row["high"]),
+      low: decimal_or_nil(row["low"]),
+      close: close,
+      adjusted_close: if(adjusted_field, do: decimal_or_nil(row[adjusted_field]), else: nil),
+      volume: decimal_or_nil(row["volume"])
+    }
+  end
+
+  defp point_from_map(_, _date_field, _opts), do: nil
+
+  defp filter_valid_points(points, start_date, end_date) do
+    points
+    |> Enum.reject(&is_nil/1)
+    |> Enum.filter(fn point ->
+      with {:ok, date} <- Date.from_iso8601(point.date),
+           true <- Date.compare(date, start_date) != :lt,
+           true <- Date.compare(date, end_date) != :gt,
+           true <- valid_ohlc?(point) do
+        true
+      else
+        _ -> false
+      end
+    end)
+    |> Enum.uniq_by(& &1.date)
+    |> Enum.sort_by(& &1.date)
+  end
+
+  defp valid_ohlc?(%{close: close} = point) do
+    is_number(close) and close > 0 and
+      Enum.all?([point.open, point.high, point.low], fn
+        nil -> true
+        value -> value > 0
+      end) and
+      (is_nil(point.high) or is_nil(point.low) or point.high >= point.low)
+  end
+
+  defp store_refreshed_points(provider_key, symbol, start_date, end_date, points) do
+    policy = source_policy(provider_key)
+    policy_json = Jason.encode!(policy)
+
+    stored =
+      points
+      |> Enum.map(&upsert_market_price_bar(provider_key, symbol, &1, policy_json))
+      |> Enum.count(& &1)
+
+    %{
+      rows: stored,
+      requested_start: Date.to_iso8601(start_date),
+      requested_end: Date.to_iso8601(end_date),
+      source_policy: policy
+    }
+  end
+
+  defp upsert_market_price_bar(provider_key, symbol, point, policy_json) do
+    source_hash =
+      "sha256:" <>
+        (:crypto.hash(
+           :sha256,
+           Jason.encode!(%{provider: provider_key, symbol: symbol, point: point})
+         )
+         |> Base.encode16(case: :lower))
+
+    Sql.execute(
+      """
+      insert into market_price_bar (
+        symbol, interval, price_date, provider_key, open, high, low, close,
+        adjusted_close, volume, currency_code, exchange, timezone,
+        provider_price_timestamp, source_hash, source_revision, is_adjusted,
+        is_suspect, quality_state, quality_json, source_policy_json, updated_at
+      )
+      values (
+        $1, '1day', cast($2 as date), $3, $4, $5, $6, $7,
+        $8, $9, 'USD', null, $10,
+        cast($11 as timestamptz), $12, $13, $14,
+        false, 'valid', $15::jsonb, $16::jsonb, now()
+      )
+      on conflict (symbol, interval, price_date, provider_key) do update set
+        open = excluded.open,
+        high = excluded.high,
+        low = excluded.low,
+        close = excluded.close,
+        adjusted_close = excluded.adjusted_close,
+        volume = excluded.volume,
+        provider_price_timestamp = excluded.provider_price_timestamp,
+        source_hash = excluded.source_hash,
+        source_revision = excluded.source_revision,
+        is_adjusted = excluded.is_adjusted,
+        is_suspect = false,
+        quality_state = 'valid',
+        quality_json = excluded.quality_json,
+        source_policy_json = excluded.source_policy_json,
+        ingested_at = now(),
+        updated_at = now()
+      """,
+      [
+        symbol,
+        point.date,
+        provider_key,
+        point.open,
+        point.high,
+        point.low,
+        point.close,
+        point.adjusted_close,
+        point.volume,
+        @us_market_timezone,
+        "#{point.date}T00:00:00Z",
+        source_hash,
+        String.slice(source_hash, 7, 16),
+        not is_nil(point.adjusted_close),
+        Jason.encode!(%{elixir_component: "market_history_refresh"}),
+        policy_json
+      ]
+    )
+
+    true
+  rescue
+    _ -> false
+  end
+
+  defp source_policy(provider_key) do
+    public_allowed =
+      Settings.get(:market_data_public_display_allowlist, "")
+      |> to_string()
+      |> String.split(",", trim: true)
+      |> Enum.map(&String.trim/1)
+      |> Enum.member?(provider_key)
+
+    %{
+      "provider_key" => provider_key,
+      "endpoint_key" => "daily_prices",
+      "normalized_storage_allowed" => true,
+      "raw_public_allowed" => public_allowed,
+      "raw_retention_days" => 0,
+      "copyright_mode" => "provider_structured_daily_bars",
+      "elixir_component" => "market_history_refresh"
+    }
+  end
+
+  defp first_decimal(row, fields) do
+    fields
+    |> Enum.find_value(&decimal_or_nil(row[&1]))
+  end
+
+  defp decimal_or_nil(nil), do: nil
+  defp decimal_or_nil(%Decimal{} = decimal), do: Decimal.to_float(decimal)
+  defp decimal_or_nil(value) when is_integer(value), do: value / 1
+  defp decimal_or_nil(value) when is_float(value), do: value
+
+  defp decimal_or_nil(value) do
+    case Float.parse(to_string(value)) do
+      {number, _} -> number
+      _ -> nil
+    end
+  end
+
+  defp market_timeout_ms do
+    Settings.get(
+      :market_data_fetch_timeout_seconds,
+      Settings.get(:source_fetch_timeout_seconds, 20)
+    )
+    |> normalize_int(20)
+    |> max(1)
+    |> Kernel.*(1000)
+  end
+
+  defp normalize_int(value, _default) when is_integer(value), do: value
+
+  defp normalize_int(value, default) do
+    case Integer.parse(to_string(value || default)) do
+      {integer, ""} -> integer
+      _ -> default
+    end
+  end
 
   def cache_headers(%{status: "ok"} = payload) do
     digest =

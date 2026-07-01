@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T08:52:42Z",
-  "stale_after": "2026-06-30T20:52:42Z",
-  "hard_expires_at": "2026-07-07T08:52:42Z",
+  "generated_at": "2026-06-30T13:19:11Z",
+  "stale_after": "2026-07-01T01:19:11Z",
+  "hard_expires_at": "2026-07-07T13:19:11Z",
   "object_type": "fund_portfolio",
   "object_key": "situational-awareness",
-  "content_hash": "sha256:656bf4f34b93ef990fdf8b5bfcda4d479f55c8537f89b6f78df9b1105954f066",
+  "content_hash": "sha256:8c8cacde38eaf745396e378ee132653b87be1754f35ecefab6d95a2d367ab565",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -116,7 +116,7 @@
     "manager_name": "Leopold Aschenbrenner",
     "fund_name": "Situational Awareness LP",
     "cik": "0002045724",
-    "generated_label": "2026-06-30T08:52:42Z",
+    "generated_label": "2026-06-30T13:19:11Z",
     "source_url": "https://www.sec.gov/edgar/browse/?CIK=0002045724",
     "filing": {
       "source": "SEC_EDGAR_13F",
@@ -128,14 +128,29 @@
       "information_table_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml"
     },
     "summary_metrics": {
-      "total_reported_value_usd": 13676657577,
-      "long_equity_value_usd": 3855771552,
+      "total_reported_value_usd": 17337216951,
+      "long_equity_value_usd": 7516330926,
       "option_notional_value_usd": 9820886025,
-      "holding_count": 42,
-      "equity_holding_count": 26,
+      "holding_count": 43,
+      "equity_holding_count": 27,
       "option_holding_count": 16
     },
     "holdings": [
+      {
+        "id": "ebb208fb82afc214",
+        "symbol": "NBIS",
+        "issuer_name": "Nebius Group N.V.",
+        "title_of_class": "Class A Ordinary Shares · event 05/19/2026",
+        "cusip": "N97284108",
+        "value_usd": 3240887169,
+        "shares": 12410060,
+        "share_type": "SH",
+        "put_call": null,
+        "holding_kind": "stock",
+        "portfolio_weight": 0.186932,
+        "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000093583626000303/primary_doc.xml",
+        "source_lineage": "SEC EDGAR SCHEDULE 13G beneficial ownership XML; value estimated from delayed quote"
+      },
       {
         "id": "dd28bcd35d92af52",
         "symbol": "SMH",
@@ -147,7 +162,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.149358,
+        "portfolio_weight": 0.117823,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -162,7 +177,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.114667,
+        "portfolio_weight": 0.090456,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -177,7 +192,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.078446,
+        "portfolio_weight": 0.061883,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -192,7 +207,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.073574,
+        "portfolio_weight": 0.05804,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -207,7 +222,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.070862,
+        "portfolio_weight": 0.055901,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -222,7 +237,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.064249,
+        "portfolio_weight": 0.050683,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -237,7 +252,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.052963,
+        "portfolio_weight": 0.041781,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -252,7 +267,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.042678,
+        "portfolio_weight": 0.033667,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -267,7 +282,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.040659,
+        "portfolio_weight": 0.032074,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -282,7 +297,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.039126,
+        "portfolio_weight": 0.030865,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -297,9 +312,24 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.036129,
+        "portfolio_weight": 0.028501,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
+      },
+      {
+        "id": "895eedb48aed6d2f",
+        "symbol": "SHAZ",
+        "issuer_name": "SharonAI Holdings Inc.",
+        "title_of_class": "Class A Ordinary Common Stock · event 06/22/2026",
+        "cusip": "778920306",
+        "value_usd": 437767740,
+        "shares": 5404540,
+        "share_type": "SH",
+        "put_call": null,
+        "holding_kind": "stock",
+        "portfolio_weight": 0.02525,
+        "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000093583626000334/primary_doc.xml",
+        "source_lineage": "SEC EDGAR SCHEDULE 13G beneficial ownership XML; value estimated from delayed quote"
       },
       {
         "id": "64c6800b39e52ec2",
@@ -312,7 +342,7 @@
         "share_type": "SH",
         "put_call": "Call",
         "holding_kind": "call",
-        "portfolio_weight": 0.030877,
+        "portfolio_weight": 0.024358,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -327,7 +357,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.029323,
+        "portfolio_weight": 0.023132,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -342,7 +372,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.028449,
+        "portfolio_weight": 0.022442,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -357,7 +387,7 @@
         "share_type": "SH",
         "put_call": "Call",
         "holding_kind": "call",
-        "portfolio_weight": 0.028425,
+        "portfolio_weight": 0.022424,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -372,7 +402,7 @@
         "share_type": "SH",
         "put_call": "Call",
         "holding_kind": "call",
-        "portfolio_weight": 0.025945,
+        "portfolio_weight": 0.020467,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -387,7 +417,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.023396,
+        "portfolio_weight": 0.018456,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -402,7 +432,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.011633,
+        "portfolio_weight": 0.009177,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -417,7 +447,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.010395,
+        "portfolio_weight": 0.0082,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -432,7 +462,7 @@
         "share_type": "SH",
         "put_call": "Call",
         "holding_kind": "call",
-        "portfolio_weight": 0.010278,
+        "portfolio_weight": 0.008108,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -447,7 +477,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.007639,
+        "portfolio_weight": 0.006026,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -462,7 +492,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.004568,
+        "portfolio_weight": 0.003604,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -477,7 +507,7 @@
         "share_type": "SH",
         "put_call": "Call",
         "holding_kind": "call",
-        "portfolio_weight": 0.004047,
+        "portfolio_weight": 0.003192,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -492,7 +522,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.00321,
+        "portfolio_weight": 0.002532,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -507,7 +537,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.002834,
+        "portfolio_weight": 0.002236,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -522,7 +552,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.002175,
+        "portfolio_weight": 0.001716,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -537,7 +567,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.001924,
+        "portfolio_weight": 0.001518,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -552,7 +582,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.001537,
+        "portfolio_weight": 0.001212,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -567,7 +597,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.001531,
+        "portfolio_weight": 0.001207,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -582,7 +612,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.001475,
+        "portfolio_weight": 0.001163,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -597,22 +627,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.001454,
-        "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
-        "source_lineage": "SEC EDGAR 13F information table XML"
-      },
-      {
-        "id": "9d24c7b922d151b1",
-        "symbol": null,
-        "issuer_name": "SHARONAI HOLDINGS INC",
-        "title_of_class": "COM CL A  ADDED",
-        "cusip": "778920306",
-        "value_usd": 18095535,
-        "shares": 796108,
-        "share_type": "SH",
-        "put_call": null,
-        "holding_kind": "stock",
-        "portfolio_weight": 0.001323,
+        "portfolio_weight": 0.001147,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -627,7 +642,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.000959,
+        "portfolio_weight": 0.000757,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -642,7 +657,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.000755,
+        "portfolio_weight": 0.000596,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -657,7 +672,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.000653,
+        "portfolio_weight": 0.000515,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -672,7 +687,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.000554,
+        "portfolio_weight": 0.000437,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -687,7 +702,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.000494,
+        "portfolio_weight": 0.00039,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -702,7 +717,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.000471,
+        "portfolio_weight": 0.000372,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -717,7 +732,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.000447,
+        "portfolio_weight": 0.000353,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -732,7 +747,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.000429,
+        "portfolio_weight": 0.000338,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -747,7 +762,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 5.3e-05,
+        "portfolio_weight": 4.1e-05,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -762,12 +777,27 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 3.6e-05,
+        "portfolio_weight": 2.9e-05,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       }
     ],
     "top_equity_holdings": [
+      {
+        "id": "ebb208fb82afc214",
+        "symbol": "NBIS",
+        "issuer_name": "Nebius Group N.V.",
+        "title_of_class": "Class A Ordinary Shares · event 05/19/2026",
+        "cusip": "N97284108",
+        "value_usd": 3240887169,
+        "shares": 12410060,
+        "share_type": "SH",
+        "put_call": null,
+        "holding_kind": "stock",
+        "portfolio_weight": 0.186932,
+        "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000093583626000303/primary_doc.xml",
+        "source_lineage": "SEC EDGAR SCHEDULE 13G beneficial ownership XML; value estimated from delayed quote"
+      },
       {
         "id": "02be65a8aee307ca",
         "symbol": "BE",
@@ -779,7 +809,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.064249,
+        "portfolio_weight": 0.050683,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -794,7 +824,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.052963,
+        "portfolio_weight": 0.041781,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -809,9 +839,24 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.040659,
+        "portfolio_weight": 0.032074,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
+      },
+      {
+        "id": "895eedb48aed6d2f",
+        "symbol": "SHAZ",
+        "issuer_name": "SharonAI Holdings Inc.",
+        "title_of_class": "Class A Ordinary Common Stock · event 06/22/2026",
+        "cusip": "778920306",
+        "value_usd": 437767740,
+        "shares": 5404540,
+        "share_type": "SH",
+        "put_call": null,
+        "holding_kind": "stock",
+        "portfolio_weight": 0.02525,
+        "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000093583626000334/primary_doc.xml",
+        "source_lineage": "SEC EDGAR SCHEDULE 13G beneficial ownership XML; value estimated from delayed quote"
       },
       {
         "id": "c9b79e36fead5ee7",
@@ -824,7 +869,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.029323,
+        "portfolio_weight": 0.023132,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -839,7 +884,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.028449,
+        "portfolio_weight": 0.022442,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -854,7 +899,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.023396,
+        "portfolio_weight": 0.018456,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -869,7 +914,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.010395,
+        "portfolio_weight": 0.0082,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -884,7 +929,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.007639,
+        "portfolio_weight": 0.006026,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -899,7 +944,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.004568,
+        "portfolio_weight": 0.003604,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -914,7 +959,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.00321,
+        "portfolio_weight": 0.002532,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -929,7 +974,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.002834,
+        "portfolio_weight": 0.002236,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -944,7 +989,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.002175,
+        "portfolio_weight": 0.001716,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -959,7 +1004,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.001924,
+        "portfolio_weight": 0.001518,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -974,7 +1019,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.001531,
+        "portfolio_weight": 0.001207,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -989,7 +1034,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.001475,
+        "portfolio_weight": 0.001163,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1004,22 +1049,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.001454,
-        "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
-        "source_lineage": "SEC EDGAR 13F information table XML"
-      },
-      {
-        "id": "9d24c7b922d151b1",
-        "symbol": null,
-        "issuer_name": "SHARONAI HOLDINGS INC",
-        "title_of_class": "COM CL A  ADDED",
-        "cusip": "778920306",
-        "value_usd": 18095535,
-        "shares": 796108,
-        "share_type": "SH",
-        "put_call": null,
-        "holding_kind": "stock",
-        "portfolio_weight": 0.001323,
+        "portfolio_weight": 0.001147,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1034,7 +1064,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.000959,
+        "portfolio_weight": 0.000757,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1049,7 +1079,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.000755,
+        "portfolio_weight": 0.000596,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1064,7 +1094,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.000653,
+        "portfolio_weight": 0.000515,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1079,7 +1109,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.000554,
+        "portfolio_weight": 0.000437,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1094,7 +1124,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.000471,
+        "portfolio_weight": 0.000372,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1109,7 +1139,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.000447,
+        "portfolio_weight": 0.000353,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1124,22 +1154,7 @@
         "share_type": "SH",
         "put_call": null,
         "holding_kind": "stock",
-        "portfolio_weight": 0.000429,
-        "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
-        "source_lineage": "SEC EDGAR 13F information table XML"
-      },
-      {
-        "id": "8b547df7507b1a6f",
-        "symbol": "GLW",
-        "issuer_name": "CORNING INC",
-        "title_of_class": "COM",
-        "cusip": "219350105",
-        "value_usd": 718330,
-        "shares": 5283,
-        "share_type": "SH",
-        "put_call": null,
-        "holding_kind": "stock",
-        "portfolio_weight": 5.3e-05,
+        "portfolio_weight": 0.000338,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       }
@@ -1156,7 +1171,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.149358,
+        "portfolio_weight": 0.117823,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1171,7 +1186,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.114667,
+        "portfolio_weight": 0.090456,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1186,7 +1201,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.078446,
+        "portfolio_weight": 0.061883,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1201,7 +1216,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.073574,
+        "portfolio_weight": 0.05804,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1216,7 +1231,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.070862,
+        "portfolio_weight": 0.055901,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1231,7 +1246,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.042678,
+        "portfolio_weight": 0.033667,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1246,7 +1261,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.039126,
+        "portfolio_weight": 0.030865,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1261,7 +1276,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.036129,
+        "portfolio_weight": 0.028501,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1276,7 +1291,7 @@
         "share_type": "SH",
         "put_call": "Call",
         "holding_kind": "call",
-        "portfolio_weight": 0.030877,
+        "portfolio_weight": 0.024358,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1291,7 +1306,7 @@
         "share_type": "SH",
         "put_call": "Call",
         "holding_kind": "call",
-        "portfolio_weight": 0.028425,
+        "portfolio_weight": 0.022424,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1306,7 +1321,7 @@
         "share_type": "SH",
         "put_call": "Call",
         "holding_kind": "call",
-        "portfolio_weight": 0.025945,
+        "portfolio_weight": 0.020467,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1321,7 +1336,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.011633,
+        "portfolio_weight": 0.009177,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1336,7 +1351,7 @@
         "share_type": "SH",
         "put_call": "Call",
         "holding_kind": "call",
-        "portfolio_weight": 0.010278,
+        "portfolio_weight": 0.008108,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1351,7 +1366,7 @@
         "share_type": "SH",
         "put_call": "Call",
         "holding_kind": "call",
-        "portfolio_weight": 0.004047,
+        "portfolio_weight": 0.003192,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1366,7 +1381,7 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.001537,
+        "portfolio_weight": 0.001212,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       },
@@ -1381,19 +1396,20 @@
         "share_type": "SH",
         "put_call": "Put",
         "holding_kind": "put",
-        "portfolio_weight": 0.000494,
+        "portfolio_weight": 0.00039,
         "source_url": "https://www.sec.gov/Archives/edgar/data/2045724/000204572426000008/salp13fq1xml.xml",
         "source_lineage": "SEC EDGAR 13F information table XML"
       }
     ],
     "caveats": [
       "SEC 13F is quarterly and delayed; it is not a real-time portfolio feed.",
+      "Recent Schedule 13G beneficial-ownership rows are merged when they are newer than the 13F row and can be valued from delayed public quotes.",
       "13F excludes cash, many shorts, most non-U.S. holdings, and positions below reporting scope.",
       "Options are shown as disclosed put/call rows and should not be treated as simple long equity exposure.",
       "Ticker mapping comes from a maintained CUSIP override file; unmapped rows remain visible by issuer and CUSIP."
     ],
     "freshness": "fresh",
-    "source_strength": "SEC EDGAR 13F XML"
+    "source_strength": "SEC EDGAR 13F + Schedule 13G XML"
   },
   "warnings": [
     {

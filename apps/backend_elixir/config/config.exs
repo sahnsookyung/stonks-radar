@@ -9,6 +9,7 @@ config :stonks_backend, StonksBackend.Repo,
   migration_foreign_key: [type: :binary_id]
 
 config :stonks_backend, StonksBackendWeb.Endpoint,
+  adapter: Bandit.PhoenixAdapter,
   url: [host: "localhost"],
   render_errors: [
     formats: [json: StonksBackendWeb.ErrorJSON],

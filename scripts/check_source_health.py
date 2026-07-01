@@ -92,6 +92,16 @@ def _html_contains(*needles: str) -> Callable[[httpx.Response], tuple[bool, str 
     return expect
 
 
+def _text_contains(*needles: str) -> Callable[[httpx.Response], tuple[bool, str | None]]:
+    def expect(response: httpx.Response) -> tuple[bool, str | None]:
+        if response.status_code != 200:
+            return False, f"unexpected status {response.status_code}"
+        missing = [needle for needle in needles if needle not in response.text]
+        return not missing, None if not missing else f"missing text marker: {missing[0]}"
+
+    return expect
+
+
 def _krx_status(response: httpx.Response) -> tuple[bool, str | None]:
     if response.status_code == 200:
         return True, None
@@ -222,6 +232,31 @@ SOURCES: dict[str, SourceProbe] = {
             "length": "1",
         },
         expect=_json_has("response"),
+    ),
+    "gdelt": SourceProbe(
+        "https://api.gdeltproject.org/api/v2/doc/doc",
+        params={
+            "query": "(oil OR semiconductor OR sanctions)",
+            "mode": "ArtList",
+            "format": "json",
+            "maxrecords": "1",
+            "sort": "DateDesc",
+        },
+        api_key_param=None,
+        expect=_json_has("articles"),
+        timeout_seconds=20.0,
+    ),
+    "gdelt_events": SourceProbe(
+        "http://data.gdeltproject.org/gdeltv2/lastupdate.txt",
+        api_key_param=None,
+        expect=_text_contains(".export.CSV.zip"),
+        timeout_seconds=20.0,
+    ),
+    "gdelt_gkg": SourceProbe(
+        "http://data.gdeltproject.org/gdeltv2/lastupdate.txt",
+        api_key_param=None,
+        expect=_text_contains(".gkg.csv.zip"),
+        timeout_seconds=20.0,
     ),
     "krx": SourceProbe(
         "https://data-dbg.krx.co.kr/svc/apis/idx/krx_dd_trd.json",

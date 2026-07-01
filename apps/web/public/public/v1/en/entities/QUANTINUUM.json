@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T08:52:42Z",
-  "stale_after": "2026-06-30T20:52:42Z",
-  "hard_expires_at": "2026-07-07T08:52:42Z",
+  "generated_at": "2026-06-30T13:19:11Z",
+  "stale_after": "2026-07-01T01:19:11Z",
+  "hard_expires_at": "2026-07-07T13:19:11Z",
   "object_type": "reference_entity",
   "object_key": "QUANTINUUM",
-  "content_hash": "sha256:ec805059a4bcba2c726792b2a64ab14ada7cf66e7ca8dac8f8079f115e20aa4e",
+  "content_hash": "sha256:a50e021ab069d08265eb4fb215289e7df147f188d0f0671f4aa5720e5b2cc9c0",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -145,7 +145,7 @@
         "entity_id": "IONQ",
         "symbol": "IONQ",
         "display_symbol": "IONQ",
-        "name": "IONQ",
+        "name": "IonQ",
         "route_kind": "ticker",
         "route_key": "IONQ",
         "sector_keys": [
@@ -163,7 +163,7 @@
         "entity_id": "RGTI",
         "symbol": "RGTI",
         "display_symbol": "RGTI",
-        "name": "RGTI",
+        "name": "Rigetti Computing",
         "route_kind": "ticker",
         "route_key": "RGTI",
         "sector_keys": [
@@ -181,7 +181,7 @@
         "entity_id": "QBTS",
         "symbol": "QBTS",
         "display_symbol": "QBTS",
-        "name": "QBTS",
+        "name": "D-Wave Quantum",
         "route_kind": "ticker",
         "route_key": "QBTS",
         "sector_keys": [

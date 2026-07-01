@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T08:52:42Z",
-  "stale_after": "2026-06-30T20:52:42Z",
-  "hard_expires_at": "2026-07-07T08:52:42Z",
+  "generated_at": "2026-06-30T13:19:11Z",
+  "stale_after": "2026-07-01T01:19:11Z",
+  "hard_expires_at": "2026-07-07T13:19:11Z",
   "object_type": "news_topic",
   "object_key": "news_topic_public_health",
-  "content_hash": "sha256:aea42a940b02fe33336ab361cd16d08e902a5b786b22e877ad82dcaf7adfae9b",
+  "content_hash": "sha256:e9914ac0b3b4a7ef99a8fcda696fa6710f103c6dadfdca1d21c41c29eba0ec39",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,17 +113,17 @@
   "data": {
     "key": "public_health",
     "label": "Public health",
-    "generated_label": "2026-06-30T08:52:42Z",
-    "topic_brief": "Public health includes 1 approved event cluster(s) built from source-linked public metadata.",
+    "generated_label": "2026-06-30T13:19:11Z",
+    "topic_brief": "Public health includes 1 reviewed source-linked event cluster(s) built from public metadata.",
     "events": [
       {
         "id": "public_health_alert_seed",
         "title": "Public-health alert monitoring covers Brazil, US, Europe, and Asia travel-sensitive markets",
         "summary": "Official public-health feeds are classified separately from financial news and surfaced only as market-context risk.",
         "event_type": "public_health_alert",
-        "first_seen_at": "2026-06-28T08:52:42Z",
-        "last_seen_at": "2026-06-30T04:52:42Z",
-        "published_at": "2026-06-30T04:52:42Z",
+        "first_seen_at": "2026-06-28T13:19:11Z",
+        "last_seen_at": "2026-06-30T09:19:11Z",
+        "published_at": "2026-06-30T09:19:11Z",
         "freshness": "watch",
         "severity": "medium",
         "confidence": 0.74,
@@ -183,7 +183,7 @@
             "source_key": "who",
             "policy_version": 1,
             "title": "Disease Outbreak News",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -193,7 +193,7 @@
             "source_key": "cdc",
             "policy_version": 1,
             "title": "Travel health notices",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": false
           }

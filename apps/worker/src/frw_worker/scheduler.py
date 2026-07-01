@@ -164,7 +164,10 @@ def source_max_documents(source: SourceProfile, settings: Settings) -> int:
     }:
         cap = min(cap, 10)
     elif source.rate_limit_provider_key == "gdelt":
-        cap = min(cap, settings.gdelt_doc_max_records)
+        if source.fetch_kind in {"gdelt_event_file", "gdelt_gkg_file"}:
+            cap = min(cap, settings.gdelt_bulk_max_documents)
+        else:
+            cap = min(cap, settings.gdelt_doc_max_records)
     return max(1, cap)
 
 

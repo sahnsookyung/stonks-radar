@@ -163,8 +163,21 @@ defmodule StonksBackendWeb.AdminController do
 
   def ingest_url(conn, params),
     do:
-      with_csrf(conn, @editor_roles, fn _ ->
-        conn |> put_status(400) |> json(%{detail: elem(Sources.ingest_url(params), 1)})
+      with_csrf(conn, @editor_roles, fn user ->
+        case Sources.ingest_url(params) do
+          {:ok, document_id} ->
+            Audit.write("source_document.ingest_url",
+              user: user,
+              target_table: "source_document",
+              target_pk: document_id,
+              after: %{url: params["url"], source_key: params["source_key"]}
+            )
+
+            json(conn, %{id: document_id})
+
+          {:error, detail} ->
+            conn |> put_status(400) |> json(%{detail: detail})
+        end
       end)
 
   def summarize_url(conn, _params),
@@ -323,11 +336,18 @@ defmodule StonksBackendWeb.AdminController do
     end)
   end
 
-  def snapshots_build_now_local(conn, _params),
+  def snapshots_build_now_local(conn, params),
     do:
       with_csrf(conn, @editor_roles, fn _ ->
-        {:ok, result} = Snapshots.build_candidate()
-        json(conn, result)
+        case Snapshots.build_candidate(params) do
+          {:ok, result} ->
+            json(conn, result)
+
+          {:error, reason} ->
+            conn
+            |> put_status(501)
+            |> json(%{detail: reason})
+        end
       end)
 
   def snapshots_build_seed_local(conn, _params),

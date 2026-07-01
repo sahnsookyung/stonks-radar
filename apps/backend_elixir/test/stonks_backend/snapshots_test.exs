@@ -14,7 +14,8 @@ defmodule StonksBackend.SnapshotsTest do
       :settings,
       Keyword.merge(previous_settings,
         published_snapshot_dir: published_root,
-        snapshot_artifact_dir: artifact_root
+        snapshot_artifact_dir: artifact_root,
+        snapshot_db_recording_enabled: false
       )
     )
 
@@ -36,24 +37,74 @@ defmodule StonksBackend.SnapshotsTest do
     assert Snapshots.candidate_root(7) == Path.join([artifact_root, "candidates", "v7", "public"])
   end
 
+  test "default candidate build refreshes the public snapshot template tree", %{
+    published_root: root,
+    artifact_root: artifact_root
+  } do
+    write_manifest!(root, %{
+      "corrections" => %{"en" => "public/v1/en/corrections.json"}
+    })
+
+    write_snapshot!(root, "v1/en/corrections.json", %{
+      "object_type" => "correction_log",
+      "object_key" => "corrections",
+      "data" => %{"entries" => []}
+    })
+
+    assert {:ok, result} = Snapshots.build_candidate()
+    assert result.snapshot_version == 1
+    assert result.destination == Path.join([artifact_root, "candidates", "v1", "public"])
+
+    assert Path.join(result.destination, "latest/manifest.json") |> File.exists?()
+    assert Path.join(result.destination, "v1/en/corrections.json") |> File.exists?()
+
+    manifest =
+      result.destination
+      |> Path.join("latest/manifest.json")
+      |> File.read!()
+      |> Jason.decode!()
+
+    assert manifest["objects"]["corrections"]["en"] == "public/v1/en/corrections.json"
+
+    snapshot =
+      result.destination
+      |> Path.join("v1/en/corrections.json")
+      |> File.read!()
+      |> Jason.decode!()
+
+    assert snapshot["snapshot_version"] == 1
+    assert snapshot["content_hash"] =~ "sha256:"
+    assert snapshot["stale_after"] != snapshot["generated_at"]
+    assert :ok = Snapshots.validate_snapshot_tree(result.destination)
+  end
+
   test "snapshot tree validation accepts envelope files and rejects private fields", %{
     published_root: root
   } do
     write_manifest!(root)
-    write_snapshot!(root, "v1/en/home.json", %{"data" => %{"headline" => "ok"}})
+    write_snapshot!(root, "v1/en/home.json", %{"data" => %{"entries" => []}})
 
     assert :ok = Snapshots.validate_snapshot_tree(root)
 
-    write_snapshot!(root, "v1/en/home.json", %{"data" => %{"secret" => "nope"}})
+    write_snapshot!(root, "v1/en/home.json", %{"data" => %{"entries" => [], "secret" => "nope"}})
 
     assert {:error, message} = Snapshots.validate_snapshot_tree(root)
     assert message =~ "prohibited public field secret"
   end
 
+  test "snapshot tree validation uses shared Draft 2020-12 schemas", %{published_root: root} do
+    write_manifest!(root)
+    write_snapshot!(root, "v1/en/home.json", %{"data" => %{}})
+
+    assert {:error, message} = Snapshots.validate_snapshot_tree(root)
+    assert message =~ "failed snapshot schema validation"
+    assert message =~ "entries"
+  end
+
   test "snapshot tree validation requires manifest references to resolve inside the tree", %{
     published_root: root
   } do
-    write_snapshot!(root, "v1/en/home.json", %{"data" => %{"headline" => "ok"}})
+    write_snapshot!(root, "v1/en/home.json", %{"data" => %{"entries" => []}})
 
     assert {:error, message} = Snapshots.validate_snapshot_tree(root)
     assert message =~ "missing latest/manifest.json"
@@ -65,7 +116,7 @@ defmodule StonksBackend.SnapshotsTest do
     assert {:error, message} = Snapshots.validate_snapshot_tree(root)
     assert message =~ "references missing snapshot public/v1/en/missing.json"
 
-    write_snapshot!(root, "v1/en/home.json", %{"locale" => "ko"})
+    write_snapshot!(root, "v1/en/home.json", %{"locale" => "ko", "data" => %{"entries" => []}})
     write_manifest!(root)
 
     assert {:error, message} = Snapshots.validate_snapshot_tree(root)
@@ -86,7 +137,7 @@ defmodule StonksBackend.SnapshotsTest do
 
     try do
       write_manifest!(source)
-      write_snapshot!(source, "v1/en/home.json", %{"data" => %{"headline" => "ok"}})
+      write_snapshot!(source, "v1/en/home.json", %{"data" => %{"entries" => []}})
 
       assert {:ok, result} = Snapshots.refresh_published_volume(source, destination)
 
@@ -110,7 +161,11 @@ defmodule StonksBackend.SnapshotsTest do
 
     try do
       write_manifest!(source)
-      write_snapshot!(source, "v1/en/home.json", %{"data" => %{"secret" => "nope"}})
+
+      write_snapshot!(source, "v1/en/home.json", %{
+        "data" => %{"entries" => [], "secret" => "nope"}
+      })
+
       write_json!(destination, "v1/en/home.json", %{"data" => %{"headline" => "old"}})
 
       assert {:error, message} = Snapshots.refresh_published_volume(source, destination)
@@ -133,7 +188,7 @@ defmodule StonksBackend.SnapshotsTest do
 
     try do
       write_manifest!(source)
-      write_snapshot!(source, "v1/en/home.json", %{"data" => %{"headline" => "ok"}})
+      write_snapshot!(source, "v1/en/home.json", %{"data" => %{"entries" => []}})
 
       File.mkdir_p!(Path.join(destination, "latest/.manifest.json.tmp"))
       File.mkdir_p!(Path.join(destination, "v1/en/.home.json.tmp"))
@@ -152,7 +207,7 @@ defmodule StonksBackend.SnapshotsTest do
   } do
     missing_manifest_source = Path.join(artifact_root, "missing-manifest")
 
-    write_snapshot!(missing_manifest_source, "v1/en/home.json", %{"data" => %{"headline" => "ok"}})
+    write_snapshot!(missing_manifest_source, "v1/en/home.json", %{"data" => %{"entries" => []}})
 
     assert {:error, message} =
              Snapshots.refresh_published_volume(missing_manifest_source, destination)
@@ -161,7 +216,7 @@ defmodule StonksBackend.SnapshotsTest do
 
     limited_source = Path.join(artifact_root, "limited")
     write_manifest!(limited_source)
-    write_snapshot!(limited_source, "v1/en/home.json", %{"data" => %{"headline" => "ok"}})
+    write_snapshot!(limited_source, "v1/en/home.json", %{"data" => %{"entries" => []}})
 
     previous_settings = Application.get_env(:stonks_backend, :settings, [])
 
@@ -189,7 +244,7 @@ defmodule StonksBackend.SnapshotsTest do
 
     try do
       write_manifest!(source)
-      write_snapshot!(source, "v1/en/home.json", %{"data" => %{"headline" => "ok"}})
+      write_snapshot!(source, "v1/en/home.json", %{"data" => %{"entries" => []}})
       File.write!(outside, "do not publish")
       :ok = File.ln_s(outside, Path.join(source, "v1/en/leak.txt"))
 
@@ -209,8 +264,8 @@ defmodule StonksBackend.SnapshotsTest do
 
     try do
       write_manifest!(source)
-      write_snapshot!(source, "v1/en/home.json", %{"data" => %{"headline" => "new"}})
-      write_snapshot!(source, "v1/en/status.json", %{"data" => %{"headline" => "status"}})
+      write_snapshot!(source, "v1/en/home.json", %{"data" => %{"entries" => []}})
+      write_snapshot!(source, "v1/en/status.json", %{"data" => %{"entries" => []}})
 
       write_json!(destination, "v1/en/home.json", %{"data" => %{"headline" => "old"}})
       File.mkdir_p!(Path.join(destination, "v1/en/status.json"))
@@ -249,17 +304,17 @@ defmodule StonksBackend.SnapshotsTest do
 
   defp write_snapshot!(root, relative_path, overrides) do
     base = %{
-      "schema_version" => "home_snapshot.v1",
+      "schema_version" => "1.0",
       "snapshot_version" => 1,
       "locale" => "en",
       "generated_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
       "stale_after" => DateTime.utc_now() |> DateTime.add(3600, :second) |> DateTime.to_iso8601(),
       "hard_expires_at" =>
         DateTime.utc_now() |> DateTime.add(7200, :second) |> DateTime.to_iso8601(),
-      "object_type" => "home",
-      "object_key" => "home",
+      "object_type" => "correction_log",
+      "object_key" => "corrections",
       "content_hash" => "sha256:test",
-      "source_policy_versions" => [%{"source" => "seed", "version" => 1}],
+      "source_policy_versions" => [%{"source_key" => "seed", "policy_version" => 1}],
       "data" => %{},
       "warnings" => [],
       "corrections" => []

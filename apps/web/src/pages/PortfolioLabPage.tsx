@@ -21,7 +21,8 @@ import {
   Target,
   Trash2,
   Upload,
-  WalletCards
+  WalletCards,
+  Wrench
 } from "lucide-react";
 import {
   type Dispatch,
@@ -83,6 +84,10 @@ type PortfolioSection =
   | "settings-data-sources"
   | "settings-security"
   | "glossary";
+
+type PortfolioTaskGroup = "overview" | "build" | "analyze" | "plan";
+
+type PortfolioTaskNavItem = readonly [PortfolioSection, string, string];
 
 const sectionLabels: Record<PortfolioSection, string> = {
   onboarding: "Onboarding",
@@ -655,14 +660,13 @@ export function PortfolioLabPage() { // NOSONAR - route-level state orchestratio
 
   return (
     <div className="grid min-w-0 gap-6">
-      <PortfolioHeader portfolio={portfolio} section={section} />
-      <PortfolioNav active={section} portfolioId={portfolio.portfolioId} />
-      <ComplianceBanner />
-      <PortfolioCoverageBanner
+      <PortfolioHeader
+        portfolio={portfolio}
+        section={section}
         analysis={analysis}
         marketHistoryCoverage={marketHistoryCoverage}
-        adminAuthState={adminAuthState}
       />
+      <PortfolioNav active={section} portfolioId={portfolio.portfolioId} />
 
       {section === "onboarding" ? (
         <OnboardingSection csvText={csvText} setCsvText={setCsvText} csvErrors={csvErrors} importCsv={importCsv} />
@@ -821,6 +825,12 @@ export function PortfolioLabPage() { // NOSONAR - route-level state orchestratio
       {section.startsWith("settings") ? <SettingsSection section={section} assumptions={assumptions} setAssumptions={setAssumptions} /> : null}
       {section === "glossary" ? <GlossarySection /> : null}
 
+      <ComplianceBanner />
+      <PortfolioCoverageBanner
+        analysis={analysis}
+        marketHistoryCoverage={marketHistoryCoverage}
+        adminAuthState={adminAuthState}
+      />
       <PortfolioCoverageLedger analysis={analysis} />
       <DataQualityPanel issues={analysis.dataQualityIssues} />
     </div>
@@ -1047,28 +1057,66 @@ function maxIsoDate(left: string | null | undefined, right: string | null | unde
   return right > left ? right : left;
 }
 
-function PortfolioHeader({ portfolio, section }: Readonly<{ portfolio: Portfolio; section: PortfolioSection }>) {
+function coverageShortLabel(analysis: ReturnType<typeof analyzePortfolio>, marketHistoryCoverage: MarketHistoryCoverageState) {
+  if (marketHistoryCoverage.status === "ready" && analysis.coverageQuality === "HIGH") return "High coverage";
+  if (marketHistoryCoverage.status === "loading") return "Checking data";
+  if (["limited", "error"].includes(marketHistoryCoverage.status)) return "Limited data";
+  return `${analysis.coverageQuality.toLowerCase()} coverage`;
+}
+
+function PortfolioHeader({
+  portfolio,
+  section,
+  analysis,
+  marketHistoryCoverage
+}: Readonly<{
+  portfolio: Portfolio;
+  section: PortfolioSection;
+  analysis: ReturnType<typeof analyzePortfolio>;
+  marketHistoryCoverage: MarketHistoryCoverageState;
+}>) {
   const locale = useLocale();
+  const coverageLabel = coverageShortLabel(analysis, marketHistoryCoverage);
   return (
-    <section className="panel grid gap-5 p-4 md:grid-cols-[1.5fr_1fr] md:p-5">
+    <section className="panel grid gap-4 p-4 md:p-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
       <div className="min-w-0">
-        <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-accent">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-accent">
           <Calculator className="h-4 w-4" />
-          {locale === "ko" ? "포트폴리오 빌더" : "Portfolio Builder"}
+          <span>{locale === "ko" ? "포트폴리오 작업공간" : "Portfolio Workspace"}</span>
+          <span className="rounded border border-line bg-panelAlt px-2 py-1 text-muted">analysis only</span>
         </div>
-        <h1 className="safe-text mt-3 text-3xl font-bold leading-tight md:text-5xl">
-          {sectionLabels[section]}
+        <h1 className="safe-text mt-3 text-2xl font-bold leading-tight md:text-4xl">
+          {portfolio.name}
         </h1>
-        <p className="safe-text mt-3 max-w-5xl text-sm leading-6 text-muted md:text-base md:leading-7">
-          {portfolio.name}: an editable, free-data, daily-resolution planning workspace. It tracks assumptions,
-          quality limits, contribution-first rebalancing, tax-lot estimates, and queued heavy work without brokerage execution.
+        <p className="safe-text mt-2 max-w-4xl text-sm leading-6 text-muted">
+          {sectionLabels[section]} view for allocation, goal progress, and source-aware planning. No broker execution or
+          buy/sell instructions.
         </p>
       </div>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <StatusPill label="Mode" value={portfolio.isDemo ? "editable sample" : "private workspace"} />
-        <StatusPill label="Data" value="daily/delayed" />
-        <StatusPill label="Execution" value="no trading" />
-        <StatusPill label="Storage" value={portfolio.isDemo ? "demo browser storage" : "in-memory only"} />
+      <div className="grid gap-3 xl:min-w-[580px]">
+        <div className="grid grid-cols-3 gap-2">
+          <CompactStatus label="Value" value={formatMoney(analysis.portfolioValue)} />
+          <CompactStatus label="Drift" value={formatPercent(analysis.allocationDrift)} tone={analysis.allocationDrift > 0.12 ? "warning" : "normal"} />
+          <CompactStatus label="Data" value={coverageLabel} tone={coverageLabel.includes("Limited") || coverageLabel.includes("low") ? "warning" : "normal"} />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Link
+            className="primary-action"
+            to="/$locale/portfolios/$portfolioId/holdings"
+            params={{ locale, portfolioId: portfolio.portfolioId }}
+          >
+            <Plus className="h-4 w-4" />
+            Add holding
+          </Link>
+          <Link
+            className="secondary-action"
+            to="/$locale/portfolios/$portfolioId/holdings"
+            params={{ locale, portfolioId: portfolio.portfolioId }}
+          >
+            <BriefcaseBusiness className="h-4 w-4" />
+            Edit
+          </Link>
+        </div>
       </div>
     </section>
   );
@@ -1077,57 +1125,111 @@ function PortfolioHeader({ portfolio, section }: Readonly<{ portfolio: Portfolio
 function PortfolioNav({ active, portfolioId }: Readonly<{ active: PortfolioSection; portfolioId: string }>) {
   const locale = useLocale();
   const navigate = useNavigate();
-  const primary = [
-    ["dashboard", "Cockpit", `/${locale}/portfolio`],
-    ["portfolios", "Portfolios", `/${locale}/portfolios`],
-    ["xray", "X-ray", `/${locale}/portfolios/${portfolioId}/xray`],
-    ["atlas", "Exposure", `/${locale}/portfolios/${portfolioId}/atlas`],
-    ["builder", "Build", `/${locale}/portfolios/${portfolioId}/builder`],
-    ["backtest", "Backtest", `/${locale}/portfolios/${portfolioId}/backtest`],
-    ["monte-carlo", "Monte Carlo", `/${locale}/portfolios/${portfolioId}/monte-carlo`],
-    ["rebalance", "Rebalance", `/${locale}/portfolios/${portfolioId}/rebalance`],
-    ["fees", "Fees", `/${locale}/portfolios/${portfolioId}/fees`],
-    ["tax-lots", "Tax lots", `/${locale}/portfolios/${portfolioId}/tax-lots`],
-    ["holdings", "Holdings", `/${locale}/portfolios/${portfolioId}/holdings`],
-    ["transactions", "Transactions", `/${locale}/portfolios/${portfolioId}/transactions`],
-    ["settings-profile", "Settings", `/${locale}/settings/profile`],
-    ["glossary", "Glossary", `/${locale}/portfolio/glossary`]
-  ] as const;
+  const taskGroups: Record<PortfolioTaskGroup, { label: string; summary: string; href: string; items: readonly PortfolioTaskNavItem[] }> = {
+    overview: {
+      label: "Overview",
+      summary: "Status, goal, and next action",
+      href: `/${locale}/portfolio`,
+      items: [
+        ["dashboard", "Cockpit", `/${locale}/portfolio`],
+        ["portfolios", "Portfolios", `/${locale}/portfolios`]
+      ]
+    },
+    build: {
+      label: "Build",
+      summary: "Holdings, cash, and imports",
+      href: `/${locale}/portfolios/${portfolioId}/builder`,
+      items: [
+        ["builder", "Target mix", `/${locale}/portfolios/${portfolioId}/builder`],
+        ["holdings", "Holdings", `/${locale}/portfolios/${portfolioId}/holdings`],
+        ["transactions", "Transactions", `/${locale}/portfolios/${portfolioId}/transactions`],
+        ["onboarding", "Import", `/${locale}/onboarding`]
+      ]
+    },
+    analyze: {
+      label: "Analyze",
+      summary: "Exposure, risk, and simulations",
+      href: `/${locale}/portfolios/${portfolioId}/xray`,
+      items: [
+        ["xray", "X-ray", `/${locale}/portfolios/${portfolioId}/xray`],
+        ["atlas", "Exposure", `/${locale}/portfolios/${portfolioId}/atlas`],
+        ["backtest", "Backtest", `/${locale}/portfolios/${portfolioId}/backtest`],
+        ["monte-carlo", "Monte Carlo", `/${locale}/portfolios/${portfolioId}/monte-carlo`],
+        ["glossary", "Glossary", `/${locale}/portfolio/glossary`]
+      ]
+    },
+    plan: {
+      label: "Plan",
+      summary: "Rebalance, costs, and assumptions",
+      href: `/${locale}/portfolios/${portfolioId}/rebalance`,
+      items: [
+        ["rebalance", "Rebalance", `/${locale}/portfolios/${portfolioId}/rebalance`],
+        ["fees", "Fees", `/${locale}/portfolios/${portfolioId}/fees`],
+        ["tax-lots", "Tax lots", `/${locale}/portfolios/${portfolioId}/tax-lots`],
+        ["settings-profile", "Profile", `/${locale}/settings/profile`],
+        ["settings-assumptions", "Assumptions", `/${locale}/settings/assumptions`],
+        ["settings-data-sources", "Data sources", `/${locale}/settings/data-sources`],
+        ["settings-security", "Security", `/${locale}/settings/security`]
+      ]
+    }
+  };
+  const activeGroup =
+    (Object.entries(taskGroups).find(([, group]) => group.items.some(([key]) => key === active))?.[0] as PortfolioTaskGroup | undefined) ??
+    "overview";
+  const visibleItems = taskGroups[activeGroup].items;
   return (
-    <nav
-      className="scroll-fade-x flex min-w-0 gap-2 overflow-x-auto pb-2"
-      data-allow-horizontal-scroll
-      aria-label="Portfolio workspace sections"
-    >
-      {primary.map(([key, label, href]) => (
-        <a
-          key={key}
-          href={href}
-          onClick={(event) => {
-            event.preventDefault();
-            void navigate({ to: href as never });
-          }}
-          className={`focus-ring inline-flex min-h-11 shrink-0 items-center justify-center rounded-md border px-3 text-sm font-semibold ${
-            active === key
-              ? "border-accent bg-accentSoft text-accent"
-              : "border-line bg-panel text-muted hover:border-accent hover:text-ink"
-          }`}
-        >
-          {label}
-        </a>
-      ))}
+    <nav className="panel grid gap-2 p-2 sm:gap-3 sm:p-3" aria-label="Portfolio workspace sections">
+      <div className="grid grid-cols-4 gap-2">
+        {(Object.entries(taskGroups) as Array<[PortfolioTaskGroup, (typeof taskGroups)[PortfolioTaskGroup]]>).map(([key, group]) => (
+          <a
+            key={key}
+            href={group.href}
+            onClick={(event) => {
+              event.preventDefault();
+              void navigate({ to: group.href as never });
+            }}
+            className={`focus-ring grid min-h-11 gap-1 rounded-md border px-2 py-2 text-left sm:min-h-16 sm:px-3 ${
+              activeGroup === key
+                ? "border-accent bg-accentSoft text-accent"
+                : "border-line bg-panelAlt text-muted hover:border-accent hover:text-ink"
+            }`}
+          >
+            <span className="text-sm font-bold">{group.label}</span>
+            <span className="safe-text hidden text-xs leading-5 md:block">{group.summary}</span>
+          </a>
+        ))}
+      </div>
+      <div className="scroll-fade-x hidden min-w-0 gap-2 overflow-x-auto min-[380px]:flex" data-allow-horizontal-scroll aria-label={`${taskGroups[activeGroup].label} sections`}>
+        {visibleItems.map(([key, label, href]) => (
+          <a
+            key={key}
+            href={href}
+            onClick={(event) => {
+              event.preventDefault();
+              void navigate({ to: href as never });
+            }}
+            className={`focus-ring inline-flex min-h-11 shrink-0 items-center justify-center rounded-md border px-3 text-sm font-semibold ${
+              active === key
+                ? "border-accent bg-accent text-paper"
+                : "border-line bg-panel text-muted hover:border-accent hover:text-ink"
+            }`}
+          >
+            {label}
+          </a>
+        ))}
+      </div>
     </nav>
   );
 }
 
 function ComplianceBanner() {
   return (
-    <div className="signal-warning min-w-0 p-4">
+    <div className="signal-warning min-w-0 p-3">
       <div className="flex items-start gap-3">
         <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
-        <p className="safe-text text-sm font-semibold leading-6">
-          Analysis and planning only. No broker execution, copy trading, leaderboards, hot-stock alerts, or buy-now language.
-          Rebalancing suggestions prioritize future contributions and show assumptions, data quality, fees, and tax-estimate limits.
+        <p className="safe-text text-sm font-semibold leading-6 text-warning">
+          Analysis and planning only. Rebalancing suggestions prioritize future contributions and disclose assumptions,
+          data quality, fees, and tax-estimate limits.
         </p>
       </div>
     </div>
@@ -1170,13 +1272,12 @@ function PortfolioCoverageBanner({
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
             <DatabaseZap className="h-4 w-4" />
-            Calculation data coverage
+            Data & limits
           </div>
           <p className="safe-text mt-2 text-sm leading-6">
-            {summary.basisLabel}. Coverage tier {summary.qualityTier.toLowerCase()}; covered or manual weight {formatPercent(summary.coveredWeight)}.
+            {coverageShortLabel(analysis, marketHistoryCoverage)}. {summary.basisLabel}; covered or manual weight {formatPercent(summary.coveredWeight)}.
             {summary.oldestPriceAsOf ? ` Price dates span ${summary.oldestPriceAsOf} to ${summary.latestPriceAsOf}.` : ""}
           </p>
-          <p className="safe-text mt-1 text-xs leading-5 opacity-90">{summary.limitation}</p>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[520px]">
           <StatusPill label="Mode" value={analysis.marketDataMode.replaceAll("_", " ").toLowerCase()} />
@@ -1185,56 +1286,63 @@ function PortfolioCoverageBanner({
           <StatusPill label="Basis" value="daily close" />
         </div>
       </div>
-      <div className="mt-4 grid gap-3 border-t border-current/20 pt-4 lg:grid-cols-[1fr_auto] lg:items-start">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
-            <span>Stored 3Y snapshot status</span>
-            <span className="rounded border border-current/30 px-2 py-1">{marketHistoryCoverage.status.replaceAll("_", " ")}</span>
+      <details className="mt-4 border-t border-current/20 pt-4">
+        <summary className="focus-ring flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md px-1 text-sm font-bold">
+          <span>Show data coverage, source policy, and private-mode details</span>
+          <span className="rounded border border-current/30 px-2 py-1 text-xs uppercase tracking-wide">{marketHistoryCoverage.status.replaceAll("_", " ")}</span>
+        </summary>
+        <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+              <span>Stored 3Y snapshot status</span>
+              <span className="rounded border border-current/30 px-2 py-1">{marketHistoryCoverage.status.replaceAll("_", " ")}</span>
+            </div>
+            <p className="safe-text mt-2 text-sm leading-6">{marketHistoryCoverage.message}</p>
+            <p className="safe-text mt-1 text-xs leading-5 opacity-90">{summary.limitation}</p>
+            {missingSymbolsLine ? (
+              <p className="safe-text mt-1 text-xs leading-5 opacity-90">
+                {missingSymbolsLine}.
+              </p>
+            ) : null}
+            {queuedSymbolsLine ? (
+              <p className="safe-text mt-1 text-xs leading-5 opacity-90">
+                {queuedSymbolsLine} will be retried by the scheduled after-close jobs when quota permits.
+              </p>
+            ) : null}
+            {marketHistoryCoverage.warnings.length ? (
+              <ul className="mt-2 grid gap-1 text-xs leading-5 opacity-90">
+                {marketHistoryCoverage.warnings.map((warning) => (
+                  <li key={warning} className="safe-text">
+                    {warning}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </div>
-          <p className="safe-text mt-2 text-sm leading-6">{marketHistoryCoverage.message}</p>
-          {missingSymbolsLine ? (
-            <p className="safe-text mt-1 text-xs leading-5 opacity-90">
-              {missingSymbolsLine}.
-            </p>
-          ) : null}
-          {queuedSymbolsLine ? (
-            <p className="safe-text mt-1 text-xs leading-5 opacity-90">
-              {queuedSymbolsLine} will be retried by the scheduled after-close jobs when quota permits.
-            </p>
-          ) : null}
-          {marketHistoryCoverage.warnings.length ? (
-            <ul className="mt-2 grid gap-1 text-xs leading-5 opacity-90">
-              {marketHistoryCoverage.warnings.map((warning) => (
-                <li key={warning} className="safe-text">
-                  {warning}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 lg:min-w-[650px]">
-          <StatusPill label="Covered" value={`${marketHistoryCoverage.coveredSymbols.length}/${marketHistoryCoverage.requestedSymbols.length}`} />
-          <StatusPill label="Queued" value={String(marketHistoryCoverage.queuedSymbols.length)} />
-          <StatusPill label="Provider" value={marketHistoryCoverage.provider ?? "stored only"} />
-          <StatusPill label="Complete through" value={marketHistoryCoverage.completeThrough ?? "pending"} />
-          <StatusPill label="Eligible" value={marketHistoryCoverage.calculationEligible ? "yes" : "no"} />
-        </div>
-      </div>
-      <div className="mt-4 grid gap-3 border-t border-current/20 pt-4 lg:grid-cols-[1fr_auto] lg:items-center">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
-            <ShieldCheck className="h-4 w-4" />
-            <span>Private admin data mode</span>
-            <span className="rounded border border-current/30 px-2 py-1">
-              {adminAuthState.status === "signed_in" ? "Google/admin session active" : adminAuthState.status}
-            </span>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 lg:min-w-[650px]">
+            <StatusPill label="Covered" value={`${marketHistoryCoverage.coveredSymbols.length}/${marketHistoryCoverage.requestedSymbols.length}`} />
+            <StatusPill label="Queued" value={String(marketHistoryCoverage.queuedSymbols.length)} />
+            <StatusPill label="Provider" value={marketHistoryCoverage.provider ?? "stored only"} />
+            <StatusPill label="Complete through" value={marketHistoryCoverage.completeThrough ?? "pending"} />
+            <StatusPill label="Eligible" value={marketHistoryCoverage.calculationEligible ? "yes" : "no"} />
           </div>
-          <p className="safe-text mt-2 text-sm leading-6">
-            Public calculations use stored approved snapshots only. Google admin sign-in can unlock a private Yahoo queue for personal analysis, but those rows stay excluded from public snapshots and must be labeled private/admin-only.
-          </p>
         </div>
-        {adminModeContent}
-      </div>
+        <div className="mt-4 grid gap-3 border-t border-current/20 pt-4 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+              <ShieldCheck className="h-4 w-4" />
+              <span>Private admin data mode</span>
+              <span className="rounded border border-current/30 px-2 py-1">
+                {adminAuthState.status === "signed_in" ? "Google/admin session active" : adminAuthState.status}
+              </span>
+            </div>
+            <p className="safe-text mt-2 text-sm leading-6">
+              Public calculations use stored approved snapshots only. Google admin sign-in can unlock a private Yahoo queue for personal analysis, but those rows stay excluded from public snapshots and must be labeled private/admin-only.
+            </p>
+          </div>
+          {adminModeContent}
+        </div>
+      </details>
     </section>
   );
 }
@@ -1279,27 +1387,42 @@ function EditablePortfolioWorkspace({
   reviewRequests: InstrumentReviewRequest[];
   requestInstrumentReview: (query: string) => void;
 } & PortfolioEditorControls) {
+  const editorProps = {
+    portfolio,
+    analysis,
+    assumptions,
+    instrumentCatalog,
+    contextScreen,
+    reviewRequests,
+    requestInstrumentReview,
+    updateCashBalance,
+    updateHoldingQuantity,
+    updateHoldingManualPrice,
+    updateHoldingManualMarketValue,
+    removeHolding,
+    addHolding,
+    resetPortfolio,
+    updateGoal,
+    setAssumptions
+  };
   return (
-    <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_420px]">
-      <div className="min-w-0">{children}</div>
-      <PortfolioEditorPanel
-        portfolio={portfolio}
-        analysis={analysis}
-        assumptions={assumptions}
-        instrumentCatalog={instrumentCatalog}
-        contextScreen={contextScreen}
-        reviewRequests={reviewRequests}
-        requestInstrumentReview={requestInstrumentReview}
-        updateCashBalance={updateCashBalance}
-        updateHoldingQuantity={updateHoldingQuantity}
-        updateHoldingManualPrice={updateHoldingManualPrice}
-        updateHoldingManualMarketValue={updateHoldingManualMarketValue}
-        removeHolding={removeHolding}
-        addHolding={addHolding}
-        resetPortfolio={resetPortfolio}
-        updateGoal={updateGoal}
-        setAssumptions={setAssumptions}
-      />
+    <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_390px]">
+      <div className="grid min-w-0 gap-4">
+        <details className="panel p-4 xl:hidden">
+          <summary className="focus-ring flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md text-sm font-bold text-accent">
+            <span className="inline-flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add / edit holdings
+            </span>
+            <span className="text-xs text-muted">{portfolio.holdings.length} holdings</span>
+          </summary>
+          <PortfolioEditorPanel {...editorProps} variant="embedded" />
+        </details>
+        {children}
+      </div>
+      <div className="hidden xl:block">
+        <PortfolioEditorPanel {...editorProps} variant="rail" />
+      </div>
     </section>
   );
 }
@@ -1316,49 +1439,68 @@ function DashboardSection({
   rebalancePlan: ReturnType<typeof generateContributionRebalancePlan>;
 }>) {
   const nextContribution = rebalancePlan.cashContributionPlan[0];
+  const goalTone = monteCarlo.successProbability < 0.5 ? "risk" : monteCarlo.successProbability < 0.7 ? "watch" : "normal";
+  const driftTone = analysis.allocationDrift > 0.12 ? "watch" : "normal";
+  const dataTone = analysis.coverageQuality === "LOW" || analysis.coverageQuality === "INSUFFICIENT" ? "watch" : "normal";
   return (
-    <section className="grid gap-4">
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <CockpitCard icon={<WalletCards />} title="Portfolio value" termKey="portfolio_value" value={formatMoney(analysis.portfolioValue)} detail="Current value plus user-entered cash" />
-        <CockpitCard icon={<Target />} title="Goal status" termKey="success_probability" value={formatPercent(monteCarlo.successProbability)} detail={`${formatMoney(monteCarlo.medianOutcome)} median projection`} tone={monteCarlo.successProbability < 0.5 ? "risk" : "normal"} />
-        <CockpitCard icon={<Activity />} title="Risk status" termKey="annualized_volatility" value={analysis.diversificationScore < 55 ? "High" : "Moderate"} detail={`Top 5 concentration ${formatPercent(analysis.top5Concentration)}`} tone={analysis.diversificationScore < 55 ? "risk" : "watch"} />
-        <CockpitCard icon={<PieChart />} title="Diversification score" termKey="concentration" value={`${analysis.diversificationScore}/100`} detail={`HHI ${analysis.hhi.toFixed(3)}`} />
-        <CockpitCard icon={<BarChart3 />} title="Fee drag" termKey="fee_drag" value={formatMoney(analysis.estimatedAnnualFees)} detail={`${formatPercent(analysis.weightedExpenseRatio)} weighted fund expenses`} />
-        <CockpitCard
-          icon={<ShieldCheck />}
-          title="Kelly sizing"
-          termKey="allocation_drift"
-          value={formatPercent(analysis.kellyEstimate.cappedKellyFraction)}
-          detail={`Full ${formatPercent(analysis.kellyEstimate.fullKellyFraction)}; capped fractional guidance`}
-          tone={analysis.kellyEstimate.cappedKellyFraction > 0.2 ? "watch" : "normal"}
-        />
-        <CockpitCard icon={<RefreshCcw />} title="Allocation drift" termKey="allocation_drift" value={formatPercent(analysis.allocationDrift)} detail="Current vs target allocation" tone={analysis.allocationDrift > 0.12 ? "watch" : "normal"} />
-        <CockpitCard icon={<ArrowRight />} title="Next action" termKey="rebalancing" value={nextContribution?.assetClass ?? "Hold course"} detail={nextContribution ? `${formatMoney(nextContribution.amount)} of next contribution` : "No material contribution drift"} />
+    <section className="grid gap-4" data-testid="portfolio-cockpit">
+      <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
+        <CockpitCard icon={<WalletCards />} title="Portfolio value" termKey="portfolio_value" value={formatMoney(analysis.portfolioValue)} detail="Holdings plus user-entered cash" />
+        <CockpitCard icon={<Target />} title="Goal status" termKey="success_probability" value={formatPercent(monteCarlo.successProbability)} detail={`${formatMoney(monteCarlo.medianOutcome)} median projection`} tone={goalTone} />
+        <CockpitCard icon={<RefreshCcw />} title="Allocation drift" termKey="allocation_drift" value={formatPercent(analysis.allocationDrift)} detail="Current mix vs target" tone={driftTone} />
         <CockpitCard
           icon={<DatabaseZap />}
-          title="Data freshness"
-          termKey="data_freshness"
-          value={`${Math.round(analysis.dataFreshnessScore * 100)}/100`}
-          detail="Daily/delayed source freshness score"
-          tone={analysis.dataFreshnessScore < 0.5 ? "watch" : "normal"}
-        />
-        <CockpitCard
-          icon={<ShieldCheck />}
           title="Coverage quality"
           termKey="data_quality"
           value={analysis.coverageQuality.toLowerCase()}
-          detail={`${formatPercent(analysis.coverageSummary.coveredWeight)} covered/manual; ${formatPercent(analysis.coverageSummary.staleWeight)} stale`}
-          tone={analysis.coverageQuality === "LOW" || analysis.coverageQuality === "INSUFFICIENT" ? "watch" : "normal"}
+          detail={`${formatPercent(analysis.coverageSummary.coveredWeight)} covered/manual`}
+          tone={dataTone}
         />
       </div>
-      <section className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
+      <section className="grid gap-4 2xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
         <div className="panel p-4">
-          <SectionTitle icon={<LineChart />} title="Goal runway" termKey="monte_carlo" />
-          <FanChart rows={monteCarlo.fanChart.slice(0, 10)} targetAmount={portfolio.goal.targetAmount} />
+          <SectionTitle icon={<PieChart />} title="Investment checkup" termKey="asset_allocation" />
+          <p className="safe-text mt-2 text-sm leading-6 text-muted">
+            Current allocation, target drift, and concentration are grouped here so the next planning step is visible before the detailed ledgers.
+          </p>
+          <AllocationCheckup rows={analysis.currentTargetRows} />
         </div>
-        <div className="panel p-4">
-          <SectionTitle icon={<ShieldCheck />} title="Plain-language summary" termKey="data_quality" />
-          <p className="safe-text mt-3 text-lg font-semibold leading-8">{analysis.healthSummary}</p>
+        <div className="grid gap-4">
+          <div className="panel p-4">
+            <SectionTitle icon={<ArrowRight />} title="Next planning action" termKey="rebalancing" />
+            <div className="mt-4 rounded-md border border-line bg-panelAlt p-4">
+              <div className="safe-text text-xl font-bold text-accent">{nextContribution?.assetClass ?? "Hold course"}</div>
+              <p className="safe-text mt-2 text-sm leading-6 text-muted">
+                {nextContribution
+                  ? `Route ${formatMoney(nextContribution.amount)} of the next contribution toward this underweight area before considering sells.`
+                  : "No material contribution drift is detected from the current target mix."}
+              </p>
+            </div>
+            <p className="safe-text mt-3 text-sm leading-6 text-muted">{analysis.healthSummary}</p>
+          </div>
+          <div className="panel p-4">
+            <SectionTitle icon={<LineChart />} title="Goal runway" termKey="monte_carlo" />
+            <FanChart rows={monteCarlo.fanChart.slice(0, 8)} targetAmount={portfolio.goal.targetAmount} />
+          </div>
+        </div>
+      </section>
+      <details className="panel p-4">
+        <summary className="focus-ring flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md text-sm font-bold">
+          <span className="inline-flex items-center gap-2">
+            <Wrench className="h-4 w-4 text-warning" />
+            Advanced diagnostics
+          </span>
+          <span className="text-xs text-muted">fees, Kelly sizing, concentration</span>
+        </summary>
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <MetricCard title="Risk status" termKey="annualized_volatility" value={analysis.diversificationScore < 55 ? "High" : "Moderate"} />
+          <MetricCard title="Diversification score" termKey="concentration" value={`${analysis.diversificationScore}/100`} />
+          <MetricCard title="Fee drag" termKey="fee_drag" value={formatMoney(analysis.estimatedAnnualFees)} />
+          <MetricCard title="Kelly sizing" termKey="allocation_drift" value={formatPercent(analysis.kellyEstimate.cappedKellyFraction)} />
+          <MetricCard title="Data freshness" termKey="data_freshness" value={`${Math.round(analysis.dataFreshnessScore * 100)}/100`} />
+          <MetricCard title="Top 5 concentration" termKey="concentration" value={formatPercent(analysis.top5Concentration)} />
+        </div>
+        {rebalancePlan.warnings.length ? (
           <div className="mt-4 grid gap-2">
             {rebalancePlan.warnings.map((warning) => (
               <div key={warning} className="rounded-md border border-line bg-panelAlt p-3 text-sm leading-6 text-muted">
@@ -1366,9 +1508,46 @@ function DashboardSection({
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        ) : null}
+      </details>
     </section>
+  );
+}
+
+function AllocationCheckup({ rows }: Readonly<{ rows: ReturnType<typeof analyzePortfolio>["currentTargetRows"] }>) {
+  const visibleRows = rows.slice(0, 6);
+  return (
+    <div className="mt-4 grid gap-3">
+      {visibleRows.map((row) => {
+        const drift = Math.abs(row.drift);
+        const isOverweight = row.drift > 0;
+        return (
+          <div key={row.key} className="grid gap-2 rounded-md border border-line bg-panelAlt p-3">
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+              <div className="min-w-0">
+                <div className="safe-text text-sm font-bold">{row.key}</div>
+                <div className="safe-text mt-1 text-xs text-muted">
+                  Current {formatPercent(row.currentWeight)} / target {formatPercent(row.targetWeight)}
+                </div>
+              </div>
+              <div className={`text-sm font-bold ${isOverweight ? "text-warning" : "text-accent"}`}>
+                {isOverweight ? "over" : "under"} {formatPercent(drift)}
+              </div>
+            </div>
+            <div className="relative h-4 rounded bg-paper">
+              <div className="absolute left-1/2 top-0 h-4 w-px bg-muted" />
+              <div
+                className={`absolute top-1 h-2 rounded ${isOverweight ? "bg-warning" : "bg-accent"}`}
+                style={{
+                  left: isOverweight ? "50%" : `${50 - Math.min(48, drift * 180)}%`,
+                  width: `${Math.max(2, Math.min(48, drift * 180))}%`
+                }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -1461,9 +1640,34 @@ function AtlasSection({
   onRequestInstrumentReview: (query: string) => void;
 } & PortfolioBuildControls) {
   const fundOverlapRows = calculateFundOverlap(portfolio.holdings, instrumentCatalog);
+  const editorProps = {
+    portfolio,
+    analysis,
+    instrumentCatalog,
+    updateCashBalance,
+    updateHoldingQuantity,
+    updateHoldingManualPrice,
+    updateHoldingManualMarketValue,
+    removeHolding,
+    addHolding,
+    contextScreen: "HOLDING_ENTRY" as const,
+    reviewRequests,
+    requestInstrumentReview: onRequestInstrumentReview,
+    resetPortfolio
+  };
   return (
     <section className="grid gap-4">
-      <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_420px]">
+      <details className="panel p-4 xl:hidden">
+        <summary className="focus-ring flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md text-sm font-bold text-accent">
+          <span className="inline-flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Add / edit holdings
+          </span>
+          <span className="text-xs text-muted">{portfolio.holdings.length} holdings</span>
+        </summary>
+        <PortfolioEditorPanel {...editorProps} variant="embedded" />
+      </details>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_390px]">
         <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
           <div className="panel p-4">
             <SectionTitle icon={<Globe2 />} title="Geographic exposure" termKey="geographic_exposure" />
@@ -1474,21 +1678,9 @@ function AtlasSection({
             <SunburstLike rows={analysis.assetAllocation} />
           </div>
         </div>
-        <PortfolioEditorPanel
-          portfolio={portfolio}
-          analysis={analysis}
-          instrumentCatalog={instrumentCatalog}
-          updateCashBalance={updateCashBalance}
-          updateHoldingQuantity={updateHoldingQuantity}
-          updateHoldingManualPrice={updateHoldingManualPrice}
-          updateHoldingManualMarketValue={updateHoldingManualMarketValue}
-          removeHolding={removeHolding}
-          addHolding={addHolding}
-          contextScreen="HOLDING_ENTRY"
-          reviewRequests={reviewRequests}
-          requestInstrumentReview={onRequestInstrumentReview}
-          resetPortfolio={resetPortfolio}
-        />
+        <div className="hidden xl:block">
+          <PortfolioEditorPanel {...editorProps} variant="rail" />
+        </div>
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
         <ExposureTable title="Sector exposure" termKey="sector_exposure" rows={analysis.sectorExposure} />
@@ -1527,9 +1719,35 @@ function BuilderSection({
   reviewRequests: InstrumentReviewRequest[];
   onRequestInstrumentReview: (query: string) => void;
 } & PortfolioBuildControls) {
+  const editorProps = {
+    portfolio,
+    analysis,
+    assumptions,
+    instrumentCatalog,
+    updateCashBalance,
+    updateHoldingQuantity,
+    updateHoldingManualPrice,
+    updateHoldingManualMarketValue,
+    removeHolding,
+    addHolding,
+    contextScreen: "BUILDER" as const,
+    reviewRequests,
+    requestInstrumentReview: onRequestInstrumentReview,
+    resetPortfolio
+  };
   return (
-    <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_420px]">
+    <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_390px]">
       <div className="grid gap-4">
+        <details className="panel p-4 xl:hidden">
+          <summary className="focus-ring flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md text-sm font-bold text-accent">
+            <span className="inline-flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add / edit holdings
+            </span>
+            <span className="text-xs text-muted">{portfolio.holdings.length} holdings</span>
+          </summary>
+          <PortfolioEditorPanel {...editorProps} variant="embedded" />
+        </details>
         <div className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
           <div className="panel p-4">
             <SectionTitle icon={<Target />} title="Goal setup" termKey="success_probability" />
@@ -1553,22 +1771,9 @@ function BuilderSection({
           </div>
         </div>
       </div>
-      <PortfolioEditorPanel
-        portfolio={portfolio}
-        analysis={analysis}
-        assumptions={assumptions}
-        instrumentCatalog={instrumentCatalog}
-        updateCashBalance={updateCashBalance}
-        updateHoldingQuantity={updateHoldingQuantity}
-        updateHoldingManualPrice={updateHoldingManualPrice}
-        updateHoldingManualMarketValue={updateHoldingManualMarketValue}
-        removeHolding={removeHolding}
-        addHolding={addHolding}
-        contextScreen="BUILDER"
-        reviewRequests={reviewRequests}
-        requestInstrumentReview={onRequestInstrumentReview}
-        resetPortfolio={resetPortfolio}
-      />
+      <div className="hidden xl:block">
+        <PortfolioEditorPanel {...editorProps} variant="rail" />
+      </div>
     </section>
   );
 }
@@ -1650,7 +1855,8 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
   addHolding,
   resetPortfolio,
   updateGoal,
-  setAssumptions
+  setAssumptions,
+  variant = "rail"
 }: {
   portfolio: Portfolio;
   analysis: ReturnType<typeof analyzePortfolio>;
@@ -1658,6 +1864,7 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
   contextScreen: ManualEditorContext;
   reviewRequests: InstrumentReviewRequest[];
   requestInstrumentReview: (query: string) => void;
+  variant?: "rail" | "embedded";
 } & PortfolioEditorControls) {
   const searchInputId = useId();
   const resultListId = useId();
@@ -1895,11 +2102,15 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
     }
   }, [canAddManual]);
 
+  const surfaceClass =
+    variant === "rail"
+      ? "panel min-w-0 p-4 xl:sticky xl:top-4 xl:self-start"
+      : "mt-4 min-w-0 border-t border-line pt-4";
   return (
-    <aside className="panel min-w-0 p-4 2xl:sticky 2xl:top-4 2xl:self-start">
+    <aside className={surfaceClass}>
       <SectionTitle icon={<BriefcaseBusiness />} title="Edit holdings" termKey="asset_allocation" />
       <p className="safe-text mt-2 text-sm leading-6 text-muted">
-        Change quantities, cash, or add sample instruments and the exposure views update immediately in this workspace.
+        Change quantities, cash, or add instruments. The checkup, exposure, and rebalance views update immediately.
       </p>
       {shouldShowGoalAssumptions && (
         <details className="mt-4 rounded-md border border-line bg-panelAlt p-3" open>
@@ -2481,25 +2692,55 @@ function HoldingsSection({
 }: Readonly<{ portfolio: Portfolio; analysis: ReturnType<typeof analyzePortfolio>; instrumentCatalog: Instrument[] }>) {
   return (
     <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-      <TablePanel title="Holdings table" termKey="asset_allocation">
-        {portfolio.holdings.map((holding) => {
-          const instrument = instrumentCatalog.find((item) => item.instrumentId === holding.instrumentId);
-          const row = analysis.topHoldings.find((item) => item.key === holding.instrumentId);
-          return (
-            <TableRow
-              key={holding.holdingId}
-              cells={[
-                instrument?.symbol ?? holding.instrumentId,
-                instrument?.name ?? "Unknown",
-                formatNumber(holding.quantity),
-                row ? formatMoney(row.value) : "n/a",
-                row ? formatPercent(row.weight) : "n/a",
-                instrument?.priceQuality ?? "UNAVAILABLE"
-              ]}
-            />
-          );
-        })}
-      </TablePanel>
+      <div className="panel min-w-0 p-4">
+        <SectionTitle icon={<FileSpreadsheet />} title="Holdings table" termKey="asset_allocation" />
+        <div className="mt-4 grid gap-3 md:hidden">
+          {portfolio.holdings.map((holding) => {
+            const instrument = instrumentCatalog.find((item) => item.instrumentId === holding.instrumentId);
+            const row = analysis.topHoldings.find((item) => item.key === holding.instrumentId);
+            const symbol = instrument?.symbol ?? holding.instrumentId;
+            return (
+              <article key={holding.holdingId} className="rounded-md border border-line bg-panelAlt p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="safe-text text-base font-bold">{symbol}</h3>
+                    <p className="safe-text mt-1 text-xs leading-5 text-muted">{instrument?.name ?? "Unknown"}</p>
+                  </div>
+                  <span className="rounded border border-line bg-panel px-2 py-1 text-xs font-semibold text-muted">
+                    {instrument?.priceQuality ?? "UNAVAILABLE"}
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <CompactStatus label="Qty" value={formatNumber(holding.quantity)} />
+                  <CompactStatus label="Value" value={row ? formatMoney(row.value) : "n/a"} />
+                  <CompactStatus label="Weight" value={row ? formatPercent(row.weight) : "n/a"} />
+                </div>
+              </article>
+            );
+          })}
+        </div>
+        <div className="table-surface mt-4 hidden md:block">
+          <div className="min-w-[720px] divide-y divide-line">
+            {portfolio.holdings.map((holding) => {
+              const instrument = instrumentCatalog.find((item) => item.instrumentId === holding.instrumentId);
+              const row = analysis.topHoldings.find((item) => item.key === holding.instrumentId);
+              return (
+                <TableRow
+                  key={holding.holdingId}
+                  cells={[
+                    instrument?.symbol ?? holding.instrumentId,
+                    instrument?.name ?? "Unknown",
+                    formatNumber(holding.quantity),
+                    row ? formatMoney(row.value) : "n/a",
+                    row ? formatPercent(row.weight) : "n/a",
+                    instrument?.priceQuality ?? "UNAVAILABLE"
+                  ]}
+                />
+              );
+            })}
+          </div>
+        </div>
+      </div>
       <ExposureTable title="Top holdings concentration" termKey="concentration" rows={analysis.topHoldings} />
     </section>
   );
@@ -2935,6 +3176,20 @@ function MetricLabel({ label, termKey }: Readonly<{ label: string; termKey: stri
 
 function IconWrap({ children }: Readonly<{ children: ReactNode }>) {
   return <span className="[&>svg]:h-4 [&>svg]:w-4">{children}</span>;
+}
+
+function CompactStatus({
+  label,
+  value,
+  tone = "normal"
+}: Readonly<{ label: string; value: string; tone?: "normal" | "warning" | "danger" }>) {
+  const toneClass = tone === "danger" ? "text-danger" : tone === "warning" ? "text-warning" : "text-ink";
+  return (
+    <div className="rounded-md border border-line bg-panelAlt p-2 sm:p-3">
+      <div className="safe-text text-xs font-semibold uppercase tracking-wide text-muted">{label}</div>
+      <div className={`safe-text mt-1 font-bold ${toneClass}`}>{value}</div>
+    </div>
+  );
 }
 
 function StatusPill({ label, value }: Readonly<{ label: string; value: string }>) {

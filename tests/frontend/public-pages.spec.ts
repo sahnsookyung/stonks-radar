@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import type { APIRequestContext } from "@playwright/test";
+import type { APIRequestContext, Page } from "@playwright/test";
 
 declare global {
   interface Window {
@@ -99,7 +99,8 @@ test("public routes render from snapshots", async ({ page }) => {
   await page.goto("/en/news");
   await expect(page.getByText("Source-Linked Event News")).toBeVisible();
   await page.goto("/en/portfolio");
-  await expect(page.getByText("Portfolio Builder")).toBeVisible();
+  await expect(page.getByText("Portfolio Workspace")).toBeVisible();
+  await expect(page.getByText("Investment checkup")).toBeVisible();
   await expect(page.getByText("Goal runway")).toBeVisible();
   await page.goto("/en/dashboard");
   await expect(page.getByText("Cockpit").first()).toBeVisible();
@@ -107,16 +108,16 @@ test("public routes render from snapshots", async ({ page }) => {
   await expect(page.getByText("CSV import", { exact: true })).toBeVisible();
   await page.goto("/en/portfolios");
   await expect(
-    page.getByRole("heading", { name: "Growth + shock absorber portfolio" }),
+    page.getByRole("heading", { name: "Growth + shock absorber portfolio" }).first(),
   ).toBeVisible();
   await page.goto("/en/portfolios/demo-growth-income/xray");
   await expect(page.getByText("Geographic exposure").first()).toBeVisible();
   await page.goto("/en/portfolios/demo-growth-income/atlas");
   await expect(page.getByText("Asset-class allocation")).toBeVisible();
-  await expect(page.getByText("Edit holdings")).toBeVisible();
+  await expectPortfolioEditorAccess(page);
   await page.goto("/en/portfolios/demo-growth-income/builder");
   await expect(page.getByText("Target allocation").first()).toBeVisible();
-  await expect(page.getByText("Edit holdings")).toBeVisible();
+  await expectPortfolioEditorAccess(page);
   await page.goto("/en/portfolios/demo-growth-income/backtest");
   await expect(page.getByText("Backtest equity curve")).toBeVisible();
   await page.goto("/en/portfolios/demo-growth-income/monte-carlo");
@@ -126,7 +127,7 @@ test("public routes render from snapshots", async ({ page }) => {
   await page.goto("/en/portfolios/demo-growth-income/fees");
   await expect(page.getByText("Fee leak chart")).toBeVisible();
   await page.goto("/en/portfolios/demo-growth-income/tax-lots");
-  await expect(page.getByRole("heading", { name: "Tax lots" })).toBeVisible();
+  await expect(page.getByText("Tax lots", { exact: true }).first()).toBeVisible();
   await page.goto("/en/portfolios/demo-growth-income/holdings");
   await expect(page.getByText("Holdings table")).toBeVisible();
   await page.goto("/en/portfolios/demo-growth-income/transactions");
@@ -148,15 +149,14 @@ test("public routes render from snapshots", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Funds Tracker" }),
   ).toBeVisible();
-  await expect(
-    page.getByText("Disclosure confidence interval", { exact: true }),
-  ).toBeVisible();
-  await expect(page.getByText("not a real-time portfolio")).toBeVisible();
+  await expect(page.getByText("Public fund filings", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Source and limits" })).toBeVisible();
+  await expect(page.getByText("not a real-time portfolio").first()).toBeVisible();
   await page.goto("/en/funds/situational-awareness");
   await expect(
     page.getByText("Leopold Aschenbrenner 13F Portfolio"),
   ).toBeVisible();
-  await expect(page.getByText("Public 13F portfolio")).toBeVisible();
+  await expect(page.getByText("Public portfolio filings")).toBeVisible();
   await page.goto("/en/sources");
   await expect(page.getByText("Source registry")).toBeVisible();
   await page.goto("/ko");
@@ -247,17 +247,29 @@ test("portfolio ticker autocomplete resolves identifiers locally and exposes hel
     if (url.includes("/api/instruments/search")) apiRequests.push(url);
   });
 
+  if ((page.viewportSize()?.width ?? 1280) < 1280) {
+    await page.getByText("Add / edit holdings").first().click();
+  }
   const search = page.getByRole("combobox", { name: "Add holding" });
   await search.fill("US67066G1040");
   await expect(page.getByRole("button", { name: /NVDA/ })).toBeVisible();
   await page.getByRole("button", { name: /NVDA/ }).click();
-  await expect(page.getByText("NVDA").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Remove NVDA" })).toBeVisible();
 
   await search.fill("AAPL");
   await expect(page.getByText("Already in this workspace")).toBeVisible();
   expect(apiRequests.length).toBeGreaterThan(0);
   expect(apiRequests.every((url) => url.includes("/api/instruments/search"))).toBeTruthy();
 });
+
+async function expectPortfolioEditorAccess(page: Page) {
+  const viewportWidth = page.viewportSize()?.width ?? 1280;
+  if (viewportWidth < 1280) {
+    await expect(page.getByText("Add / edit holdings")).toBeVisible();
+    return;
+  }
+  await expect(page.locator("aside").filter({ hasText: "Edit holdings" }).last()).toBeVisible();
+}
 
 test("sector pages use ticker-specific modules and reference entities route", async ({
   page,

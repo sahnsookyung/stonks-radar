@@ -32,13 +32,18 @@ defmodule StonksBackendWeb.ContractOpsTest do
 
     assert compose =~ ~s(profiles: ["elixir-backend"])
     assert compose =~ "/api/public/health"
+    assert compose =~ "FETCH_SANDBOX_URL: http://fetch-sandbox:8080/fetch"
+    assert compose =~ "fetch-sandbox:"
     refute compose =~ "dev-elixir-secret-key-base"
 
     assert compose_dev =~ ~s("8001:8000")
 
     assert compose_prod =~ "api-elixir:"
-    assert compose_prod =~ "depends_on:\n      - api"
-    refute compose_prod =~ "depends_on:\n      - api-elixir"
+    assert compose_prod =~ "fetch-sandbox:"
+    refute compose_prod =~ "depends_on:\n      - api"
+
+    caddyfile = read_repo_file("infra/Caddyfile")
+    assert caddyfile =~ "reverse_proxy {$API_UPSTREAM:api:8000}"
   end
 
   test "production runtime cannot bypass required secrets by downgrading APP_ENV" do

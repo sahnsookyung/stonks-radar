@@ -57,7 +57,9 @@ export function CountryRegionPage({ type }: Readonly<{ type: "country" | "region
         ))}
       </section>
       <section>
-        <h2 className="mb-3 text-2xl font-bold">Recent approved events</h2>
+        <h2 className="mb-3 text-2xl font-bold">
+          {locale === "ko" ? "최근 출처 연결 이벤트" : "Recent source-linked events"}
+        </h2>
         <EventList events={data.recent_events} />
       </section>
       <section>

@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY_PATH = ROOT / "config" / "tracked_entities.json"
-SECTOR_KEYS = {"space", "quantum", "semiconductors", "oil-energy", "big-tech"}
+SECTOR_KEYS = {"space", "drones", "quantum", "semiconductors", "oil-energy", "big-tech"}
 ROUTE_KINDS = {"ticker", "reference_entity", "unsupported"}
 ASSET_TYPES = {"Equity", "ETF", "Reference"}
 SOURCE_TYPES = {"official", "regulated_filing"}

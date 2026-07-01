@@ -6,6 +6,7 @@ import io
 import zipfile
 from types import SimpleNamespace
 from datetime import datetime, timezone
+from urllib.parse import urlencode
 
 import httpx
 import pytest
@@ -16,6 +17,7 @@ from frw_api.services.news.email_alerts import _extract_links, email_webhook_sig
 from frw_api.services.news.entity_matcher import EntityProfile, match_entities
 from frw_api.services.news.ingestion import (
     _parse_gdelt_bulk_file,
+    _gdelt_doc_queries,
     _select_gdelt_update_file,
     build_news_source_request,
     parse_news_response,
@@ -298,6 +300,52 @@ def test_news_source_request_uses_constrained_provider_endpoint():
     assert "NVIDIA Corporation" in ticker_request.params["q"]
 
 
+def test_fetch_news_source_updates_generic_source_health_without_gdelt_details(monkeypatch):
+    health_updates = []
+
+    async def fake_fetch_limited_provider_response(**kwargs):
+        return httpx.Response(
+            200,
+            headers={"content-type": "application/rss+xml"},
+            text="""
+            <rss><channel>
+              <item>
+                <title>Canada energy markets watch</title>
+                <link>https://example.com/canada-energy-markets-watch</link>
+                <description>metadata only</description>
+                <pubDate>Wed, 27 May 2026 12:15:00 GMT</pubDate>
+              </item>
+            </channel></rss>
+            """,
+        )
+
+    def fake_persist_adapter_result(db, adapter_result):
+        return {"documents": len(adapter_result.documents), "observations": 0, "releases": 0, "source_status": "ready"}
+
+    def fake_upsert_source_health(db, **kwargs):
+        health_updates.append(kwargs)
+
+    monkeypatch.setattr(
+        ingestion,
+        "get_settings",
+        lambda: Settings(news_rss_enabled=True, news_max_documents_per_source_per_run=10),
+    )
+    monkeypatch.setattr(ingestion, "_fetch_limited_provider_response", fake_fetch_limited_provider_response)
+    monkeypatch.setattr(ingestion, "persist_adapter_result", fake_persist_adapter_result)
+    monkeypatch.setattr(ingestion, "upsert_source_health", fake_upsert_source_health)
+
+    result = asyncio.run(
+        ingestion.fetch_news_source(object(), source_key="google_news_rss", query="Canada markets", max_documents=5)
+    )
+
+    assert result["status"] == "ready"
+    assert result["documents"] == 1
+    assert health_updates[-1]["source_key"] == "google_news_rss"
+    assert health_updates[-1]["details"]["object_key"] == "news:google_news_rss"
+    assert "gdelt_file" not in health_updates[-1]["details"]
+    assert "discovery" not in health_updates[-1]["details"]
+
+
 def test_scheduled_news_fetch_uses_safe_fetch_and_finalizes_rejections(monkeypatch):
     finalizations = []
 
@@ -488,24 +536,85 @@ def test_news_gdelt_event_file_parser_keeps_registry_matched_metadata_only_rows(
     row[59] = "20260609093000"
     row[60] = "https://example.com/hormuz-risk"
 
-    documents = _parse_gdelt_bulk_file(
-        profile,
-        _zip_rows([row]),
-        selected={
-            "url": "http://data.gdeltproject.org/gdeltv2/20260609093000.export.CSV.zip",
-            "timestamp": "20260609093000",
-        },
-        max_documents=5,
-        max_rows=10,
-        max_expanded_bytes=100_000,
+    documents = asyncio.run(
+        _parse_gdelt_bulk_file(
+            profile,
+            _zip_rows([row]),
+            selected={
+                "url": "http://data.gdeltproject.org/gdeltv2/20260609093000.export.CSV.zip",
+                "timestamp": "20260609093000",
+            },
+            max_documents=5,
+            max_rows=10,
+            max_expanded_bytes=100_000,
+        )
     )
 
-    assert documents[0]["title"].startswith("GDELT event 193")
+    assert documents[0]["title"] == "Example source report: Iran / Shipping"
+    assert not documents[0]["title"].startswith("GDELT event")
     assert documents[0]["discovery_only"] is True
     assert documents[0]["gdelt_global_event_id"] == "12345"
     assert documents[0]["published_at"] == "2026-06-09T09:30:00+00:00"
     assert documents[0]["geo_points"][0]["area_key"] in {"IRN", "HORMUZ"}
     assert documents[0]["dedupe_key"].startswith("news:")
+
+
+def test_news_gdelt_event_file_parser_uses_linked_article_metadata_title(monkeypatch):
+    profile = source_registry()["gdelt_events"]
+    row = [""] * 61
+    row[0] = "12345"
+    row[1] = "20260609"
+    row[6] = "IRAN"
+    row[16] = "SHIPPING"
+    row[26] = "193"
+    row[29] = "4"
+    row[36] = "Tehran, Iran"
+    row[37] = "IR"
+    row[52] = "Strait of Hormuz, Iran"
+    row[53] = "IR"
+    row[59] = "20260609093000"
+    row[60] = "https://example.com/news/oil-prices-rise-after-hormuz-risk"
+
+    async def fake_safe_fetch_bytes(url, **kwargs):
+        return SimpleNamespace(
+            body=b"""
+            <html><head>
+              <meta property="og:title" content="Oil prices rise after Hormuz shipping risk - Example">
+              <link rel="canonical" href="https://example.com/news/oil-prices-rise-after-hormuz-risk">
+              <meta property="article:published_time" content="2026-06-09T09:10:00Z">
+            </head><body>Body text that must not be persisted.</body></html>
+            """,
+            response=httpx.Response(200, headers={"content-type": "text/html"}),
+            final_url=url,
+        )
+
+    monkeypatch.setattr(ingestion, "safe_fetch_bytes", fake_safe_fetch_bytes)
+    context = ingestion.GdeltTitleEnrichmentContext(
+        limit=5,
+        timeout_seconds=1,
+        max_bytes=50_000,
+        per_host_interval_seconds=0,
+        user_agent="test-agent",
+    )
+    documents = asyncio.run(
+        _parse_gdelt_bulk_file(
+            profile,
+            _zip_rows([row]),
+            selected={
+                "url": "http://data.gdeltproject.org/gdeltv2/20260609093000.export.CSV.zip",
+                "timestamp": "20260609093000",
+            },
+            max_documents=5,
+            max_rows=10,
+            max_expanded_bytes=100_000,
+            title_context=context,
+        )
+    )
+
+    assert documents[0]["title"] == "Oil prices rise after Hormuz shipping risk - Example"
+    assert documents[0]["published_at"] == "2026-06-09T09:10:00+00:00"
+    assert documents[0]["gdelt_title_status"] == "enriched"
+    assert "Body text that must not be persisted" not in str(documents[0])
 
 
 def test_news_gdelt_event_file_parser_rejects_private_source_urls():
@@ -522,16 +631,18 @@ def test_news_gdelt_event_file_parser_rejects_private_source_urls():
     row[59] = "20260609093000"
     row[60] = "http://127.0.0.1/hormuz-risk"
 
-    documents = _parse_gdelt_bulk_file(
-        profile,
-        _zip_rows([row]),
-        selected={
-            "url": "http://data.gdeltproject.org/gdeltv2/20260609093000.export.CSV.zip",
-            "timestamp": "20260609093000",
-        },
-        max_documents=5,
-        max_rows=10,
-        max_expanded_bytes=100_000,
+    documents = asyncio.run(
+        _parse_gdelt_bulk_file(
+            profile,
+            _zip_rows([row]),
+            selected={
+                "url": "http://data.gdeltproject.org/gdeltv2/20260609093000.export.CSV.zip",
+                "timestamp": "20260609093000",
+            },
+            max_documents=5,
+            max_rows=10,
+            max_expanded_bytes=100_000,
+        )
     )
 
     assert documents == []
@@ -545,6 +656,85 @@ def test_geopolitical_registry_alias_matching_does_not_match_substrings():
     assert "GBR" not in area_keys
 
 
+def test_region_classifier_short_aliases_match_as_whole_tokens():
+    false_positive_keys = {
+        item.key
+        for item in classify_regions(
+            {"title": "Massive software rally lifts US markets while investors debate secular AI demand"}
+        )
+    }
+    singapore_keys = {
+        item.key
+        for item in classify_regions({"title": "MAS policy guidance moves Singapore bank shares"})
+    }
+
+    assert "SGP" not in false_positive_keys
+    assert "SGP" in singapore_keys
+
+
+def test_requested_tracked_country_coverage_is_classified_and_mapped():
+    expected = {
+        "USA",
+        "CHN",
+        "DEU",
+        "JPN",
+        "IND",
+        "GBR",
+        "FRA",
+        "ITA",
+        "CAN",
+        "BRA",
+        "RUS",
+        "KOR",
+        "MEX",
+        "AUS",
+        "ESP",
+        "IDN",
+        "TUR",
+        "SAU",
+        "NLD",
+        "CHE",
+        "POL",
+        "BEL",
+        "ARG",
+        "IRL",
+        "SWE",
+        "ARE",
+        "SGP",
+        "ISR",
+        "AUT",
+        "THA",
+        "NOR",
+        "ZAF",
+    }
+    region_keys = {
+        item.key
+        for item in classify_regions(
+            {
+                "title": (
+                    "United States China Germany Japan India United Kingdom France Italy Canada Brazil Russia "
+                    "South Korea Mexico Australia Spain Indonesia Turkiye Saudi Arabia Netherlands Switzerland Poland "
+                    "Belgium Argentina Ireland Sweden United Arab Emirates Singapore Israel Austria Thailand Norway South Africa markets"
+                )
+            }
+        )
+    }
+    map_keys = {
+        point["area_key"]
+        for point in match_geo_points(
+            texts=(
+                "United States China Germany Japan India United Kingdom France Italy Canada Brazil Russia "
+                "South Korea Mexico Australia Spain Indonesia Turkiye Saudi Arabia Netherlands Switzerland Poland "
+                "Belgium Argentina Ireland Sweden United Arab Emirates Singapore Israel Austria Thailand Norway South Africa energy markets sanctions",
+            ),
+            max_points=40,
+        )
+    }
+
+    assert expected.issubset(region_keys)
+    assert expected.issubset(map_keys)
+
+
 def test_news_gdelt_gkg_file_parser_keeps_registry_matched_metadata_only_rows():
     profile = source_registry()["gdelt_gkg"]
     row = [""] * 16
@@ -555,22 +745,169 @@ def test_news_gdelt_gkg_file_parser_keeps_registry_matched_metadata_only_rows():
     row[7] = "TAX_FNCACT_SHIPPING;WB_133_INFORMATION_AND_COMMUNICATION_TECHNOLOGIES"
     row[9] = "1#Taiwan Strait#TW#TW#23.7#121.0#TW;1#Taiwan#TW#TW#23.7#121.0#TW"
 
-    documents = _parse_gdelt_bulk_file(
-        profile,
-        _zip_rows([row]),
-        selected={
-            "url": "http://data.gdeltproject.org/gdeltv2/20260609093000.gkg.csv.zip",
-            "timestamp": "20260609093000",
-        },
-        max_documents=5,
-        max_rows=10,
-        max_expanded_bytes=100_000,
+    documents = asyncio.run(
+        _parse_gdelt_bulk_file(
+            profile,
+            _zip_rows([row]),
+            selected={
+                "url": "http://data.gdeltproject.org/gdeltv2/20260609093000.gkg.csv.zip",
+                "timestamp": "20260609093000",
+            },
+            max_documents=5,
+            max_rows=10,
+            max_expanded_bytes=100_000,
+        )
     )
 
-    assert documents[0]["title"].startswith("GDELT GKG:")
+    assert documents[0]["title"] == "Example source report: Taiwan Strait"
+    assert not documents[0]["title"].startswith("GDELT GKG:")
     assert documents[0]["discovery_only"] is True
     assert documents[0]["gdelt_record_id"] == "20260609093000-1"
     assert documents[0]["geo_points"][0]["area_key"] in {"TWN", "TAIWAN_STRAIT"}
+
+
+def test_news_gdelt_doc_query_pack_uses_focused_market_queries():
+    queries = _gdelt_doc_queries("market_watch", 10)
+
+    assert len(queries) == 10
+    assert all(" AND " in query for query in queries[:6])
+    assert any("semiconductor" in query for query in queries[6:])
+    assert any("hormuz" in query.lower() or "red sea" in query.lower() for query in queries[6:])
+    country_query = " ".join(queries[:6])
+    for country in (
+        "United States",
+        "China",
+        "Germany",
+        "Japan",
+        "India",
+        "United Kingdom",
+        "France",
+        "Italy",
+        "Canada",
+        "Brazil",
+        "Russia",
+        "South Korea",
+        "Mexico",
+        "Australia",
+        "Spain",
+        "Indonesia",
+        "Turkiye",
+        "Saudi Arabia",
+        "Netherlands",
+        "Switzerland",
+        "Poland",
+        "Belgium",
+        "Argentina",
+        "Ireland",
+        "Sweden",
+        "United Arab Emirates",
+        "Singapore",
+        "Israel",
+        "Austria",
+        "Thailand",
+        "Norway",
+        "South Africa",
+    ):
+        assert country in country_query
+
+    profile = source_registry()["gdelt"]
+    request_urls = [
+        f"{request.url}?{urlencode(request.params)}"
+        for query in queries
+        if (request := build_news_source_request(profile, query=query, max_documents=1))
+    ]
+    assert all(len(url) < 700 for url in request_urls)
+
+
+def test_news_gdelt_doc_query_pack_generates_bounded_country_theme_combinations():
+    queries = _gdelt_doc_queries("market_watch", 250)
+    country_queries = [query for query in queries if " AND " in query]
+
+    assert len(country_queries) >= 18
+    assert any("commodities" in query for query in country_queries)
+    assert any("export" in query for query in country_queries)
+    assert any("chokepoint" in query for query in country_queries)
+    assert all(query.split(" AND ", 1)[0].count(" OR ") <= 5 for query in country_queries)
+
+    profile = source_registry()["gdelt"]
+    for query in queries:
+        request = build_news_source_request(profile, query=query, max_documents=1)
+        assert request is not None
+        full_url = f"{request.url}?{urlencode(request.params)}"
+        assert len(full_url) < 700
+
+
+def test_news_gdelt_doc_query_pack_rotates_bounded_country_theme_windows():
+    first_window = _gdelt_doc_queries("market_watch", 6, cycle_index=0)
+    second_window = _gdelt_doc_queries("market_watch", 6, cycle_index=1)
+    third_window = _gdelt_doc_queries("market_watch", 6, cycle_index=2)
+
+    assert len(first_window) == 6
+    assert len(second_window) == 6
+    assert len(third_window) == 6
+    assert set(first_window).isdisjoint(second_window)
+    assert any("semiconductor" in query for query in second_window)
+    assert any("export" in query for query in third_window)
+
+
+def test_news_gdelt_doc_query_pack_spaces_provider_calls(monkeypatch):
+    calls = []
+    sleeps = []
+    health_updates = []
+
+    async def fake_fetch_limited_provider_response(**kwargs):
+        query = kwargs["params"]["query"]
+        calls.append(query)
+        ordinal = len(calls)
+        return httpx.Response(
+            200,
+            request=httpx.Request("GET", kwargs["url"]),
+            headers={"content-type": "application/json"},
+            json={
+                "articles": [
+                    {
+                        "title": f"GDELT country market article {ordinal}",
+                        "url": f"https://example.com/gdelt-{ordinal}",
+                        "seendate": "20260630000000",
+                        "domain": "example.com",
+                        "language": "English",
+                    }
+                ]
+            },
+        )
+
+    async def fake_sleep(seconds):
+        sleeps.append(seconds)
+
+    def fake_persist_adapter_result(db, adapter_result):
+        return {"documents": len(adapter_result.documents), "observations": 0, "releases": 0, "source_status": "ready"}
+
+    def fake_upsert_source_health(db, **kwargs):
+        health_updates.append(kwargs)
+
+    monkeypatch.setattr(
+        ingestion,
+        "get_settings",
+        lambda: Settings(
+            news_gdelt_enabled=True,
+            news_max_documents_per_source_per_run=3,
+            gdelt_doc_cycle_budget=3,
+            gdelt_doc_min_interval_seconds=7,
+            gdelt_doc_max_records=1,
+        ),
+    )
+    monkeypatch.setattr(ingestion, "_fetch_limited_provider_response", fake_fetch_limited_provider_response)
+    monkeypatch.setattr(ingestion.asyncio, "sleep", fake_sleep)
+    monkeypatch.setattr(ingestion, "persist_adapter_result", fake_persist_adapter_result)
+    monkeypatch.setattr(ingestion, "upsert_source_health", fake_upsert_source_health)
+
+    result = asyncio.run(ingestion.fetch_news_source(object(), source_key="gdelt", max_documents=3))
+
+    assert result["status"] == "ready"
+    assert result["documents"] == 3
+    assert len(calls) == 3
+    assert sleeps == [7, 7]
+    assert health_updates[-1]["details"]["query_count"] == 3
 
 
 def _zip_rows(rows: list[list[str]]) -> bytes:

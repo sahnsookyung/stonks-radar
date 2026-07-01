@@ -59,15 +59,15 @@ export function FundPortfolioPage() { // NOSONAR - page-level layout composes fi
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-sm font-semibold uppercase text-accent">
               <FileSpreadsheet className="h-4 w-4" />
-              {isKo ? "공개 13F 포트폴리오" : "Public 13F portfolio"}
+              {isKo ? "공개 포트폴리오 공시" : "Public portfolio filings"}
             </div>
             <h1 className="safe-text mt-3 text-3xl font-bold leading-tight sm:text-4xl">
               {data.display_name}
             </h1>
             <p className="safe-text mt-3 max-w-5xl text-sm leading-6 text-muted">
               {isKo
-                ? `${data.fund_name}의 SEC 13F XML 정보표를 기반으로 한 출처 연결형 스냅샷입니다. HedgeFollow HTML은 자동 수집하지 않습니다.`
-                : `A source-linked snapshot built from the SEC 13F XML information table for ${data.fund_name}. HedgeFollow HTML is not scraped in production.`}
+                ? `${data.fund_name}의 SEC 13F XML 정보표와 최신 Schedule 13G 수익소유 XML을 함께 읽는 출처 연결형 스냅샷입니다. HedgeFollow HTML은 자동 수집하지 않습니다.`
+                : `A source-linked snapshot built from the SEC 13F XML information table and newer Schedule 13G beneficial-ownership XML for ${data.fund_name}. HedgeFollow HTML is not scraped in production.`}
             </p>
             <div className="mt-4 flex min-w-0 flex-wrap gap-2">
               <Badge>{data.manager_name}</Badge>
@@ -102,7 +102,7 @@ export function FundPortfolioPage() { // NOSONAR - page-level layout composes fi
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="flex items-center gap-2 text-lg font-bold">
               <PieChart className="h-5 w-5 text-accent" />
-              {isKo ? "상위 롱 주식 비중" : "Top long-equity allocation"}
+              {isKo ? "상위 공개 주식 비중" : "Top public-equity allocation"}
             </h2>
             {data.filing ? (
               <a
@@ -164,7 +164,7 @@ export function FundPortfolioPage() { // NOSONAR - page-level layout composes fi
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 text-lg font-bold">
             <Table2 className="h-5 w-5 text-accent" />
-            {isKo ? "13F 행" : "13F rows"}
+            {isKo ? "공개 공시 행" : "Public filing rows"}
           </h2>
           <div
             className="flex rounded-md border border-line bg-panelAlt p-1"
@@ -194,7 +194,7 @@ export function FundPortfolioPage() { // NOSONAR - page-level layout composes fi
           className="mt-4 hidden overflow-x-auto rounded-md border border-line md:block"
           data-allow-horizontal-scroll
         >
-          <table className="min-w-[900px] w-full text-left text-sm">
+          <table className="min-w-[1040px] w-full text-left text-sm">
             <thead className="bg-panelAlt text-xs uppercase text-muted">
               <tr>
                 <th className="px-3 py-3">{isKo ? "티커" : "Ticker"}</th>
@@ -210,6 +210,7 @@ export function FundPortfolioPage() { // NOSONAR - page-level layout composes fi
                   {isKo ? "비중" : "Weight"}
                 </th>
                 <th className="px-3 py-3">CUSIP</th>
+                <th className="px-3 py-3">{isKo ? "출처" : "Source"}</th>
               </tr>
             </thead>
             <tbody>
@@ -232,6 +233,7 @@ export function FundPortfolioPage() { // NOSONAR - page-level layout composes fi
                     {formatPercent(holding.portfolio_weight)}
                   </td>
                   <td className="px-3 py-3 text-muted">{holding.cusip}</td>
+                  <td className="safe-text px-3 py-3 text-muted">{holding.source_lineage}</td>
                 </tr>
               ))}
             </tbody>
@@ -246,13 +248,6 @@ export function FundPortfolioPage() { // NOSONAR - page-level layout composes fi
           params={{ locale }}
         >
           {isKo ? "포트폴리오 실험실" : "Portfolio lab"}
-        </Link>
-        <Link
-          className="secondary-action min-h-11 px-3 py-2"
-          to="/$locale/trump-filings"
-          params={{ locale }}
-        >
-          {isKo ? "트럼프 공시" : "Trump filings"}
         </Link>
       </section>
     </div>
@@ -326,6 +321,7 @@ function HoldingCard({
           {holding.shares ? formatNumber(holding.shares) : "-"}
         </span>
         <span>CUSIP {holding.cusip}</span>
+        <span>{holding.source_lineage}</span>
       </div>
       <a
         className="focus-ring inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-accent"

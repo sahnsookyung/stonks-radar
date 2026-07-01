@@ -1,6 +1,6 @@
 {
   "current_version": 1,
-  "generated_at": "2026-06-30T08:52:42Z",
+  "generated_at": "2026-06-30T13:19:11Z",
   "locales": [
     "en",
     "ko"
@@ -22,33 +22,133 @@
       "en": "public/v1/en/countries/USA.json",
       "ko": "public/v1/ko/countries/USA.json"
     },
-    "country_BRA": {
-      "en": "public/v1/en/countries/BRA.json",
-      "ko": "public/v1/ko/countries/BRA.json"
-    },
-    "country_KOR": {
-      "en": "public/v1/en/countries/KOR.json",
-      "ko": "public/v1/ko/countries/KOR.json"
-    },
-    "country_GBR": {
-      "en": "public/v1/en/countries/GBR.json",
-      "ko": "public/v1/ko/countries/GBR.json"
+    "country_CHN": {
+      "en": "public/v1/en/countries/CHN.json",
+      "ko": "public/v1/ko/countries/CHN.json"
     },
     "country_DEU": {
       "en": "public/v1/en/countries/DEU.json",
       "ko": "public/v1/ko/countries/DEU.json"
     },
-    "country_CHN": {
-      "en": "public/v1/en/countries/CHN.json",
-      "ko": "public/v1/ko/countries/CHN.json"
+    "country_JPN": {
+      "en": "public/v1/en/countries/JPN.json",
+      "ko": "public/v1/ko/countries/JPN.json"
+    },
+    "country_IND": {
+      "en": "public/v1/en/countries/IND.json",
+      "ko": "public/v1/ko/countries/IND.json"
+    },
+    "country_GBR": {
+      "en": "public/v1/en/countries/GBR.json",
+      "ko": "public/v1/ko/countries/GBR.json"
+    },
+    "country_FRA": {
+      "en": "public/v1/en/countries/FRA.json",
+      "ko": "public/v1/ko/countries/FRA.json"
+    },
+    "country_ITA": {
+      "en": "public/v1/en/countries/ITA.json",
+      "ko": "public/v1/ko/countries/ITA.json"
+    },
+    "country_CAN": {
+      "en": "public/v1/en/countries/CAN.json",
+      "ko": "public/v1/ko/countries/CAN.json"
+    },
+    "country_BRA": {
+      "en": "public/v1/en/countries/BRA.json",
+      "ko": "public/v1/ko/countries/BRA.json"
+    },
+    "country_RUS": {
+      "en": "public/v1/en/countries/RUS.json",
+      "ko": "public/v1/ko/countries/RUS.json"
+    },
+    "country_KOR": {
+      "en": "public/v1/en/countries/KOR.json",
+      "ko": "public/v1/ko/countries/KOR.json"
+    },
+    "country_MEX": {
+      "en": "public/v1/en/countries/MEX.json",
+      "ko": "public/v1/ko/countries/MEX.json"
+    },
+    "country_AUS": {
+      "en": "public/v1/en/countries/AUS.json",
+      "ko": "public/v1/ko/countries/AUS.json"
+    },
+    "country_ESP": {
+      "en": "public/v1/en/countries/ESP.json",
+      "ko": "public/v1/ko/countries/ESP.json"
+    },
+    "country_IDN": {
+      "en": "public/v1/en/countries/IDN.json",
+      "ko": "public/v1/ko/countries/IDN.json"
+    },
+    "country_TUR": {
+      "en": "public/v1/en/countries/TUR.json",
+      "ko": "public/v1/ko/countries/TUR.json"
+    },
+    "country_SAU": {
+      "en": "public/v1/en/countries/SAU.json",
+      "ko": "public/v1/ko/countries/SAU.json"
+    },
+    "country_NLD": {
+      "en": "public/v1/en/countries/NLD.json",
+      "ko": "public/v1/ko/countries/NLD.json"
+    },
+    "country_CHE": {
+      "en": "public/v1/en/countries/CHE.json",
+      "ko": "public/v1/ko/countries/CHE.json"
+    },
+    "country_POL": {
+      "en": "public/v1/en/countries/POL.json",
+      "ko": "public/v1/ko/countries/POL.json"
+    },
+    "country_BEL": {
+      "en": "public/v1/en/countries/BEL.json",
+      "ko": "public/v1/ko/countries/BEL.json"
+    },
+    "country_ARG": {
+      "en": "public/v1/en/countries/ARG.json",
+      "ko": "public/v1/ko/countries/ARG.json"
+    },
+    "country_IRL": {
+      "en": "public/v1/en/countries/IRL.json",
+      "ko": "public/v1/ko/countries/IRL.json"
+    },
+    "country_SWE": {
+      "en": "public/v1/en/countries/SWE.json",
+      "ko": "public/v1/ko/countries/SWE.json"
+    },
+    "country_ARE": {
+      "en": "public/v1/en/countries/ARE.json",
+      "ko": "public/v1/ko/countries/ARE.json"
+    },
+    "country_SGP": {
+      "en": "public/v1/en/countries/SGP.json",
+      "ko": "public/v1/ko/countries/SGP.json"
+    },
+    "country_ISR": {
+      "en": "public/v1/en/countries/ISR.json",
+      "ko": "public/v1/ko/countries/ISR.json"
+    },
+    "country_AUT": {
+      "en": "public/v1/en/countries/AUT.json",
+      "ko": "public/v1/ko/countries/AUT.json"
+    },
+    "country_THA": {
+      "en": "public/v1/en/countries/THA.json",
+      "ko": "public/v1/ko/countries/THA.json"
+    },
+    "country_NOR": {
+      "en": "public/v1/en/countries/NOR.json",
+      "ko": "public/v1/ko/countries/NOR.json"
+    },
+    "country_ZAF": {
+      "en": "public/v1/en/countries/ZAF.json",
+      "ko": "public/v1/ko/countries/ZAF.json"
     },
     "country_TWN": {
       "en": "public/v1/en/countries/TWN.json",
       "ko": "public/v1/ko/countries/TWN.json"
-    },
-    "country_JPN": {
-      "en": "public/v1/en/countries/JPN.json",
-      "ko": "public/v1/ko/countries/JPN.json"
     },
     "region_EUROZONE": {
       "en": "public/v1/en/countries/EUROZONE.json",
@@ -66,9 +166,17 @@
       "en": "public/v1/en/countries/TOP10_GDP_2026_WORLD_BANK.json",
       "ko": "public/v1/ko/countries/TOP10_GDP_2026_WORLD_BANK.json"
     },
+    "region_TOP30_GDP_2024_WORLD_BANK": {
+      "en": "public/v1/en/countries/TOP30_GDP_2024_WORLD_BANK.json",
+      "ko": "public/v1/ko/countries/TOP30_GDP_2024_WORLD_BANK.json"
+    },
     "sector_space": {
       "en": "public/v1/en/sectors/space.json",
       "ko": "public/v1/ko/sectors/space.json"
+    },
+    "sector_drones": {
+      "en": "public/v1/en/sectors/drones.json",
+      "ko": "public/v1/ko/sectors/drones.json"
     },
     "sector_quantum": {
       "en": "public/v1/en/sectors/quantum.json",
@@ -178,6 +286,22 @@
       "en": "public/v1/en/news/tickers/RDW.json",
       "ko": "public/v1/ko/news/tickers/RDW.json"
     },
+    "news_ticker_ONDS": {
+      "en": "public/v1/en/news/tickers/ONDS.json",
+      "ko": "public/v1/ko/news/tickers/ONDS.json"
+    },
+    "news_ticker_UMAC": {
+      "en": "public/v1/en/news/tickers/UMAC.json",
+      "ko": "public/v1/ko/news/tickers/UMAC.json"
+    },
+    "news_ticker_AVAV": {
+      "en": "public/v1/en/news/tickers/AVAV.json",
+      "ko": "public/v1/ko/news/tickers/AVAV.json"
+    },
+    "news_ticker_RCAT": {
+      "en": "public/v1/en/news/tickers/RCAT.json",
+      "ko": "public/v1/ko/news/tickers/RCAT.json"
+    },
     "news_ticker_AMD": {
       "en": "public/v1/en/news/tickers/AMD.json",
       "ko": "public/v1/ko/news/tickers/AMD.json"
@@ -202,25 +326,137 @@
       "en": "public/v1/en/news/regions/USA.json",
       "ko": "public/v1/ko/news/regions/USA.json"
     },
-    "news_region_KOR": {
-      "en": "public/v1/en/news/regions/KOR.json",
-      "ko": "public/v1/ko/news/regions/KOR.json"
+    "news_region_CHN": {
+      "en": "public/v1/en/news/regions/CHN.json",
+      "ko": "public/v1/ko/news/regions/CHN.json"
+    },
+    "news_region_DEU": {
+      "en": "public/v1/en/news/regions/DEU.json",
+      "ko": "public/v1/ko/news/regions/DEU.json"
     },
     "news_region_JPN": {
       "en": "public/v1/en/news/regions/JPN.json",
       "ko": "public/v1/ko/news/regions/JPN.json"
     },
+    "news_region_IND": {
+      "en": "public/v1/en/news/regions/IND.json",
+      "ko": "public/v1/ko/news/regions/IND.json"
+    },
+    "news_region_GBR": {
+      "en": "public/v1/en/news/regions/GBR.json",
+      "ko": "public/v1/ko/news/regions/GBR.json"
+    },
+    "news_region_FRA": {
+      "en": "public/v1/en/news/regions/FRA.json",
+      "ko": "public/v1/ko/news/regions/FRA.json"
+    },
+    "news_region_ITA": {
+      "en": "public/v1/en/news/regions/ITA.json",
+      "ko": "public/v1/ko/news/regions/ITA.json"
+    },
+    "news_region_CAN": {
+      "en": "public/v1/en/news/regions/CAN.json",
+      "ko": "public/v1/ko/news/regions/CAN.json"
+    },
     "news_region_BRA": {
       "en": "public/v1/en/news/regions/BRA.json",
       "ko": "public/v1/ko/news/regions/BRA.json"
     },
+    "news_region_RUS": {
+      "en": "public/v1/en/news/regions/RUS.json",
+      "ko": "public/v1/ko/news/regions/RUS.json"
+    },
+    "news_region_KOR": {
+      "en": "public/v1/en/news/regions/KOR.json",
+      "ko": "public/v1/ko/news/regions/KOR.json"
+    },
+    "news_region_MEX": {
+      "en": "public/v1/en/news/regions/MEX.json",
+      "ko": "public/v1/ko/news/regions/MEX.json"
+    },
+    "news_region_AUS": {
+      "en": "public/v1/en/news/regions/AUS.json",
+      "ko": "public/v1/ko/news/regions/AUS.json"
+    },
+    "news_region_ESP": {
+      "en": "public/v1/en/news/regions/ESP.json",
+      "ko": "public/v1/ko/news/regions/ESP.json"
+    },
+    "news_region_IDN": {
+      "en": "public/v1/en/news/regions/IDN.json",
+      "ko": "public/v1/ko/news/regions/IDN.json"
+    },
+    "news_region_TUR": {
+      "en": "public/v1/en/news/regions/TUR.json",
+      "ko": "public/v1/ko/news/regions/TUR.json"
+    },
+    "news_region_SAU": {
+      "en": "public/v1/en/news/regions/SAU.json",
+      "ko": "public/v1/ko/news/regions/SAU.json"
+    },
+    "news_region_NLD": {
+      "en": "public/v1/en/news/regions/NLD.json",
+      "ko": "public/v1/ko/news/regions/NLD.json"
+    },
+    "news_region_CHE": {
+      "en": "public/v1/en/news/regions/CHE.json",
+      "ko": "public/v1/ko/news/regions/CHE.json"
+    },
+    "news_region_POL": {
+      "en": "public/v1/en/news/regions/POL.json",
+      "ko": "public/v1/ko/news/regions/POL.json"
+    },
+    "news_region_BEL": {
+      "en": "public/v1/en/news/regions/BEL.json",
+      "ko": "public/v1/ko/news/regions/BEL.json"
+    },
+    "news_region_ARG": {
+      "en": "public/v1/en/news/regions/ARG.json",
+      "ko": "public/v1/ko/news/regions/ARG.json"
+    },
+    "news_region_IRL": {
+      "en": "public/v1/en/news/regions/IRL.json",
+      "ko": "public/v1/ko/news/regions/IRL.json"
+    },
+    "news_region_SWE": {
+      "en": "public/v1/en/news/regions/SWE.json",
+      "ko": "public/v1/ko/news/regions/SWE.json"
+    },
+    "news_region_ARE": {
+      "en": "public/v1/en/news/regions/ARE.json",
+      "ko": "public/v1/ko/news/regions/ARE.json"
+    },
+    "news_region_SGP": {
+      "en": "public/v1/en/news/regions/SGP.json",
+      "ko": "public/v1/ko/news/regions/SGP.json"
+    },
+    "news_region_ISR": {
+      "en": "public/v1/en/news/regions/ISR.json",
+      "ko": "public/v1/ko/news/regions/ISR.json"
+    },
+    "news_region_AUT": {
+      "en": "public/v1/en/news/regions/AUT.json",
+      "ko": "public/v1/ko/news/regions/AUT.json"
+    },
+    "news_region_THA": {
+      "en": "public/v1/en/news/regions/THA.json",
+      "ko": "public/v1/ko/news/regions/THA.json"
+    },
+    "news_region_NOR": {
+      "en": "public/v1/en/news/regions/NOR.json",
+      "ko": "public/v1/ko/news/regions/NOR.json"
+    },
+    "news_region_ZAF": {
+      "en": "public/v1/en/news/regions/ZAF.json",
+      "ko": "public/v1/ko/news/regions/ZAF.json"
+    },
+    "news_region_TWN": {
+      "en": "public/v1/en/news/regions/TWN.json",
+      "ko": "public/v1/ko/news/regions/TWN.json"
+    },
     "news_region_EU": {
       "en": "public/v1/en/news/regions/EU.json",
       "ko": "public/v1/ko/news/regions/EU.json"
-    },
-    "news_region_CHN": {
-      "en": "public/v1/en/news/regions/CHN.json",
-      "ko": "public/v1/ko/news/regions/CHN.json"
     },
     "news_topic_semiconductors": {
       "en": "public/v1/en/news/topics/semiconductors.json",
@@ -229,6 +465,10 @@
     "news_topic_space": {
       "en": "public/v1/en/news/topics/space.json",
       "ko": "public/v1/ko/news/topics/space.json"
+    },
+    "news_topic_drones": {
+      "en": "public/v1/en/news/topics/drones.json",
+      "ko": "public/v1/ko/news/topics/drones.json"
     },
     "news_topic_quantum": {
       "en": "public/v1/en/news/topics/quantum.json",

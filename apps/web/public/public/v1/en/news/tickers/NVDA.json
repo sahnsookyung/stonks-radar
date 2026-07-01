@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T08:52:42Z",
-  "stale_after": "2026-06-30T20:52:42Z",
-  "hard_expires_at": "2026-07-07T08:52:42Z",
+  "generated_at": "2026-06-30T13:19:11Z",
+  "stale_after": "2026-07-01T01:19:11Z",
+  "hard_expires_at": "2026-07-07T13:19:11Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_NVDA",
-  "content_hash": "sha256:33d3e002246e04c8663d42a3d4bf9109435dbe34be444b40f21fba668e0a1c94",
+  "content_hash": "sha256:f6606266ea955ec8717229c9631147ffce40edc804496abd24a5828dbe60be2b",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "NVDA",
     "name": "NVIDIA Corporation",
-    "generated_label": "2026-06-30T08:52:42Z",
+    "generated_label": "2026-06-30T13:19:11Z",
     "summary": "NVIDIA Corporation has 1 approved, source-linked news event(s) in the public snapshot.",
     "events": [
       {
@@ -121,9 +121,9 @@
         "title": "China-origin export-control risk remains elevated for AI-chip supply chains",
         "summary": "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.",
         "event_type": "trade_policy",
-        "first_seen_at": "2026-06-28T08:52:42Z",
-        "last_seen_at": "2026-06-30T08:52:42Z",
-        "published_at": "2026-06-30T08:52:42Z",
+        "first_seen_at": "2026-06-28T13:19:11Z",
+        "last_seen_at": "2026-06-30T13:19:11Z",
+        "published_at": "2026-06-30T13:19:11Z",
         "freshness": "fresh",
         "severity": "high",
         "confidence": 0.78,
@@ -220,7 +220,7 @@
             "source_key": "bis",
             "policy_version": 1,
             "title": "Bureau of Industry and Security export controls",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -230,7 +230,7 @@
             "source_key": "sec_edgar",
             "policy_version": 1,
             "title": "Issuer filings for affected companies",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T1_REGULATED_FILING",
             "is_primary": false
           },
@@ -240,7 +240,7 @@
             "source_key": "source_policy",
             "policy_version": 1,
             "title": "Export Administration Regulations reference",
-            "published_at": "2026-06-29T14:52:42Z",
+            "published_at": "2026-06-29T19:19:11Z",
             "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
             "is_primary": false
           }

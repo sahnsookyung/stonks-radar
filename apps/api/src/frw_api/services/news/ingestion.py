@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+import asyncio
 import email.utils
 import hashlib
 import io
 import ipaddress
 import re
+import time
 import zipfile
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from html import unescape
 from typing import Any
-from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlunparse
 from xml.etree import ElementTree
 
 import httpx
@@ -47,6 +50,90 @@ GDELT_LASTUPDATE_URL = "http://data.gdeltproject.org/gdeltv2/lastupdate.txt"
 GDELT_DATA_HOST_ALLOWLIST = frozenset({"data.gdeltproject.org"})
 GDELT_EXPORT_SUFFIX = ".export.CSV.zip"
 GDELT_GKG_SUFFIX = ".gkg.csv.zip"
+GDELT_TRACKED_COUNTRY_QUERY_TERMS = (
+    '"United States"',
+    "China",
+    "Germany",
+    "Japan",
+    "India",
+    '"United Kingdom"',
+    "France",
+    "Italy",
+    "Canada",
+    "Brazil",
+    "Russia",
+    '"South Korea"',
+    "Mexico",
+    "Australia",
+    "Spain",
+    "Indonesia",
+    "Turkiye",
+    "Turkey",
+    '"Saudi Arabia"',
+    "Netherlands",
+    "Switzerland",
+    "Poland",
+    "Belgium",
+    "Argentina",
+    "Ireland",
+    "Sweden",
+    '"United Arab Emirates"',
+    "UAE",
+    "Singapore",
+    "Israel",
+    "Austria",
+    "Thailand",
+    "Norway",
+    '"South Africa"',
+)
+GDELT_TRACKED_COUNTRY_THEME_QUERIES = (
+    "(markets OR stocks OR energy OR commodities OR rates OR sanctions OR trade)",
+    "(sanctions OR tariff OR \"trade war\" OR export OR controls OR supply)",
+    "(oil OR gas OR lng OR shipping OR chokepoint OR refinery OR pipeline)",
+)
+GDELT_COUNTRY_QUERY_CHUNK_SIZE = 6
+
+
+def _or_clause(terms: Iterable[str]) -> str:
+    return "(" + " OR ".join(term for term in terms if term) + ")"
+
+
+def _chunked_terms(terms: Iterable[str], chunk_size: int) -> tuple[tuple[str, ...], ...]:
+    chunk: list[str] = []
+    chunks: list[tuple[str, ...]] = []
+    for term in terms:
+        chunk.append(term)
+        if len(chunk) >= chunk_size:
+            chunks.append(tuple(chunk))
+            chunk = []
+    if chunk:
+        chunks.append(tuple(chunk))
+    return tuple(chunks)
+
+
+def _gdelt_country_theme_queries(
+    country_terms: Iterable[str] = GDELT_TRACKED_COUNTRY_QUERY_TERMS,
+    theme_queries: Iterable[str] = GDELT_TRACKED_COUNTRY_THEME_QUERIES,
+    *,
+    chunk_size: int = GDELT_COUNTRY_QUERY_CHUNK_SIZE,
+) -> tuple[str, ...]:
+    chunks = _chunked_terms(country_terms, max(1, chunk_size))
+    return tuple(f"{_or_clause(chunk)} AND {theme}" for theme in theme_queries for chunk in chunks)
+
+
+GDELT_DOC_QUERY_PACKS: dict[str, tuple[str, ...]] = {
+    "market_watch": (
+        *_gdelt_country_theme_queries(theme_queries=(GDELT_TRACKED_COUNTRY_THEME_QUERIES[0],)),
+        "(hormuz OR \"red sea\" OR oil OR lng OR pipeline OR refinery OR shipping)",
+        "(semiconductor OR chip OR \"export control\" OR BIS OR Taiwan OR Korea OR Japan)",
+        "(\"AI infrastructure\" OR datacenter OR \"data center\" OR capex OR HBM OR accelerator)",
+        "(\"central bank\" OR rates OR inflation OR treasury OR yen OR dollar)",
+        *_gdelt_country_theme_queries(theme_queries=GDELT_TRACKED_COUNTRY_THEME_QUERIES[1:]),
+        "(sanctions OR tariff OR \"trade war\" OR blockade OR missile OR conflict)",
+        "(outbreak OR pandemic OR WHO OR avian OR vaccine OR public health)",
+        "(NVDA OR AMD OR MSFT OR AAPL OR TSMC OR Samsung OR ASML OR RKLB OR IONQ OR RGTI OR QBTS OR LUNR OR ASTS OR RDW OR DJT)",
+    ),
+}
 
 
 class NewsIngestionError(ValueError):
@@ -58,6 +145,63 @@ class NewsSourceRequest:
     url: str
     params: dict[str, str]
     headers: dict[str, str]
+
+
+@dataclass
+class GdeltDiscoveryStats:
+    fetched: int = 0
+    parsed: int = 0
+    deduped: int = 0
+    title_enriched: int = 0
+    title_fallback: int = 0
+    stale_dropped: int = 0
+    irrelevant_dropped: int = 0
+    no_geo_dropped: int = 0
+    blocked_or_denied: int = 0
+    published_or_projected: int = 0
+
+    def as_dict(self) -> dict[str, int]:
+        return {
+            "fetched": self.fetched,
+            "parsed": self.parsed,
+            "deduped": self.deduped,
+            "title_enriched": self.title_enriched,
+            "title_fallback": self.title_fallback,
+            "stale_dropped": self.stale_dropped,
+            "irrelevant_dropped": self.irrelevant_dropped,
+            "no_geo_dropped": self.no_geo_dropped,
+            "blocked_or_denied": self.blocked_or_denied,
+            "published_or_projected": self.published_or_projected,
+        }
+
+
+@dataclass(frozen=True)
+class GdeltArticleMetadata:
+    title: str | None = None
+    canonical_url: str | None = None
+    published_at: str | None = None
+    status: str = "fallback"
+    source: str = "none"
+    denial_reason: str | None = None
+
+
+@dataclass
+class GdeltTitleEnrichmentContext:
+    limit: int
+    timeout_seconds: int
+    max_bytes: int
+    per_host_interval_seconds: float
+    user_agent: str
+    transport: httpx.AsyncBaseTransport | None = None
+    fetched: int = 0
+    cache: dict[str, GdeltArticleMetadata] | None = None
+    host_last_fetch: dict[str, float] | None = None
+
+    def __post_init__(self) -> None:
+        if self.cache is None:
+            self.cache = {}
+        if self.host_last_fetch is None:
+            self.host_last_fetch = {}
 
 
 _SEC_NEWS_FORMS = {
@@ -114,6 +258,13 @@ async def fetch_news_source(
         }
 
     limit = max(1, min(max_documents or settings.news_max_documents_per_source_per_run, settings.news_max_documents_per_source_per_run))
+    if profile.source_key == "gdelt" and query is None:
+        return await _fetch_gdelt_doc_query_pack(
+            db,
+            profile=profile,
+            max_documents=limit,
+            transport=transport,
+        )
     request = build_news_source_request(profile, query=query, max_documents=limit)
     if request is None:
         upsert_source_health(
@@ -215,6 +366,15 @@ async def fetch_news_source(
         unsupported=[] if documents else ["no_documents_parsed"],
     )
     persisted = persist_adapter_result(db, adapter_result)
+    upsert_source_health(
+        db,
+        source_key=profile.source_key,
+        status="ready" if documents else "empty",
+        details={
+            "object_key": adapter_result.object_key,
+            **persisted,
+        },
+    )
     return {
         "source_key": profile.source_key,
         "status": "ready" if documents else "empty",
@@ -222,6 +382,111 @@ async def fetch_news_source(
         "persisted": persisted,
         "trust_tier": profile.trust_tier,
         "copyright_mode": profile.copyright_mode,
+    }
+
+
+async def _fetch_gdelt_doc_query_pack(
+    db: Session,
+    *,
+    profile: SourceProfile,
+    max_documents: int,
+    transport: httpx.AsyncBaseTransport | None,
+) -> dict[str, Any]:
+    settings = get_settings()
+    cycle_seconds = max(300, int(settings.news_source_refresh_seconds or settings.gdelt_doc_min_interval_seconds))
+    cycle_index = int(datetime.now(timezone.utc).timestamp()) // cycle_seconds
+    queries = _gdelt_doc_queries(
+        settings.gdelt_doc_query_pack,
+        settings.gdelt_doc_cycle_budget,
+        cycle_index=cycle_index,
+    )
+    if not queries:
+        request = build_news_source_request(profile, query=profile.default_query, max_documents=max_documents)
+        if request is None:
+            return {
+                "source_key": profile.source_key,
+                "status": "unsupported",
+                "documents": 0,
+                "persisted": {"documents": 0, "observations": 0, "releases": 0, "source_status": "unsupported"},
+            }
+        queries = (request.params.get("query") or profile.default_query or "financial markets",)
+    per_query_records = _gdelt_doc_records_per_query(max_documents, len(queries), settings.gdelt_doc_max_records)
+    stats = GdeltDiscoveryStats()
+    documents: list[dict[str, Any]] = []
+    seen_keys: set[str] = set()
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": settings.sec_user_agent,
+        **headers_for_fetch_profile(profile.fetch_profile, settings.sec_user_agent),
+    }
+    for index, query in enumerate(queries):
+        if index > 0:
+            await asyncio.sleep(settings.gdelt_doc_min_interval_seconds)
+        request = build_news_source_request(profile, query=query, max_documents=per_query_records)
+        if request is None:
+            continue
+        try:
+            response = await _fetch_limited_provider_response(
+                provider_key=profile.rate_limit_provider_key,
+                endpoint_key=profile.rate_limit_endpoint_key,
+                db=db,
+                idempotency_key=_request_idempotency_key(profile.source_key, request),
+                max_bytes=settings.source_fetch_max_bytes,
+                timeout_seconds=settings.source_fetch_timeout_seconds,
+                headers={**headers, **request.headers},
+                url=request.url,
+                params=request.params or None,
+                transport=transport,
+            )
+        except ProviderLimitError:
+            if not documents:
+                raise
+            break
+        rows = parse_news_response(profile, response, max_documents=per_query_records)
+        stats.fetched += per_query_records
+        stats.parsed += len(rows)
+        for document in rows:
+            dedupe_key = _document_dedupe_key(document)
+            if dedupe_key in seen_keys:
+                stats.deduped += 1
+                continue
+            seen_keys.add(dedupe_key)
+            document["gdelt_query_pack"] = settings.gdelt_doc_query_pack
+            document["gdelt_query"] = query
+            documents.append(document)
+    documents = _rank_gdelt_documents(documents)[:max_documents]
+    stats.published_or_projected = len(documents)
+    adapter_result = AdapterResult(
+        source_key=profile.source_key,
+        object_key=f"news:{profile.source_key}:query-pack:{settings.gdelt_doc_query_pack}",
+        observations=[],
+        releases=[],
+        documents=documents,
+        unsupported=[] if documents else ["no_documents_parsed"],
+    )
+    persisted = persist_adapter_result(db, adapter_result)
+    upsert_source_health(
+        db,
+        source_key=profile.source_key,
+        status="ready" if documents else "empty",
+        details={
+            "object_key": adapter_result.object_key,
+            "query_pack": settings.gdelt_doc_query_pack,
+            "query_count": len(queries),
+            "candidate_records_per_query": per_query_records,
+            "discovery": stats.as_dict(),
+            **persisted,
+        },
+    )
+    return {
+        "source_key": profile.source_key,
+        "status": "ready" if documents else "empty",
+        "documents": len(documents),
+        "persisted": persisted,
+        "trust_tier": profile.trust_tier,
+        "copyright_mode": profile.copyright_mode,
+        "query_pack": settings.gdelt_doc_query_pack,
+        "discovery": stats.as_dict(),
     }
 
 
@@ -270,6 +535,53 @@ def build_news_source_request(
         headers = {"Accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.3"} if profile.fetch_kind == "html_index" else {}
         return NewsSourceRequest(url=profile.feed_url, params={}, headers=headers)
     return None
+
+
+def _gdelt_doc_queries(
+    pack_name: str,
+    cycle_budget: int,
+    *,
+    cycle_index: int = 0,
+) -> tuple[str, ...]:
+    pack = GDELT_DOC_QUERY_PACKS.get((pack_name or "").strip()) or GDELT_DOC_QUERY_PACKS["market_watch"]
+    if cycle_budget <= 0:
+        return ()
+    budget = min(cycle_budget, len(pack))
+    if budget == len(pack):
+        return pack
+    start = (max(0, cycle_index) * budget) % len(pack)
+    return tuple(pack[(start + offset) % len(pack)] for offset in range(budget))
+
+
+def _gdelt_doc_records_per_query(max_documents: int, query_count: int, provider_cap: int) -> int:
+    if query_count <= 0:
+        return max(1, min(max_documents, provider_cap))
+    diversified_floor = 25
+    return max(1, min(provider_cap, max(diversified_floor, (max_documents + query_count - 1) // query_count)))
+
+
+def _gdelt_candidate_limit(max_documents: int, title_context: GdeltTitleEnrichmentContext | None) -> int:
+    title_budget = title_context.limit if title_context is not None else 0
+    return max(1, min(max_documents * 2, max_documents + title_budget))
+
+
+def _document_dedupe_key(document: dict[str, Any]) -> str:
+    url = str(document.get("canonical_url") or document.get("url") or "").strip().lower()
+    if url:
+        return url
+    return str(document.get("dedupe_key") or document.get("normalized_hash") or document.get("title") or "")
+
+
+def _rank_gdelt_documents(documents: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return sorted(
+        documents,
+        key=lambda document: (
+            _trusty_title_score(str(document.get("title") or "")),
+            str(document.get("published_at") or document.get("fetched_at") or ""),
+            str(document.get("canonical_url") or document.get("url") or ""),
+        ),
+        reverse=True,
+    )
 
 
 def parse_news_response(
@@ -357,14 +669,20 @@ async def _fetch_gdelt_bulk_source(
         transport=transport,
         allow_http_hosts=GDELT_DATA_HOST_ALLOWLIST,
     )
-    documents = _parse_gdelt_bulk_file(
+    stats = GdeltDiscoveryStats()
+    title_context = _gdelt_title_context(settings, transport=transport)
+    documents = await _parse_gdelt_bulk_file(
         profile,
         archive.content,
         selected=selected,
         max_documents=max_documents,
         max_rows=settings.gdelt_bulk_max_rows,
         max_expanded_bytes=settings.gdelt_bulk_max_expanded_bytes,
+        title_context=title_context,
+        stats=stats,
     )
+    stats.fetched = stats.parsed
+    stats.published_or_projected = len(documents)
     adapter_result = AdapterResult(
         source_key=profile.source_key,
         object_key=f"news:{profile.source_key}:{selected['timestamp']}",
@@ -374,6 +692,19 @@ async def _fetch_gdelt_bulk_source(
         unsupported=[] if documents else ["no_relevant_gdelt_bulk_rows"],
     )
     persisted = persist_adapter_result(db, adapter_result)
+    upsert_source_health(
+        db,
+        source_key=profile.source_key,
+        status="ready" if documents else "empty",
+        details={
+            "object_key": adapter_result.object_key,
+            "gdelt_file": selected,
+            "discovery": stats.as_dict(),
+            "title_fetch_limit": title_context.limit,
+            "title_fetches_used": title_context.fetched,
+            **persisted,
+        },
+    )
     return {
         "source_key": profile.source_key,
         "status": "ready" if documents else "empty",
@@ -382,6 +713,7 @@ async def _fetch_gdelt_bulk_source(
         "trust_tier": profile.trust_tier,
         "copyright_mode": profile.copyright_mode,
         "gdelt_file": selected,
+        "discovery": stats.as_dict(),
     }
 
 
@@ -398,7 +730,7 @@ def _select_gdelt_update_file(text: str, *, suffix: str) -> dict[str, str] | Non
     return None
 
 
-def _parse_gdelt_bulk_file(
+async def _parse_gdelt_bulk_file(
     profile: SourceProfile,
     body: bytes,
     *,
@@ -406,11 +738,27 @@ def _parse_gdelt_bulk_file(
     max_documents: int,
     max_rows: int,
     max_expanded_bytes: int,
+    title_context: GdeltTitleEnrichmentContext | None = None,
+    stats: GdeltDiscoveryStats | None = None,
 ) -> list[dict[str, Any]]:
     rows = _iter_zipped_csv_rows(body, max_rows=max_rows, max_expanded_bytes=max_expanded_bytes)
     if profile.fetch_kind == "gdelt_event_file":
-        return _parse_gdelt_event_rows(profile, rows, selected=selected, max_documents=max_documents)
-    return _parse_gdelt_gkg_rows(profile, rows, selected=selected, max_documents=max_documents)
+        return await _parse_gdelt_event_rows(
+            profile,
+            rows,
+            selected=selected,
+            max_documents=max_documents,
+            title_context=title_context,
+            stats=stats,
+        )
+    return await _parse_gdelt_gkg_rows(
+        profile,
+        rows,
+        selected=selected,
+        max_documents=max_documents,
+        title_context=title_context,
+        stats=stats,
+    )
 
 
 def _iter_zipped_csv_rows(
@@ -442,21 +790,28 @@ def _iter_zipped_csv_rows(
     yield from csv.reader(line_iter(), delimiter="\t")
 
 
-def _parse_gdelt_event_rows(
+async def _parse_gdelt_event_rows(
     profile: SourceProfile,
     rows: Iterable[list[str]],
     *,
     selected: dict[str, str],
     max_documents: int,
+    title_context: GdeltTitleEnrichmentContext | None = None,
+    stats: GdeltDiscoveryStats | None = None,
 ) -> list[dict[str, Any]]:
     documents: list[dict[str, Any]] = []
+    candidate_limit = _gdelt_candidate_limit(max_documents, title_context)
     for row in rows:
-        if len(documents) >= max_documents:
+        if len(documents) >= candidate_limit:
             break
+        if stats:
+            stats.parsed += 1
         if len(row) < 61:
             continue
         source_url = row[60].strip()
         if not _is_public_http_url(source_url):
+            if stats:
+                stats.blocked_or_denied += 1
             continue
         place = _first_nonempty(row[52], row[44], row[36])
         actor1 = row[6].strip()
@@ -470,19 +825,27 @@ def _parse_gdelt_event_rows(
             part for part in (actor1, actor2, place, source_country, event_code, source_url) if part
         )
         if not _gdelt_bulk_relevant(text_blob, event_code=event_code, quad_class=quad_class):
+            if stats:
+                stats.irrelevant_dropped += 1
             continue
         geo_points = match_geo_points(texts=(text_blob,))
         if not geo_points:
+            if stats:
+                stats.no_geo_dropped += 1
             continue
-        title = _gdelt_event_title(actor1, actor2, place, event_code)
+        title_metadata = await _gdelt_article_metadata(source_url, context=title_context, stats=stats)
+        fallback_title = _gdelt_source_report_title(source_url, actor1, actor2, place)
+        title = _best_gdelt_title(title_metadata, fallback_title)
         published_at = _gdelt_file_datetime(_first_nonempty(row[59], selected["timestamp"], row[1]))
+        canonical_url = title_metadata.canonical_url or source_url
+        published_at = title_metadata.published_at or published_at
         documents.append(
             _normalized_document_dict(
                 profile,
                 {
                     "title": title,
                     "url": source_url,
-                    "canonical_url": source_url,
+                    "canonical_url": canonical_url,
                     "snippet": (
                         f"GDELT event metadata: event {event_code}, quad class {quad_class}, "
                         f"Goldstein {goldstein or 'n/a'}, tone {tone or 'n/a'}."
@@ -495,36 +858,45 @@ def _parse_gdelt_event_rows(
                     "gdelt_global_event_id": row[0].strip(),
                     "gdelt_event_code": event_code,
                     "gdelt_quad_class": quad_class,
+                    "gdelt_title_status": title_metadata.status,
+                    "gdelt_title_source": title_metadata.source,
                     "geo_points": geo_points,
                     "dedupe_key": _news_dedupe_key(profile.source_key, row[0].strip(), source_url, selected["timestamp"]),
                 },
             )
         )
-    return documents
+    return _rank_gdelt_documents(documents)[:max_documents]
 
 
-def _parse_gdelt_gkg_rows(
+async def _parse_gdelt_gkg_rows(
     profile: SourceProfile,
     rows: Iterable[list[str]],
     *,
     selected: dict[str, str],
     max_documents: int,
+    title_context: GdeltTitleEnrichmentContext | None = None,
+    stats: GdeltDiscoveryStats | None = None,
 ) -> list[dict[str, Any]]:
     documents: list[dict[str, Any]] = []
+    candidate_limit = _gdelt_candidate_limit(max_documents, title_context)
     for row in rows:
-        if len(documents) >= max_documents:
+        if len(documents) >= candidate_limit:
             break
-        document = _gdelt_gkg_document(profile, row, selected=selected)
+        if stats:
+            stats.parsed += 1
+        document = await _gdelt_gkg_document(profile, row, selected=selected, title_context=title_context, stats=stats)
         if document is not None:
             documents.append(document)
-    return documents
+    return _rank_gdelt_documents(documents)[:max_documents]
 
 
-def _gdelt_gkg_document(
+async def _gdelt_gkg_document(
     profile: SourceProfile,
     row: list[str],
     *,
     selected: dict[str, str],
+    title_context: GdeltTitleEnrichmentContext | None = None,
+    stats: GdeltDiscoveryStats | None = None,
 ) -> dict[str, Any] | None:
     if len(row) < 16:
         return None
@@ -532,33 +904,339 @@ def _gdelt_gkg_document(
     source_domain = row[3].strip()
     document_url = row[4].strip()
     if not _is_public_http_url(document_url):
+        if stats:
+            stats.blocked_or_denied += 1
         return None
     themes = _gdelt_gkg_values(row[7] if len(row) > 7 else "")
     locations = _gdelt_gkg_locations(row[9] if len(row) > 9 else "")
     text_blob = " ".join([document_url, source_domain, " ".join(themes), " ".join(locations)])
     if not _gdelt_bulk_relevant(text_blob):
+        if stats:
+            stats.irrelevant_dropped += 1
         return None
     geo_points = match_geo_points(texts=(text_blob,))
     if not geo_points:
+        if stats:
+            stats.no_geo_dropped += 1
         return None
+    title_metadata = await _gdelt_article_metadata(document_url, context=title_context, stats=stats)
+    fallback_title = _gdelt_source_report_title(document_url, "", "", locations[0] if locations else "")
+    title = _best_gdelt_title(title_metadata, fallback_title)
+    canonical_url = title_metadata.canonical_url or document_url
+    published_at = title_metadata.published_at or _gdelt_file_datetime(_first_nonempty(row[1], selected["timestamp"]))
     return _normalized_document_dict(
         profile,
         {
-            "title": _gdelt_gkg_title(themes, locations, source_domain),
+            "title": title,
             "url": document_url,
-            "canonical_url": document_url,
+            "canonical_url": canonical_url,
             "snippet": _gdelt_gkg_snippet(themes, locations),
-            "published_at": _gdelt_file_datetime(_first_nonempty(row[1], selected["timestamp"])),
+            "published_at": published_at,
             "source_region": locations[0] if locations else None,
             "language": "en",
             "gdelt_file_url": selected["url"],
             "gdelt_file_timestamp": selected["timestamp"],
             "gdelt_record_id": record_id,
             "gdelt_source_domain": source_domain,
+            "gdelt_title_status": title_metadata.status,
+            "gdelt_title_source": title_metadata.source,
             "geo_points": geo_points,
             "dedupe_key": _news_dedupe_key(profile.source_key, record_id, document_url),
         },
     )
+
+
+def _gdelt_title_context(
+    settings: Any,
+    *,
+    transport: httpx.AsyncBaseTransport | None,
+) -> GdeltTitleEnrichmentContext:
+    return GdeltTitleEnrichmentContext(
+        limit=settings.gdelt_title_fetch_limit,
+        timeout_seconds=settings.gdelt_title_fetch_timeout_seconds,
+        max_bytes=settings.gdelt_title_fetch_max_bytes,
+        per_host_interval_seconds=settings.gdelt_title_per_host_interval_seconds,
+        user_agent=settings.sec_user_agent,
+        transport=transport,
+    )
+
+
+async def _gdelt_article_metadata(
+    url: str,
+    *,
+    context: GdeltTitleEnrichmentContext | None,
+    stats: GdeltDiscoveryStats | None = None,
+) -> GdeltArticleMetadata:
+    if context is None:
+        if stats:
+            stats.title_fallback += 1
+        return GdeltArticleMetadata(title=_article_title_from_url_path(url), status="fallback", source="url_slug")
+    safe_url = _safe_gdelt_article_url(url)
+    if not safe_url:
+        if stats:
+            stats.blocked_or_denied += 1
+            stats.title_fallback += 1
+        return GdeltArticleMetadata(title=_article_title_from_url_path(url), status="blocked", source="url_slug", denial_reason="unsafe_url")
+    assert context.cache is not None
+    if safe_url in context.cache:
+        cached = context.cache[safe_url]
+        _record_title_metadata_stats(cached, stats)
+        return cached
+    title_hint = _article_title_from_url_path(safe_url)
+    if context.fetched >= context.limit:
+        metadata = GdeltArticleMetadata(title=title_hint, status="fallback", source="url_slug", denial_reason="fetch_budget_exhausted")
+        context.cache[safe_url] = metadata
+        _record_title_metadata_stats(metadata, stats)
+        return metadata
+    context.fetched += 1
+    await _gdelt_title_host_backoff(safe_url, context)
+    headers = {
+        "User-Agent": context.user_agent,
+        "Accept": "text/html,application/xhtml+xml,text/plain;q=0.8,*/*;q=0.5",
+        "Range": f"bytes=0-{context.max_bytes - 1}",
+    }
+    try:
+        fetched = await safe_fetch_bytes(
+            safe_url,
+            headers=headers,
+            transport=context.transport,
+            max_bytes=context.max_bytes,
+            timeout_seconds=context.timeout_seconds,
+            raise_for_status=False,
+        )
+    except (SafeFetchError, httpx.HTTPError) as exc:
+        metadata = GdeltArticleMetadata(
+            title=title_hint,
+            status="blocked",
+            source="url_slug" if title_hint else "none",
+            denial_reason=exc.__class__.__name__,
+        )
+        context.cache[safe_url] = metadata
+        _record_title_metadata_stats(metadata, stats)
+        return metadata
+    body = fetched.body.decode(fetched.response.encoding or "utf-8", errors="replace")
+    denial_reason = detect_denial_reason(
+        fetched.response.status_code,
+        fetched.response.headers.get("content-type", ""),
+        body,
+    )
+    if denial_reason:
+        metadata = GdeltArticleMetadata(
+            title=title_hint,
+            status="blocked",
+            source="url_slug" if title_hint else "none",
+            denial_reason=denial_reason,
+        )
+        context.cache[safe_url] = metadata
+        _record_title_metadata_stats(metadata, stats)
+        return metadata
+    title = _article_title_from_html(body) or title_hint
+    canonical_url = _article_canonical_url_from_html(body, fetched.final_url or safe_url)
+    published_at = _article_published_at_from_html(body)
+    metadata = GdeltArticleMetadata(
+        title=title,
+        canonical_url=canonical_url,
+        published_at=published_at,
+        status="enriched" if title and title != title_hint else "fallback",
+        source="html_metadata" if title and title != title_hint else "url_slug",
+    )
+    context.cache[safe_url] = metadata
+    _record_title_metadata_stats(metadata, stats)
+    return metadata
+
+
+async def _gdelt_title_host_backoff(url: str, context: GdeltTitleEnrichmentContext) -> None:
+    host = (urlparse(url).hostname or "").lower()
+    if not host or context.per_host_interval_seconds <= 0:
+        return
+    assert context.host_last_fetch is not None
+    last_fetch = context.host_last_fetch.get(host)
+    now = time.monotonic()
+    if last_fetch is not None:
+        remaining = context.per_host_interval_seconds - (now - last_fetch)
+        if remaining > 0:
+            await asyncio.sleep(remaining)
+    context.host_last_fetch[host] = time.monotonic()
+
+
+def _record_title_metadata_stats(metadata: GdeltArticleMetadata, stats: GdeltDiscoveryStats | None) -> None:
+    if not stats:
+        return
+    if metadata.status == "enriched":
+        stats.title_enriched += 1
+    else:
+        stats.title_fallback += 1
+    if metadata.status == "blocked":
+        stats.blocked_or_denied += 1
+
+
+def _best_gdelt_title(metadata: GdeltArticleMetadata, fallback_title: str) -> str:
+    title = _clean_article_title(metadata.title or "")
+    if title:
+        return title
+    return fallback_title
+
+
+def _safe_gdelt_article_url(value: str) -> str:
+    parsed = urlparse(value.strip())
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return ""
+    if parsed.hostname == "data.gdeltproject.org" or parsed.path.endswith(".zip"):
+        return ""
+    if not _is_public_http_url(value):
+        return ""
+    return value.strip()
+
+
+def _article_title_from_html(html: str) -> str | None:
+    for pattern in (
+        r"<meta[^>]+property=[\"']og:title[\"'][^>]+content=[\"']([^\"']+)[\"']",
+        r"<meta[^>]+content=[\"']([^\"']+)[\"'][^>]+property=[\"']og:title[\"']",
+        r"<meta[^>]+name=[\"']twitter:title[\"'][^>]+content=[\"']([^\"']+)[\"']",
+        r"<meta[^>]+content=[\"']([^\"']+)[\"'][^>]+name=[\"']twitter:title[\"']",
+        r"<title[^>]*>(.*?)</title>",
+    ):
+        title = _clean_article_title(_html_field(html, pattern) or "")
+        if title:
+            return title
+    return None
+
+
+def _article_canonical_url_from_html(html: str, base_url: str) -> str | None:
+    href = _html_field(html, r"<link[^>]+rel=[\"']canonical[\"'][^>]+href=[\"']([^\"']+)[\"']")
+    if not href:
+        href = _html_field(html, r"<meta[^>]+property=[\"']og:url[\"'][^>]+content=[\"']([^\"']+)[\"']")
+    if not href:
+        return None
+    resolved = urljoin(base_url, href)
+    return resolved if _safe_gdelt_article_url(resolved) else None
+
+
+def _article_published_at_from_html(html: str) -> str | None:
+    for pattern in (
+        r"<meta[^>]+property=[\"']article:published_time[\"'][^>]+content=[\"']([^\"']+)[\"']",
+        r"<meta[^>]+name=[\"']pubdate[\"'][^>]+content=[\"']([^\"']+)[\"']",
+        r"<meta[^>]+name=[\"']date[\"'][^>]+content=[\"']([^\"']+)[\"']",
+    ):
+        value = _html_field(html, pattern)
+        if value and (parsed := _parse_metadata_datetime(value)):
+            return parsed
+    return None
+
+
+def _html_field(html: str, pattern: str) -> str | None:
+    match = re.search(pattern, html, flags=re.IGNORECASE | re.DOTALL)
+    if not match:
+        return None
+    return unescape(re.sub(r"\s+", " ", match.group(1)).strip())
+
+
+def _parse_metadata_datetime(value: str) -> str | None:
+    text = value.strip().replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return _email_datetime(value)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).isoformat()
+
+
+def _article_title_from_url_path(url: str) -> str | None:
+    parsed = urlparse(url)
+    candidates: list[tuple[int, str]] = []
+    for raw_segment in parsed.path.split("/"):
+        segment = raw_segment.strip()
+        segment = re.sub(r"\.(html?|amp|php|aspx?)$", "", segment, flags=re.IGNORECASE)
+        if not segment or segment.isdigit():
+            continue
+        words = [word for word in re.split(r"[-_\s]+", segment) if re.search(r"[A-Za-z]", word)]
+        if len(words) < 3:
+            continue
+        candidates.append((len(words) * 10 + len(segment), segment))
+    if not candidates:
+        return None
+    words = [word for word in re.split(r"[-_\s]+", max(candidates)[1]) if word]
+    return _clean_article_title(" ".join(_title_word(word) for word in words))
+
+
+def _clean_article_title(value: str) -> str | None:
+    text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", unescape(value))).strip()
+    if not text:
+        return None
+    blocked = {
+        "access denied",
+        "attention required!",
+        "403 forbidden",
+        "404 not found",
+        "just a moment...",
+        "service unavailable",
+    }
+    lowered = text.lower()
+    if lowered in blocked or lowered.startswith("gdelt event") or lowered.startswith("gdelt gkg"):
+        return None
+    return text[:280]
+
+
+def _gdelt_source_report_title(source_url: str, actor1: str, actor2: str, place: str) -> str:
+    source = _source_domain_display_name(source_url)
+    actors = " / ".join(_title_phrase(value) for value in (actor1, actor2) if value.strip())
+    subject = actors
+    if not subject and place:
+        subject = _title_phrase(place)
+    if source and subject:
+        return f"{source} source report: {subject}"
+    if source:
+        return f"{source} source report"
+    if subject:
+        return f"Source report: {subject}"
+    return "Source-linked market report"
+
+
+def _source_domain_display_name(url: str) -> str | None:
+    host = urlparse(url).hostname or ""
+    labels = [
+        label
+        for label in host.lower().split(".")
+        if label and label not in {"www", "m", "mobile", "en", "eng", "news"}
+    ]
+    while labels and labels[-1] in {"com", "co", "net", "org", "eu", "pk", "uk", "jp", "kr", "au", "ca", "in"}:
+        labels.pop()
+    if not labels:
+        return None
+    known = {
+        "aljazeera": "Al Jazeera",
+        "arabnews": "Arab News",
+        "hindustantimes": "Hindustan Times",
+        "rferl": "Radio Free Europe",
+        "radiofreeeurope": "Radio Free Europe",
+        "themoscowtimes": "The Moscow Times",
+        "wsj": "WSJ",
+    }
+    core = labels[-1]
+    if core in known:
+        return known[core]
+    return " ".join(_title_word(word) for word in re.split(r"[-_]+", core) if word) or None
+
+
+def _title_word(value: str) -> str:
+    upper = value.upper()
+    if upper in {"AI", "API", "BIS", "CPI", "ECB", "EU", "FOMC", "GDP", "HBM", "IEA", "IPO", "LNG", "NATO", "OPEC", "SEC", "TSMC", "UAE", "UK", "UN", "US", "USA", "WHO", "WTI"}:
+        return upper
+    if value.isupper() and len(value) <= 5:
+        return value
+    return value[:1].upper() + value[1:].lower()
+
+
+def _title_phrase(value: str) -> str:
+    return " ".join(_title_word(word) for word in re.split(r"\s+", value.strip().lower()) if word)
+
+
+def _trusty_title_score(title: str) -> int:
+    clean = _clean_article_title(title)
+    if not clean:
+        return 0
+    return min(100, len(clean)) + (50 if not clean.lower().startswith("source report") else 0)
 
 
 def _news_dedupe_key(*parts: str) -> str:
@@ -911,14 +1589,6 @@ def _first_nonempty(*values: Any) -> str:
     return ""
 
 
-def _gdelt_event_title(actor1: str, actor2: str, place: str, event_code: str) -> str:
-    actors = " / ".join(part for part in (actor1.strip(), actor2.strip()) if part)
-    where = f" near {place.strip()}" if place.strip() else ""
-    if actors:
-        return f"GDELT event {event_code}: {actors}{where}"
-    return f"GDELT event {event_code}{where}".strip()
-
-
 def _gdelt_file_datetime(value: str) -> str | None:
     clean = str(value or "").strip()
     if not clean:
@@ -953,13 +1623,6 @@ def _gdelt_gkg_locations(value: str, *, limit: int = 6) -> list[str]:
         if len(result) >= limit:
             break
     return result
-
-
-def _gdelt_gkg_title(themes: list[str], locations: list[str], source_domain: str) -> str:
-    subject = themes[0] if themes else "global knowledge graph item"
-    where = f" in {locations[0]}" if locations else ""
-    source = f" via {source_domain}" if source_domain else ""
-    return f"GDELT GKG: {subject}{where}{source}"[:500]
 
 
 def _gdelt_gkg_snippet(themes: list[str], locations: list[str]) -> str:

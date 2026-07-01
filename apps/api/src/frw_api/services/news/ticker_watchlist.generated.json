@@ -899,6 +899,353 @@
       ]
     },
     {
+      "entity_id": "ONDS",
+      "symbol": "ONDS",
+      "display_symbol": "ONDS",
+      "route_key": "ONDS",
+      "route_kind": "ticker",
+      "name_en": "Ondas",
+      "name_ko": "온다스",
+      "legal_name": "Ondas Inc.",
+      "exchange": "NASDAQ",
+      "asset_type": "Equity",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Drones / autonomous systems",
+      "industry": "Aerospace and defense",
+      "sector_keys": [
+        "drones"
+      ],
+      "tags": [
+        "drones",
+        "autonomous-systems",
+        "defense-tech",
+        "small-cap"
+      ],
+      "aliases": [
+        "Ondas",
+        "Ondas Holdings",
+        "Ondas Autonomous Systems"
+      ],
+      "related_symbols": [
+        "UMAC",
+        "AVAV",
+        "RCAT",
+        "RKLB"
+      ],
+      "sec_cik": "0001646188",
+      "tradingview_symbol": "NASDAQ:ONDS",
+      "official_domains": [
+        "ondas.com",
+        "ondasnetworks.com"
+      ],
+      "sector_terms": [
+        "drone",
+        "autonomous systems",
+        "counter-uas",
+        "rail communications"
+      ],
+      "thesis_bull": "Autonomous systems, defense demand, and critical-network modernization can create high-impact contract catalysts.",
+      "thesis_bear": "Small-cap liquidity, acquisition integration, and funding needs can dominate between contract milestones.",
+      "invalidation": "Watch backlog conversion, financing filings, and customer concentration risk.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "ondas_ir",
+          "source_name": "Ondas Investor Relations",
+          "source_type": "official",
+          "base_url": "https://ir.ondas.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA"
+          ],
+          "topic_coverage": [
+            "drones",
+            "autonomous_systems",
+            "defense"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://ir.ondas.com/news-events/press-releases",
+          "fetch_kind": "html_index",
+          "official_domains": [
+            "ondas.com",
+            "ondasnetworks.com"
+          ],
+          "fetch_profile": "ir_vendor",
+          "scheduled_fetch": false
+        }
+      ],
+      "email_sources": [
+        {
+          "signup_url": "https://ir.ondas.com/news-events/email-alerts",
+          "source_name": "Ondas IR email alerts"
+        }
+      ],
+      "source_keys": [
+        "ondas_ir"
+      ]
+    },
+    {
+      "entity_id": "UMAC",
+      "symbol": "UMAC",
+      "display_symbol": "UMAC",
+      "route_key": "UMAC",
+      "route_kind": "ticker",
+      "name_en": "Unusual Machines",
+      "name_ko": "언유주얼 머신스",
+      "legal_name": "Unusual Machines, Inc.",
+      "exchange": "NYSE American",
+      "asset_type": "Equity",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Drones / components",
+      "industry": "Drone components and manufacturing",
+      "sector_keys": [
+        "drones"
+      ],
+      "tags": [
+        "drones",
+        "domestic-manufacturing",
+        "small-cap",
+        "high-volatility"
+      ],
+      "aliases": [
+        "Unusual Machines",
+        "Rotor Riot",
+        "Fat Shark"
+      ],
+      "related_symbols": [
+        "ONDS",
+        "AVAV",
+        "RCAT"
+      ],
+      "sec_cik": "0001956955",
+      "tradingview_symbol": "AMEX:UMAC",
+      "official_domains": [
+        "unusualmachines.com"
+      ],
+      "sector_terms": [
+        "drone",
+        "fpv",
+        "components",
+        "domestic manufacturing"
+      ],
+      "thesis_bull": "Domestic drone-component demand and FPV ecosystem exposure can support event-driven upside.",
+      "thesis_bear": "Scale, working-capital needs, and speculative retail flow can make volatility extreme.",
+      "invalidation": "Watch supply-chain execution, dilution filings, and customer demand evidence.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "unusual_machines_ir",
+          "source_name": "Unusual Machines Investor Relations",
+          "source_type": "official",
+          "base_url": "https://ir.unusualmachines.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA"
+          ],
+          "topic_coverage": [
+            "drones",
+            "components",
+            "manufacturing"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://ir.unusualmachines.com/news-events/press-releases",
+          "fetch_kind": "html_index",
+          "official_domains": [
+            "unusualmachines.com"
+          ],
+          "fetch_profile": "ir_vendor",
+          "scheduled_fetch": false
+        }
+      ],
+      "email_sources": [
+        {
+          "signup_url": "https://ir.unusualmachines.com/news-events/email-alerts",
+          "source_name": "Unusual Machines IR email alerts"
+        }
+      ],
+      "source_keys": [
+        "unusual_machines_ir"
+      ]
+    },
+    {
+      "entity_id": "AVAV",
+      "symbol": "AVAV",
+      "display_symbol": "AVAV",
+      "route_key": "AVAV",
+      "route_kind": "ticker",
+      "name_en": "AeroVironment",
+      "name_ko": "에어로바이런먼트",
+      "legal_name": "AeroVironment Inc",
+      "exchange": "NASDAQ",
+      "asset_type": "Equity",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Drones / defense",
+      "industry": "Aerospace and defense",
+      "sector_keys": [
+        "drones"
+      ],
+      "tags": [
+        "drones",
+        "defense",
+        "counter-uas",
+        "profitable-defense-tech"
+      ],
+      "aliases": [
+        "AeroVironment",
+        "AV"
+      ],
+      "related_symbols": [
+        "ONDS",
+        "UMAC",
+        "RCAT",
+        "RKLB"
+      ],
+      "sec_cik": "0001368622",
+      "tradingview_symbol": "NASDAQ:AVAV",
+      "official_domains": [
+        "avinc.com"
+      ],
+      "sector_terms": [
+        "drone",
+        "loitering munition",
+        "counter-uas",
+        "defense"
+      ],
+      "thesis_bull": "Defense procurement, loitering-munition demand, and counter-UAS adoption can support durable backlog growth.",
+      "thesis_bear": "Program timing, budget cycles, and valuation sensitivity can pressure returns after sharp rallies.",
+      "invalidation": "Watch backlog quality, margin trend, and defense-budget procurement language.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "aerovironment_ir",
+          "source_name": "AeroVironment Investor Relations",
+          "source_type": "official",
+          "base_url": "https://investor.avinc.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA"
+          ],
+          "topic_coverage": [
+            "drones",
+            "defense",
+            "counter_uas"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://investor.avinc.com/news-releases",
+          "fetch_kind": "html_index",
+          "official_domains": [
+            "avinc.com"
+          ],
+          "fetch_profile": "ir_vendor",
+          "scheduled_fetch": false
+        }
+      ],
+      "email_sources": [
+        {
+          "signup_url": "https://investor.avinc.com/email-alerts",
+          "source_name": "AeroVironment IR email alerts"
+        }
+      ],
+      "source_keys": [
+        "aerovironment_ir"
+      ]
+    },
+    {
+      "entity_id": "RCAT",
+      "symbol": "RCAT",
+      "display_symbol": "RCAT",
+      "route_key": "RCAT",
+      "route_kind": "ticker",
+      "name_en": "Red Cat Holdings",
+      "name_ko": "레드 캣 홀딩스",
+      "legal_name": "Red Cat Holdings, Inc.",
+      "exchange": "NASDAQ",
+      "asset_type": "Equity",
+      "currency": "USD",
+      "country": "USA",
+      "sector": "Drones / defense",
+      "industry": "Drone systems",
+      "sector_keys": [
+        "drones"
+      ],
+      "tags": [
+        "drones",
+        "defense",
+        "small-cap",
+        "contract-risk"
+      ],
+      "aliases": [
+        "Red Cat",
+        "Teal Drones"
+      ],
+      "related_symbols": [
+        "ONDS",
+        "UMAC",
+        "AVAV"
+      ],
+      "sec_cik": "0000748268",
+      "tradingview_symbol": "NASDAQ:RCAT",
+      "official_domains": [
+        "redcatholdings.com",
+        "tealdrones.com"
+      ],
+      "sector_terms": [
+        "drone",
+        "sUAS",
+        "defense",
+        "teal"
+      ],
+      "thesis_bull": "U.S. defense drone procurement and Blue UAS demand can produce step-change contract catalysts.",
+      "thesis_bear": "Execution, production ramp, contract timing, and financing risk can drive large drawdowns.",
+      "invalidation": "Watch program award timing, delivery milestones, and dilution or debt filings.",
+      "source_policy": "metadata_only_unless_terms_allow_display",
+      "sources": [
+        {
+          "source_key": "red_cat_ir",
+          "source_name": "Red Cat Holdings Investor Relations",
+          "source_type": "official",
+          "base_url": "https://ir.redcatholdings.com",
+          "trust_tier": "T0_OFFICIAL",
+          "region_coverage": [
+            "USA"
+          ],
+          "topic_coverage": [
+            "drones",
+            "defense"
+          ],
+          "rate_limit_provider_key": "company_ir",
+          "rate_limit_endpoint_key": "html",
+          "copyright_mode": "official_public_metadata",
+          "feed_url": "https://ir.redcatholdings.com/news-events/press-releases",
+          "fetch_kind": "html_index",
+          "official_domains": [
+            "redcatholdings.com",
+            "tealdrones.com"
+          ],
+          "fetch_profile": "ir_vendor",
+          "scheduled_fetch": false
+        }
+      ],
+      "email_sources": [
+        {
+          "signup_url": "https://ir.redcatholdings.com/news-events/email-alerts",
+          "source_name": "Red Cat IR email alerts"
+        }
+      ],
+      "source_keys": [
+        "red_cat_ir"
+      ]
+    },
+    {
       "entity_id": "AMD",
       "symbol": "AMD",
       "display_symbol": "AMD",

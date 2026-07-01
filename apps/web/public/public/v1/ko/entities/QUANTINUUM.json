@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-30T08:52:42Z",
-  "stale_after": "2026-06-30T20:52:42Z",
-  "hard_expires_at": "2026-07-07T08:52:42Z",
+  "generated_at": "2026-06-30T13:19:11Z",
+  "stale_after": "2026-07-01T01:19:11Z",
+  "hard_expires_at": "2026-07-07T13:19:11Z",
   "object_type": "reference_entity",
   "object_key": "QUANTINUUM",
-  "content_hash": "sha256:74b3c1530da266710e6e64417d83fb0f1bb34eda4f75abbe4d0309ce2dbc5b20",
+  "content_hash": "sha256:e0e782555ceafa1af9da86ed276c63c8d141540f8f2be6c6e9ec9e7b4d0380c2",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -115,7 +115,7 @@
       "entity_id": "QUANTINUUM",
       "symbol": "QUANTINUUM",
       "display_symbol": "Quantinuum",
-      "name": "Quantinuum",
+      "name": "퀀티넘",
       "route_kind": "reference_entity",
       "route_key": "QUANTINUUM",
       "sector_keys": [
@@ -129,7 +129,7 @@
       "source_strength": "registry",
       "freshness": "watch"
     },
-    "summary": "Quantinuum은 참고 엔티티로 추적됩니다. 비상장 또는 비거래 대상일 수 있어 시장가격 위젯은 표시하지 않습니다.",
+    "summary": "퀀티넘은 참고 엔티티로 추적됩니다. 비상장 또는 비거래 대상일 수 있어 시장가격 위젯은 표시하지 않습니다.",
     "source_links": [
       {
         "label": "Quantinuum Newsroom",
@@ -145,7 +145,7 @@
         "entity_id": "IONQ",
         "symbol": "IONQ",
         "display_symbol": "IONQ",
-        "name": "IONQ",
+        "name": "아이온큐",
         "route_kind": "ticker",
         "route_key": "IONQ",
         "sector_keys": [
@@ -163,7 +163,7 @@
         "entity_id": "RGTI",
         "symbol": "RGTI",
         "display_symbol": "RGTI",
-        "name": "RGTI",
+        "name": "리게티 컴퓨팅",
         "route_kind": "ticker",
         "route_key": "RGTI",
         "sector_keys": [
@@ -181,7 +181,7 @@
         "entity_id": "QBTS",
         "symbol": "QBTS",
         "display_symbol": "QBTS",
-        "name": "QBTS",
+        "name": "디웨이브 퀀텀",
         "route_kind": "ticker",
         "route_key": "QBTS",
         "sector_keys": [

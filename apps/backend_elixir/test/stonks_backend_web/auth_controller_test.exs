@@ -122,7 +122,7 @@ defmodule StonksBackendWeb.AuthControllerTest do
     assert byte_size(params["nonce"]) > 20
   end
 
-  test "google callback preserves error redirect and unfinished stub statuses" do
+  test "google callback preserves error redirect and rejects invalid state" do
     conn =
       :get
       |> conn("/api/auth/google/callback", %{"error" => String.duplicate("a", 300)})
@@ -154,14 +154,12 @@ defmodule StonksBackendWeb.AuthControllerTest do
       google_oauth_client_secret: "client-secret"
     )
 
-    stubbed =
+    invalid_state =
       :get
       |> conn("/api/auth/google/callback", %{"code" => "code", "state" => "state"})
       |> StonksBackendWeb.Router.call(@opts)
 
-    assert stubbed.status == 501
-
-    assert stubbed.resp_body ==
-             "Google OAuth callback exchange is not enabled in this migration slice."
+    assert invalid_state.status == 400
+    assert invalid_state.resp_body == "Invalid or expired OAuth state."
   end
 end

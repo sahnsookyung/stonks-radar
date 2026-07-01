@@ -214,6 +214,89 @@ defmodule StonksBackend.Accounts do
     normalized in allowed_emails or (domain != "" and domain in allowed_domains)
   end
 
+  def consume_google_state(state) do
+    row =
+      Sql.one(
+        """
+        update oauth_login_state
+        set used_at = now()
+        where state_hash = $1
+          and provider = 'google'
+          and used_at is null
+          and expires_at > now()
+        returning state_hash, nonce_hash, redirect_to
+        """,
+        [Crypto.hash_secret(state)]
+      )
+
+    if row, do: {:ok, row}, else: {:error, :invalid_oauth_state}
+  end
+
+  def fetch_google_profile(code, expected_nonce_hash) do
+    with {:ok, token_payload} <- exchange_google_code(code),
+         {:ok, id_token} <- require_id_token(token_payload),
+         {:ok, claims} <- fetch_google_claims(id_token),
+         :ok <- validate_google_claims(claims, expected_nonce_hash) do
+      {:ok, claims}
+    end
+  end
+
+  def upsert_google_admin_user(profile) when is_map(profile) do
+    email = profile |> Map.get("email", "") |> normalize_email()
+    subject = profile |> Map.get("sub", "") |> to_string() |> String.trim()
+    email_verified = google_email_verified?(profile["email_verified"])
+
+    cond do
+      email == "" or subject == "" or not email_verified or not google_allowed?(email) ->
+        {:error, :google_account_not_authorized}
+
+      true ->
+        role =
+          if email == normalize_email(Settings.get(:admin_email, "owner@example.com")),
+            do: "owner",
+            else: "admin"
+
+        user =
+          Sql.one(
+            """
+            insert into app_user(
+              email, password_hash, role, active, totp_required,
+              auth_provider, external_subject, last_login_at, auth_metadata
+            )
+            values (
+              $1, $2, $3, true, false,
+              'google', $4, now(), $5::jsonb
+            )
+            on conflict (email) do update set
+              role = case
+                when app_user.role = 'owner' then app_user.role
+                else excluded.role
+              end,
+              auth_provider = 'google',
+              external_subject = excluded.external_subject,
+              active = true,
+              last_login_at = now(),
+              auth_metadata = excluded.auth_metadata,
+              updated_at = now()
+            returning id, email, role
+            """,
+            [
+              email,
+              "oauth:google:#{Crypto.hash_secret(subject)}",
+              role,
+              subject,
+              Jason.encode!(%{
+                "name" => profile["name"],
+                "picture" => profile["picture"],
+                "email_verified" => profile["email_verified"]
+              })
+            ]
+          )
+
+        if user, do: {:ok, user}, else: {:error, :google_user_upsert_failed}
+    end
+  end
+
   def google_config do
     enabled = Settings.google_oauth_enabled?()
 
@@ -250,6 +333,73 @@ defmodule StonksBackend.Accounts do
     path = if String.starts_with?(path, "/"), do: path, else: "/" <> path
     base <> path
   end
+
+  defp exchange_google_code(code) do
+    case Req.post(Settings.get(:google_oauth_token_url, "https://oauth2.googleapis.com/token"),
+           form: %{
+             "code" => code,
+             "client_id" => Settings.get(:google_oauth_client_id),
+             "client_secret" => Settings.get(:google_oauth_client_secret),
+             "redirect_uri" => google_redirect_uri(),
+             "grant_type" => "authorization_code"
+           },
+           headers: [{"accept", "application/json"}],
+           receive_timeout: 12_000,
+           retry: false
+         ) do
+      {:ok, %{status: status, body: body}} when status in 200..299 and is_map(body) ->
+        {:ok, body}
+
+      {:ok, %{status: status}} when status >= 400 ->
+        {:error, {:bad_gateway, "Google OAuth token exchange failed."}}
+
+      {:error, exception} ->
+        {:error,
+         {:bad_gateway, "Google OAuth token exchange failed: #{Exception.message(exception)}"}}
+    end
+  end
+
+  defp require_id_token(%{"id_token" => id_token}) when is_binary(id_token) and id_token != "",
+    do: {:ok, id_token}
+
+  defp require_id_token(_),
+    do: {:error, {:bad_gateway, "Google OAuth token response did not include an ID token."}}
+
+  defp fetch_google_claims(id_token) do
+    case Req.get(
+           Settings.get(:google_oauth_tokeninfo_url, "https://oauth2.googleapis.com/tokeninfo"),
+           params: %{id_token: id_token},
+           headers: [{"accept", "application/json"}],
+           receive_timeout: 12_000,
+           retry: false
+         ) do
+      {:ok, %{status: status, body: body}} when status in 200..299 and is_map(body) ->
+        {:ok, body}
+
+      {:ok, %{status: status}} when status >= 400 ->
+        {:error, {:bad_gateway, "Google OAuth ID token validation failed."}}
+
+      {:error, exception} ->
+        {:error,
+         {:bad_gateway,
+          "Google OAuth ID token validation failed: #{Exception.message(exception)}"}}
+    end
+  end
+
+  defp validate_google_claims(claims, expected_nonce_hash) do
+    cond do
+      claims["aud"] != Settings.get(:google_oauth_client_id) ->
+        {:error, {:forbidden, "Google OAuth audience mismatch."}}
+
+      Crypto.hash_secret(to_string(claims["nonce"] || "")) != expected_nonce_hash ->
+        {:error, {:forbidden, "Google OAuth nonce mismatch."}}
+
+      true ->
+        :ok
+    end
+  end
+
+  defp google_email_verified?(value), do: value in [true, "true", "True", "1", 1]
 
   defp google_allowed_hint do
     emails = Settings.google_allowed_emails()
