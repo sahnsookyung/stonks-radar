@@ -342,7 +342,7 @@ defmodule StonksBackend.Sources do
       elixir_component: "disclosure_metadata_ingest",
       coverage_status: "coverage_gap",
       reason:
-        "OGE PDF discovery and parsing are still served by the Python implementation until the Elixir parser is ported."
+        "OGE PDF discovery and parsing are not yet ported to the Elixir disclosure ingester."
     }
 
     try do
@@ -592,12 +592,11 @@ defmodule StonksBackend.Sources do
     end
   end
 
-  defp ingest_error({:fetch_sandbox_denied, _status, detail}), do: detail
+  defp ingest_error({:safe_fetch_denied, _status, detail}), do: detail
 
-  defp ingest_error({:fetch_sandbox_unavailable, detail}),
-    do: "Fetch sandbox unavailable: #{detail}"
+  defp ingest_error({:safe_fetch_unavailable, detail}),
+    do: "SafeFetch unavailable: #{detail}"
 
-  defp ingest_error(:fetch_sandbox_url_not_configured), do: "Fetch sandbox URL is not configured"
   defp ingest_error(reason), do: to_string(reason)
 
   defp hash_document(document) do

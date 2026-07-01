@@ -14,7 +14,8 @@ defmodule StonksBackendWeb.ContractOpsTest do
     assert scripts["backend:check"] ==
              "npm run backend:deps && npm run backend:compile && npm run backend:test:contract"
 
-    assert scripts["test:all"] =~ "backend:check"
+    assert scripts["test"] =~ "backend:check"
+    assert scripts["test:all"] =~ "backend:test"
   end
 
   test "Mix exposes an explicit contract-only alias" do
@@ -24,7 +25,7 @@ defmodule StonksBackendWeb.ContractOpsTest do
     assert mix_exs =~ ~s("test.contract": ["test --only contract"])
   end
 
-  test "compose uses api-elixir as the default backend and keeps Python runtime profile-only" do
+  test "compose uses api-elixir as the only backend runtime" do
     compose = read_repo_file("compose.yaml")
     compose_dev = read_repo_file("compose.dev.yaml")
     compose_prod = read_repo_file("infra/docker-compose.prod.yml")
@@ -33,31 +34,31 @@ defmodule StonksBackendWeb.ContractOpsTest do
     deploy_workflow = read_repo_file(".github/workflows/deploy.yml")
 
     assert compose =~ ~s(api-elixir:)
-    assert compose =~ ~s(profiles: ["python-legacy"])
     assert compose =~ "depends_on:\n      - api-elixir"
     assert compose =~ "/api/public/health"
-    assert compose =~ "fetch-sandbox:"
-    assert compose =~ "dockerfile: apps/fetch-sandbox/Dockerfile"
-    assert compose =~ "fetch-sandbox:\n    profiles: [\"python-legacy\"]"
+    refute compose =~ "\n  api:"
+    refute compose =~ "\n  worker:"
+    refute compose =~ "fetch-sandbox:"
+    refute compose =~ "python-legacy"
     refute compose =~ "FETCH_SANDBOX_URL"
-    refute compose =~ "fetch-sandbox:\n        condition: service_healthy"
     refute compose =~ "dev-elixir-secret-key-base"
 
     assert compose_dev =~ ~s("8000:8000")
+    refute compose_dev =~ "python-legacy"
 
     assert compose_prod =~ "api-elixir:"
-    assert compose_prod =~ "fetch-sandbox:"
-    assert compose_prod =~ "fetch-sandbox:\n    profiles: [\"python-legacy\"]"
+    refute compose_prod =~ "\n  api:"
+    refute compose_prod =~ "\n  worker:"
+    refute compose_prod =~ "fetch-sandbox:"
+    refute compose_prod =~ "python-legacy"
     refute compose_prod =~ "depends_on:\n      - api"
     refute compose_prod =~ "FETCH_SANDBOX_URL"
 
     refute deploy_script =~ "publish_runtime_snapshots.py"
     refute deploy_script =~ " up -d postgres valkey fetch-sandbox"
     refute deploy_script =~ "python3 -c"
-    assert deploy_script =~ "--profile python-legacy down --remove-orphans"
-
-    assert deploy_script =~
-             "docker rm -f stonks-radar-api-1 stonks-radar-worker-1 stonks-radar-fetch-sandbox-1"
+    refute deploy_script =~ "python-legacy"
+    refute deploy_script =~ "stonks-radar-fetch-sandbox"
 
     assert deploy_script =~ "StonksBackend.Release.migrate()"
     assert deploy_script =~ "stonks-radar_published-snapshots"
@@ -70,10 +71,8 @@ defmodule StonksBackendWeb.ContractOpsTest do
     refute deploy_workflow =~ "seed:snapshots"
     refute deploy_workflow =~ "test:all"
     refute deploy_workflow =~ "STONKS_SNAPSHOT_ENV_FILE"
-    assert deploy_workflow =~ "--profile python-legacy down --remove-orphans"
-
-    assert deploy_workflow =~
-             "docker rm -f stonks-radar-api-1 stonks-radar-worker-1 stonks-radar-fetch-sandbox-1"
+    refute deploy_workflow =~ "python-legacy"
+    refute deploy_workflow =~ "stonks-radar-fetch-sandbox"
 
     assert deploy_workflow =~ "StonksBackend.Release.migrate()"
     assert deploy_workflow =~ "stonks-radar_published-snapshots"

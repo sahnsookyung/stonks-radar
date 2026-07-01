@@ -54,8 +54,7 @@ rm -rf \
   "$deploy_dir/apps/web/.generated-public" \
   "$deploy_dir/apps/backend_elixir/deps" \
   "$deploy_dir/apps/backend_elixir/_build" \
-  "$deploy_dir/apps/backend_elixir/.elixir_ls" \
-  "$deploy_dir/.pytest_cache"
+  "$deploy_dir/apps/backend_elixir/.elixir_ls"
 
 if [[ "$(cd "$source_dir" && pwd -P)" != "$(cd "$deploy_dir" && pwd -P)" ]]; then
   rsync -az --delete \
@@ -80,15 +79,14 @@ install -m 600 "$env_file" "$deploy_dir/.env"
 install -m 600 "$env_file" "$deploy_dir/.secrets/stonks-radar.production.env"
 
 cd "$deploy_dir"
-docker compose "${compose_files[@]}" --profile python-legacy down --remove-orphans || true
-docker rm -f stonks-radar-api-1 stonks-radar-worker-1 stonks-radar-fetch-sandbox-1 || true
+docker compose "${compose_files[@]}" down --remove-orphans || true
 for volume in stonks-radar_snapshot-artifacts stonks-radar_published-snapshots; do
   mountpoint="$(docker volume inspect "$volume" --format "{{ .Mountpoint }}" 2>/dev/null || true)"
   if [[ -n "$mountpoint" && -d "$mountpoint" ]]; then
     "${sudo_cmd[@]}" find "$mountpoint" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
   fi
 done
-docker image rm -f stonks-radar-api stonks-radar-api-elixir stonks-radar-fetch-sandbox || true
+docker image rm -f stonks-radar-api-elixir || true
 docker container prune -f || true
 docker builder prune -af || true
 docker image prune -f || true

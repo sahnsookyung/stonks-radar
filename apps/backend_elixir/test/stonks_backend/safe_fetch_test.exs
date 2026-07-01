@@ -3,7 +3,7 @@ defmodule StonksBackend.SafeFetchTest do
 
   alias StonksBackend.SafeFetch
 
-  test "fetch_url returns sandbox-compatible metadata without raw html" do
+  test "fetch_url returns SafeFetch metadata without raw html" do
     request_fun = fn url, opts ->
       assert url == "https://example.com/story"
       assert opts[:redirect] == false
@@ -53,7 +53,7 @@ defmodule StonksBackend.SafeFetchTest do
     request_fun = fn _, _ -> send(parent, :request_called) end
     resolver = fn "127.0.0.1", 80 -> {:ok, [{127, 0, 0, 1}]} end
 
-    assert {:error, {:fetch_sandbox_denied, 400, detail}} =
+    assert {:error, {:safe_fetch_denied, 400, detail}} =
              SafeFetch.fetch_url("http://127.0.0.1/",
                request_fun: request_fun,
                resolver: resolver
@@ -91,7 +91,7 @@ defmodule StonksBackend.SafeFetchTest do
 
     resolver = fn "example.com", 443 -> {:ok, [{93, 184, 216, 34}]} end
 
-    assert {:error, {:fetch_sandbox_denied, 400, "Response exceeded byte cap"}} =
+    assert {:error, {:safe_fetch_denied, 400, "Response exceeded byte cap"}} =
              SafeFetch.fetch_url("https://example.com/story",
                request_fun: request_fun,
                resolver: resolver,

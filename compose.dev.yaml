@@ -7,11 +7,6 @@ services:
     ports:
       - "6379:6379"
 
-  api:
-    profiles: ["python-legacy"]
-    ports:
-      - "8001:8000"
-
   api-elixir:
     ports:
       - "8000:8000"

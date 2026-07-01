@@ -3,7 +3,7 @@ defmodule StonksBackend.AccountsCryptoTest do
 
   alias StonksBackend.Accounts.Crypto
 
-  test "PBKDF2 verification accepts current FastAPI-style hashes" do
+  test "PBKDF2 verification accepts legacy hashes" do
     encoded =
       "pbkdf2_sha256$260000$0123456789abcdef0123456789abcdef$" <>
         "8966fb3174de4fb29d889f130d91cdd426a2209b6ef91ef6f45fc0651e7adeb4"
@@ -37,7 +37,7 @@ defmodule StonksBackend.AccountsCryptoTest do
     refute Crypto.verify_password("correct horse battery staple", "$argon2not-a-real-hash")
   end
 
-  test "legacy PBKDF2 helper still emits FastAPI-compatible hashes" do
+  test "legacy PBKDF2 helper still emits compatible hashes" do
     encoded =
       Crypto.hash_legacy_password(
         "correct horse battery staple",

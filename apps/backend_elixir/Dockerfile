@@ -13,7 +13,7 @@ COPY packages/schemas/snapshots /app/packages/schemas/snapshots
 COPY packages/shared-config /app/packages/shared-config
 COPY apps/backend_elixir ./
 RUN mkdir -p priv/news_sources
-COPY apps/api/src/frw_api/services/news/ticker_watchlist.generated.json priv/news_sources/ticker_watchlist.generated.json
+COPY packages/shared-config/ticker-watchlist.generated.json priv/news_sources/ticker_watchlist.generated.json
 COPY config/tracked_entities.json priv/news_sources/tracked_entities.json
 RUN mix deps.compile && mix compile && mix release
 

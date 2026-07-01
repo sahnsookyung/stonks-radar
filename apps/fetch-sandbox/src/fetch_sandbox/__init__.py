@@ -1,1 +1,0 @@
-"""Isolated fetch sandbox."""

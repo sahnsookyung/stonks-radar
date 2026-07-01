@@ -16,11 +16,6 @@
     "web:e2e:responsive": "npm --workspace apps/web exec -- playwright test mobile-responsive.spec.ts --project=mobile",
     "web:e2e:prod-mobile": "STONKS_E2E_BASE_URL=https://stonks.sookyungahn.com npm --workspace apps/web exec -- playwright test mobile-responsive.spec.ts --project=mobile",
     "build:map-assets": "node scripts/build_map_assets.mjs",
-    "seed:snapshots": "python3 scripts/build_seed_snapshots.py",
-    "seed:snapshots:build": "rm -rf apps/web/.generated-public && mkdir -p apps/web/.generated-public && cp -a apps/web/public/. apps/web/.generated-public/ && STONKS_SNAPSHOT_PUBLIC_ROOT=apps/web/.generated-public/public python3 scripts/build_seed_snapshots.py",
-    "check:schemas": "python3 scripts/validate_tracked_entities.py --check-generated && python3 scripts/validate_snapshots.py",
-    "api:compile": "python3 -m compileall apps/api/src apps/worker/src apps/fetch-sandbox/src scripts",
-    "api:test": "PYTHONPATH=apps/api/src:apps/worker/src:apps/fetch-sandbox/src uv run --project apps/api --extra dev --with ./apps/fetch-sandbox python -m pytest -q tests",
     "backend:deps": "cd apps/backend_elixir && mix deps.get",
     "backend:compile": "cd apps/backend_elixir && mix compile",
     "backend:test": "cd apps/backend_elixir && mix test",
@@ -28,12 +23,10 @@
     "backend:check": "npm run backend:deps && npm run backend:compile && npm run backend:test:contract",
     "backend:ecto.migrate": "cd apps/backend_elixir && mix ecto.migrate",
     "backend:release": "cd apps/backend_elixir && MIX_ENV=prod mix release",
-    "deploy:preflight": "python3 scripts/deploy_preflight.py",
     "audit:delivery": "node scripts/audit_live_delivery.mjs",
-    "ops:storage": "python3 scripts/monitor_storage.py",
-    "test": "npm run check:schemas && npm run web:test && npm run api:compile",
-    "test:all": "npm run check:schemas && npm run web:test && npm run api:test && npm run web:e2e && npm run api:compile && npm run backend:check",
-    "build": "npm run build:map-assets && npm run seed:snapshots:build && STONKS_SNAPSHOT_PUBLIC_ROOT=apps/web/.generated-public/public STONKS_REQUIRE_FRESH_SNAPSHOTS=1 python3 scripts/validate_snapshots.py && STONKS_WEB_PUBLIC_DIR=.generated-public npm run web:build"
+    "test": "npm run web:test && npm run backend:check",
+    "test:all": "npm run web:test && npm run backend:test && npm run web:e2e",
+    "build": "npm run build:map-assets && npm run web:build"
   },
   "engines": {
     "node": ">=20"

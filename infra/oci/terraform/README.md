@@ -11,7 +11,7 @@ Requires Terraform `>= 1.6`.
 - Existing public subnet
 - No managed database, load balancer, NAT gateway, object storage, or other paid resources
 
-The variables deliberately validate the agreed Always Free envelope. If this shape changes, update the free-tier capacity model in `scripts/deploy_preflight.py` first and rerun `npm run deploy:preflight`.
+The variables deliberately validate the agreed Always Free envelope. If this shape changes, update this Terraform model and rerun `terraform plan` with the production variable file before changing the host shape.
 
 For the existing manually-created instance, import before applying:
 

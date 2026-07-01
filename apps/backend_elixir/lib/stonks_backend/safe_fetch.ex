@@ -8,7 +8,7 @@ defmodule StonksBackend.SafeFetch do
   @default_timeout_seconds 20
   @default_max_bytes 5_000_000
   @max_redirects 5
-  @user_agent "FRWFetchSandbox/1.0"
+  @user_agent "StonksRadarSafeFetch/1.0"
 
   def fetch_url(url, opts \\ []) do
     request_fun = Keyword.get(opts, :request_fun, &Req.get/2)
@@ -52,7 +52,7 @@ defmodule StonksBackend.SafeFetch do
          _ips,
          _redirects
        ),
-       do: {:error, {:fetch_sandbox_denied, 400, "url is required"}}
+       do: {:error, {:safe_fetch_denied, 400, "url is required"}}
 
   defp fetch_loop(
          current_url,
@@ -107,17 +107,17 @@ defmodule StonksBackend.SafeFetch do
         {:ok, response}
 
       {:error, exception} ->
-        {:error, {:fetch_sandbox_unavailable, Exception.message(exception)}}
+        {:error, {:safe_fetch_unavailable, Exception.message(exception)}}
 
       other ->
-        {:error, {:fetch_sandbox_unavailable, "unexpected fetch response: #{inspect(other)}"}}
+        {:error, {:safe_fetch_unavailable, "unexpected fetch response: #{inspect(other)}"}}
     end
   end
 
   defp maybe_redirect(%{status: status, headers: headers}) when status in 300..399 do
     case header_value(headers, "location") do
       nil ->
-        {:error, {:fetch_sandbox_denied, status, "Redirect response missing Location header"}}
+        {:error, {:safe_fetch_denied, status, "Redirect response missing Location header"}}
 
       location ->
         {:redirect, location}
@@ -127,7 +127,7 @@ defmodule StonksBackend.SafeFetch do
   defp maybe_redirect(_response), do: :not_redirect
 
   defp next_redirect_url(_current_url, _location, redirects) when redirects + 1 > @max_redirects,
-    do: {:error, {:fetch_sandbox_denied, 400, "Too many redirects"}}
+    do: {:error, {:safe_fetch_denied, 400, "Too many redirects"}}
 
   defp next_redirect_url(current_url, location, _redirects) do
     current_url
@@ -135,13 +135,13 @@ defmodule StonksBackend.SafeFetch do
     |> URI.to_string()
     |> then(&{:ok, &1})
   rescue
-    _ -> {:error, {:fetch_sandbox_denied, 400, "Invalid redirect URL"}}
+    _ -> {:error, {:safe_fetch_denied, 400, "Invalid redirect URL"}}
   end
 
   defp ok_status(%{status: status}) when status in 200..299, do: :ok
 
   defp ok_status(%{status: status}),
-    do: {:error, {:fetch_sandbox_denied, status, "source returned HTTP #{status}"}}
+    do: {:error, {:safe_fetch_denied, status, "source returned HTTP #{status}"}}
 
   defp payload(original_url, final_url, response, body, resolved_ips) do
     content_type = header_value(response.headers, "content-type") || ""
@@ -165,10 +165,10 @@ defmodule StonksBackend.SafeFetch do
 
     cond do
       parsed.scheme not in ["http", "https"] ->
-        {:error, {:fetch_sandbox_denied, 400, "Only http/https protocols are allowed"}}
+        {:error, {:safe_fetch_denied, 400, "Only http/https protocols are allowed"}}
 
       is_nil(parsed.host) or String.trim(parsed.host) == "" ->
-        {:error, {:fetch_sandbox_denied, 400, "Hostname is required"}}
+        {:error, {:safe_fetch_denied, 400, "Hostname is required"}}
 
       true ->
         port = parsed.port || if(parsed.scheme == "https", do: 443, else: 80)
@@ -179,7 +179,7 @@ defmodule StonksBackend.SafeFetch do
   defp validate_resolved_ips(host, port, resolver) do
     case resolver.(host, port) do
       {:ok, []} ->
-        {:error, {:fetch_sandbox_denied, 400, "DNS resolution returned no addresses"}}
+        {:error, {:safe_fetch_denied, 400, "DNS resolution returned no addresses"}}
 
       {:ok, ips} ->
         normalized_ips = Enum.map(ips, &normalize_ip/1)
@@ -190,12 +190,12 @@ defmodule StonksBackend.SafeFetch do
 
           ip ->
             {:error,
-             {:fetch_sandbox_denied, 400,
+             {:safe_fetch_denied, 400,
               "Private, link-local, loopback, or metadata IP blocked: #{ip_to_string(ip)}"}}
         end
 
       {:error, reason} ->
-        {:error, {:fetch_sandbox_denied, 400, "DNS resolution failed: #{inspect(reason)}"}}
+        {:error, {:safe_fetch_denied, 400, "DNS resolution failed: #{inspect(reason)}"}}
     end
   end
 
@@ -228,7 +228,7 @@ defmodule StonksBackend.SafeFetch do
     body = body_to_binary(body)
 
     if byte_size(body) > max_bytes do
-      {:error, {:fetch_sandbox_denied, 400, "Response exceeded byte cap"}}
+      {:error, {:safe_fetch_denied, 400, "Response exceeded byte cap"}}
     else
       {:ok, body}
     end

@@ -17,30 +17,6 @@ services:
     image: valkey/valkey:8-alpine
     command: ["valkey-server", "--save", "", "--appendonly", "no", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
 
-  api:
-    profiles: ["python-legacy"]
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-    env_file:
-      - path: .env
-        required: false
-    environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-frw}:${POSTGRES_PASSWORD:-frw}@postgres:5432/${POSTGRES_DB:-frw}
-      REDIS_URL: redis://valkey:6379/0
-      SNAPSHOT_ARTIFACT_DIR: /app/artifacts/snapshots
-      PUBLISHED_SNAPSHOT_DIR: /app/published-public
-    volumes:
-      - snapshot-artifacts:/app/artifacts/snapshots
-      - published-snapshots:/app/published-public
-    depends_on:
-      postgres:
-        condition: service_healthy
-      valkey:
-        condition: service_started
-    security_opt:
-      - no-new-privileges:true
-
   api-elixir:
     build:
       context: .
@@ -70,48 +46,6 @@ services:
       start_period: 20s
     security_opt:
       - no-new-privileges:true
-
-  worker:
-    profiles: ["python-legacy"]
-    build:
-      context: .
-      dockerfile: apps/worker/Dockerfile
-    env_file:
-      - path: .env
-        required: false
-    environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-frw}:${POSTGRES_PASSWORD:-frw}@postgres:5432/${POSTGRES_DB:-frw}
-      REDIS_URL: redis://valkey:6379/0
-      SNAPSHOT_ARTIFACT_DIR: /app/artifacts/snapshots
-      PUBLISHED_SNAPSHOT_DIR: /app/published-public
-    volumes:
-      - snapshot-artifacts:/app/artifacts/snapshots
-      - published-snapshots:/app/published-public
-    depends_on:
-      postgres:
-        condition: service_healthy
-    security_opt:
-      - no-new-privileges:true
-
-  fetch-sandbox:
-    profiles: ["python-legacy"]
-    build:
-      context: .
-      dockerfile: apps/fetch-sandbox/Dockerfile
-    env_file:
-      - path: .env
-        required: false
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
-    read_only: true
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import json, urllib.request as u; data=json.load(u.urlopen('http://127.0.0.1:8080/health', timeout=2)); assert data.get('status') == 'ok'\""]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
 
   web:
     build:

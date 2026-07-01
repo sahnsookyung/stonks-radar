@@ -1,1 +1,0 @@
-"""DB-backed worker process."""

@@ -186,7 +186,7 @@ defmodule StonksBackendWeb.PublicControllerTest do
     assert body["data_freshness"]["license_mode"] == "public_display_not_allowed"
   end
 
-  test "market history rejects inverted windows with FastAPI-compatible message" do
+  test "market history rejects inverted windows with legacy-compatible message" do
     conn =
       :get
       |> conn("/api/public/market/history?symbols=AAPL&start=2026-01-03&end=2026-01-01")
@@ -254,7 +254,7 @@ defmodule StonksBackendWeb.PublicControllerTest do
              Enum.find(MarketData.cache_headers(payload), &(elem(&1, 0) == "etag"))
   end
 
-  test "disclosure helpers preserve empty FastAPI envelopes without a live db" do
+  test "disclosure helpers preserve empty legacy envelopes without a live db" do
     filings = Sources.filings(%{})
     assert filings.filings == []
     assert is_list(filings.limitations)

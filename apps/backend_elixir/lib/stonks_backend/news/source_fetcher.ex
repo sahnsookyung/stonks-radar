@@ -233,11 +233,11 @@ defmodule StonksBackend.News.SourceFetcher do
       app_priv_path("ticker_watchlist.generated.json"),
       app_priv_path("tracked_entities.json"),
       Path.expand(
-        "../api/src/frw_api/services/news/ticker_watchlist.generated.json",
+        "packages/shared-config/ticker-watchlist.generated.json",
         File.cwd!()
       ),
       Path.expand(
-        "../../apps/api/src/frw_api/services/news/ticker_watchlist.generated.json",
+        "../../packages/shared-config/ticker-watchlist.generated.json",
         File.cwd!()
       ),
       Path.expand("../config/tracked_entities.json", File.cwd!()),

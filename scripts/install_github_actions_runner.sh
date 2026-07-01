@@ -52,7 +52,8 @@ runner_version="${GITHUB_RUNNER_VERSION:-}"
 if [[ -z "$runner_version" ]]; then
   runner_version="$(
     curl -fsSL https://api.github.com/repos/actions/runner/releases/latest \
-      | python3 -c 'import json, sys; print(json.load(sys.stdin)["tag_name"].lstrip("v"))'
+      | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"v\([^"]*\)".*/\1/p' \
+      | head -n 1
   )"
 fi
 
