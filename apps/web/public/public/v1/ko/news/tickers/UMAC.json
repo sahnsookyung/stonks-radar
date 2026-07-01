@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_UMAC",
-  "content_hash": "sha256:8ed7c24a1598ba801ab1f398ed965207a26e0aad8b0d3a80cf1c0c75387f89ee",
+  "content_hash": "sha256:5a24df0ea9feec59b2bb3d9d3fa5c21fa5a41ab2ca00e04752bfa5268bcffc29",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "UMAC",
     "name": "언유주얼 머신스",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "summary": "UMAC에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
     "events": []
   },

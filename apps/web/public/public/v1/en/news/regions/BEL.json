@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_region",
   "object_key": "news_region_BEL",
-  "content_hash": "sha256:b3794089514189ee8dd2d3bb31a18e1ebc5f427fefaf1da3126af4f215fc9102",
+  "content_hash": "sha256:333cefc2ff0ad0deb5629a6235f95c4637b3dcf4f534ee85a51d6e18c47fdd5e",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "BEL",
     "name": "Belgium",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "regional_brief": "Belgium has 0 source-linked news event(s), with relation labels separating event location, affected region, and market region.",
     "events": []
   },

@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_region",
   "object_key": "news_region_SWE",
-  "content_hash": "sha256:f8028c5d9f6d0162bd206ac099f69710d84945e639adbf17717498cd3425ccd3",
+  "content_hash": "sha256:569a42462d171ac49e6fba896e2664c58ee9a0208fdd4ca3615122b80af79b83",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "SWE",
     "name": "스웨덴",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "regional_brief": "스웨덴 관련 출처 연결 뉴스 이벤트 0건이 있으며 발생지, 영향 지역, 시장 지역 라벨을 분리합니다.",
     "events": []
   },

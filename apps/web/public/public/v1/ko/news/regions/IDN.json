@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_region",
   "object_key": "news_region_IDN",
-  "content_hash": "sha256:2b5e1fdb7070f7e13fe27af07ad043ea14350c7e84199b22d24765d68d036b2b",
+  "content_hash": "sha256:f9870e40fa4f6ec411258dd664edeb24c4da710fa22169a28a27e3fa88abc07f",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "IDN",
     "name": "인도네시아",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "regional_brief": "인도네시아 관련 출처 연결 뉴스 이벤트 0건이 있으며 발생지, 영향 지역, 시장 지역 라벨을 분리합니다.",
     "events": []
   },

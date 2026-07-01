@@ -5,6 +5,7 @@ import json
 import re
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Iterable
 from urllib.parse import urlparse
 
@@ -29,6 +30,9 @@ BREAKING_MARKET_FUTURE_SKEW = timedelta(minutes=10)
 BREAKING_MARKET_MAX_POINTS = 250
 BREAKING_MARKET_MAX_JSON_BYTES = 250_000
 UTC_OFFSET_SUFFIX = "+00:00"
+ROOT = Path(__file__).resolve().parents[6]
+WATCHED_REGIONS_PATH = ROOT / "packages" / "shared-config" / "watched-regions.json"
+_WATCHED_REGION_REGISTRY: dict[str, Any] | None = None
 
 
 def news_symbol_key(symbol: str) -> str:
@@ -73,7 +77,7 @@ def build_reviewed_news_snapshots(db: Session, *, locale: str, generated_label: 
             "filters": _filters(list_items),
             "events": list_items,
         },
-        "breaking_market": _breaking_market_projection(list_items, generated_label=generated_label),
+        "breaking_market": _breaking_market_projection(list_items, generated_label=generated_label, locale=locale),
         "events": {
             event_id: _event_detail(by_id[event_id], list_items, locale=locale)
             for event_id in by_id
@@ -379,7 +383,7 @@ def _filters(items: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
     }
 
 
-def _breaking_market_projection(items: list[dict[str, Any]], *, generated_label: str) -> dict[str, Any]:
+def _breaking_market_projection(items: list[dict[str, Any]], *, generated_label: str, locale: str = "en") -> dict[str, Any]:
     now = _parse_iso(generated_label) or datetime.now(timezone.utc)
     events: list[dict[str, Any]] = []
     for item in items:
@@ -415,11 +419,13 @@ def _breaking_market_projection(items: list[dict[str, Any]], *, generated_label:
         total_count=total_count,
         generated_label=generated_label,
     )
+    _apply_watched_region_coverage(payload, locale, now)
     while _payload_size(payload) > BREAKING_MARKET_MAX_JSON_BYTES and payload["map_points"]:
         payload["map_points"] = payload["map_points"][:-1]
         payload["events"] = _events_for_points(events, payload["map_points"])
         payload["shown_count"] = len(payload["map_points"])
         payload["ranking_cutoff"] = _ranking_cutoff(payload["map_points"], total_count)
+        _apply_watched_region_coverage(payload, locale, now)
     return payload
 
 
@@ -635,6 +641,201 @@ def _breaking_payload(
     }
 
 
+def _apply_watched_region_coverage(payload: dict[str, Any], locale: str, generated_at: datetime) -> None:
+    watched_regions = _watched_region_coverage(payload, locale, generated_at)
+    payload["watched_regions"] = watched_regions
+    payload["coverage_gaps"] = _watched_region_coverage_gaps(watched_regions)
+    payload["regional_briefs"] = _regional_briefs(payload, watched_regions, locale, generated_at)
+
+
+def _watched_region_registry() -> dict[str, Any]:
+    global _WATCHED_REGION_REGISTRY
+    if _WATCHED_REGION_REGISTRY is None:
+        _WATCHED_REGION_REGISTRY = json.loads(WATCHED_REGIONS_PATH.read_text())
+    return _WATCHED_REGION_REGISTRY
+
+
+def _watched_region_rows() -> list[dict[str, Any]]:
+    rows = _watched_region_registry().get("regions", [])
+    return [row for row in rows if isinstance(row, dict)]
+
+
+def _watched_region_row(key: str) -> dict[str, Any] | None:
+    for row in _watched_region_rows():
+        if row.get("key") == key:
+            return row
+    return None
+
+
+def _watched_region_label(row: dict[str, Any], locale: str) -> str:
+    names = row.get("display_names") if isinstance(row.get("display_names"), dict) else {}
+    localized = names.get(locale) or names.get("en")
+    return str(localized or row.get("key") or "")
+
+
+def _watched_region_type(row: dict[str, Any]) -> str:
+    region_type = str(row.get("type") or "region")
+    return "country" if region_type == "country" else "region"
+
+
+def _country_region_member_keys(key: str) -> set[str]:
+    row = _watched_region_row(key)
+    if not row:
+        return {key}
+    if row.get("type") == "country":
+        return {key}
+    group_key = key.lower()
+    group_aliases = {
+        "top10_gdp_2026_world_bank": {"top10_gdp"},
+        "top30_gdp_2024_world_bank": {"top30_gdp"},
+        "middle_east_opec_gcc": {"middle_east_opec_gcc"},
+    }.get(group_key, {group_key})
+    members = {
+        str(candidate.get("key"))
+        for candidate in _watched_region_rows()
+        if candidate.get("type") == "country"
+        and group_aliases.intersection(set(candidate.get("groups") or []))
+        and candidate.get("key")
+    }
+    return members or {key}
+
+
+def _watched_region_coverage(payload: dict[str, Any], locale: str, generated_at: datetime) -> list[dict[str, Any]]:
+    events = [event for event in payload.get("events", []) if isinstance(event, dict)]
+    map_points = [point for point in payload.get("map_points", []) if isinstance(point, dict)]
+    coverage: list[dict[str, Any]] = []
+    for row in _watched_region_rows():
+        if not row.get("render_on_map") and not row.get("gather_news") and not row.get("nav_visible"):
+            continue
+        keys = _country_region_member_keys(str(row.get("key") or ""))
+        region_events = [event for event in events if _breaking_event_matches_region(event, keys)]
+        region_points = [point for point in map_points if str(point.get("area_key") or "") in keys]
+        newest = _newest_breaking_timestamp(region_events, region_points)
+        if region_events or region_points:
+            coverage_status = "active"
+            quiet_reason = None
+        elif bool(row.get("gather_news")):
+            coverage_status = "quiet"
+            quiet_reason = "no_recent_evidence"
+        else:
+            coverage_status = "coverage_gap"
+            quiet_reason = "source_disabled"
+        coverage.append(
+            {
+                "key": str(row.get("key") or ""),
+                "type": _watched_region_type(row),
+                "label": _watched_region_label(row, locale),
+                "iso3": row.get("iso3") if isinstance(row.get("iso3"), str) else None,
+                "natural_earth_names": [str(name) for name in row.get("natural_earth_names") or [] if str(name).strip()],
+                "groups": [str(group) for group in row.get("groups") or []],
+                "priority": int(row.get("priority") or 0),
+                "gdp_rank": row.get("gdp_rank") if isinstance(row.get("gdp_rank"), int) else None,
+                "gather_news": bool(row.get("gather_news")),
+                "render_on_map": bool(row.get("render_on_map")),
+                "nav_visible": bool(row.get("nav_visible")),
+                "coverage_status": coverage_status,
+                "coverage_window_days": int(row.get("coverage_window_days") or 7),
+                "event_count": len({str(event.get("event_id") or "") for event in region_events if event.get("event_id")}),
+                "map_point_count": len(region_points),
+                "newest_source_published_at": newest,
+                "quiet_reason": quiet_reason,
+            }
+        )
+    return sorted(
+        coverage,
+        key=lambda item: (
+            0 if item["coverage_status"] == "active" else 1,
+            -(item["priority"]),
+            item["gdp_rank"] or 999,
+            item["label"],
+        ),
+    )
+
+
+def _watched_region_coverage_gaps(watched_regions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "region_key": region["key"],
+            "label": region["label"],
+            "reason": region["quiet_reason"] or "no_recent_evidence",
+            "coverage_window_days": region["coverage_window_days"],
+            "newest_source_published_at": region["newest_source_published_at"],
+        }
+        for region in watched_regions
+        if region["coverage_status"] != "active"
+    ]
+
+
+def _regional_briefs(payload: dict[str, Any], watched_regions: list[dict[str, Any]], locale: str, generated_at: datetime) -> list[dict[str, Any]]:
+    events = [event for event in payload.get("events", []) if isinstance(event, dict)]
+    generated_iso = _iso(generated_at)
+    briefs: list[dict[str, Any]] = []
+    for region in watched_regions:
+        if not region["gather_news"] and region["coverage_status"] != "active":
+            continue
+        keys = _country_region_member_keys(region["key"])
+        region_events = [event for event in events if _breaking_event_matches_region(event, keys)]
+        evidence = [
+            {
+                "event_id": str(event.get("event_id") or ""),
+                "title": _safe_display_text(str(event.get("title") or "Source-linked market event"), 180),
+                "source_published_at": str(event.get("source_published_at") or generated_iso),
+                "severity": _severity(event.get("severity")),
+                **({"source_url": str(event.get("source_url"))} if event.get("source_url") else {}),
+            }
+            for event in region_events[:3]
+            if event.get("event_id")
+        ]
+        summary = _localized(
+            locale,
+            f"{region['label']} has {len(region_events)} source-linked breaking/developing item(s) in the current metadata window."
+            if evidence
+            else f"{region['label']} is watched, but no source-linked breaking item is mapped in the current metadata window.",
+            f"{region['label']}에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 {len(region_events)}건이 있습니다."
+            if evidence
+            else f"{region['label']}은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다.",
+        )
+        briefs.append(
+            {
+                "region_key": region["key"],
+                "label": region["label"],
+                "coverage_window_days": region["coverage_window_days"],
+                "generated_at": generated_iso,
+                "summary": summary,
+                "event_count": len({str(event.get("event_id") or "") for event in region_events if event.get("event_id")}),
+                "source_count": sum(int(event.get("source_count") or 0) for event in region_events),
+                "newest_source_published_at": region["newest_source_published_at"],
+                "evidence": evidence,
+                "confidence": "metadata_only",
+            }
+        )
+    return briefs
+
+
+def _breaking_event_matches_region(event: dict[str, Any], region_keys: set[str]) -> bool:
+    for point in event.get("geo_points") or []:
+        if isinstance(point, dict) and str(point.get("area_key") or "") in region_keys:
+            return True
+    for region in event.get("regions") or []:
+        if isinstance(region, dict) and str(region.get("key") or "") in region_keys:
+            return True
+        if isinstance(region, str) and region in region_keys:
+            return True
+    return False
+
+
+def _newest_breaking_timestamp(events: list[dict[str, Any]], points: list[dict[str, Any]]) -> str | None:
+    timestamps = [
+        str(value)
+        for value in [
+            *(event.get("source_published_at") for event in events),
+            *(point.get("source_published_at") for point in points),
+        ]
+        if isinstance(value, str) and value
+    ]
+    return max(timestamps) if timestamps else None
+
+
 def _ranking_cutoff(points: list[dict[str, Any]], total_count: int) -> int | None:
     if not points or len(points) >= total_count:
         return None
@@ -789,6 +990,9 @@ def _ticker_relationship(value: str) -> str:
 
 
 def _region_name(key: str) -> str:
+    row = _watched_region_row(key)
+    if row is not None:
+        return _watched_region_label(row, "en")
     return {
         "USA": "United States",
         "CAN": "Canada",

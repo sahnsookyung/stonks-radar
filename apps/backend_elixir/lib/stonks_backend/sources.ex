@@ -446,7 +446,7 @@ defmodule StonksBackend.Sources do
         )
         values (
           $1, $2, $3, $4, $5, $6,
-          'fetch_sandbox', $7, now(), $8, $9,
+          'elixir_safe_fetch', $7, now(), $8, $9,
           $10, $11, $12, true,
           'extract_only', false, 'fetched', $13::jsonb
         )

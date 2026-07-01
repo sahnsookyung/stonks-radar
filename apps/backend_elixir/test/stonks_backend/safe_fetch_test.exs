@@ -1,70 +1,101 @@
 defmodule StonksBackend.SafeFetchTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   alias StonksBackend.SafeFetch
 
-  setup do
-    original = Application.get_env(:stonks_backend, :settings)
+  test "fetch_url returns sandbox-compatible metadata without raw html" do
+    request_fun = fn url, opts ->
+      assert url == "https://example.com/story"
+      assert opts[:redirect] == false
 
-    on_exit(fn ->
-      if is_nil(original) do
-        Application.delete_env(:stonks_backend, :settings)
-      else
-        Application.put_env(:stonks_backend, :settings, original)
-      end
-    end)
-  end
+      {:ok,
+       %{
+         status: 200,
+         headers: %{"content-type" => ["text/html; charset=utf-8"]},
+         body: """
+         <html>
+           <head>
+             <meta property="og:title" content="Example OG Title">
+             <title>Fallback</title>
+           </head>
+           <body>
+             <h1>Visible Headline</h1>
+             <script>secret()</script>
+             <p>Useful paragraph.</p>
+           </body>
+         </html>
+         """
+       }}
+    end
 
-  test "fetch_url delegates to the configured fetch-sandbox endpoint" do
-    bypass = Bypass.open()
+    resolver = fn "example.com", 443 -> {:ok, [{93, 184, 216, 34}]} end
 
-    Application.put_env(:stonks_backend, :settings,
-      fetch_sandbox_url: "http://localhost:#{bypass.port}/fetch",
-      source_fetch_timeout_seconds: "2"
-    )
+    assert {:ok, payload} =
+             SafeFetch.fetch_url("https://example.com/story",
+               request_fun: request_fun,
+               resolver: resolver,
+               max_bytes: 10_000
+             )
 
-    Bypass.expect_once(bypass, "POST", "/fetch", fn conn ->
-      {:ok, body, conn} = Plug.Conn.read_body(conn)
-      assert Jason.decode!(body) == %{"url" => "https://example.com/story"}
-
-      conn
-      |> Plug.Conn.put_resp_content_type("application/json")
-      |> Plug.Conn.resp(
-        200,
-        Jason.encode!(%{
-          final_url: "https://example.com/story",
-          resolved_ips: ["93.184.216.34"],
-          status_code: 200,
-          content_type: "text/html",
-          content_hash: "sha256:test",
-          title: "Example Story Title",
-          text: "Example Story",
-          raw_html_returned: false
-        })
-      )
-    end)
-
-    assert {:ok, payload} = SafeFetch.fetch_url("https://example.com/story")
-    assert payload["title"] == "Example Story Title"
-    assert payload["text"] == "Example Story"
+    assert payload["final_url"] == "https://example.com/story"
+    assert payload["status_code"] == 200
+    assert payload["title"] == "Example OG Title"
+    assert payload["text"] =~ "Visible Headline"
+    assert payload["text"] =~ "Useful paragraph"
+    refute payload["text"] =~ "secret"
     assert payload["raw_html_returned"] == false
+    assert String.starts_with?(payload["content_hash"], "sha256:")
+    assert payload["resolved_ips"] == ["93.184.216.34"]
   end
 
-  test "fetch_url returns sandbox denial details" do
-    bypass = Bypass.open()
+  test "fetch_url blocks private resolved IPs before request" do
+    parent = self()
+    request_fun = fn _, _ -> send(parent, :request_called) end
+    resolver = fn "127.0.0.1", 80 -> {:ok, [{127, 0, 0, 1}]} end
 
-    Application.put_env(:stonks_backend, :settings,
-      fetch_sandbox_url: "http://localhost:#{bypass.port}/fetch",
-      source_fetch_timeout_seconds: "2"
-    )
+    assert {:error, {:fetch_sandbox_denied, 400, detail}} =
+             SafeFetch.fetch_url("http://127.0.0.1/",
+               request_fun: request_fun,
+               resolver: resolver
+             )
 
-    Bypass.expect_once(bypass, "POST", "/fetch", fn conn ->
-      conn
-      |> Plug.Conn.put_resp_content_type("application/json")
-      |> Plug.Conn.resp(400, Jason.encode!(%{detail: "Private IP blocked"}))
-    end)
+    assert detail =~ "blocked"
+    refute_received :request_called
+  end
 
-    assert {:error, {:fetch_sandbox_denied, 400, "Private IP blocked"}} =
-             SafeFetch.fetch_url("http://127.0.0.1/")
+  test "fetch_url revalidates redirects and preserves final URL" do
+    request_fun = fn
+      "https://example.com/start", _opts ->
+        {:ok, %{status: 302, headers: %{"location" => ["/final"]}, body: ""}}
+
+      "https://example.com/final", _opts ->
+        {:ok, %{status: 200, headers: %{"content-type" => ["text/plain"]}, body: "done"}}
+    end
+
+    resolver = fn "example.com", 443 -> {:ok, [{93, 184, 216, 34}]} end
+
+    assert {:ok, payload} =
+             SafeFetch.fetch_url("https://example.com/start",
+               request_fun: request_fun,
+               resolver: resolver
+             )
+
+    assert payload["final_url"] == "https://example.com/final"
+    assert payload["text"] == "done"
+  end
+
+  test "fetch_url rejects oversized responses" do
+    request_fun = fn _, _ ->
+      {:ok, %{status: 200, headers: %{"content-type" => ["text/plain"]}, body: "abcdef"}}
+    end
+
+    resolver = fn "example.com", 443 -> {:ok, [{93, 184, 216, 34}]} end
+
+    assert {:error, {:fetch_sandbox_denied, 400, "Response exceeded byte cap"}} =
+             SafeFetch.fetch_url("https://example.com/story",
+               request_fun: request_fun,
+               resolver: resolver,
+               max_bytes: 5
+             )
   end
 end

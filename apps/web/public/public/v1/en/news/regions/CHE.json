@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_region",
   "object_key": "news_region_CHE",
-  "content_hash": "sha256:6c8ee6ec9effae9b213b324753e936733c65ed714430d4dec14e1aa58dd74af8",
+  "content_hash": "sha256:cfcdb8006e4ef37087bd4aa086af7cdaa15d293e95fdb6933ffc576fb8659f5c",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "CHE",
     "name": "Switzerland",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "regional_brief": "Switzerland has 0 source-linked news event(s), with relation labels separating event location, affected region, and market region.",
     "events": []
   },

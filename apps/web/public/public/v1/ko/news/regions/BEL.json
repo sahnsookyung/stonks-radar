@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_region",
   "object_key": "news_region_BEL",
-  "content_hash": "sha256:3a8315152ab9c2d0ca7edfa0b499455d626dde5e21f7f2187a3be124dc864d14",
+  "content_hash": "sha256:faaede9317cea8a8a1015b0e6aee765ec223284337c82fae448cc7f62683ef7c",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "BEL",
     "name": "벨기에",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "regional_brief": "벨기에 관련 출처 연결 뉴스 이벤트 0건이 있으며 발생지, 영향 지역, 시장 지역 라벨을 분리합니다.",
     "events": []
   },

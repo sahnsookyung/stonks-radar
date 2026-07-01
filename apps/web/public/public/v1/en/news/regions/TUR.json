@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_region",
   "object_key": "news_region_TUR",
-  "content_hash": "sha256:3500872f039d106d75cb5f9a946c03631697e1639a8482b399d2c5d998aaa03b",
+  "content_hash": "sha256:5b9fd7107ea1422e1721c858da1c4854f7e6b60fd3ea55adfff1229a411cccd3",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "TUR",
     "name": "Turkiye",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "regional_brief": "Turkiye has 0 source-linked news event(s), with relation labels separating event location, affected region, and market region.",
     "events": []
   },

@@ -79,6 +79,7 @@ export function HomePage() {
             <EventMap
               events={data.top_events}
               mapPoints={newsMapPoints}
+              watchedRegions={breakingMarketMap?.watched_regions ?? []}
               selectedMapPointId={selectedBreakingEventId}
               onMapPointSelect={setSelectedBreakingEventId}
               heightClass="h-[clamp(330px,48svh,500px)] md:h-[560px] xl:h-[610px]"

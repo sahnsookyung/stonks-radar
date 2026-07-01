@@ -18,6 +18,7 @@ services:
     command: ["valkey-server", "--save", "", "--appendonly", "no", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
 
   api:
+    profiles: ["python-legacy"]
     build:
       context: .
       dockerfile: apps/api/Dockerfile
@@ -41,7 +42,6 @@ services:
       - no-new-privileges:true
 
   api-elixir:
-    profiles: ["elixir-backend"]
     build:
       context: .
       dockerfile: apps/backend_elixir/Dockerfile
@@ -53,7 +53,6 @@ services:
       REDIS_URL: redis://valkey:6379/0
       SNAPSHOT_ARTIFACT_DIR: /app/artifacts/snapshots
       PUBLISHED_SNAPSHOT_DIR: /app/published-public
-      FETCH_SANDBOX_URL: http://fetch-sandbox:8080/fetch
       PORT: 8000
     volumes:
       - snapshot-artifacts:/app/artifacts/snapshots
@@ -63,8 +62,6 @@ services:
         condition: service_healthy
       valkey:
         condition: service_started
-      fetch-sandbox:
-        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:$${PORT:-8000}/api/public/health"]
       interval: 10s
@@ -75,6 +72,7 @@ services:
       - no-new-privileges:true
 
   worker:
+    profiles: ["python-legacy"]
     build:
       context: .
       dockerfile: apps/worker/Dockerfile
@@ -96,6 +94,7 @@ services:
       - no-new-privileges:true
 
   fetch-sandbox:
+    profiles: ["python-legacy"]
     build:
       context: .
       dockerfile: apps/fetch-sandbox/Dockerfile
@@ -119,7 +118,7 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
     depends_on:
-      - api
+      - api-elixir
 
 volumes:
   postgres-data:

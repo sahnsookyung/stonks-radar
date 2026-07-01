@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["version", "generated_from", "regions"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "generated_from": { "type": "string", "minLength": 1 },
+    "regions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "type",
+          "iso3",
+          "display_names",
+          "natural_earth_names",
+          "gdelt_terms",
+          "groups",
+          "priority",
+          "gdp_rank",
+          "gather_news",
+          "render_on_map",
+          "nav_visible",
+          "coverage_window_days"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "key": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+          "type": { "enum": ["country", "region", "chokepoint"] },
+          "iso3": { "type": ["string", "null"], "pattern": "^[A-Z]{3}$" },
+          "display_names": {
+            "type": "object",
+            "required": ["en", "ko"],
+            "additionalProperties": false,
+            "properties": {
+              "en": { "type": "string", "minLength": 1 },
+              "ko": { "type": "string", "minLength": 1 }
+            }
+          },
+          "natural_earth_names": { "type": "array", "items": { "type": "string" } },
+          "gdelt_terms": { "type": "array", "items": { "type": "string" } },
+          "groups": { "type": "array", "items": { "type": "string" } },
+          "priority": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "gdp_rank": { "type": ["integer", "null"], "minimum": 1 },
+          "gather_news": { "type": "boolean" },
+          "render_on_map": { "type": "boolean" },
+          "nav_visible": { "type": "boolean" },
+          "coverage_window_days": { "type": "integer", "minimum": 1, "maximum": 30 }
+        }
+      }
+    }
+  }
+}

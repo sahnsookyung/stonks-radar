@@ -221,7 +221,7 @@ jobs:
                  sudo find "$mountpoint" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
                fi
              done
-             docker image rm -f stonks-radar-api || true
+             docker image rm -f stonks-radar-api stonks-radar-api-elixir stonks-radar-fetch-sandbox || true
              docker container prune -f || true
              docker builder prune -af || true
              docker image prune -af || true
@@ -230,9 +230,11 @@ jobs:
              sudo find /var/log -type f \( -name "*.gz" -o -name "*.1" -o -name "*.old" \) -delete || true
              sudo find /tmp -mindepth 1 -maxdepth 1 -exec rm -rf {} + || true
              df -h / /opt /tmp || true
-             COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml build api
+             COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml build api-elixir
              docker builder prune -af || true
-             COMPOSE_PARALLEL_LIMIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d postgres valkey api caddy
+             COMPOSE_PARALLEL_LIMIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d postgres valkey
+             docker compose -f compose.yaml -f infra/docker-compose.prod.yml run --rm --no-deps api-elixir /app/bin/stonks_backend eval "StonksBackend.Release.migrate()"
+             COMPOSE_PARALLEL_LIMIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d api-elixir caddy
              docker image prune -f || true
              df -h / /opt /tmp || true'
 
@@ -244,7 +246,7 @@ jobs:
           set -euo pipefail
           SSH_OPTS="-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes"
           ssh $SSH_OPTS -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
-            'cd /opt/stonks-radar && docker compose -f compose.yaml -f infra/docker-compose.prod.yml run --rm -e PYTHONPATH=/app/apps/api/src api python scripts/publish_runtime_snapshots.py --generated-by github-actions-deploy'
+            'docker run --rm -v stonks-radar_published-snapshots:/dest -v /opt/stonks-radar/apps/web/public/public:/src:ro alpine:3.24 sh -lc '\''set -e; rm -rf /dest/* /dest/.[!.]* /dest/..?* 2>/dev/null || true; cp -a /src/. /dest/; test -s /dest/latest/manifest.json'\'''
 
       - name: Verify origin health
         env:
@@ -254,4 +256,4 @@ jobs:
           set -euo pipefail
           SSH_OPTS="-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes"
           ssh $SSH_OPTS -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
-            'cd /opt/stonks-radar && PUBLIC_HOSTNAME=$(awk -F= '\''$1=="PUBLIC_HOSTNAME"{print $2}'\'' .env) && test -n "$PUBLIC_HOSTNAME" && curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/api/public/health" >/dev/null && curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/public/latest/manifest.json" | python3 -c "import json, sys; data=json.load(sys.stdin); assert data.get(\"current_version\") and data.get(\"objects\")"'
+            'cd /opt/stonks-radar && PUBLIC_HOSTNAME=$(awk -F= '\''$1=="PUBLIC_HOSTNAME"{print $2}'\'' .env) && test -n "$PUBLIC_HOSTNAME" && curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/api/public/health" >/dev/null && curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/public/latest/manifest.json" | tee /tmp/stonks-manifest.json >/dev/null && grep -q "\"current_version\"" /tmp/stonks-manifest.json && grep -q "\"objects\"" /tmp/stonks-manifest.json'

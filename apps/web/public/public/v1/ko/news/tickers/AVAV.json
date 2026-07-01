@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_ticker",
   "object_key": "news_ticker_AVAV",
-  "content_hash": "sha256:601d95a97b4f29f877f354cffefc4376ec3734c07429033eb30bf5871c274394",
+  "content_hash": "sha256:7bea2d91e1defa71b76dfcf77c810d5e272e3b62d1c027cf2d68516945458096",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "symbol": "AVAV",
     "name": "에어로바이런먼트",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "summary": "AVAV에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
     "events": []
   },

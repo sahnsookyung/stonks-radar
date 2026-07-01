@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_region",
   "object_key": "news_region_SWE",
-  "content_hash": "sha256:e47e33f338145f434b258cb9c3b3650d32447a30b20a8457e70d6cb52760ee7b",
+  "content_hash": "sha256:09c9b6097a8a80933c308614e7316d144be4fab64ce5c3cac0874673ab7c72b3",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "SWE",
     "name": "Sweden",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "regional_brief": "Sweden has 0 source-linked news event(s), with relation labels separating event location, affected region, and market region.",
     "events": []
   },

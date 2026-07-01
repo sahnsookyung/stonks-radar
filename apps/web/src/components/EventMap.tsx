@@ -1,13 +1,15 @@
-import type { NewsMapPoint, PublicEvent } from "@frw/shared-types";
+import type { NewsMapPoint, PublicEvent, WatchedRegionCoverage } from "@frw/shared-types";
 import type { Feature, Geometry } from "geojson";
 import type maplibregl from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { naturalEarthNamesForCoverage } from "../lib/watchedRegions";
 
 type MutableRef<T> = { current: T };
 
 interface EventMapProps extends Readonly<{
   events: PublicEvent[];
   mapPoints?: NewsMapPoint[];
+  watchedRegions?: WatchedRegionCoverage[];
   selectedMapPointId?: string | null;
   onMapPointSelect?: (eventId: string) => void;
   heightClass?: string;
@@ -27,6 +29,7 @@ function shouldExposeMapDebugHook() {
 export function EventMap({
   events,
   mapPoints = [],
+  watchedRegions = [],
   selectedMapPointId = null,
   onMapPointSelect,
   heightClass = "h-[540px] md:h-[680px]",
@@ -40,6 +43,7 @@ export function EventMap({
   const hoveredCountryRef = useRef<string | null>(null);
   const eventsRef = useRef(events);
   const mapPointsRef = useRef(mapPoints);
+  const watchedRegionsRef = useRef(watchedRegions);
   const onMapPointSelectRef = useRef(onMapPointSelect);
   const [shouldLoad, setShouldLoad] = useState(loadStrategy === "immediate");
   const [isReady, setIsReady] = useState(false);
@@ -53,6 +57,12 @@ export function EventMap({
   useEffect(() => {
     mapPointsRef.current = mapPoints;
   }, [mapPoints]);
+
+  useEffect(() => {
+    watchedRegionsRef.current = watchedRegions;
+    if (!mapRef.current?.isStyleLoaded()) return;
+    syncWatchedCountryLayers(mapRef.current, watchedRegions);
+  }, [watchedRegions]);
 
   useEffect(() => {
     onMapPointSelectRef.current = onMapPointSelect;
@@ -128,29 +138,33 @@ export function EventMap({
               }
             },
             {
-              id: "monitored-country-fill",
+              id: WATCHED_COUNTRY_GAP_LAYER_ID,
               type: "fill",
               source: "countries",
-              filter: [
-                "in",
-                ["get", "name"],
-                [
-                  "literal",
-                  [
-                    "United States of America",
-                    "Brazil",
-                    "South Korea",
-                    "United Kingdom",
-                    "Germany",
-                    "China",
-                    "Taiwan",
-                    "Japan"
-                  ]
-                ]
-              ],
+              filter: watchedCountryStatusFilter(watchedRegionsRef.current, "coverage_gap"),
               paint: {
-                "fill-color": "#1f3d4a",
-                "fill-opacity": 0.95
+                "fill-color": "#373f4f",
+                "fill-opacity": 0.8
+              }
+            },
+            {
+              id: WATCHED_COUNTRY_QUIET_LAYER_ID,
+              type: "fill",
+              source: "countries",
+              filter: watchedCountryStatusFilter(watchedRegionsRef.current, "quiet"),
+              paint: {
+                "fill-color": "#1d3541",
+                "fill-opacity": 0.88
+              }
+            },
+            {
+              id: WATCHED_COUNTRY_ACTIVE_LAYER_ID,
+              type: "fill",
+              source: "countries",
+              filter: watchedCountryStatusFilter(watchedRegionsRef.current, "active"),
+              paint: {
+                "fill-color": "#1f4b59",
+                "fill-opacity": 0.98
               }
             },
             {
@@ -205,6 +219,7 @@ export function EventMap({
           markerRefs,
           eventsRef,
           mapPointsRef,
+          watchedRegionsRef,
           onMapPointSelectRef,
           hoveredCountryRef,
           setHoveredCountry,
@@ -322,6 +337,7 @@ type InitialMapLoadOptions = Readonly<{
   markerRefs: MutableRef<maplibregl.Marker[]>;
   eventsRef: MutableRef<PublicEvent[]>;
   mapPointsRef: MutableRef<NewsMapPoint[]>;
+  watchedRegionsRef: MutableRef<WatchedRegionCoverage[]>;
   onMapPointSelectRef: MutableRef<((eventId: string) => void) | undefined>;
   hoveredCountryRef: MutableRef<string | null>;
   setHoveredCountry: HoveredCountrySetter;
@@ -333,6 +349,14 @@ const NEWS_SOURCE_ID = "breaking-news-points";
 const NEWS_CLUSTER_LAYER_ID = "breaking-news-clusters";
 const NEWS_CLUSTER_COUNT_LAYER_ID = "breaking-news-cluster-count";
 const NEWS_POINT_LAYER_ID = "breaking-news-unclustered";
+const WATCHED_COUNTRY_ACTIVE_LAYER_ID = "watched-country-active-fill";
+const WATCHED_COUNTRY_QUIET_LAYER_ID = "watched-country-quiet-fill";
+const WATCHED_COUNTRY_GAP_LAYER_ID = "watched-country-gap-fill";
+const WATCHED_COUNTRY_LAYER_IDS = [
+  WATCHED_COUNTRY_ACTIVE_LAYER_ID,
+  WATCHED_COUNTRY_QUIET_LAYER_ID,
+  WATCHED_COUNTRY_GAP_LAYER_ID
+];
 const wiredClusterMaps = new WeakSet<maplibregl.Map>();
 const clusterPopupRefs = new WeakMap<maplibregl.Map, maplibregl.Popup>();
 const clusterPopupModes = new WeakMap<maplibregl.Map, "hover" | "click">();
@@ -359,6 +383,7 @@ function handleInitialMapLoad({
   markerRefs,
   eventsRef,
   mapPointsRef,
+  watchedRegionsRef,
   onMapPointSelectRef,
   hoveredCountryRef,
   setHoveredCountry,
@@ -374,6 +399,7 @@ function handleInitialMapLoad({
     { padding: 24, duration: 0 }
   );
   map.resize();
+  syncWatchedCountryLayers(map, watchedRegionsRef.current);
   wireCountryHover(map, setHoveredCountry, hoveredCountryRef);
   exposeDebugCountryHover(mapRef, setHoveredCountry, hoveredCountryRef);
   syncNewsMapPoints(maplibre, map, mapPointsRef.current, onMapPointSelectRef);
@@ -427,7 +453,7 @@ function wireCountryHover(
     const rect = canvas.getBoundingClientRect();
     const point: [number, number] = [event.clientX - rect.left, event.clientY - rect.top];
     const country = map.queryRenderedFeatures(point, {
-      layers: ["monitored-country-fill", "countries-fill"]
+      layers: [...WATCHED_COUNTRY_LAYER_IDS, "countries-fill"]
     })[0];
     if (!country) {
       clearHover();
@@ -496,6 +522,34 @@ function countryHoverFilter(countryName: string) {
 
 function antimeridianSafeCountryFilter() {
   return ["!=", ["get", "crossesAntimeridian"], true] as maplibregl.FilterSpecification;
+}
+
+function syncWatchedCountryLayers(map: maplibregl.Map, watchedRegions: WatchedRegionCoverage[]) {
+  for (const status of ["active", "quiet", "coverage_gap"] as const) {
+    const layerId = watchedCountryLayerId(status);
+    if (!map.getLayer(layerId)) continue;
+    map.setFilter(layerId, watchedCountryStatusFilter(watchedRegions, status));
+  }
+}
+
+function watchedCountryLayerId(status: WatchedRegionCoverage["coverage_status"]) {
+  if (status === "active") return WATCHED_COUNTRY_ACTIVE_LAYER_ID;
+  if (status === "quiet") return WATCHED_COUNTRY_QUIET_LAYER_ID;
+  return WATCHED_COUNTRY_GAP_LAYER_ID;
+}
+
+function watchedCountryStatusFilter(
+  watchedRegions: WatchedRegionCoverage[] | undefined,
+  status: WatchedRegionCoverage["coverage_status"]
+) {
+  const names = naturalEarthNamesForCoverage((watchedRegions ?? []).filter((region) => region.coverage_status === status));
+  return [
+    "all",
+    ["!=", ["get", "crossesAntimeridian"], true],
+    ["!=", ["get", "antimeridianRepaired"], true],
+    ["!=", ["get", "antimeridianHoverUnsafe"], true],
+    ["in", ["get", "name"], ["literal", names]]
+  ] as maplibregl.FilterSpecification;
 }
 
 function syncMarkers(

@@ -179,6 +179,57 @@ export interface NewsMapPoint {
   score_reason_codes: string[];
 }
 
+export type WatchedRegionCoverageStatus = "active" | "quiet" | "coverage_gap";
+
+export interface WatchedRegionCoverage {
+  key: string;
+  type: "country" | "region" | "chokepoint";
+  label: string;
+  iso3: string | null;
+  natural_earth_names: string[];
+  groups: string[];
+  priority: number;
+  gdp_rank: number | null;
+  gather_news: boolean;
+  render_on_map: boolean;
+  nav_visible: boolean;
+  coverage_status: WatchedRegionCoverageStatus;
+  coverage_window_days: number;
+  event_count: number;
+  map_point_count: number;
+  newest_source_published_at: string | null;
+  quiet_reason: string | null;
+}
+
+export interface WatchedRegionCoverageGap {
+  region_key: string;
+  label: string;
+  reason: "no_recent_evidence" | "not_geocoded" | "not_reviewed" | "source_disabled";
+  coverage_window_days: number;
+  newest_source_published_at: string | null;
+}
+
+export interface RegionalBriefEvidence {
+  event_id: string;
+  title: string;
+  source_url?: string;
+  source_published_at: string;
+  severity: Severity;
+}
+
+export interface RegionalBrief {
+  region_key: string;
+  label: string;
+  coverage_window_days: number;
+  generated_at: string;
+  summary: string;
+  event_count: number;
+  source_count: number;
+  newest_source_published_at: string | null;
+  evidence: RegionalBriefEvidence[];
+  confidence: "metadata_only" | "source_linked" | "official_corroborated";
+}
+
 export interface BreakingMarketEvent {
   event_id: string;
   title: string;
@@ -209,6 +260,9 @@ export interface BreakingMarketEvent {
 export interface BreakingMarketMapData {
   events: BreakingMarketEvent[];
   map_points: NewsMapPoint[];
+  watched_regions: WatchedRegionCoverage[];
+  coverage_gaps: WatchedRegionCoverageGap[];
+  regional_briefs: RegionalBrief[];
   shown_count: number;
   total_count: number;
   ranking_cutoff: number | null;

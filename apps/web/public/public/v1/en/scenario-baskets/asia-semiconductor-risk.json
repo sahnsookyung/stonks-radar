@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "scenario_basket",
   "object_key": "asia-semiconductor-risk",
-  "content_hash": "sha256:848326205d94fd1315bc466fb958e3b57bf55ba5ece34b0cdb173eedfa60b5f2",
+  "content_hash": "sha256:caf5f75c77a99282fd40ac96a30c2a8cd892a20c0924c0e14229b95a31a090a0",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -122,7 +122,7 @@
         "summary": "Export controls, Taiwan/Korea/Japan exposure, and tracked semiconductor tickers are summarized from recent source-linked news.",
         "coverage_status": "active",
         "evidence_count": 3,
-        "last_observed_at": "2026-06-30T13:19:11Z",
+        "last_observed_at": "2026-07-01T12:08:56Z",
         "metric_rows": [
           {
             "key": "seven-day-news",
@@ -132,7 +132,7 @@
             "source": "Stonks Radar news snapshots",
             "source_url": "https://www.bis.gov/",
             "freshness": "fresh",
-            "as_of_date": "2026-06-30T13:19:11Z",
+            "as_of_date": "2026-07-01T12:08:56Z",
             "coverage_status": "active"
           },
           {
@@ -143,7 +143,7 @@
             "source": "BIS",
             "source_url": "https://www.bis.gov/",
             "freshness": "watch",
-            "as_of_date": "2026-06-30",
+            "as_of_date": "2026-07-01",
             "coverage_status": "active"
           }
         ],
@@ -153,9 +153,9 @@
             "title": "China-origin export-control risk remains elevated for AI-chip supply chains",
             "summary": "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.",
             "event_type": "trade_policy",
-            "first_seen_at": "2026-06-28T13:19:11Z",
-            "last_seen_at": "2026-06-30T13:19:11Z",
-            "published_at": "2026-06-30T13:19:11Z",
+            "first_seen_at": "2026-06-29T12:08:56Z",
+            "last_seen_at": "2026-07-01T12:08:56Z",
+            "published_at": "2026-07-01T12:08:56Z",
             "freshness": "fresh",
             "severity": "high",
             "confidence": 0.78,
@@ -252,7 +252,7 @@
                 "source_key": "bis",
                 "policy_version": 1,
                 "title": "Bureau of Industry and Security export controls",
-                "published_at": "2026-06-29T19:19:11Z",
+                "published_at": "2026-06-30T18:08:56Z",
                 "trust_tier": "T0_OFFICIAL",
                 "is_primary": true
               },
@@ -262,7 +262,7 @@
                 "source_key": "sec_edgar",
                 "policy_version": 1,
                 "title": "Issuer filings for affected companies",
-                "published_at": "2026-06-29T19:19:11Z",
+                "published_at": "2026-06-30T18:08:56Z",
                 "trust_tier": "T1_REGULATED_FILING",
                 "is_primary": false
               },
@@ -272,7 +272,7 @@
                 "source_key": "source_policy",
                 "policy_version": 1,
                 "title": "Export Administration Regulations reference",
-                "published_at": "2026-06-29T19:19:11Z",
+                "published_at": "2026-06-30T18:08:56Z",
                 "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
                 "is_primary": false
               }
@@ -296,12 +296,12 @@
       }
     ],
     "risk_summary": "Asia semiconductor risk can change quickly when export rules, Taiwan/Korea/Japan headlines, or company guidance diverge.",
-    "freshness_timestamp": "2026-06-30T13:19:11Z",
+    "freshness_timestamp": "2026-07-01T12:08:56Z",
     "data_delay_warning": "Uses delayed/reference indicators and outbound source links only; no brokerage connection or trade execution.",
     "disclaimer": "Research only. Not personalized financial advice. Do not treat this as a buy, sell, or allocation recommendation.",
     "coverage_status": "active",
     "evidence_count": 3,
-    "last_observed_at": "2026-06-30T13:19:11Z",
+    "last_observed_at": "2026-07-01T12:08:56Z",
     "primary_source_url": "https://www.bis.gov/"
   },
   "warnings": [

@@ -502,6 +502,9 @@ def _has_breaking_market_content(breaking: dict[str, Any]) -> bool:
 
 
 def _set_breaking_market_projection(snapshot: dict[str, Any], breaking: dict[str, Any]) -> None:
+    breaking.setdefault("watched_regions", [])
+    breaking.setdefault("coverage_gaps", [])
+    breaking.setdefault("regional_briefs", [])
     snapshot["data"]["breaking_market_events"] = breaking.get("events", [])
     snapshot["data"]["breaking_market_map"] = breaking
 
@@ -510,6 +513,9 @@ def _empty_breaking_market_projection(template: dict[str, Any], generated_at: da
     projection = {
         "events": [],
         "map_points": [],
+        "watched_regions": template.get("watched_regions", []) if isinstance(template.get("watched_regions"), list) else [],
+        "coverage_gaps": template.get("coverage_gaps", []) if isinstance(template.get("coverage_gaps"), list) else [],
+        "regional_briefs": template.get("regional_briefs", []) if isinstance(template.get("regional_briefs"), list) else [],
         "shown_count": 0,
         "total_count": 0,
         "ranking_cutoff": template.get("ranking_cutoff"),

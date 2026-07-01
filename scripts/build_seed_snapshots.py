@@ -69,6 +69,7 @@ DEFAULT_NEWS_TICKERS = "DJT,TSLA,NVDA,RKLB,IONQ,RGTI,QBTS,QUANTINUUM,LUNR,ASTS,R
 DEFAULT_TRUMP_CIKS = {"DJT": "0001849635"}
 TRACKED_ENTITY_REGISTRY_PATH = ROOT / "config" / "tracked_entities.json"
 GEOPOLITICAL_WATCH_REGISTRY_PATH = ROOT / "config" / "geopolitical_watch_registry.json"
+WATCHED_REGIONS_PATH = ROOT / "packages" / "shared-config" / "watched-regions.json"
 CUSIP_TICKER_OVERRIDES_PATH = ROOT / "config" / "cusip_ticker_overrides.json"
 TRACKED_ENTITY_WATCHLIST_PATH = ROOT / "apps" / "api" / "src" / "frw_api" / "services" / "news" / "ticker_watchlist.generated.json"
 FUND_PORTFOLIOS = {
@@ -117,6 +118,7 @@ KRX_DOC_URLS = {
     "futures_daily": "https://openapi.krx.co.kr/contents/OPP/USES/service/OPPUSES005_S2.cmd?BO_ID=ilaVYOabbaicHbKTsqga",
 }
 _RUNTIME_ENV: dict[str, str] | None = None
+_WATCHED_REGION_REGISTRY: dict[str, Any] | None = None
 _FRED_CACHE: dict[str, dict[str, Any] | None] = {}
 _MOF_JGB_CACHE: list[dict[str, Any]] | None = None
 _KRX_ROWS_CACHE: dict[tuple[str, str], list[dict[str, Any]]] = {}
@@ -225,49 +227,88 @@ SECTORS = {
     },
 }
 
-COUNTRIES = {
-    "USA": ("United States", "미국", "country"),
-    "CHN": ("China", "중국", "country"),
-    "DEU": ("Germany", "독일", "country"),
-    "JPN": ("Japan", "일본", "country"),
-    "IND": ("India", "인도", "country"),
-    "GBR": ("United Kingdom", "영국", "country"),
-    "FRA": ("France", "프랑스", "country"),
-    "ITA": ("Italy", "이탈리아", "country"),
-    "CAN": ("Canada", "캐나다", "country"),
-    "BRA": ("Brazil", "브라질", "country"),
-    "RUS": ("Russia", "러시아", "country"),
-    "KOR": ("South Korea", "대한민국", "country"),
-    "MEX": ("Mexico", "멕시코", "country"),
-    "AUS": ("Australia", "호주", "country"),
-    "ESP": ("Spain", "스페인", "country"),
-    "IDN": ("Indonesia", "인도네시아", "country"),
-    "TUR": ("Turkiye", "튀르키예", "country"),
-    "SAU": ("Saudi Arabia", "사우디아라비아", "country"),
-    "NLD": ("Netherlands", "네덜란드", "country"),
-    "CHE": ("Switzerland", "스위스", "country"),
-    "POL": ("Poland", "폴란드", "country"),
-    "BEL": ("Belgium", "벨기에", "country"),
-    "ARG": ("Argentina", "아르헨티나", "country"),
-    "IRL": ("Ireland", "아일랜드", "country"),
-    "SWE": ("Sweden", "스웨덴", "country"),
-    "ARE": ("United Arab Emirates", "아랍에미리트", "country"),
-    "SGP": ("Singapore", "싱가포르", "country"),
-    "ISR": ("Israel", "이스라엘", "country"),
-    "AUT": ("Austria", "오스트리아", "country"),
-    "THA": ("Thailand", "태국", "country"),
-    "NOR": ("Norway", "노르웨이", "country"),
-    "ZAF": ("South Africa", "남아프리카공화국", "country"),
-    "TWN": ("Taiwan", "대만", "country"),
-}
+def _watched_region_registry() -> dict[str, Any]:
+    global _WATCHED_REGION_REGISTRY
+    if _WATCHED_REGION_REGISTRY is None:
+        _WATCHED_REGION_REGISTRY = json.loads(WATCHED_REGIONS_PATH.read_text())
+    return _WATCHED_REGION_REGISTRY
 
-REGIONS = {
-    "EUROZONE": ("Eurozone", "유로존", "region"),
-    "EU": ("European Union", "유럽연합", "region"),
-    "MIDDLE_EAST_OPEC_GCC": ("Middle East / OPEC+ / GCC", "중동 / OPEC+ / GCC", "region"),
-    "TOP10_GDP_2026_WORLD_BANK": ("Dynamic Top-10 Economies", "동적 GDP 상위 10개 경제권", "region"),
-    "TOP30_GDP_2024_WORLD_BANK": ("World Bank Top-30 GDP Economies", "세계은행 GDP 상위 30개 경제권", "region"),
-}
+
+def _watched_region_rows() -> list[dict[str, Any]]:
+    rows = _watched_region_registry().get("regions", [])
+    return [row for row in rows if isinstance(row, dict)]
+
+
+def _watched_region_row(key: str) -> dict[str, Any] | None:
+    for row in _watched_region_rows():
+        if row.get("key") == key:
+            return row
+    return None
+
+
+def _watched_region_label(row: dict[str, Any], locale: str) -> str:
+    names = row.get("display_names")
+    if isinstance(names, dict):
+        localized = names.get(locale) or names.get("en")
+        if isinstance(localized, str) and localized.strip():
+            return localized
+    return str(row.get("key") or "")
+
+
+def _watched_region_type(row: dict[str, Any]) -> str:
+    region_type = str(row.get("type") or "region")
+    return "country" if region_type == "country" else "region"
+
+
+def _country_region_tuple(row: dict[str, Any]) -> tuple[str, str, str]:
+    names = row.get("display_names") if isinstance(row.get("display_names"), dict) else {}
+    return (
+        str(names.get("en") or row.get("key") or ""),
+        str(names.get("ko") or names.get("en") or row.get("key") or ""),
+        _watched_region_type(row),
+    )
+
+
+def _countries_from_watched_regions() -> dict[str, tuple[str, str, str]]:
+    return {
+        str(row["key"]): _country_region_tuple(row)
+        for row in _watched_region_rows()
+        if row.get("type") == "country" and row.get("key")
+    }
+
+
+def _regions_from_watched_regions() -> dict[str, tuple[str, str, str]]:
+    return {
+        str(row["key"]): _country_region_tuple(row)
+        for row in _watched_region_rows()
+        if row.get("type") != "country" and row.get("key")
+    }
+
+
+def _country_region_member_keys(key: str) -> set[str]:
+    row = _watched_region_row(key)
+    if not row:
+        return {key}
+    if row.get("type") == "country":
+        return {key}
+    group_key = key.lower()
+    group_aliases = {
+        "top10_gdp_2026_world_bank": {"top10_gdp"},
+        "top30_gdp_2024_world_bank": {"top30_gdp"},
+        "middle_east_opec_gcc": {"middle_east_opec_gcc"},
+    }.get(group_key, {group_key})
+    members = {
+        str(candidate.get("key"))
+        for candidate in _watched_region_rows()
+        if candidate.get("type") == "country"
+        and group_aliases.intersection(set(candidate.get("groups") or []))
+        and candidate.get("key")
+    }
+    return members or {key}
+
+
+COUNTRIES = _countries_from_watched_regions()
+REGIONS = _regions_from_watched_regions()
 
 SCENARIOS = {
     "ai-infra-capex": {
@@ -504,6 +545,7 @@ def build_snapshots() -> None:
         macro_tiles = _preserve_previous_active_macro_tiles(locale, _macro_tiles(locale, generated_at))
         alternative_signals = _alternative_signals(locale, generated_at)
         breaking_market_map = _breaking_market_projection_from_signals(alternative_signals, generated_at=generated_at)
+        _apply_watched_region_coverage(breaking_market_map, locale, generated_at)
         sector_tiles = [_sector_tile(key, locale, events) for key in SECTORS]
         scenario_summaries = [
             _scenario_summary(key, locale, generated_at, news_list_items, macro_tiles)
@@ -5924,6 +5966,156 @@ def _breaking_market_payload(
     }
 
 
+def _apply_watched_region_coverage(payload: dict[str, Any], locale: str, generated_at: datetime) -> None:
+    watched_regions = _watched_region_coverage(payload, locale, generated_at)
+    payload["watched_regions"] = watched_regions
+    payload["coverage_gaps"] = _watched_region_coverage_gaps(watched_regions)
+    payload["regional_briefs"] = _regional_briefs(payload, watched_regions, locale, generated_at)
+
+
+def _watched_region_coverage(payload: dict[str, Any], locale: str, generated_at: datetime) -> list[dict[str, Any]]:
+    events = [event for event in payload.get("events", []) if isinstance(event, dict)]
+    map_points = [point for point in payload.get("map_points", []) if isinstance(point, dict)]
+    coverage: list[dict[str, Any]] = []
+    for row in _watched_region_rows():
+        if not row.get("render_on_map") and not row.get("gather_news") and not row.get("nav_visible"):
+            continue
+        keys = _country_region_member_keys(str(row.get("key") or ""))
+        region_events = [event for event in events if _breaking_event_matches_region(event, keys)]
+        region_points = [point for point in map_points if str(point.get("area_key") or "") in keys]
+        newest = _newest_breaking_timestamp(region_events, region_points)
+        if region_events or region_points:
+            coverage_status = "active"
+            quiet_reason = None
+        elif bool(row.get("gather_news")):
+            coverage_status = "quiet"
+            quiet_reason = "no_recent_evidence"
+        else:
+            coverage_status = "coverage_gap"
+            quiet_reason = "source_disabled"
+        coverage.append(
+            {
+                "key": str(row.get("key") or ""),
+                "type": _watched_region_type(row),
+                "label": _watched_region_label(row, locale),
+                "iso3": row.get("iso3") if isinstance(row.get("iso3"), str) else None,
+                "natural_earth_names": [str(name) for name in row.get("natural_earth_names") or [] if str(name).strip()],
+                "groups": [str(group) for group in row.get("groups") or []],
+                "priority": int(row.get("priority") or 0),
+                "gdp_rank": row.get("gdp_rank") if isinstance(row.get("gdp_rank"), int) else None,
+                "gather_news": bool(row.get("gather_news")),
+                "render_on_map": bool(row.get("render_on_map")),
+                "nav_visible": bool(row.get("nav_visible")),
+                "coverage_status": coverage_status,
+                "coverage_window_days": int(row.get("coverage_window_days") or 7),
+                "event_count": len({str(event.get("event_id") or "") for event in region_events if event.get("event_id")}),
+                "map_point_count": len(region_points),
+                "newest_source_published_at": newest,
+                "quiet_reason": quiet_reason,
+            }
+        )
+    return sorted(
+        coverage,
+        key=lambda item: (
+            0 if item["coverage_status"] == "active" else 1,
+            -(item["priority"]),
+            item["gdp_rank"] or 999,
+            item["label"],
+        ),
+    )
+
+
+def _watched_region_coverage_gaps(watched_regions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    gaps: list[dict[str, Any]] = []
+    for region in watched_regions:
+        if region["coverage_status"] == "active":
+            continue
+        gaps.append(
+            {
+                "region_key": region["key"],
+                "label": region["label"],
+                "reason": region["quiet_reason"] or "no_recent_evidence",
+                "coverage_window_days": region["coverage_window_days"],
+                "newest_source_published_at": region["newest_source_published_at"],
+            }
+        )
+    return gaps
+
+
+def _regional_briefs(payload: dict[str, Any], watched_regions: list[dict[str, Any]], locale: str, generated_at: datetime) -> list[dict[str, Any]]:
+    events = [event for event in payload.get("events", []) if isinstance(event, dict)]
+    briefs: list[dict[str, Any]] = []
+    generated_iso = generated_at.isoformat().replace("+00:00", "Z")
+    for region in watched_regions:
+        if not region["gather_news"] and region["coverage_status"] != "active":
+            continue
+        keys = _country_region_member_keys(region["key"])
+        region_events = [event for event in events if _breaking_event_matches_region(event, keys)]
+        evidence = [
+            {
+                "event_id": str(event.get("event_id") or ""),
+                "title": _safe_display_text(str(event.get("title") or "Source-linked market event"), 180),
+                "source_published_at": str(event.get("source_published_at") or generated_iso),
+                "severity": str(event.get("severity") or "medium"),
+                **({"source_url": str(event.get("source_url"))} if event.get("source_url") else {}),
+            }
+            for event in region_events[:3]
+            if event.get("event_id")
+        ]
+        source_count = sum(int(event.get("source_count") or 0) for event in region_events)
+        if evidence:
+            summary = _t(
+                locale,
+                f"{region['label']} has {len(region_events)} source-linked breaking/developing item(s) in the current metadata window.",
+                f"{region['label']}에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 {len(region_events)}건이 있습니다.",
+            )
+        else:
+            summary = _t(
+                locale,
+                f"{region['label']} is watched, but no source-linked breaking item is mapped in the current metadata window.",
+                f"{region['label']}은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다.",
+            )
+        briefs.append(
+            {
+                "region_key": region["key"],
+                "label": region["label"],
+                "coverage_window_days": region["coverage_window_days"],
+                "generated_at": generated_iso,
+                "summary": summary,
+                "event_count": len({str(event.get("event_id") or "") for event in region_events if event.get("event_id")}),
+                "source_count": source_count,
+                "newest_source_published_at": region["newest_source_published_at"],
+                "evidence": evidence,
+                "confidence": "metadata_only",
+            }
+        )
+    return briefs
+
+
+def _breaking_event_matches_region(event: dict[str, Any], region_keys: set[str]) -> bool:
+    for point in event.get("geo_points") or []:
+        if isinstance(point, dict) and str(point.get("area_key") or "") in region_keys:
+            return True
+    for region in event.get("regions") or []:
+        if isinstance(region, dict) and str(region.get("key") or "") in region_keys:
+            return True
+        if isinstance(region, str) and region in region_keys:
+            return True
+    return False
+
+
+def _newest_breaking_timestamp(events: list[dict[str, Any]], points: list[dict[str, Any]]) -> str | None:
+    timestamps = [
+        str(value)
+        for value in [
+            *(event.get("source_published_at") for event in events),
+            *(point.get("source_published_at") for point in points),
+        ]
+        if isinstance(value, str) and value
+    ]
+    return max(timestamps) if timestamps else None
+
+
 def _ranking_cutoff(points: list[dict[str, Any]], total_count: int) -> int | None:
     if not points or len(points) >= total_count:
         return None
@@ -6452,17 +6644,32 @@ def _country_region_data(
     calendar: list[dict[str, Any]],
     generated_at: datetime,
 ) -> dict[str, Any]:
-    relevant_events = [event for event in events if key in event["country_region_keys"]]
+    match_keys = _country_region_member_keys(key)
+    relevant_events = [
+        event
+        for event in events
+        if match_keys.intersection(set(event.get("country_region_keys") or []))
+    ]
+    calendar_items = [
+        item
+        for item in calendar
+        if item.get("country_region_key") in match_keys
+    ]
+    has_relevant_coverage = bool(relevant_events or calendar_items)
     return {
         "key": key,
         "name": names[1 if locale == "ko" else 0],
         "type": names[2],
-        "overview": _t(locale, f"{names[0]} coverage combines official macro calendars, sector exposure, source-strength labels, and source-linked events.", f"{names[1]} 커버리지는 공식 거시 일정, 섹터 노출, 출처 강도 라벨, 출처 연결 이벤트를 결합합니다."),
-        "source_strength": "official_or_reviewed_seed",
-        "freshness": "fresh",
+        "overview": _t(
+            locale,
+            f"{names[0]} coverage combines official macro calendars, sector exposure, source-strength labels, and source-linked events. Quiet pages intentionally avoid unrelated fallback events.",
+            f"{names[1]} 커버리지는 공식 거시 일정, 섹터 노출, 출처 강도 라벨, 출처 연결 이벤트를 결합합니다. 조용한 페이지는 관련 없는 대체 이벤트를 표시하지 않습니다.",
+        ),
+        "source_strength": "official_or_reviewed_seed" if has_relevant_coverage else "coverage_gap_no_recent_source_linked_event",
+        "freshness": "fresh" if has_relevant_coverage else "watch",
         "monitored_sectors": [_sector_tile(sector_key, locale, events) for sector_key in SECTORS],
-        "recent_events": relevant_events or events[:1],
-        "calendar_items": [item for item in calendar if item["country_region_key"] == key] or calendar[:2],
+        "recent_events": relevant_events,
+        "calendar_items": calendar_items,
         "indicators": _macro_tiles(locale, generated_at),
     }
 

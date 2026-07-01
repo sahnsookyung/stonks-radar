@@ -5,6 +5,7 @@ import email.utils
 import hashlib
 import io
 import ipaddress
+import json
 import re
 import time
 import zipfile
@@ -12,6 +13,7 @@ from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from html import unescape
+from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlunparse
 from xml.etree import ElementTree
@@ -50,48 +52,31 @@ GDELT_LASTUPDATE_URL = "http://data.gdeltproject.org/gdeltv2/lastupdate.txt"
 GDELT_DATA_HOST_ALLOWLIST = frozenset({"data.gdeltproject.org"})
 GDELT_EXPORT_SUFFIX = ".export.CSV.zip"
 GDELT_GKG_SUFFIX = ".gkg.csv.zip"
-GDELT_TRACKED_COUNTRY_QUERY_TERMS = (
-    '"United States"',
-    "China",
-    "Germany",
-    "Japan",
-    "India",
-    '"United Kingdom"',
-    "France",
-    "Italy",
-    "Canada",
-    "Brazil",
-    "Russia",
-    '"South Korea"',
-    "Mexico",
-    "Australia",
-    "Spain",
-    "Indonesia",
-    "Turkiye",
-    "Turkey",
-    '"Saudi Arabia"',
-    "Netherlands",
-    "Switzerland",
-    "Poland",
-    "Belgium",
-    "Argentina",
-    "Ireland",
-    "Sweden",
-    '"United Arab Emirates"',
-    "UAE",
-    "Singapore",
-    "Israel",
-    "Austria",
-    "Thailand",
-    "Norway",
-    '"South Africa"',
-)
+ROOT = Path(__file__).resolve().parents[6]
+WATCHED_REGIONS_PATH = ROOT / "packages" / "shared-config" / "watched-regions.json"
+_WATCHED_REGION_REGISTRY: dict[str, Any] | None = None
 GDELT_TRACKED_COUNTRY_THEME_QUERIES = (
     "(markets OR stocks OR energy OR commodities OR rates OR sanctions OR trade)",
     "(sanctions OR tariff OR \"trade war\" OR export OR controls OR supply)",
     "(oil OR gas OR lng OR shipping OR chokepoint OR refinery OR pipeline)",
 )
 GDELT_COUNTRY_QUERY_CHUNK_SIZE = 6
+
+
+def _watched_region_registry() -> dict[str, Any]:
+    global _WATCHED_REGION_REGISTRY
+    if _WATCHED_REGION_REGISTRY is None:
+        _WATCHED_REGION_REGISTRY = json.loads(WATCHED_REGIONS_PATH.read_text())
+    return _WATCHED_REGION_REGISTRY
+
+
+def _gdelt_tracked_country_query_terms() -> tuple[str, ...]:
+    terms: list[str] = []
+    for row in _watched_region_registry().get("regions", []):
+        if not isinstance(row, dict) or not row.get("gather_news"):
+            continue
+        terms.extend(str(term) for term in row.get("gdelt_terms") or [] if str(term).strip())
+    return tuple(dict.fromkeys(terms))
 
 
 def _or_clause(terms: Iterable[str]) -> str:
@@ -112,26 +97,49 @@ def _chunked_terms(terms: Iterable[str], chunk_size: int) -> tuple[tuple[str, ..
 
 
 def _gdelt_country_theme_queries(
-    country_terms: Iterable[str] = GDELT_TRACKED_COUNTRY_QUERY_TERMS,
+    country_terms: Iterable[str] | None = None,
     theme_queries: Iterable[str] = GDELT_TRACKED_COUNTRY_THEME_QUERIES,
     *,
     chunk_size: int = GDELT_COUNTRY_QUERY_CHUNK_SIZE,
 ) -> tuple[str, ...]:
+    country_terms = _gdelt_tracked_country_query_terms() if country_terms is None else country_terms
     chunks = _chunked_terms(country_terms, max(1, chunk_size))
     return tuple(f"{_or_clause(chunk)} AND {theme}" for theme in theme_queries for chunk in chunks)
 
 
+def _interleave_query_groups(*groups: Iterable[str]) -> tuple[str, ...]:
+    pending: list[list[str]] = []
+    for group in groups:
+        materialized = list(group)
+        if materialized:
+            pending.append(materialized)
+    interleaved: list[str] = []
+    while pending:
+        next_pending: list[list[str]] = []
+        for group in pending:
+            interleaved.append(group[0])
+            rest = group[1:]
+            if rest:
+                next_pending.append(rest)
+        pending = next_pending
+    return tuple(interleaved)
+
+
 GDELT_DOC_QUERY_PACKS: dict[str, tuple[str, ...]] = {
-    "market_watch": (
-        *_gdelt_country_theme_queries(theme_queries=(GDELT_TRACKED_COUNTRY_THEME_QUERIES[0],)),
-        "(hormuz OR \"red sea\" OR oil OR lng OR pipeline OR refinery OR shipping)",
-        "(semiconductor OR chip OR \"export control\" OR BIS OR Taiwan OR Korea OR Japan)",
-        "(\"AI infrastructure\" OR datacenter OR \"data center\" OR capex OR HBM OR accelerator)",
-        "(\"central bank\" OR rates OR inflation OR treasury OR yen OR dollar)",
-        *_gdelt_country_theme_queries(theme_queries=GDELT_TRACKED_COUNTRY_THEME_QUERIES[1:]),
-        "(sanctions OR tariff OR \"trade war\" OR blockade OR missile OR conflict)",
-        "(outbreak OR pandemic OR WHO OR avian OR vaccine OR public health)",
-        "(NVDA OR AMD OR MSFT OR AAPL OR TSMC OR Samsung OR ASML OR RKLB OR IONQ OR RGTI OR QBTS OR LUNR OR ASTS OR RDW OR DJT)",
+    "market_watch": _interleave_query_groups(
+        _gdelt_country_theme_queries(theme_queries=(GDELT_TRACKED_COUNTRY_THEME_QUERIES[0],)),
+        (
+            "(hormuz OR \"red sea\" OR oil OR lng OR pipeline OR refinery OR shipping)",
+            "(semiconductor OR chip OR \"export control\" OR BIS OR Taiwan OR Korea OR Japan)",
+            "(\"AI infrastructure\" OR datacenter OR \"data center\" OR capex OR HBM OR accelerator)",
+            "(\"central bank\" OR rates OR inflation OR treasury OR yen OR dollar)",
+        ),
+        _gdelt_country_theme_queries(theme_queries=GDELT_TRACKED_COUNTRY_THEME_QUERIES[1:]),
+        (
+            "(sanctions OR tariff OR \"trade war\" OR blockade OR missile OR conflict)",
+            "(outbreak OR pandemic OR WHO OR avian OR vaccine OR public health)",
+            "(NVDA OR AMD OR MSFT OR AAPL OR TSMC OR Samsung OR ASML OR RKLB OR IONQ OR RGTI OR QBTS OR LUNR OR ASTS OR RDW OR DJT)",
+        ),
     ),
 }
 

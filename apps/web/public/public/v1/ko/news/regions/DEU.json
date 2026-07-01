@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_region",
   "object_key": "news_region_DEU",
-  "content_hash": "sha256:f6c5425ec4dd0b3ba58b3e929f33a05bd82ce27224234cfd58cb86e0657c56ca",
+  "content_hash": "sha256:88ce4033da0eafff35bb3d74f4931f4def89058b81b78e819774b7707cb32fcc",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "DEU",
     "name": "독일",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "regional_brief": "독일 관련 출처 연결 뉴스 이벤트 0건이 있으며 발생지, 영향 지역, 시장 지역 라벨을 분리합니다.",
     "events": []
   },

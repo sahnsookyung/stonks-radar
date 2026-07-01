@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "en",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_region",
   "object_key": "news_region_TWN",
-  "content_hash": "sha256:7496d265fa73b2edc1551c922e5c58a7467ff112e0e4f08e85ff24a7be547d3b",
+  "content_hash": "sha256:5effe599da18ce64cce1e02a0aea3f42fd94bcef06f8001a3a90ae60f29bd0af",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "TWN",
     "name": "Taiwan",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "regional_brief": "Taiwan has 0 source-linked news event(s), with relation labels separating event location, affected region, and market region.",
     "events": []
   },

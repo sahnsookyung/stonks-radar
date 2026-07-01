@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "snapshot_version": 1,
   "locale": "ko",
-  "generated_at": "2026-06-30T13:19:11Z",
-  "stale_after": "2026-07-01T01:19:11Z",
-  "hard_expires_at": "2026-07-07T13:19:11Z",
+  "generated_at": "2026-07-01T12:08:56Z",
+  "stale_after": "2026-07-02T00:08:56Z",
+  "hard_expires_at": "2026-07-08T12:08:56Z",
   "object_type": "news_topic",
   "object_key": "news_topic_public_health",
-  "content_hash": "sha256:d9d2fee8ae0217203405a81d5d7645646b1801900bc42ed04a32780c542c398c",
+  "content_hash": "sha256:e70b65e70d312db799281dd20f66602dd86661481cdbbe9df8cc634722b73def",
   "source_policy_versions": [
     {
       "source_key": "federal_reserve",
@@ -113,7 +113,7 @@
   "data": {
     "key": "public_health",
     "label": "공중보건",
-    "generated_label": "2026-06-30T13:19:11Z",
+    "generated_label": "2026-07-01T12:08:56Z",
     "topic_brief": "공중보건에는 공개 메타데이터에서 만든 검토된 출처 연결 이벤트 클러스터 1건이 포함됩니다.",
     "events": [
       {
@@ -121,9 +121,9 @@
         "title": "공중보건 경보 모니터링이 브라질, 미국, 유럽, 아시아 여행 민감 시장을 포괄",
         "summary": "공식 공중보건 피드는 금융 뉴스와 별도로 분류되어 시장 맥락 리스크로만 표시됩니다.",
         "event_type": "public_health_alert",
-        "first_seen_at": "2026-06-28T13:19:11Z",
-        "last_seen_at": "2026-06-30T09:19:11Z",
-        "published_at": "2026-06-30T09:19:11Z",
+        "first_seen_at": "2026-06-29T12:08:56Z",
+        "last_seen_at": "2026-07-01T08:08:56Z",
+        "published_at": "2026-07-01T08:08:56Z",
         "freshness": "watch",
         "severity": "medium",
         "confidence": 0.74,
@@ -183,7 +183,7 @@
             "source_key": "who",
             "policy_version": 1,
             "title": "질병 발생 뉴스",
-            "published_at": "2026-06-29T19:19:11Z",
+            "published_at": "2026-06-30T18:08:56Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": true
           },
@@ -193,7 +193,7 @@
             "source_key": "cdc",
             "policy_version": 1,
             "title": "여행 건강 고지",
-            "published_at": "2026-06-29T19:19:11Z",
+            "published_at": "2026-06-30T18:08:56Z",
             "trust_tier": "T0_OFFICIAL",
             "is_primary": false
           }

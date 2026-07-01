@@ -37,6 +37,7 @@ services:
     restart: unless-stopped
 
   fetch-sandbox:
+    profiles: ["python-legacy"]
     mem_limit: 512m
     cpus: 0.25
     restart: unless-stopped

@@ -73,6 +73,7 @@ export function MapPage() {
       <EventMap
         events={events}
         mapPoints={mapPoints}
+        watchedRegions={query.data.data.breaking_market_map?.watched_regions ?? []}
         selectedMapPointId={selectedMapPointId}
         onMapPointSelect={setSelectedMapPointId}
         heightClass="h-[clamp(420px,60svh,640px)] md:h-[720px] xl:h-[calc(100vh-260px)]"
