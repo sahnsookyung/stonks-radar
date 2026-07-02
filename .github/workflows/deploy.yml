@@ -6,11 +6,11 @@ on:
       runner:
         description: "Execution path"
         required: true
-        default: self-hosted
+        default: github-hosted
         type: choice
         options:
-          - self-hosted
           - github-hosted
+          - self-hosted
       mode:
         description: "Deployment mode"
         required: true

@@ -36,17 +36,19 @@ rotated, update both locations and restart the Phoenix/Oban runtime stack.
 
 The deploy workflow is manual-only: `.github/workflows/deploy.yml`.
 
-Default execution path: `self-hosted`.
+Default execution path: `github-hosted`.
 Default deployment mode: `fast`.
 
-The self-hosted path runs on the OCI instance with runner labels
-`self-hosted`, `linux`, and `stonks-radar-deploy`. This avoids GitHub-hosted
-runner minutes and keeps deploys available when GitHub-hosted jobs are blocked
-by account billing/spending-limit state. It checks out the repository, builds
-the web assets, syncs the checked-out release into `/opt/stonks-radar`, writes
-the production env file, pulls the prebuilt Elixir API image for fast deploys,
-runs Docker Compose, refreshes the published snapshot volume, and verifies local
-origin health.
+The default GitHub-hosted path connects to OCI over SSH. It checks out the
+repository, builds the web assets, syncs the checked-out release into
+`/opt/stonks-radar`, writes the production env file, pulls the prebuilt Elixir
+API image for fast deploys, runs Docker Compose, refreshes the published
+snapshot volume, and verifies local origin health.
+
+The optional self-hosted path runs the same deployment script on the OCI
+instance with runner labels `self-hosted`, `linux`, and
+`stonks-radar-deploy`. Use it only after that runner is registered and visible in
+GitHub repository settings; otherwise the job will queue indefinitely.
 
 Deployment modes:
 
@@ -87,7 +89,7 @@ Required repository or environment secrets:
 
 - `STONKS_PRODUCTION_ENV_B64`: base64 encoding of the production env file
 
-Additional secrets required only for the `github-hosted` SSH fallback:
+Additional secrets required for the default `github-hosted` SSH path:
 
 - `STONKS_HOST`: OCI public IPv4 or DNS name
 - `STONKS_USER`: SSH user, normally `ubuntu`
@@ -121,8 +123,8 @@ The runner service must have Docker access and write access to
 that group exists; log out/in or restart the service if group membership was
 changed after Docker was installed.
 
-Use the `github-hosted` workflow input only when GitHub-hosted runner billing is
-healthy. Production deploys are intentionally not scheduled; they require manual
+Use the `self-hosted` workflow input only when the OCI runner is online.
+Production deploys are intentionally not scheduled; they require manual
 dispatch.
 
 Manual host deploys use the same mode names:
