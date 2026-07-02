@@ -225,6 +225,7 @@ defmodule StonksBackend.Snapshots do
       |> ensure_map()
       |> maybe_put_existing("generated_label", iso8601(context.generated_at))
       |> update_snapshot_health(context)
+      |> maybe_enrich_yield_curves()
     end)
   end
 
@@ -248,6 +249,12 @@ defmodule StonksBackend.Snapshots do
   end
 
   defp apply_template_runtime_data(snapshot, _object_key, _locale, _context), do: snapshot
+
+  defp maybe_enrich_yield_curves(data) do
+    case StonksBackend.YieldCurves.enrich_home_snapshot_data(data) do
+      {:ok, enriched_data} -> enriched_data
+    end
+  end
 
   defp write_snapshot(candidate_root, relative, snapshot) do
     snapshot = Map.put(snapshot, "content_hash", payload_hash(snapshot["data"]))

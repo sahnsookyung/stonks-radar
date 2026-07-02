@@ -3,7 +3,9 @@
 - `canonical_object`: stable object registry for cross-domain links.
 - `data_source`: source profile, retention, robots/rate limits, display policy.
 - `source_policy_decision`: versioned source-policy approvals used by publication.
-- `job_queue`: durable jobs with leases, heartbeats, retries, dead letters.
+- `oban_jobs`: durable Oban job records for background work, retries, and dead-letter visibility.
+- `job_runtime_lock`: provider, source, and global runtime locks used by Oban workers.
+- `job_queue`: legacy read-only job history used for migration, audit, and replay compatibility.
 - `series`: time-series metadata with latency, stale threshold, revision policy.
 - `observation_candidate`: partitioned provider observations before arbitration.
 - `canonical_observation`: versioned accepted observations with one active row per series/time.

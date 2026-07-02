@@ -1,11 +1,27 @@
 defmodule StonksBackendWeb.InstrumentsControllerTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   import Plug.Conn
   import Plug.Test
 
   alias StonksBackend.Instruments
 
   @opts StonksBackendWeb.Router.init([])
+
+  setup do
+    original = Application.get_env(:stonks_backend, :settings)
+    clear_provider_cache()
+    Application.put_env(:stonks_backend, :settings, test_settings(original))
+
+    on_exit(fn ->
+      if is_nil(original) do
+        Application.delete_env(:stonks_backend, :settings)
+      else
+        Application.put_env(:stonks_backend, :settings, original)
+      end
+
+      clear_provider_cache()
+    end)
+  end
 
   test "instrument search preserves legacy autocomplete result shape" do
     conn =
@@ -21,6 +37,185 @@ defmodule StonksBackendWeb.InstrumentsControllerTest do
     assert first["listingId"] == "KRX:005930"
     assert first["currency"] == "KRW"
     assert "IDENTIFIER_EXACT" in first["matchedOn"]
+  end
+
+  test "instrument search includes shared tracked ticker watchlist entries" do
+    conn =
+      :get
+      |> conn("/api/instruments/search?q=RKLB&limit=5")
+      |> dispatch()
+
+    assert conn.status == 200
+    body = Jason.decode!(conn.resp_body)
+    assert [first | _] = body["results"]
+    assert first["instrumentId"] == "RKLB"
+    assert first["listingId"] == "NASDAQ:RKLB"
+    assert first["name"] =~ "Rocket Lab"
+    assert first["priceCoverage"] == "unavailable"
+
+    assert Enum.any?(
+             body["dataFreshness"]["providerStatuses"],
+             &(&1["source"] == "ticker_watchlist" and &1["instrument_count"] > 0)
+           )
+  end
+
+  test "instrument search uses configured provider lookup and quote fallback for unknown symbols" do
+    Application.put_env(:stonks_backend, :settings,
+      instrument_provider_search_enabled: "true",
+      fmp_api_key: "fmp-token",
+      instrument_provider_search_cache_seconds: "60",
+      instrument_provider_request_fun: fn url, opts ->
+        params = Keyword.fetch!(opts, :params)
+
+        cond do
+          String.ends_with?(url, "/search-symbol") ->
+            assert params["query"] == "ZZZZ"
+            assert params["apikey"] == "fmp-token"
+
+            {:ok,
+             %{
+               status: 200,
+               body: [
+                 %{
+                   "symbol" => "ZZZZ",
+                   "name" => "Zeta Space Holdings",
+                   "exchangeShortName" => "NASDAQ",
+                   "currency" => "USD"
+                 }
+               ]
+             }}
+
+          String.ends_with?(url, "/quote-short") ->
+            assert params["symbol"] == "ZZZZ"
+            {:ok, %{status: 200, body: [%{"symbol" => "ZZZZ", "price" => 12.34}]}}
+
+          true ->
+            flunk("unexpected provider URL #{url}")
+        end
+      end
+    )
+
+    conn =
+      :get
+      |> conn("/api/instruments/search?q=ZZZZ&limit=5&context=BUILDER")
+      |> dispatch()
+
+    assert conn.status == 200
+    body = Jason.decode!(conn.resp_body)
+    assert [first | _] = body["results"]
+    assert first["instrumentId"] == "ZZZZ"
+    assert first["listingId"] == "NASDAQ:ZZZZ"
+    assert first["priceCoverage"] == "available"
+    assert first["calculationEligible"] == true
+    assert first["requiresUserPrice"] == false
+    assert first["currentPrice"] == 12.34
+    assert "fmp_quote_short" in first["sourceProviders"]
+  end
+
+  test "instrument search enriches exact local ticker matches when quote provider is configured" do
+    Application.put_env(:stonks_backend, :settings,
+      instrument_provider_search_enabled: "true",
+      instrument_public_symbol_lookup_enabled: "false",
+      fmp_api_key: "fmp-token",
+      instrument_provider_search_cache_seconds: "60",
+      instrument_provider_request_fun: fn url, opts ->
+        params = Keyword.fetch!(opts, :params)
+
+        cond do
+          String.ends_with?(url, "/search-symbol") ->
+            assert params["query"] == "RKLB"
+            assert params["apikey"] == "fmp-token"
+
+            {:ok,
+             %{
+               status: 200,
+               body: [
+                 %{
+                   "symbol" => "RKLB",
+                   "name" => "Rocket Lab USA, Inc.",
+                   "exchangeShortName" => "NASDAQ",
+                   "currency" => "USD"
+                 }
+               ]
+             }}
+
+          String.ends_with?(url, "/quote-short") ->
+            assert params["symbol"] == "RKLB"
+            {:ok, %{status: 200, body: [%{"symbol" => "RKLB", "price" => 27.42}]}}
+
+          true ->
+            flunk("unexpected provider URL #{url}")
+        end
+      end
+    )
+
+    conn =
+      :get
+      |> conn("/api/instruments/search?q=RKLB&limit=5&context=BUILDER")
+      |> dispatch()
+
+    assert conn.status == 200
+    body = Jason.decode!(conn.resp_body)
+    assert [first | _] = body["results"]
+    assert first["instrumentId"] == "RKLB"
+    assert first["listingId"] == "NASDAQ:RKLB"
+    assert first["priceCoverage"] == "available"
+    assert first["calculationEligible"] == true
+    assert first["requiresUserPrice"] == false
+    assert first["currentPrice"] == 27.42
+    assert "fmp_quote_short" in first["sourceProviders"]
+  end
+
+  test "instrument search falls back to public symbol directory without provider keys" do
+    Application.put_env(:stonks_backend, :settings,
+      instrument_provider_search_enabled: "true",
+      instrument_public_symbol_lookup_enabled: "true",
+      instrument_public_symbol_directory_cache_seconds: "60",
+      instrument_provider_request_fun: fn url, _opts ->
+        cond do
+          String.ends_with?(url, "/nasdaqlisted.txt") ->
+            {:ok,
+             %{
+               status: 200,
+               body:
+                 "Symbol|Security Name|Market Category|Test Issue|Financial Status|Round Lot Size|ETF|NextShares\nFREE|Free Range Robotics, Inc. Common Stock|Q|N|N|100|N|N\nTEST|Ignored Test Issue|Q|Y|N|100|N|N\nFile Creation Time:0701202618:00"
+             }}
+
+          String.ends_with?(url, "/otherlisted.txt") ->
+            {:ok,
+             %{
+               status: 200,
+               body:
+                 "ACT Symbol|Security Name|Exchange|CQS Symbol|ETF|Round Lot Size|Test Issue|NASDAQ Symbol\nBOND|Bond Ladder ETF|P|BOND|Y|100|N|BOND\nFile Creation Time:0701202618:00"
+             }}
+
+          true ->
+            flunk("unexpected provider URL #{url}")
+        end
+      end
+    )
+
+    conn =
+      :get
+      |> conn("/api/instruments/search?q=FREE&limit=5&context=BUILDER")
+      |> dispatch()
+
+    assert conn.status == 200
+    body = Jason.decode!(conn.resp_body)
+    assert [first | _] = body["results"]
+    assert first["instrumentId"] == "FREE"
+    assert first["listingId"] == "NASDAQ:FREE"
+    assert first["name"] == "Free Range Robotics, Inc. Common Stock"
+    assert first["priceCoverage"] == "unavailable"
+    assert first["calculationEligible"] == false
+    assert first["requiresUserPrice"] == true
+    assert "nasdaq_trader_symbol_directory" in first["sourceProviders"]
+
+    assert Enum.any?(
+             body["dataFreshness"]["providerStatuses"],
+             &(&1["source"] == "nasdaq_trader_symbol_directory" and
+                 &1["status"] == "configured")
+           )
   end
 
   test "instrument search hides advanced instruments unless requested" do
@@ -204,5 +399,24 @@ defmodule StonksBackendWeb.InstrumentsControllerTest do
     |> conn(path, Jason.encode!(body))
     |> put_req_header("content-type", "application/json")
     |> StonksBackendWeb.Endpoint.call([])
+  end
+
+  defp clear_provider_cache do
+    case :ets.whereis(:stonks_backend_instrument_provider_cache) do
+      :undefined -> :ok
+      table -> :ets.delete_all_objects(table)
+    end
+  end
+
+  defp test_settings(nil), do: [instrument_public_symbol_lookup_enabled: "false"]
+
+  defp test_settings(settings) when is_list(settings) do
+    Keyword.put(settings, :instrument_public_symbol_lookup_enabled, "false")
+  end
+
+  defp test_settings(settings) when is_map(settings) do
+    settings
+    |> Map.to_list()
+    |> Keyword.put(:instrument_public_symbol_lookup_enabled, "false")
   end
 end

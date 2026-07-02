@@ -1,12 +1,44 @@
 defmodule StonksBackend.Instruments do
   @moduledoc "Instrument search/resolve compatibility."
 
-  alias StonksBackend.Sql
+  alias StonksBackend.{Settings, Sql}
 
   @index_schema_version 1
   @index_last_updated_at "2026-05-25T00:00:00Z"
   @contexts ["HOLDING_ENTRY", "TAX_LOT", "BUILDER", "IMPORT_RECONCILIATION", "CSV_IMPORT"]
   @reference_regex ~r/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/
+  @provider_cache_table :stonks_backend_instrument_provider_cache
+  @provider_source "provider_symbol_lookup"
+  @public_symbol_directory_source "nasdaq_trader_symbol_directory"
+  @nasdaq_listed_url "https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt"
+  @nasdaq_other_listed_url "https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt"
+  @country_by_exchange %{
+    "AMEX" => "US",
+    "ARCA" => "US",
+    "CBOE" => "US",
+    "NASDAQ" => "US",
+    "Nasdaq" => "US",
+    "NYSE" => "US",
+    "NYSEAMERICAN" => "US",
+    "NYSE AMERICAN" => "US",
+    "OTC" => "US",
+    "KRX" => "Korea",
+    "KOSPI" => "Korea",
+    "KOSDAQ" => "Korea",
+    "TSE" => "Japan",
+    "TYO" => "Japan",
+    "JPX" => "Japan",
+    "LSE" => "United Kingdom",
+    "TSX" => "Canada",
+    "TSXV" => "Canada",
+    "ASX" => "Australia",
+    "XETRA" => "Germany",
+    "FWB" => "Germany",
+    "EPA" => "France",
+    "HKEX" => "Hong Kong",
+    "SSE" => "China",
+    "SZSE" => "China"
+  }
   @payload_atom_keys %{
     "context" => :context,
     "context_screen" => :context_screen,
@@ -35,15 +67,16 @@ defmodule StonksBackend.Instruments do
         response(query, [], [minimum_warning])
 
       true ->
+        local_entries = instrument_index()
+        local_results = search_entries(local_entries, normalized, filters)
+
         results =
-          instrument_index()
-          |> Enum.map(&search_result_for_entry(&1, normalized, filters))
-          |> Enum.reject(&is_nil/1)
-          |> keep_best_results()
-          |> Enum.sort_by(fn row ->
-            {-row["score"], row["displaySymbol"], row["listingId"], row["instrumentId"]}
-          end)
-          |> Enum.take(filters.limit)
+          if provider_lookup_needed?(local_results, normalized, filters) do
+            (local_entries ++ provider_lookup_entries(query, normalized))
+            |> search_entries(normalized, filters)
+          else
+            local_results
+          end
 
         response(query, results, [], cache: "miss")
     end
@@ -86,7 +119,8 @@ defmodule StonksBackend.Instruments do
       exact =
         Enum.filter(results, fn row ->
           normalize_symbol(row["displaySymbol"]) == normalize_symbol(symbol) ||
-            (present?(isin) && "IDENTIFIER_EXACT" in Map.get(row, "matchedOn", []))
+            "IDENTIFIER_EXACT" in Map.get(row, "matchedOn", []) ||
+            (present?(isin) && normalize_symbol(row["displaySymbol"]) == normalize_symbol(isin))
         end)
 
       matches = if exact == [], do: results, else: exact
@@ -162,8 +196,30 @@ defmodule StonksBackend.Instruments do
     end
   end
 
-  def refresh_index(payload),
-    do: {:ok, %{status: "refreshed", source: payload["source"], mode: payload["mode"]}}
+  def refresh_index(payload) do
+    warm_queries =
+      payload
+      |> Map.get("symbols", default_provider_warm_symbols())
+      |> normalize_symbol_list()
+      |> Enum.take(provider_search_limit())
+
+    provider_hits =
+      warm_queries
+      |> Enum.flat_map(fn symbol ->
+        provider_lookup_entries(symbol, normalize_search_query(symbol))
+      end)
+      |> Enum.uniq_by(&normalize_symbol(&1.instrument_id <> ":" <> &1.listing_id))
+
+    {:ok,
+     %{
+       status: "refreshed",
+       source: payload["source"],
+       mode: payload["mode"],
+       local_index_count: length(instrument_index()),
+       provider_index_count: length(provider_hits),
+       provider_lookup_enabled: provider_lookup_enabled?()
+     }}
+  end
 
   def normalize_review_request(payload) do
     query = value_for(payload, "query") |> to_string() |> String.trim()
@@ -240,8 +296,19 @@ defmodule StonksBackend.Instruments do
     }
   end
 
+  defp search_entries(entries, normalized, filters) do
+    entries
+    |> Enum.map(&search_result_for_entry(&1, normalized, filters))
+    |> Enum.reject(&is_nil/1)
+    |> keep_best_results()
+    |> Enum.sort_by(fn row ->
+      {-row["score"], row["displaySymbol"], row["listingId"], row["instrumentId"]}
+    end)
+    |> Enum.take(filters.limit)
+  end
+
   defp instrument_index do
-    (static_entries() ++ db_entries())
+    (static_entries() ++ watchlist_entries() ++ db_entries())
     |> Enum.uniq_by(&normalize_symbol(&1.instrument_id <> ":" <> &1.listing_id))
   end
 
@@ -281,6 +348,128 @@ defmodule StonksBackend.Instruments do
       aliases: [row["display_name_ko"]],
       identifiers: []
     })
+  end
+
+  defp watchlist_entries do
+    case watchlist_payload() do
+      {:ok, %{"entities" => entities}} when is_list(entities) ->
+        entities
+        |> Enum.flat_map(&watchlist_entry/1)
+
+      _ ->
+        []
+    end
+  end
+
+  defp watchlist_entry(%{"route_kind" => "ticker"} = entity) do
+    symbol = entity |> Map.get("symbol") |> trim_value() |> String.upcase()
+    exchange = entity |> Map.get("exchange") |> trim_value()
+
+    if symbol == "" or exchange == "" do
+      []
+    else
+      [
+        entry(%{
+          instrument_id: Map.get(entity, "entity_id") || symbol,
+          symbol: symbol,
+          name: Map.get(entity, "legal_name") || Map.get(entity, "name_en") || symbol,
+          listing_id: "#{exchange}:#{symbol}",
+          exchange: exchange,
+          country: Map.get(entity, "country") || country_for_exchange(exchange),
+          currency: Map.get(entity, "currency") || "USD",
+          asset_class: asset_class_from_watchlist(entity["asset_type"]),
+          instrument_type: instrument_type_from_watchlist(entity["asset_type"]),
+          sector: Map.get(entity, "sector") || "Unclassified",
+          quality_level: "PARTIAL",
+          quality_message:
+            "Tracked ticker metadata from the shared watchlist. Price data requires stored market history or provider lookup.",
+          aliases:
+            [
+              Map.get(entity, "name_en"),
+              Map.get(entity, "name_ko"),
+              Map.get(entity, "legal_name")
+            ] ++
+              List.wrap(Map.get(entity, "aliases")),
+          identifiers: watchlist_identifiers(entity),
+          source_providers: ["ticker_watchlist"]
+        })
+      ]
+    end
+  end
+
+  defp watchlist_entry(_entity), do: []
+
+  defp watchlist_payload do
+    watchlist_path_candidates()
+    |> Enum.find_value(fn
+      nil ->
+        nil
+
+      path ->
+        if File.regular?(path) do
+          path
+          |> File.read()
+          |> case do
+            {:ok, content} -> Jason.decode(content)
+            _ -> nil
+          end
+          |> case do
+            {:ok, %{"entities" => entities} = payload} when is_list(entities) -> {:ok, payload}
+            _ -> nil
+          end
+        end
+    end)
+    |> case do
+      nil -> {:error, :watchlist_missing}
+      result -> result
+    end
+  end
+
+  defp watchlist_path_candidates do
+    [
+      Settings.get(:news_ticker_watchlist_path),
+      app_priv_path("ticker_watchlist.generated.json"),
+      Path.expand("packages/shared-config/ticker-watchlist.generated.json", File.cwd!()),
+      Path.expand("../../packages/shared-config/ticker-watchlist.generated.json", File.cwd!())
+    ]
+    |> Enum.reject(&blank?/1)
+  end
+
+  defp app_priv_path(filename) do
+    Application.app_dir(:stonks_backend, Path.join(["priv", "news_sources", filename]))
+  rescue
+    _ -> nil
+  end
+
+  defp watchlist_identifiers(entity) do
+    [
+      if(present?(entity["sec_cik"]),
+        do: %{"type" => "OTHER", "value" => "CIK#{entity["sec_cik"]}"}
+      ),
+      if(present?(entity["tradingview_symbol"]),
+        do: %{"type" => "OTHER", "value" => entity["tradingview_symbol"]}
+      )
+    ]
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp asset_class_from_watchlist(value) do
+    case value |> to_string() |> String.downcase() do
+      "etf" -> "Equity"
+      "fund" -> "Equity"
+      "crypto" -> "Crypto / Digital Assets"
+      "fixed income" -> "Fixed Income"
+      _ -> "Equity"
+    end
+  end
+
+  defp instrument_type_from_watchlist(value) do
+    case value |> to_string() |> String.downcase() do
+      "etf" -> "etf"
+      "fund" -> "etf"
+      "crypto" -> "crypto"
+      _ -> "stock"
+    end
   end
 
   defp static_entries do
@@ -487,7 +676,17 @@ defmodule StonksBackend.Instruments do
       inverse_flag: Map.get(attrs, :inverse_flag, false),
       aliases: Map.get(attrs, :aliases, []) |> Enum.reject(&blank?/1),
       identifiers: Map.get(attrs, :identifiers, []),
-      source_providers: Map.get(attrs, :source_providers, ["local_static_seed"])
+      source_providers: Map.get(attrs, :source_providers, ["local_static_seed"]),
+      current_price: decimal_or_nil(Map.get(attrs, :current_price)),
+      previous_close: decimal_or_nil(Map.get(attrs, :previous_close)),
+      price_as_of: Map.get(attrs, :price_as_of),
+      price_coverage: Map.get(attrs, :price_coverage, "unavailable"),
+      calculation_eligible: Map.get(attrs, :calculation_eligible, false),
+      requires_user_price: Map.get(attrs, :requires_user_price, true),
+      source_observed_at: Map.get(attrs, :source_observed_at, @index_last_updated_at),
+      stale_after: Map.get(attrs, :stale_after),
+      hard_expires_at: Map.get(attrs, :hard_expires_at),
+      staleness_state: Map.get(attrs, :staleness_state)
     }
   end
 
@@ -603,6 +802,7 @@ defmodule StonksBackend.Instruments do
 
   defp result_for(entry, score, matched_on) do
     quality = entry.quality_level
+    has_price = is_number(entry.current_price) and entry.current_price > 0
 
     tooltip_keys = [
       "ticker",
@@ -639,15 +839,545 @@ defmodule StonksBackend.Instruments do
       "qualityLevel" => quality,
       "qualityMessage" => entry.quality_message,
       "metadataCoverage" => metadata_coverage_for_quality(quality),
-      "priceCoverage" => "unavailable",
-      "calculationEligible" => false,
-      "requiresUserPrice" => true,
+      "priceCoverage" => entry.price_coverage,
+      "calculationEligible" => entry.calculation_eligible,
+      "requiresUserPrice" => entry.requires_user_price,
+      "currentPrice" => entry.current_price,
+      "previousClose" => entry.previous_close || entry.current_price,
+      "priceAsOf" => entry.price_as_of,
       "sourceProviders" => entry.source_providers,
-      "sourceObservedAt" => @index_last_updated_at,
+      "sourceObservedAt" => entry.source_observed_at,
+      "staleAfter" => entry.stale_after,
+      "hardExpiresAt" => entry.hard_expires_at,
+      "stalenessState" => entry.staleness_state || if(has_price, do: "fresh"),
       "score" => score,
       "matchedOn" => matched_on,
       "tooltipKeys" => tooltip_keys
     }
+  end
+
+  defp provider_lookup_needed?(local_results, normalized, filters) do
+    provider_lookup_enabled?() and provider_query_eligible?(normalized, filters) and
+      (not Enum.any?(local_results, &exact_result_match?(&1, normalized)) or
+         (quote_provider_enabled?() and exact_results_need_price?(local_results, normalized)))
+  end
+
+  defp exact_result_match?(row, normalized) do
+    normalize_symbol(normalized) in [
+      normalize_symbol(row["instrumentId"]),
+      normalize_symbol(row["displaySymbol"]),
+      normalize_symbol(row["listingId"])
+    ]
+  end
+
+  defp exact_results_need_price?(local_results, normalized) do
+    Enum.any?(local_results, fn row ->
+      exact_result_match?(row, normalized) and
+        (row["priceCoverage"] != "available" or row["requiresUserPrice"] == true)
+    end)
+  end
+
+  defp provider_query_eligible?(normalized, filters) do
+    String.length(normalized) >= 2 and
+      filters.context in @contexts and
+      (likely_symbol_query?(normalized) or String.length(normalized) >= 3)
+  end
+
+  defp provider_lookup_enabled? do
+    Settings.truthy?(Settings.get(:instrument_provider_search_enabled, "true")) and
+      (public_symbol_lookup_enabled?() or
+         not is_nil(provider_api_key(:fmp_api_key)) or
+         not is_nil(provider_api_key(:finnhub_api_key)))
+  end
+
+  defp provider_lookup_entries(query, normalized) do
+    if provider_lookup_enabled?() and provider_query_eligible?(normalized, %{context: "BUILDER"}) do
+      cached_provider_entries(normalized, fn ->
+        fetch_provider_entries(query, normalized)
+      end)
+    else
+      []
+    end
+  end
+
+  defp cached_provider_entries(normalized, fetch_fun) do
+    cache_key = {:provider_symbol_lookup, normalize_search_query(normalized)}
+    now = System.monotonic_time(:millisecond)
+
+    with {:ok, table} <- ensure_provider_cache(),
+         [{^cache_key, expires_at, entries}] when expires_at > now <-
+           :ets.lookup(table, cache_key) do
+      entries
+    else
+      _ ->
+        entries = fetch_fun.()
+        cache_provider_entries(cache_key, entries, now)
+        entries
+    end
+  end
+
+  defp ensure_provider_cache do
+    case :ets.whereis(@provider_cache_table) do
+      :undefined ->
+        {:ok, :ets.new(@provider_cache_table, [:named_table, :public, read_concurrency: true])}
+
+      table ->
+        {:ok, table}
+    end
+  rescue
+    ArgumentError ->
+      case :ets.whereis(@provider_cache_table) do
+        :undefined -> {:error, :cache_unavailable}
+        table -> {:ok, table}
+      end
+  end
+
+  defp cache_provider_entries(cache_key, entries, now) do
+    with {:ok, table} <- ensure_provider_cache() do
+      expires_at = now + provider_cache_ttl_ms()
+      :ets.insert(table, {cache_key, expires_at, entries})
+    end
+  end
+
+  defp fetch_provider_entries(query, normalized) do
+    keyed_entries =
+      []
+      |> Kernel.++(fmp_symbol_entries(query, normalized))
+      |> Kernel.++(finnhub_symbol_entries(query))
+      |> unique_provider_entries()
+
+    directory_entries =
+      if keyed_provider_result_complete?(keyed_entries, normalized) do
+        []
+      else
+        public_symbol_directory_entries(query, normalized)
+      end
+
+    entries =
+      keyed_entries
+      |> Kernel.++(directory_entries)
+      |> unique_provider_entries()
+      |> Enum.take(provider_search_limit())
+
+    if likely_symbol_query?(normalized) do
+      enrich_provider_quotes(entries, normalize_symbol(query))
+    else
+      entries
+    end
+  end
+
+  defp fmp_symbol_entries(query, normalized) do
+    case provider_api_key(:fmp_api_key) do
+      nil ->
+        []
+
+      api_key ->
+        rows = fmp_search_request(:symbol, query, api_key)
+
+        rows =
+          if rows == [] and String.length(normalized) >= 3,
+            do: fmp_search_request(:name, query, api_key),
+            else: rows
+
+        rows
+        |> Enum.flat_map(&fmp_search_row_to_entry/1)
+    end
+  end
+
+  defp fmp_search_request(kind, query, api_key) do
+    url =
+      case kind do
+        :name ->
+          Settings.get(
+            :instrument_fmp_name_search_url,
+            "https://financialmodelingprep.com/stable/search-name"
+          )
+
+        _ ->
+          Settings.get(
+            :instrument_fmp_symbol_search_url,
+            "https://financialmodelingprep.com/stable/search-symbol"
+          )
+      end
+
+    request_json(url,
+      params: %{"query" => query, "apikey" => api_key},
+      receive_timeout: provider_timeout_ms()
+    )
+    |> case do
+      {:ok, rows} when is_list(rows) -> rows
+      {:ok, %{"data" => rows}} when is_list(rows) -> rows
+      _ -> []
+    end
+  end
+
+  defp fmp_search_row_to_entry(row) when is_map(row) do
+    symbol = string_value(row["symbol"])
+    name = string_value(row["name"])
+    exchange = first_present([row["exchangeShortName"], row["exchange"], row["stockExchange"]])
+    currency = string_value(row["currency"], "USD")
+
+    cond do
+      symbol == "" or name == "" ->
+        []
+
+      exchange == "" ->
+        []
+
+      true ->
+        [
+          entry(%{
+            instrument_id: symbol,
+            symbol: symbol,
+            name: name,
+            listing_id: "#{exchange}:#{symbol}",
+            exchange: exchange,
+            country: country_for_exchange(exchange),
+            currency: currency,
+            asset_class: "Equity",
+            instrument_type: instrument_type_from_provider(row),
+            sector: "Unclassified",
+            quality_level: "PARTIAL",
+            quality_message:
+              "Provider-backed symbol metadata. Classification may be incomplete until scheduled index refresh confirms it.",
+            aliases: [row["companyName"], row["stockExchange"]],
+            identifiers: [],
+            source_providers: ["fmp", @provider_source],
+            source_observed_at: DateTime.utc_now() |> DateTime.to_iso8601()
+          })
+        ]
+    end
+  end
+
+  defp fmp_search_row_to_entry(_row), do: []
+
+  defp finnhub_symbol_entries(query) do
+    case provider_api_key(:finnhub_api_key) do
+      nil ->
+        []
+
+      api_key ->
+        Settings.get(:instrument_finnhub_symbol_lookup_url, "https://finnhub.io/api/v1/search")
+        |> request_json(
+          params: %{"q" => query, "token" => api_key},
+          receive_timeout: provider_timeout_ms()
+        )
+        |> case do
+          {:ok, %{"result" => rows}} when is_list(rows) -> rows
+          {:ok, rows} when is_list(rows) -> rows
+          _ -> []
+        end
+        |> Enum.flat_map(&finnhub_row_to_entry/1)
+    end
+  end
+
+  defp finnhub_row_to_entry(row) when is_map(row) do
+    symbol = first_present([row["symbol"], row["displaySymbol"]])
+    display_symbol = first_present([row["displaySymbol"], row["symbol"]])
+    name = first_present([row["description"], row["name"]])
+
+    if symbol == "" or name == "" do
+      []
+    else
+      exchange = exchange_from_provider_symbol(symbol)
+
+      [
+        entry(%{
+          instrument_id: display_symbol,
+          symbol: display_symbol,
+          name: name,
+          listing_id: "#{exchange}:#{display_symbol}",
+          exchange: exchange,
+          country: country_for_exchange(exchange),
+          currency: "USD",
+          asset_class: "Equity",
+          instrument_type: instrument_type_from_provider(row),
+          sector: "Unclassified",
+          quality_level: "PARTIAL",
+          quality_message:
+            "Finnhub symbol lookup metadata. Classification may be incomplete until scheduled index refresh confirms it.",
+          aliases: [symbol],
+          identifiers: [],
+          source_providers: ["finnhub", @provider_source],
+          source_observed_at: DateTime.utc_now() |> DateTime.to_iso8601()
+        })
+      ]
+    end
+  end
+
+  defp finnhub_row_to_entry(_row), do: []
+
+  defp unique_provider_entries(entries) do
+    Enum.uniq_by(entries, &normalize_symbol(&1.instrument_id <> ":" <> &1.listing_id))
+  end
+
+  defp keyed_provider_result_complete?([], _normalized), do: false
+
+  defp keyed_provider_result_complete?(entries, normalized) do
+    Enum.any?(entries, &entry_exact_symbol?(&1, normalized)) or
+      length(entries) >= provider_search_limit()
+  end
+
+  defp public_symbol_directory_entries(query, normalized) do
+    if public_symbol_lookup_enabled?() and
+         provider_query_eligible?(normalized, %{context: "BUILDER"}) do
+      symbol_query = normalize_symbol(query)
+      text_query = normalize_search_query(query)
+
+      public_symbol_directory()
+      |> Enum.filter(&public_symbol_directory_match?(&1, symbol_query, text_query))
+      |> Enum.take(provider_search_limit())
+    else
+      []
+    end
+  end
+
+  defp public_symbol_directory do
+    now = System.monotonic_time(:millisecond)
+    cache_key = :public_symbol_directory
+
+    with {:ok, table} <- ensure_provider_cache(),
+         [{^cache_key, expires_at, entries}] when expires_at > now <-
+           :ets.lookup(table, cache_key) do
+      entries
+    else
+      _ ->
+        entries = fetch_public_symbol_directory()
+
+        with {:ok, table} <- ensure_provider_cache() do
+          :ets.insert(table, {cache_key, now + public_symbol_directory_cache_ttl_ms(), entries})
+        end
+
+        entries
+    end
+  end
+
+  defp fetch_public_symbol_directory do
+    [
+      {Settings.get(:instrument_nasdaq_listed_url, @nasdaq_listed_url), :nasdaq_listed},
+      {Settings.get(:instrument_nasdaq_other_listed_url, @nasdaq_other_listed_url), :other_listed}
+    ]
+    |> Enum.flat_map(fn {url, kind} ->
+      case request_text(url, receive_timeout: provider_timeout_ms()) do
+        {:ok, body} -> parse_public_symbol_directory(body, kind)
+        _ -> []
+      end
+    end)
+    |> unique_provider_entries()
+  end
+
+  defp parse_public_symbol_directory(body, kind) do
+    body
+    |> to_string()
+    |> String.split(~r/\r?\n/, trim: true)
+    |> Enum.drop(1)
+    |> Enum.flat_map(&public_symbol_row_to_entry(&1, kind))
+  end
+
+  defp public_symbol_row_to_entry("File Creation Time:" <> _rest, _kind), do: []
+
+  defp public_symbol_row_to_entry(row, :nasdaq_listed) do
+    case String.split(row, "|") do
+      [symbol, name, market_category, test_issue, _financial_status, _round_lot_size, etf | _rest] ->
+        if public_symbol_row_valid?(symbol, name, test_issue) do
+          exchange = nasdaq_market_category_exchange(market_category)
+          [public_symbol_entry(symbol, name, exchange, etf)]
+        else
+          []
+        end
+
+      _ ->
+        []
+    end
+  end
+
+  defp public_symbol_row_to_entry(row, :other_listed) do
+    case String.split(row, "|") do
+      [symbol, name, exchange_code, _cqs_symbol, etf, _round_lot_size, test_issue | _rest] ->
+        if public_symbol_row_valid?(symbol, name, test_issue) do
+          [public_symbol_entry(symbol, name, listed_exchange_name(exchange_code), etf)]
+        else
+          []
+        end
+
+      _ ->
+        []
+    end
+  end
+
+  defp public_symbol_row_valid?(symbol, name, test_issue) do
+    symbol = String.trim(to_string(symbol))
+    name = String.trim(to_string(name))
+    String.upcase(String.trim(to_string(test_issue))) != "Y" and symbol != "" and name != ""
+  end
+
+  defp public_symbol_entry(symbol, name, exchange, etf) do
+    symbol = String.trim(symbol)
+    name = clean_public_symbol_name(name)
+    exchange = if exchange == "", do: "US", else: exchange
+
+    instrument_type =
+      if String.upcase(String.trim(to_string(etf))) == "Y", do: "etf", else: "stock"
+
+    entry(%{
+      instrument_id: symbol,
+      symbol: symbol,
+      name: name,
+      listing_id: "#{exchange}:#{symbol}",
+      exchange: exchange,
+      country: country_for_exchange(exchange),
+      currency: "USD",
+      asset_class: if(instrument_type == "etf", do: "Fund", else: "Equity"),
+      instrument_type: instrument_type,
+      sector: "Unclassified",
+      quality_level: "PARTIAL",
+      quality_message:
+        "Public listing-directory metadata. Add a manual price or wait for configured market-data providers to supply quote coverage.",
+      aliases: [],
+      identifiers: [],
+      source_providers: [@public_symbol_directory_source, @provider_source],
+      source_observed_at: DateTime.utc_now() |> DateTime.to_iso8601()
+    })
+  end
+
+  defp public_symbol_directory_match?(entry, symbol_query, text_query) do
+    symbol = normalize_symbol(entry.symbol)
+    name = normalize_search_query(entry.name)
+
+    cond do
+      symbol_query == "" ->
+        false
+
+      symbol == symbol_query ->
+        true
+
+      String.length(symbol_query) >= 2 and String.starts_with?(symbol, symbol_query) ->
+        true
+
+      String.length(text_query) >= 3 and String.contains?(name, text_query) ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  defp nasdaq_market_category_exchange(category) do
+    case String.upcase(String.trim(to_string(category))) do
+      "Q" -> "NASDAQ"
+      "G" -> "NASDAQ"
+      "S" -> "NASDAQ"
+      _ -> "NASDAQ"
+    end
+  end
+
+  defp listed_exchange_name(code) do
+    case String.upcase(String.trim(to_string(code))) do
+      "A" -> "NYSEAMERICAN"
+      "N" -> "NYSE"
+      "P" -> "ARCA"
+      "Z" -> "CBOE"
+      "V" -> "IEX"
+      _ -> "US"
+    end
+  end
+
+  defp clean_public_symbol_name(name) do
+    name
+    |> to_string()
+    |> String.trim()
+    |> String.replace(~r/\s+/, " ")
+  end
+
+  defp enrich_provider_quotes(entries, normalized_symbol) do
+    case provider_api_key(:fmp_api_key) do
+      nil ->
+        entries
+
+      api_key ->
+        quote = fmp_quote(normalized_symbol, api_key)
+
+        Enum.map(entries, fn entry ->
+          if normalize_symbol(entry.symbol) == normalized_symbol and is_number(quote.price) do
+            %{entry | current_price: quote.price, previous_close: quote.price}
+            |> Map.put(:price_as_of, quote.observed_at)
+            |> Map.put(:price_coverage, "available")
+            |> Map.put(:calculation_eligible, true)
+            |> Map.put(:requires_user_price, false)
+            |> Map.put(:quality_level, "PARTIAL")
+            |> Map.put(
+              :quality_message,
+              "Provider-backed symbol metadata with latest quote snapshot."
+            )
+            |> Map.put(:source_observed_at, quote.observed_at)
+            |> Map.put(:staleness_state, "fresh")
+            |> Map.update!(:source_providers, &Enum.uniq(["fmp_quote_short" | &1]))
+          else
+            entry
+          end
+        end)
+    end
+  end
+
+  defp fmp_quote(symbol, api_key) do
+    Settings.get(
+      :instrument_fmp_quote_short_url,
+      "https://financialmodelingprep.com/stable/quote-short"
+    )
+    |> request_json(
+      params: %{"symbol" => symbol, "apikey" => api_key},
+      receive_timeout: provider_timeout_ms()
+    )
+    |> case do
+      {:ok, [row | _]} when is_map(row) ->
+        %{
+          price: decimal_or_nil(row["price"]),
+          observed_at: DateTime.utc_now() |> DateTime.to_iso8601()
+        }
+
+      {:ok, %{"price" => price}} ->
+        %{price: decimal_or_nil(price), observed_at: DateTime.utc_now() |> DateTime.to_iso8601()}
+
+      _ ->
+        %{price: nil, observed_at: nil}
+    end
+  end
+
+  defp request_json(url, opts) do
+    request_fun = Settings.get(:instrument_provider_request_fun, &Req.get/2)
+
+    case request_fun.(url, opts) do
+      {:ok, %{status: status, body: body}} when status in 200..299 and is_list(body) ->
+        {:ok, body}
+
+      {:ok, %{status: status, body: body}} when status in 200..299 and is_map(body) ->
+        {:ok, body}
+
+      {:ok, %{status: status, body: body}} when status in 200..299 ->
+        Jason.decode(to_string(body))
+
+      _ ->
+        {:error, :request_failed}
+    end
+  rescue
+    _ -> {:error, :request_failed}
+  end
+
+  defp request_text(url, opts) do
+    request_fun = Settings.get(:instrument_provider_request_fun, &Req.get/2)
+
+    case request_fun.(url, opts) do
+      {:ok, %{status: status, body: body}} when status in 200..299 and is_binary(body) ->
+        {:ok, body}
+
+      {:ok, %{status: status, body: body}} when status in 200..299 ->
+        {:ok, to_string(body)}
+
+      _ ->
+        {:error, :request_failed}
+    end
+  rescue
+    _ -> {:error, :request_failed}
   end
 
   defp keep_best_results(results) do
@@ -656,7 +1386,7 @@ defmodule StonksBackend.Instruments do
       key = row["listingId"]
       current = Map.get(acc, key)
 
-      if current == nil or row["score"] > current["score"] do
+      if current == nil or better_search_result?(row, current) do
         Map.put(acc, key, row)
       else
         acc
@@ -664,6 +1394,27 @@ defmodule StonksBackend.Instruments do
     end)
     |> Map.values()
   end
+
+  defp better_search_result?(candidate, current) do
+    candidate_quality_rank = result_quality_rank(candidate)
+    current_quality_rank = result_quality_rank(current)
+
+    candidate_quality_rank > current_quality_rank or
+      (candidate_quality_rank == current_quality_rank and candidate["score"] > current["score"])
+  end
+
+  defp result_quality_rank(row) do
+    0
+    |> maybe_add(row["calculationEligible"] == true, 1_000)
+    |> maybe_add(row["priceCoverage"] == "available", 500)
+    |> maybe_add(row["requiresUserPrice"] == false, 250)
+    |> Kernel.+(metadata_quality_rank(row["qualityLevel"]))
+  end
+
+  defp metadata_quality_rank("COMPLETE"), do: 30
+  defp metadata_quality_rank("PARTIAL"), do: 20
+  defp metadata_quality_rank("STALE"), do: 10
+  defp metadata_quality_rank(_quality), do: 0
 
   defp detail_payload(entry, normalized_listing) do
     listings =
@@ -757,6 +1508,8 @@ defmodule StonksBackend.Instruments do
   end
 
   defp response(query, results, warnings, opts \\ []) do
+    watchlist_count = length(watchlist_entries())
+
     %{
       query: query,
       results: results,
@@ -779,6 +1532,24 @@ defmodule StonksBackend.Instruments do
             status: "loaded",
             generated_at: @index_last_updated_at,
             instrument_count: length(static_entries())
+          },
+          %{
+            source: "ticker_watchlist",
+            status: if(watchlist_count > 0, do: "loaded", else: "missing"),
+            generated_at: @index_last_updated_at,
+            instrument_count: watchlist_count
+          },
+          %{
+            source: @provider_source,
+            status: if(provider_lookup_enabled?(), do: "configured", else: "disabled"),
+            generated_at: @index_last_updated_at,
+            instrument_count: nil
+          },
+          %{
+            source: @public_symbol_directory_source,
+            status: if(public_symbol_lookup_enabled?(), do: "configured", else: "disabled"),
+            generated_at: @index_last_updated_at,
+            instrument_count: nil
           }
         ]
       }
@@ -820,6 +1591,168 @@ defmodule StonksBackend.Instruments do
 
   defp maybe_add(score, true, value), do: score + value
   defp maybe_add(score, _condition, _value), do: score
+
+  defp default_provider_warm_symbols do
+    watchlist_entries()
+    |> Enum.map(& &1.symbol)
+    |> Enum.reject(&blank?/1)
+    |> Enum.uniq()
+  end
+
+  defp normalize_symbol_list(value) when is_list(value) do
+    value
+    |> Enum.map(&normalize_provider_symbol/1)
+    |> Enum.reject(&blank?/1)
+    |> Enum.uniq()
+  end
+
+  defp normalize_symbol_list(value) when is_binary(value) do
+    value
+    |> String.split(",", trim: true)
+    |> normalize_symbol_list()
+  end
+
+  defp normalize_symbol_list(_value), do: []
+
+  defp normalize_provider_symbol(value) do
+    value
+    |> to_string()
+    |> String.trim()
+    |> String.upcase()
+    |> String.replace(~r/[^A-Z0-9.\-]/, "")
+  end
+
+  defp provider_api_key(:fmp_api_key) do
+    Settings.get(:fmp_api_key)
+    |> present_api_key()
+    |> case do
+      nil -> Settings.get(:market_data_api_key) |> present_api_key()
+      api_key -> api_key
+    end
+  end
+
+  defp provider_api_key(:finnhub_api_key) do
+    Settings.get(:finnhub_api_key)
+    |> present_api_key()
+  end
+
+  defp public_symbol_lookup_enabled? do
+    Settings.truthy?(Settings.get(:instrument_public_symbol_lookup_enabled, "true"))
+  end
+
+  defp quote_provider_enabled? do
+    not is_nil(provider_api_key(:fmp_api_key))
+  end
+
+  defp present_api_key(nil), do: nil
+
+  defp present_api_key(value) do
+    value = value |> to_string() |> String.trim()
+    if value == "", do: nil, else: value
+  end
+
+  defp provider_search_limit do
+    Settings.get(:instrument_provider_search_limit, "8")
+    |> parse_int(8)
+    |> max(1)
+    |> min(10)
+  end
+
+  defp provider_cache_ttl_ms do
+    Settings.get(:instrument_provider_search_cache_seconds, "900")
+    |> parse_int(900)
+    |> max(60)
+    |> min(86_400)
+    |> Kernel.*(1000)
+  end
+
+  defp public_symbol_directory_cache_ttl_ms do
+    Settings.get(:instrument_public_symbol_directory_cache_seconds, "86400")
+    |> parse_int(86_400)
+    |> max(300)
+    |> min(604_800)
+    |> Kernel.*(1000)
+  end
+
+  defp provider_timeout_ms do
+    Settings.get(
+      :instrument_provider_search_timeout_seconds,
+      Settings.get(:market_data_fetch_timeout_seconds, "8")
+    )
+    |> parse_int(8)
+    |> max(1)
+    |> min(20)
+    |> Kernel.*(1000)
+  end
+
+  defp first_present(values, default \\ "") do
+    values
+    |> Enum.find_value(fn value ->
+      text = string_value(value)
+      if text == "", do: nil, else: text
+    end)
+    |> case do
+      nil -> default
+      text -> text
+    end
+  end
+
+  defp string_value(value, default \\ "")
+  defp string_value(nil, default), do: default
+
+  defp string_value(value, default) do
+    value = value |> to_string() |> String.trim()
+    if value == "", do: default, else: value
+  end
+
+  defp country_for_exchange(exchange) do
+    normalized =
+      exchange
+      |> to_string()
+      |> String.trim()
+      |> String.upcase()
+
+    Map.get(@country_by_exchange, normalized, if(normalized == "", do: "Unknown", else: "US"))
+  end
+
+  defp exchange_from_provider_symbol(symbol) do
+    symbol = to_string(symbol)
+
+    cond do
+      String.ends_with?(symbol, ".KS") -> "KRX"
+      String.ends_with?(symbol, ".KQ") -> "KRX"
+      String.ends_with?(symbol, ".T") -> "TSE"
+      String.ends_with?(symbol, ".TO") -> "TSX"
+      true -> "US"
+    end
+  end
+
+  defp instrument_type_from_provider(row) do
+    text =
+      [row["type"], row["instrumentType"], row["exchange"], row["name"], row["description"]]
+      |> Enum.map(&to_string/1)
+      |> Enum.join(" ")
+      |> String.downcase()
+
+    cond do
+      String.contains?(text, "etf") -> "etf"
+      String.contains?(text, "fund") -> "etf"
+      String.contains?(text, "crypto") -> "crypto"
+      true -> "stock"
+    end
+  end
+
+  defp decimal_or_nil(nil), do: nil
+  defp decimal_or_nil(%Decimal{} = decimal), do: Decimal.to_float(decimal)
+  defp decimal_or_nil(value) when is_integer(value), do: value / 1
+  defp decimal_or_nil(value) when is_float(value), do: value
+
+  defp decimal_or_nil(value) do
+    case Float.parse(to_string(value)) do
+      {number, _rest} when number > 0 -> number
+      _ -> nil
+    end
+  end
 
   defp value_for(map, key) when is_map(map) do
     Map.get(map, key) || Map.get(map, Map.get(@payload_atom_keys, key))

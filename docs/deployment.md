@@ -30,7 +30,7 @@ Generated production environment values are stored outside git:
 - OCI runtime copy: `/opt/stonks-radar/.env`
 
 Both files should be mode `600`. Do not commit either file. If a secret is
-rotated, update both locations and restart the API/worker stack.
+rotated, update both locations and restart the Phoenix/Oban runtime stack.
 
 ## GitHub Actions Deploy
 
@@ -43,8 +43,8 @@ The self-hosted path runs on the OCI instance with runner labels
 runner minutes and keeps deploys available when GitHub-hosted jobs are blocked
 by account billing/spending-limit state. It checks out the repository, runs the
 normal test/build gates, syncs the checked-out release into `/opt/stonks-radar`,
-writes the production env file, runs Docker Compose, publishes runtime
-snapshots, and verifies local origin health.
+writes the production env file, runs Docker Compose, refreshes the published
+snapshot volume, and verifies local origin health.
 
 Required repository or environment secrets:
 

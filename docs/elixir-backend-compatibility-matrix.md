@@ -10,7 +10,7 @@ preserve the HTTP, cookie, cache, and JSON contracts the frontend already uses.
 | --- | --- | --- |
 | L0 DB-free smoke | `npm run backend:test:contract` or `cd apps/backend_elixir && mix test.contract` | Proves HTTP-observable route contracts that do not need persisted state. |
 | L1 fixture-backed contracts | Phoenix tests using sanitized fixtures under `apps/backend_elixir/test/support/fixtures/` | Proves JSON shapes, status codes, cache headers, cookies, and validation failures without a live DB. |
-| L2 staging/prod cutover | Production-like Compose with `api-elixir`, production secrets, mounted snapshots, and unchanged React build | Proves deploy and runtime behavior before or during release promotion. |
+| L2 staging/prod runtime | Production-like Compose with `api-elixir`, production secrets, mounted snapshots, and unchanged React build | Proves deploy and runtime behavior before or during release promotion. |
 
 ## Common HTTP Guardrails
 
@@ -129,7 +129,7 @@ developer task against deterministic local data, never production.
 Run these checks before staging or production promotion:
 
 1. `docker compose -f compose.yaml -f infra/docker-compose.prod.yml config --services`
-   must list `api-elixir` and must not list removed backend services.
+   must list the current production runtime services, including `api-elixir`.
 2. Production `api-elixir` requires real `PHX_SECRET_KEY_BASE`,
    `SESSION_SECRET`, and `PASSWORD_PEPPER` values from the production secret
    file or environment whenever the release runs with `MIX_ENV=prod` or
@@ -141,7 +141,7 @@ Run these checks before staging or production promotion:
    provider circuits, stale series, and conflicts must be reviewed during
    staging and production go/no-go.
 
-## Cutover Acceptance Criteria
+## Production Acceptance Criteria
 
 - Every matrix row has at least one Phoenix contract test at L0 or L1.
 - React/Vite source and generated public snapshots are unchanged by backend

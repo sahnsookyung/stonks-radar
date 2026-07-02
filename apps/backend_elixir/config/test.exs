@@ -15,6 +15,9 @@ config :stonks_backend, StonksBackendWeb.Endpoint,
 config :stonks_backend, Oban, testing: :manual, queues: false, plugins: false
 config :stonks_backend, :start_repo, false
 config :stonks_backend, :start_scheduler, false
-config :stonks_backend, :settings, gdelt_runtime_fetch_enabled: "false"
+
+config :stonks_backend, :settings,
+  gdelt_runtime_fetch_enabled: "false",
+  yield_curve_history_enabled: "false"
 
 config :logger, level: :warning

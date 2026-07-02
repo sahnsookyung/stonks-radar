@@ -49,13 +49,13 @@ const homeSnapshot: SnapshotEnvelope<HomeSnapshotData> = {
       generated_at: "2026-06-07T00:00:00Z"
     },
     macro_tiles: [
-      yieldTile("us_2y", "US Treasury 2Y", "4.10", "2026-06-05"),
-      yieldTile("us_3y", "US Treasury 3Y", "4.16", "2026-06-05"),
-      yieldTile("us_5y", "US Treasury 5Y", "4.25", "2026-06-05"),
-      yieldTile("us_10y", "US Treasury 10Y", "4.60", "2026-06-05"),
-      yieldTile("japan_2y", "Japan govt 2Y", "0.70", "2026-06-05"),
-      yieldTile("japan_5y", "Japan govt 5Y", "1.18", "2026-06-05"),
-      yieldTile("japan_10y", "Japan govt 10Y", "1.56", "2026-06-05")
+      yieldTile("us_2y", "US Treasury 2Y", "4.10", "2026-07-01", 4.1),
+      yieldTile("us_3y", "US Treasury 3Y", "4.16", "2026-07-01", 4.16),
+      yieldTile("us_5y", "US Treasury 5Y", "4.25", "2026-07-01", 4.25),
+      yieldTile("us_10y", "US Treasury 10Y", "4.60", "2026-07-01", 4.6),
+      yieldTile("japan_2y", "Japan govt 2Y", "0.70", "2026-06-30", 0.7),
+      yieldTile("japan_5y", "Japan govt 5Y", "1.18", "2026-06-30", 1.18),
+      yieldTile("japan_10y", "Japan govt 10Y", "1.56", "2026-06-30", 1.56)
     ],
     alternative_signals: [],
     sector_tiles: [],
@@ -82,10 +82,12 @@ describe("YieldCurvesPage", () => {
 
     expect(await screen.findByText("Government Yield Curves")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Compare countries" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText(/Latest common official observation date: 2026-06-30/)).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Yield curve comparison chart" })).toBeInTheDocument();
     fireEvent.pointerEnter(screen.getByLabelText("USA 10Y 4.60%"));
     expect(screen.getByRole("tooltip", { name: "USA 10Y 4.60%" })).toBeInTheDocument();
     expect(screen.getByText("10Y: 4.60%")).toBeInTheDocument();
+    expect(screen.getByText("as of 2026-06-30")).toBeInTheDocument();
     expect(screen.getByText("Snapshot curve table")).toBeInTheDocument();
     expect(screen.getByText("US Treasury observations")).toBeInTheDocument();
     expect(screen.getByText("Japan government bond observations")).toBeInTheDocument();
@@ -98,13 +100,14 @@ describe("YieldCurvesPage", () => {
       "https://www.tradingview.com/markets/bonds/yield-curve-all/"
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "US recent range" }));
+    fireEvent.click(screen.getByRole("tab", { name: "US 24m range" }));
     expect(screen.getAllByText("USA Latest")).toHaveLength(2);
-    expect(screen.getAllByText("USA Previous obs.")).toHaveLength(2);
+    expect(screen.getAllByText("USA About 12m ago")).toHaveLength(2);
+    expect(screen.getAllByText("USA Window start")).toHaveLength(2);
   });
 });
 
-function yieldTile(key: string, label: string, value: string, updatedAt: string) {
+function yieldTile(key: string, label: string, value: string, updatedAt: string, monthlyFinalValue: number) {
   return {
     key,
     label,
@@ -115,9 +118,16 @@ function yieldTile(key: string, label: string, value: string, updatedAt: string)
     freshness: "fresh" as const,
     delay_label: `actual through ${updatedAt}`,
     updated_at: `${updatedAt}T20:00:00Z`,
-    points: [
-      { date: "2026-06-04", value: Number(value) - 0.05 },
-      { date: updatedAt, value: Number(value) }
-    ]
+    points: monthlyDates().map((date, index, dates) => ({
+      date,
+      value: Number((monthlyFinalValue - (dates.length - index - 1) * 0.01).toFixed(2))
+    }))
   };
+}
+
+function monthlyDates() {
+  return Array.from({ length: 24 }, (_, monthIndex) => {
+    const date = new Date(Date.UTC(2024, 6 + monthIndex + 1, 0));
+    return date.toISOString().slice(0, 10);
+  });
 }

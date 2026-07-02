@@ -91,52 +91,60 @@ export function YieldCurvesPage() { // NOSONAR - page coordinates snapshot-backe
 
   const usCurve = buildCurve(query.data, US_TERMS);
   const japanCurve = buildCurve(query.data, JAPAN_TERMS);
-  const currentSeries = [
-    buildCurrentSeries({
-      id: "us-current",
-      label: localeText(locale, "USA", "미국"),
-      shortLabel: "USA",
-      detail: localeText(locale, "U.S. Treasury XML feed", "미국 재무부 XML 피드"),
-      color: CURRENT_COLORS[0],
-      points: usCurve
-    }),
-    buildCurrentSeries({
-      id: "japan-current",
-      label: localeText(locale, "Japan", "일본"),
-      shortLabel: "Japan",
-      detail: localeText(locale, "Japan MOF JGB yield curve", "일본 재무성 JGB 수익률 곡선"),
-      color: CURRENT_COLORS[1],
-      points: japanCurve
-    })
-  ].filter(isCurveSeries);
+  const comparisonDate = latestSharedObservationDate([usCurve, japanCurve]);
+  const currentSeries = buildAlignedCurrentSeries(
+    [
+      {
+        id: "us-current",
+        label: localeText(locale, "USA", "미국"),
+        shortLabel: "USA",
+        detail: localeText(locale, "U.S. Treasury XML feed", "미국 재무부 XML 피드"),
+        color: CURRENT_COLORS[0],
+        points: usCurve
+      },
+      {
+        id: "japan-current",
+        label: localeText(locale, "Japan", "일본"),
+        shortLabel: "Japan",
+        detail: localeText(locale, "Japan MOF JGB yield curve", "일본 재무성 JGB 수익률 곡선"),
+        color: CURRENT_COLORS[1],
+        points: japanCurve
+      }
+    ],
+    comparisonDate
+  );
   const views: CurveView[] = [
     {
       key: "compare",
       label: localeText(locale, "Compare countries", "국가 비교"),
       detail: localeText(
         locale,
-        "All available official snapshot curves on one axis.",
-        "사용 가능한 공식 스냅샷 곡선을 하나의 축에 표시합니다."
+        comparisonDate
+          ? `Latest common official observation date: ${comparisonDate}. The snapshot keeps up to 24 monthly points sampled from daily official observations.`
+          : "No shared observation date is available yet, so the chart falls back to each country's latest official point.",
+        comparisonDate
+          ? `공통 공식 관측일: ${comparisonDate}. 스냅샷은 일별 공식 관측치에서 월별로 샘플링한 최대 24개 지점을 보관합니다.`
+          : "아직 공통 관측일이 없어 각 국가의 최신 공식 지점으로 표시합니다."
       ),
       series: currentSeries
     },
     {
       key: "us-history",
-      label: localeText(locale, "US recent range", "미국 최근 범위"),
+      label: localeText(locale, "US 24m range", "미국 24개월 범위"),
       detail: localeText(
         locale,
-        "Latest, previous, and earliest common dates from the U.S. Treasury snapshot window.",
-        "미국 재무부 스냅샷 구간의 최신, 직전, 최초 공통 일자를 표시합니다."
+        "Latest, about 12 months back, and the start of the 24-month monthly U.S. Treasury sample.",
+        "미국 재무부 24개월 월별 샘플의 최신, 약 12개월 전, 시작 지점입니다."
       ),
       series: buildHistoricalSeries(locale, "us", localeText(locale, "USA", "미국"), usCurve)
     },
     {
       key: "japan-history",
-      label: localeText(locale, "Japan recent range", "일본 최근 범위"),
+      label: localeText(locale, "Japan 24m range", "일본 24개월 범위"),
       detail: localeText(
         locale,
-        "Latest, previous, and earliest common dates from the Japan MOF snapshot window.",
-        "일본 재무성 스냅샷 구간의 최신, 직전, 최초 공통 일자를 표시합니다."
+        "Latest, about 12 months back, and the start of the 24-month monthly Japan MOF sample.",
+        "일본 재무성 24개월 월별 샘플의 최신, 약 12개월 전, 시작 지점입니다."
       ),
       series: buildHistoricalSeries(locale, "japan", localeText(locale, "Japan", "일본"), japanCurve)
     }
@@ -161,15 +169,15 @@ export function YieldCurvesPage() { // NOSONAR - page coordinates snapshot-backe
             <p className="safe-text mt-3 max-w-5xl text-sm leading-6 text-muted md:text-base md:leading-7">
               {localeText(
                 locale,
-                "Reconstructed from official rates already present in the public snapshot. The chart compares available countries and recent snapshot windows without inventing missing tenors or long-history data.",
-                "공개 스냅샷에 저장된 공식 금리 타일을 곡선으로 재구성합니다. 누락된 만기나 장기 이력을 만들지 않고 사용 가능한 국가와 최근 스냅샷 구간을 비교합니다."
+                "Reconstructed from official daily rate feeds in the public snapshot. Country comparisons use the latest shared observation date when possible, and history views use monthly samples over the last 24 months.",
+                "공개 스냅샷의 공식 일별 금리 피드에서 재구성합니다. 국가 비교는 가능한 경우 최신 공통 관측일을 사용하고, 이력 보기는 최근 24개월 월별 샘플을 사용합니다."
               )}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[520px]">
             <StatusPill label={localeText(locale, "US points", "미국 구간")} value={String(usCurve.length)} />
             <StatusPill label={localeText(locale, "Japan points", "일본 구간")} value={String(japanCurve.length)} />
-            <StatusPill label={localeText(locale, "Views", "보기")} value={String(views.filter((view) => view.series.length > 0).length)} />
+            <StatusPill label={localeText(locale, "Shared date", "공통일")} value={comparisonDate ?? "n/a"} />
             <StatusPill label={localeText(locale, "Realtime", "실시간")} value={localeText(locale, "no", "아님")} />
           </div>
         </div>
@@ -186,7 +194,7 @@ export function YieldCurvesPage() { // NOSONAR - page coordinates snapshot-backe
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
         <SpreadPanel title="US 10Y-2Y" points={usCurve} longLabel="10Y" shortLabel="2Y" />
         <SpreadPanel title="Japan 10Y-2Y" points={japanCurve} longLabel="10Y" shortLabel="2Y" />
-        <CoveragePanel locale={locale} usCurve={usCurve} japanCurve={japanCurve} />
+        <CoveragePanel locale={locale} usCurve={usCurve} japanCurve={japanCurve} comparisonDate={comparisonDate} />
         <TradingViewReference locale={locale} />
       </div>
 
@@ -574,22 +582,34 @@ function SpreadPanel({ title, points, longLabel, shortLabel }: Readonly<{ title:
   );
 }
 
-function CoveragePanel({ locale, usCurve, japanCurve }: Readonly<{ locale: string; usCurve: CurvePoint[]; japanCurve: CurvePoint[] }>) {
+function CoveragePanel({
+  comparisonDate,
+  locale,
+  usCurve,
+  japanCurve
+}: Readonly<{ comparisonDate: string | null; locale: string; usCurve: CurvePoint[]; japanCurve: CurvePoint[] }>) {
+  const usMonths = monthlyCoverageCount(usCurve);
+  const japanMonths = monthlyCoverageCount(japanCurve);
+
   return (
     <section className="panel p-4">
       <h2 className="text-base font-semibold">{localeText(locale, "Snapshot coverage", "스냅샷 커버리지")}</h2>
       <dl className="mt-3 grid gap-3 text-sm">
         <div className="flex items-center justify-between gap-3">
+          <dt className="text-muted">{localeText(locale, "Common date", "공통일")}</dt>
+          <dd className="font-semibold">{comparisonDate ?? "n/a"}</dd>
+        </div>
+        <div className="flex items-center justify-between gap-3">
           <dt className="text-muted">USA</dt>
-          <dd className="font-semibold">{usCurve.length} {localeText(locale, "tenors", "구간")}</dd>
+          <dd className="font-semibold">{usMonths} {localeText(locale, "months", "개월")}</dd>
         </div>
         <div className="flex items-center justify-between gap-3">
           <dt className="text-muted">Japan</dt>
-          <dd className="font-semibold">{japanCurve.length} {localeText(locale, "tenors", "구간")}</dd>
+          <dd className="font-semibold">{japanMonths} {localeText(locale, "months", "개월")}</dd>
         </div>
         <div className="flex items-center justify-between gap-3">
           <dt className="text-muted">{localeText(locale, "History mode", "이력 보기")}</dt>
-          <dd className="font-semibold">{localeText(locale, "snapshot window", "스냅샷 구간")}</dd>
+          <dd className="font-semibold">{localeText(locale, "monthly sample", "월별 샘플")}</dd>
         </div>
       </dl>
     </section>
@@ -729,6 +749,15 @@ function normalizeHistory(points: MetricTile["points"], fallbackUpdatedAt: strin
   return history;
 }
 
+type CurrentCurveConfig = Readonly<{
+  id: string;
+  label: string;
+  shortLabel: string;
+  detail: string;
+  color: string;
+  points: CurvePoint[];
+}>;
+
 function buildCurrentSeries({
   id,
   label,
@@ -736,14 +765,7 @@ function buildCurrentSeries({
   detail,
   color,
   points
-}: Readonly<{
-  id: string;
-  label: string;
-  shortLabel: string;
-  detail: string;
-  color: string;
-  points: CurvePoint[];
-}>): CurveSeries | null {
+}: CurrentCurveConfig): CurveSeries | null {
   if (points.length < 2) return null;
   return {
     id,
@@ -758,27 +780,40 @@ function buildCurrentSeries({
   };
 }
 
-function isCurveSeries(series: CurveSeries | null): series is CurveSeries {
-  return series != null;
+function buildAlignedCurrentSeries(configs: CurrentCurveConfig[], date: string | null): CurveSeries[] {
+  return configs
+    .map((config) => (date ? buildCurrentSeriesAtDate(config, date) : buildCurrentSeries(config)))
+    .filter(isCurveSeries);
+}
+
+function buildCurrentSeriesAtDate(config: CurrentCurveConfig, date: string): CurveSeries | null {
+  const points = curvePointsAtDate(config.points, date);
+  if (points.length < 2) return null;
+  return {
+    id: config.id,
+    label: config.label,
+    shortLabel: config.shortLabel,
+    detail: config.detail,
+    color: config.color,
+    latestDate: date,
+    source: sourceSummary(points),
+    sourceUrl: points.find((point) => point.sourceUrl)?.sourceUrl,
+    points
+  };
 }
 
 function buildHistoricalSeries(locale: string, idPrefix: string, countryLabel: string, points: CurvePoint[]): CurveSeries[] {
   if (points.length < 2) return [];
   const dates = commonObservationDates(points);
   if (dates.length === 0) return [];
-  const selectedDates = uniqueStrings([dates.at(-1), dates.length > 1 ? dates.at(-2) : undefined, dates.length > 2 ? dates[0] : undefined]);
+  const selectedDates = selectedHistoryDates(dates);
   const labels = [
     localeText(locale, "Latest", "최신"),
-    localeText(locale, "Previous obs.", "직전 관측"),
-    localeText(locale, "Earliest in snapshot", "스냅샷 최초")
+    localeText(locale, "About 12m ago", "약 12개월 전"),
+    localeText(locale, "Window start", "구간 시작")
   ];
   return selectedDates.map((date, index) => {
-    const curvePoints = points
-      .map((point) => {
-        const observation = point.history.find((candidate) => candidate.date === date);
-        return observation ? { ...point, value: observation.value, updatedAt: `${date}T00:00:00Z` } : null;
-      })
-      .filter((point): point is CurvePoint => point != null);
+    const curvePoints = curvePointsAtDate(points, date);
     return {
       id: `${idPrefix}-${date}`,
       label: `${countryLabel} ${labels[index] ?? date}`,
@@ -793,6 +828,33 @@ function buildHistoricalSeries(locale: string, idPrefix: string, countryLabel: s
   });
 }
 
+function isCurveSeries(series: CurveSeries | null): series is CurveSeries {
+  return series != null;
+}
+
+function latestSharedObservationDate(curves: CurvePoint[][]) {
+  const dateSets = curves
+    .filter((curve) => curve.length >= 2)
+    .map((curve) => new Set(commonObservationDates(curve)));
+  if (dateSets.length < 2) return null;
+  const [firstSet, ...restSets] = dateSets;
+  return (
+    [...firstSet]
+      .filter((date) => restSets.every((set) => set.has(date)))
+      .sort((left, right) => left.localeCompare(right))
+      .at(-1) ?? null
+  );
+}
+
+function curvePointsAtDate(points: CurvePoint[], date: string) {
+  return points
+    .map((point) => {
+      const observation = point.history.find((candidate) => candidate.date === date);
+      return observation ? { ...point, value: observation.value, updatedAt: `${date}T00:00:00Z` } : null;
+    })
+    .filter((point): point is CurvePoint => point != null);
+}
+
 function commonObservationDates(points: CurvePoint[]) {
   const [firstPoint, ...rest] = points;
   if (!firstPoint) return [];
@@ -800,6 +862,28 @@ function commonObservationDates(points: CurvePoint[]) {
     .map((point) => point.date)
     .filter((date) => rest.every((point) => point.history.some((candidate) => candidate.date === date)))
     .sort((left, right) => left.localeCompare(right));
+}
+
+function selectedHistoryDates(dates: string[]) {
+  const latest = dates.at(-1);
+  const earliest = dates[0];
+  const oneYearBack = latest ? closestDateOnOrBefore(dates, addDays(latest, -365)) : undefined;
+  return uniqueStrings([latest, oneYearBack, earliest]);
+}
+
+function closestDateOnOrBefore(dates: string[], target: string) {
+  return dates.filter((date) => date <= target).at(-1) ?? dates[0];
+}
+
+function addDays(date: string, days: number) {
+  const parsed = new Date(`${date}T00:00:00Z`);
+  parsed.setUTCDate(parsed.getUTCDate() + days);
+  return parsed.toISOString().slice(0, 10);
+}
+
+function monthlyCoverageCount(points: CurvePoint[]) {
+  if (points.length === 0) return 0;
+  return Math.min(...points.map((point) => new Set(point.history.map((observation) => observation.date.slice(0, 7))).size));
 }
 
 function uniqueStrings(values: (string | undefined)[]) {

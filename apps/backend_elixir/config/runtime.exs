@@ -112,6 +112,28 @@ config :stonks_backend, :settings,
   twelve_data_api_key: System.get_env("TWELVE_DATA_API_KEY"),
   alpha_vantage_api_key: System.get_env("ALPHA_VANTAGE_API_KEY"),
   fmp_api_key: System.get_env("FMP_API_KEY"),
+  finnhub_api_key: System.get_env("FINNHUB_API_KEY"),
+  instrument_provider_search_enabled:
+    System.get_env("INSTRUMENT_PROVIDER_SEARCH_ENABLED", "true"),
+  instrument_public_symbol_lookup_enabled:
+    System.get_env("INSTRUMENT_PUBLIC_SYMBOL_LOOKUP_ENABLED", "true"),
+  instrument_public_symbol_directory_cache_seconds:
+    System.get_env("INSTRUMENT_PUBLIC_SYMBOL_DIRECTORY_CACHE_SECONDS", "86400"),
+  instrument_nasdaq_listed_url:
+    System.get_env(
+      "INSTRUMENT_NASDAQ_LISTED_URL",
+      "https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt"
+    ),
+  instrument_nasdaq_other_listed_url:
+    System.get_env(
+      "INSTRUMENT_NASDAQ_OTHER_LISTED_URL",
+      "https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt"
+    ),
+  instrument_provider_search_cache_seconds:
+    System.get_env("INSTRUMENT_PROVIDER_SEARCH_CACHE_SECONDS", "900"),
+  instrument_provider_search_limit: System.get_env("INSTRUMENT_PROVIDER_SEARCH_LIMIT", "8"),
+  instrument_provider_search_timeout_seconds:
+    System.get_env("INSTRUMENT_PROVIDER_SEARCH_TIMEOUT_SECONDS", "8"),
   market_data_public_display_allowlist:
     System.get_env("MARKET_DATA_PUBLIC_DISPLAY_ALLOWLIST", ""),
   market_data_fetch_timeout_seconds: System.get_env("MARKET_DATA_FETCH_TIMEOUT_SECONDS", "20"),
@@ -120,6 +142,9 @@ config :stonks_backend, :settings,
   market_data_snapshot_window_days: System.get_env("MARKET_DATA_SNAPSHOT_WINDOW_DAYS", "1095"),
   market_data_refresh_after_close_minutes:
     System.get_env("MARKET_DATA_REFRESH_AFTER_CLOSE_MINUTES", "45"),
+  yield_curve_history_enabled: System.get_env("YIELD_CURVE_HISTORY_ENABLED", "true"),
+  yield_curve_history_months: System.get_env("YIELD_CURVE_HISTORY_MONTHS", "24"),
+  yield_curve_fetch_timeout_seconds: System.get_env("YIELD_CURVE_FETCH_TIMEOUT_SECONDS", "15"),
   instrument_universe_refresh_seconds:
     System.get_env("INSTRUMENT_UNIVERSE_REFRESH_SECONDS", "14400"),
   news_email_webhook_secret: System.get_env("NEWS_EMAIL_WEBHOOK_SECRET"),

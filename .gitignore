@@ -33,3 +33,6 @@ apps/backend_elixir/_build/
 apps/backend_elixir/deps/
 .agents/
 .gitnexus
+
+# Personal architecture notes and scratch docs.
+docs/ignoreables/

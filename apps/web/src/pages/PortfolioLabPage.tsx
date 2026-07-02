@@ -2283,7 +2283,7 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
           {isSearching || isApiSearching ? (
             <div className="mt-2 flex items-center gap-2 text-xs text-muted">
               <Loader2 className="h-3 w-3 animate-spin" />
-              Searching local instrument index...
+              Searching instrument providers...
             </div>
           ) : null}
           {apiSearch.freshness?.instrumentIndexLastUpdatedAt && apiSearch.query === debouncedSearchTerm ? (
@@ -2371,6 +2371,7 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
                   <li>Adding the exchange code</li>
                   <li>Searching by ISIN or FIGI</li>
                   <li>Enabling advanced instruments</li>
+                  <li>Checking that external symbol lookup is enabled</li>
                 </ul>
                 <button
                   type="button"

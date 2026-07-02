@@ -133,6 +133,9 @@ export interface InstrumentSearchResult {
   priceCoverage: "available" | "unavailable" | "stale" | "license_limited";
   calculationEligible: boolean;
   requiresUserPrice: boolean;
+  currentPrice?: number | null;
+  previousClose?: number | null;
+  priceAsOf?: string | null;
   sourceProviders: string[];
   sourceObservedAt?: string;
   staleAfter?: string;
@@ -875,6 +878,10 @@ export function instrumentFromSearchResult(result: InstrumentSearchResult): Inst
   const assetClass = ASSET_CLASS_VALUES.has(result.assetClass as AssetClass) ? (result.assetClass as AssetClass) : "Other Assets";
   const symbol = result.displaySymbol.toUpperCase();
   const listingId = result.listingId || `${result.exchange}:${symbol}`;
+  const currentPrice = positiveNumberOrZero(result.currentPrice);
+  const previousClose = positiveNumberOrZero(result.previousClose) || currentPrice;
+  const hasProviderPrice = currentPrice > 0 && result.priceCoverage === "available";
+  const priceAsOf = result.priceAsOf ?? result.sourceObservedAt ?? new Date().toISOString().slice(0, 10);
   return {
     instrumentId: result.instrumentId,
     symbol,
@@ -892,24 +899,29 @@ export function instrumentFromSearchResult(result: InstrumentSearchResult): Inst
     theme: ["Source-backed listing"],
     expenseRatio: 0,
     dataQualityScore: metadataCoverageScore(result.metadataCoverage),
-    currentPrice: 0,
-    previousClose: 0,
-    priceAsOf: result.sourceObservedAt ?? new Date().toISOString().slice(0, 10),
-    priceQuality: "UNAVAILABLE",
+    currentPrice,
+    previousClose,
+    priceAsOf,
+    priceQuality: hasProviderPrice ? "PARTIAL" : "UNAVAILABLE",
     aliases: [result.name].filter(Boolean),
     identifiers: [],
     listings: [{ listingId, symbol, exchange: result.exchange, country: result.country, currency: result.currency, localCode: symbol, isPrimary: result.isPrimaryListing, isActive: result.isActive }],
     primaryListingId: listingId,
     metadataCoverage: result.metadataCoverage,
     priceCoverage: result.priceCoverage,
-    calculationEligible: false,
-    requiresUserPrice: true,
+    calculationEligible: Boolean(result.calculationEligible && hasProviderPrice),
+    requiresUserPrice: !hasProviderPrice || result.requiresUserPrice,
     sourceProviders: result.sourceProviders,
     sourceObservedAt: result.sourceObservedAt,
     staleAfter: result.staleAfter,
     hardExpiresAt: result.hardExpiresAt,
     stalenessState: result.stalenessState
   };
+}
+
+function positiveNumberOrZero(value: number | null | undefined) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
 }
 
 function subAssetClassForSearchResult(instrumentType: Instrument["instrumentType"]) {

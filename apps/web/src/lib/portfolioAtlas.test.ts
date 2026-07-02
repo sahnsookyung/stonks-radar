@@ -315,6 +315,67 @@ describe("portfolio atlas calculation engine", () => {
     expect(analysisWithManualPrice.holdingCoverageRows[0]?.coverageStatus).toBe("manual");
   });
 
+  it("materializes provider-priced search results as calculation-ready instruments", () => {
+    const result = {
+      instrumentId: "RKLB",
+      listingId: "NASDAQ:RKLB",
+      displaySymbol: "RKLB",
+      name: "Rocket Lab USA, Inc.",
+      exchange: "NASDAQ",
+      country: "US",
+      currency: "USD",
+      assetClass: "Equity",
+      instrumentType: "stock" as const,
+      sector: "Space",
+      isPrimaryListing: true,
+      isAdvancedInstrument: false,
+      isActive: true,
+      isStale: false,
+      qualityLevel: "PARTIAL" as const,
+      qualityMessage: "Provider-backed symbol metadata with latest quote snapshot.",
+      metadataCoverage: "partial" as const,
+      priceCoverage: "available" as const,
+      calculationEligible: true,
+      requiresUserPrice: false,
+      currentPrice: 25.5,
+      previousClose: 25.1,
+      priceAsOf: "2026-07-02T00:00:00Z",
+      sourceProviders: ["fmp", "fmp_quote_short"],
+      sourceObservedAt: "2026-07-02T00:00:00Z",
+      score: 1000,
+      matchedOn: ["SYMBOL_EXACT"],
+      tooltipKeys: ["ticker"]
+    };
+
+    const instrument = instrumentFromSearchResult(result);
+    const portfolio = {
+      ...createDemoPortfolio(),
+      holdings: [
+        {
+          holdingId: "h-rklb",
+          portfolioId: "demo-growth-income",
+          accountId: "taxable",
+          instrumentId: "RKLB",
+          listingId: "NASDAQ:RKLB",
+          quantity: 4,
+          currency: "USD",
+          source: "manual" as const
+        }
+      ],
+      cashBalance: 0,
+      transactions: [],
+      taxLots: []
+    };
+    const analysis = analyzePortfolio(portfolio, [instrument], defaultAssumptions);
+
+    expect(instrument.currentPrice).toBe(25.5);
+    expect(instrument.priceQuality).toBe("PARTIAL");
+    expect(instrument.requiresUserPrice).toBe(false);
+    expect(instrument.calculationEligible).toBe(true);
+    expect(analysis.portfolioValue).toBe(102);
+    expect(analysis.holdingCoverageRows[0]?.coverageStatus).not.toBe("manual");
+  });
+
   it("keeps advanced and inactive instruments gated unless explicitly requested", () => {
     const advanced = {
       ...demoInstruments[0],

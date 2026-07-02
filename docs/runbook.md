@@ -14,7 +14,7 @@ Create a correction log row, publish a new correction snapshot, roll forward aff
 
 ## Backend Outage
 
-Leave public app served from snapshots. Restore API/worker stack from Docker Compose, verify Postgres, then resume jobs.
+Leave public app served from snapshots. Restore the Phoenix/Oban stack from Docker Compose, verify Postgres, then resume jobs.
 
 ## Snapshot Publish Failure
 
