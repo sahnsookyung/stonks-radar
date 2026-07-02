@@ -57,8 +57,6 @@ jobs:
           tags: |
             ${{ env.API_IMAGE }}:${{ github.sha }}
             ${{ env.API_IMAGE }}:main
-          cache-from: type=gha,scope=api-elixir-arm64
-          cache-to: type=gha,scope=api-elixir-arm64,mode=max
 
   terraform-fmt:
     runs-on: ubuntu-latest
