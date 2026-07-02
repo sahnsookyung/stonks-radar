@@ -83,6 +83,9 @@ describe("YieldCurvesPage", () => {
     expect(await screen.findByText("Government Yield Curves")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Compare countries" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("img", { name: "Yield curve comparison chart" })).toBeInTheDocument();
+    fireEvent.pointerEnter(screen.getByLabelText("USA 10Y 4.60%"));
+    expect(screen.getByRole("tooltip", { name: "USA 10Y 4.60%" })).toBeInTheDocument();
+    expect(screen.getByText("10Y: 4.60%")).toBeInTheDocument();
     expect(screen.getByText("Snapshot curve table")).toBeInTheDocument();
     expect(screen.getByText("US Treasury observations")).toBeInTheDocument();
     expect(screen.getByText("Japan government bond observations")).toBeInTheDocument();

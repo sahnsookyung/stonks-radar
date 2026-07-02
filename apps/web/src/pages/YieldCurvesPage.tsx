@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { HomeSnapshotData, MetricTile, SnapshotEnvelope } from "@frw/shared-types";
 import { ExternalLink, LineChart, SlidersHorizontal, Table2, TrendingDown, TrendingUp } from "lucide-react";
@@ -43,6 +43,20 @@ type CurveView = {
   label: string;
   detail: string;
   series: CurveSeries[];
+};
+
+type ChartSize = {
+  width: number;
+  height: number;
+};
+
+type HoveredCurvePoint = {
+  id: string;
+  curveLabel: string;
+  point: CurvePoint;
+  x: number;
+  y: number;
+  color: string;
 };
 
 const US_TERMS = [
@@ -316,34 +330,59 @@ function CurvePanel({ title, detail, points }: Readonly<{ title: string; detail:
 }
 
 function YieldCurveChart({ series }: Readonly<{ series: CurveSeries[] }>) {
+  const [chartRef, chartSize] = useMeasuredChartSize({ width: 1280, height: 460 });
+  const [hoveredPoint, setHoveredPoint] = useState<HoveredCurvePoint | null>(null);
   const allPoints = series.flatMap((curve) => curve.points);
   const values = allPoints.map((point) => point.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const yMin = Math.max(0, Math.floor((min - 0.2) * 4) / 4);
   const yMax = Math.ceil((max + 0.2) * 4) / 4;
-  const width = 1120;
-  const height = 440;
-  const padding = { top: 34, right: 112, bottom: 62, left: 58 };
+  const width = Math.max(760, chartSize.width);
+  const height = Math.max(360, chartSize.height);
+  const padding = { top: 36, right: 164, bottom: 66, left: 64 };
   const innerWidth = width - padding.left - padding.right;
   const innerHeight = height - padding.top - padding.bottom;
-  const maxYears = Math.max(...allPoints.map((point) => point.years), 1);
+  const minYears = Math.min(...allPoints.map((point) => point.years));
+  const maxYears = Math.max(...allPoints.map((point) => point.years));
+  const yearRange = Math.max(maxYears - minYears, 1);
   const range = yMax - yMin || 1;
   const tenorTicks = uniqueTenors(allPoints);
   const coordinate = (point: CurvePoint) => {
-    const x = padding.left + (point.years / maxYears) * innerWidth;
+    const x = padding.left + ((point.years - minYears) / yearRange) * innerWidth;
     const y = padding.top + (1 - (point.value - yMin) / range) * innerHeight;
     return { ...point, x, y };
   };
+  const plottedSeries = series.map((curve) => ({
+    curve,
+    coords: curve.points.map(coordinate)
+  }));
+  const endpointLabels = endpointLabelPositions(
+    plottedSeries
+      .map(({ curve, coords }) => {
+        const endpoint = coords.at(-1);
+        return endpoint ? { id: curve.id, y: endpoint.y } : null;
+      })
+      .filter((item): item is { id: string; y: number } => item != null),
+    padding.top,
+    height - padding.bottom
+  );
 
   return (
     <div className="px-2 pt-3 md:px-5 md:pt-5">
+      <div
+        ref={chartRef}
+        className="relative min-h-[360px] overflow-hidden bg-[#050b14]"
+        style={{ height: "clamp(360px, 28vw, 500px)" }}
+        onPointerLeave={() => setHoveredPoint(null)}
+      >
       <svg
-        className="h-[360px] w-full md:h-[460px]"
+        className="block h-full w-full"
+        width={width}
+        height={height}
         viewBox={`0 0 ${width} ${height}`}
         role="img"
         aria-label="Yield curve comparison chart"
-        preserveAspectRatio="none"
       >
         <rect x="0" y="0" width={width} height={height} fill="#050b14" />
         {[0, 0.25, 0.5, 0.75, 1].map((tick) => {
@@ -359,7 +398,7 @@ function YieldCurveChart({ series }: Readonly<{ series: CurveSeries[] }>) {
           );
         })}
         {tenorTicks.map((tick) => {
-          const x = padding.left + (tick.years / maxYears) * innerWidth;
+          const x = padding.left + ((tick.years - minYears) / yearRange) * innerWidth;
           return (
             <g key={tick.label}>
               <line x1={x} x2={x} y1={padding.top} y2={height - padding.bottom} stroke="rgba(147, 163, 183, 0.08)" />
@@ -369,30 +408,79 @@ function YieldCurveChart({ series }: Readonly<{ series: CurveSeries[] }>) {
             </g>
           );
         })}
-        {series.map((curve) => {
-          const coords = curve.points.map(coordinate);
+        {plottedSeries.map(({ curve, coords }) => {
           const path = coords.map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
           const endpoint = coords.at(-1);
+          const labelY = endpointLabels.get(curve.id) ?? endpoint?.y ?? padding.top;
           return (
             <g key={curve.id}>
               <path d={path} fill="none" stroke={curve.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" />
               {coords.map((point) => (
-                <g key={`${curve.id}-${point.key}`}>
-                  <circle cx={point.x} cy={point.y} r="5.5" fill={curve.color} stroke="#050b14" strokeWidth="2.5">
-                    <title>{`${curve.label} ${point.label}: ${point.value.toFixed(2)}%`}</title>
+                <g
+                  key={`${curve.id}-${point.key}`}
+                  aria-label={`${curve.label} ${point.label} ${point.value.toFixed(2)}%`}
+                  tabIndex={0}
+                  onBlur={() => setHoveredPoint(null)}
+                  onFocus={() => setHoveredPoint({ id: `${curve.id}-${point.key}`, curveLabel: curve.label, point, x: point.x, y: point.y, color: curve.color })}
+                  onPointerEnter={() => setHoveredPoint({ id: `${curve.id}-${point.key}`, curveLabel: curve.label, point, x: point.x, y: point.y, color: curve.color })}
+                >
+                  <circle cx={point.x} cy={point.y} r="15" fill="transparent" />
+                  {hoveredPoint?.id === `${curve.id}-${point.key}` ? (
+                    <circle cx={point.x} cy={point.y} r="9" fill="none" stroke={curve.color} strokeWidth="2" opacity="0.55" />
+                  ) : null}
+                  <circle cx={point.x} cy={point.y} r={hoveredPoint?.id === `${curve.id}-${point.key}` ? "6.5" : "5.5"} fill={curve.color} stroke="#050b14" strokeWidth="2.5">
+                    <title>{`${curve.label} ${point.label}: ${point.value.toFixed(2)}% as of ${point.updatedAt.slice(0, 10)}`}</title>
                   </circle>
                 </g>
               ))}
               {endpoint ? (
-                <text x={Math.min(endpoint.x + 12, width - 104)} y={endpoint.y + 5} fontSize="13" fontWeight="700" fill={curve.color}>
+                <text x={Math.min(endpoint.x + 14, width - padding.right + 24)} y={labelY + 5} fontSize="13" fontWeight="700" fill={curve.color}>
                   {curve.shortLabel}
                 </text>
               ) : null}
             </g>
           );
         })}
+        {hoveredPoint ? (
+          <YieldCurveTooltip hoveredPoint={hoveredPoint} width={width} height={height} padding={padding} />
+        ) : null}
       </svg>
+      </div>
     </div>
+  );
+}
+
+function YieldCurveTooltip({
+  hoveredPoint,
+  width,
+  height,
+  padding
+}: Readonly<{
+  hoveredPoint: HoveredCurvePoint;
+  width: number;
+  height: number;
+  padding: { top: number; right: number; bottom: number; left: number };
+}>) {
+  const tooltipWidth = 210;
+  const tooltipHeight = 82;
+  const x = clamp(hoveredPoint.x + 16, padding.left, width - tooltipWidth - 12);
+  const y = clamp(hoveredPoint.y - tooltipHeight - 14, 12, height - padding.bottom - tooltipHeight);
+  const date = hoveredPoint.point.updatedAt.slice(0, 10);
+
+  return (
+    <g role="tooltip" aria-label={`${hoveredPoint.curveLabel} ${hoveredPoint.point.label} ${hoveredPoint.point.value.toFixed(2)}%`}>
+      <line x1={hoveredPoint.x} x2={hoveredPoint.x} y1={padding.top} y2={height - padding.bottom} stroke={hoveredPoint.color} strokeOpacity="0.32" strokeDasharray="4 5" />
+      <rect x={x} y={y} width={tooltipWidth} height={tooltipHeight} rx="8" fill="#121c2a" stroke="rgba(103, 216, 239, 0.6)" />
+      <text x={x + 12} y={y + 24} fontSize="12" fontWeight="700" fill={hoveredPoint.color}>
+        {hoveredPoint.curveLabel}
+      </text>
+      <text x={x + 12} y={y + 48} fontSize="16" fontWeight="800" fill="#dfe8f5">
+        {hoveredPoint.point.label}: {hoveredPoint.point.value.toFixed(2)}%
+      </text>
+      <text x={x + 12} y={y + 68} fontSize="11" fontWeight="600" fill="#93a3b7">
+        as of {date}
+      </text>
+    </g>
   );
 }
 
@@ -541,6 +629,55 @@ function SpreadIcon({ spread, inverted }: Readonly<{ spread: number | null; inve
   if (spread == null) return null;
   if (inverted) return <TrendingDown className="h-5 w-5 text-warning" />;
   return <TrendingUp className="h-5 w-5 text-success" />;
+}
+
+function useMeasuredChartSize(fallback: ChartSize) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [size, setSize] = useState(fallback);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return undefined;
+
+    const applySize = () => {
+      const rect = element.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        setSize({ width: Math.round(rect.width), height: Math.round(rect.height) });
+      }
+    };
+
+    applySize();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", applySize);
+      return () => window.removeEventListener("resize", applySize);
+    }
+
+    const observer = new ResizeObserver(applySize);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, size] as const;
+}
+
+function endpointLabelPositions(endpoints: { id: string; y: number }[], minY: number, maxY: number) {
+  const sorted = [...endpoints]
+    .map((endpoint) => ({ ...endpoint, labelY: clamp(endpoint.y, minY + 14, maxY - 14) }))
+    .sort((left, right) => left.labelY - right.labelY);
+  const minGap = 18;
+
+  for (let index = 1; index < sorted.length; index += 1) {
+    sorted[index].labelY = Math.max(sorted[index].labelY, sorted[index - 1].labelY + minGap);
+  }
+  for (let index = sorted.length - 2; index >= 0; index -= 1) {
+    sorted[index].labelY = Math.min(sorted[index].labelY, sorted[index + 1].labelY - minGap);
+  }
+
+  return new Map(sorted.map((endpoint) => [endpoint.id, clamp(endpoint.labelY, minY + 14, maxY - 14)]));
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
 }
 
 function spreadDescription(spread: number | null, inverted: boolean) {
