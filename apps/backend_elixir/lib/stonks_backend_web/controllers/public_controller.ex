@@ -179,12 +179,16 @@ defmodule StonksBackendWeb.PublicController do
   end
 
   defp db_snapshot_age do
-    Sql.scalar(
-      "select extract(epoch from now() - max(generated_at))/60 from publication_snapshot",
-      [],
-      0
-    )
+    "select extract(epoch from now() - max(generated_at))/60 from publication_snapshot"
+    |> Sql.scalar([], 0)
+    |> json_number(0)
   end
+
+  defp json_number(%Decimal{} = decimal, default),
+    do: decimal |> Decimal.to_float() |> json_number(default)
+
+  defp json_number(value, _default) when is_integer(value) or is_float(value), do: value
+  defp json_number(_value, default), do: default
 
   defp put_resp_headers(conn, headers),
     do: Enum.reduce(headers, conn, fn {key, value}, acc -> put_resp_header(acc, key, value) end)
