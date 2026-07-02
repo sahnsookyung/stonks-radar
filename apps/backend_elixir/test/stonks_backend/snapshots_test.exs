@@ -37,6 +37,14 @@ defmodule StonksBackend.SnapshotsTest do
     assert Snapshots.candidate_root(7) == Path.join([artifact_root, "candidates", "v7", "public"])
   end
 
+  test "manifest status handles the published manifest file timestamp", %{published_root: root} do
+    write_manifest!(root)
+
+    assert %{age_minutes: age_minutes, generated_at: generated_at} = Snapshots.manifest_status()
+    assert is_number(age_minutes)
+    assert is_binary(generated_at)
+  end
+
   test "default candidate build refreshes the public snapshot template tree", %{
     published_root: root,
     artifact_root: artifact_root

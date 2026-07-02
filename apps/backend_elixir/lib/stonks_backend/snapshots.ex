@@ -425,18 +425,32 @@ defmodule StonksBackend.Snapshots do
     with true <- File.exists?(path),
          {:ok, stat} <- File.stat(path),
          {:ok, content} <- File.read(path),
-         {:ok, manifest} <- Jason.decode(content) do
+         {:ok, manifest} <- Jason.decode(content),
+         {:ok, mtime} <- file_stat_time_to_datetime(stat.mtime) do
       generated_at = manifest["generated_at"]
 
-      age_minutes =
-        DateTime.diff(DateTime.utc_now(), stat.mtime |> DateTime.from_naive!("Etc/UTC"), :second) /
-          60
+      age_minutes = DateTime.diff(DateTime.utc_now(), mtime, :second) / 60
 
       %{generated_at: generated_at, age_minutes: age_minutes}
     else
       _ -> nil
     end
+  rescue
+    _ -> nil
   end
+
+  defp file_stat_time_to_datetime(%DateTime{} = datetime), do: {:ok, datetime}
+
+  defp file_stat_time_to_datetime(%NaiveDateTime{} = naive_datetime),
+    do: DateTime.from_naive(naive_datetime, "Etc/UTC")
+
+  defp file_stat_time_to_datetime({date, time}) do
+    with {:ok, naive_datetime} <- NaiveDateTime.from_erl({date, time}) do
+      DateTime.from_naive(naive_datetime, "Etc/UTC")
+    end
+  end
+
+  defp file_stat_time_to_datetime(_mtime), do: :error
 
   defp next_snapshot_version do
     (Sql.scalar("select coalesce(max(snapshot_version), 0) + 1 from publication_manifest", [], 1) ||
