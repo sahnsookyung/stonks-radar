@@ -4,7 +4,47 @@ set -euo pipefail
 env_file="${1:-/tmp/stonks-production.env}"
 source_dir="${GITHUB_WORKSPACE:-$(pwd)}"
 deploy_dir="${STONKS_DEPLOY_DIR:-/opt/stonks-radar}"
+deploy_mode="${STONKS_DEPLOY_MODE:-fast}"
 compose_files=(-f compose.yaml -f infra/docker-compose.prod.yml)
+summary_started=0
+
+if [[ "$deploy_mode" != "fast" && "$deploy_mode" != "clean" ]]; then
+  echo "STONKS_DEPLOY_MODE must be fast or clean, got: $deploy_mode" >&2
+  exit 1
+fi
+
+record_phase() {
+  local name="$1"
+  local duration="$2"
+
+  if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+    if [[ "$summary_started" != "1" ]]; then
+      {
+        echo "### Deploy phase timings"
+        echo
+        echo "| Phase | Duration |"
+        echo "| --- | ---: |"
+      } >> "$GITHUB_STEP_SUMMARY"
+      summary_started=1
+    fi
+
+    echo "| $name | ${duration}s |" >> "$GITHUB_STEP_SUMMARY"
+  fi
+}
+
+run_phase() {
+  local name="$1"
+  shift
+  local start
+  local duration
+
+  echo "==> $name"
+  start="$(date +%s)"
+  "$@"
+  duration="$(( $(date +%s) - start ))"
+  record_phase "$name" "$duration"
+  echo "<== $name completed in ${duration}s"
+}
 
 if [[ ! -s "$env_file" ]]; then
   echo "Production env file is missing or empty: $env_file" >&2
@@ -36,86 +76,133 @@ if [[ ! -d "$deploy_dir" || ! -w "$deploy_dir" ]]; then
   fi
 fi
 
-if [[ ! -d "$deploy_dir" ]]; then
-  "${sudo_cmd[@]}" mkdir -p "$deploy_dir"
-  "${sudo_cmd[@]}" chown "$(id -u):$(id -g)" "$deploy_dir"
-elif [[ ! -w "$deploy_dir" ]]; then
-  "${sudo_cmd[@]}" chown -R "$(id -u):$(id -g)" "$deploy_dir"
-fi
-
-docker container prune -f || true
-docker builder prune -af || true
-docker image prune -af || true
-
-rm -rf \
-  "$deploy_dir/node_modules" \
-  "$deploy_dir/apps/web/node_modules" \
-  "$deploy_dir/apps/web/dist" \
-  "$deploy_dir/apps/web/.generated-public" \
-  "$deploy_dir/apps/backend_elixir/deps" \
-  "$deploy_dir/apps/backend_elixir/_build" \
-  "$deploy_dir/apps/backend_elixir/.elixir_ls"
-
-if [[ "$(cd "$source_dir" && pwd -P)" != "$(cd "$deploy_dir" && pwd -P)" ]]; then
-  rsync -az --delete \
-    --exclude '.git' \
-    --exclude '.gitnexus' \
-    --exclude '.deploy-old-assets' \
-    --exclude '.secrets' \
-    --exclude '.env' \
-    --exclude '.env.*' \
-    --exclude 'node_modules' \
-    --exclude 'apps/backend_elixir/deps' \
-    --exclude 'apps/backend_elixir/_build' \
-    --exclude 'apps/backend_elixir/.elixir_ls' \
-    --exclude 'artifacts' \
-    --exclude 'playwright-report' \
-    --exclude 'test-results' \
-    "$source_dir/" "$deploy_dir/"
-fi
-
-mkdir -p "$deploy_dir/apps/web/dist/assets" "$deploy_dir/.secrets"
-install -m 600 "$env_file" "$deploy_dir/.env"
-install -m 600 "$env_file" "$deploy_dir/.secrets/stonks-radar.production.env"
-
-cd "$deploy_dir"
-docker compose "${compose_files[@]}" down --remove-orphans || true
-for volume in stonks-radar_snapshot-artifacts stonks-radar_published-snapshots; do
-  mountpoint="$(docker volume inspect "$volume" --format "{{ .Mountpoint }}" 2>/dev/null || true)"
-  if [[ -n "$mountpoint" && -d "$mountpoint" ]]; then
-    "${sudo_cmd[@]}" find "$mountpoint" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+prepare_host() {
+  if [[ ! -d "$deploy_dir" ]]; then
+    "${sudo_cmd[@]}" mkdir -p "$deploy_dir"
+    "${sudo_cmd[@]}" chown "$(id -u):$(id -g)" "$deploy_dir"
+  elif [[ ! -w "$deploy_dir" ]]; then
+    "${sudo_cmd[@]}" chown -R "$(id -u):$(id -g)" "$deploy_dir"
   fi
-done
-docker image rm -f stonks-radar-api-elixir || true
-docker container prune -f || true
-docker builder prune -af || true
-docker image prune -f || true
-df -h / /opt /tmp || true
 
-COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 docker compose "${compose_files[@]}" build api-elixir
-docker builder prune -af || true
-COMPOSE_PARALLEL_LIMIT=1 docker compose "${compose_files[@]}" up -d postgres valkey
-docker compose "${compose_files[@]}" run --rm --no-deps api-elixir \
-  /app/bin/stonks_backend eval 'StonksBackend.Release.migrate()'
-COMPOSE_PARALLEL_LIMIT=1 docker compose "${compose_files[@]}" up -d api-elixir caddy
-docker image prune -f || true
-df -h / /opt /tmp || true
-docker run --rm \
-  -v stonks-radar_published-snapshots:/dest \
-  -v "$deploy_dir/apps/web/public/public:/src:ro" \
-  alpine:3.24 \
-  sh -lc 'set -e; rm -rf /dest/* /dest/.[!.]* /dest/..?* 2>/dev/null || true; cp -a /src/. /dest/; test -s /dest/latest/manifest.json'
+  if [[ "$deploy_mode" == "clean" ]]; then
+    if [[ -f "$deploy_dir/compose.yaml" ]]; then
+      (cd "$deploy_dir" && docker compose "${compose_files[@]}" down --remove-orphans || true)
+    fi
 
-public_hostname="$(awk -F= '$1=="PUBLIC_HOSTNAME"{print $2}' .env)"
-public_hostname="$(printf '%s' "$public_hostname" | tr -d '[:space:]"')"
-public_hostname="$(printf '%s' "$public_hostname" | tr -d "'")"
-if [[ -z "$public_hostname" ]]; then
-  echo "PUBLIC_HOSTNAME is missing from production env" >&2
-  exit 1
-fi
+    docker container prune -f || true
+    docker builder prune -af || true
+    docker image prune -af || true
 
-curl -fsS --resolve "$public_hostname:443:127.0.0.1" "https://$public_hostname/api/public/health" >/dev/null
-curl -fsS --resolve "$public_hostname:443:127.0.0.1" "https://$public_hostname/public/latest/manifest.json" \
-  | tee /tmp/stonks-manifest.json >/dev/null
-grep -q '"current_version"' /tmp/stonks-manifest.json
-grep -q '"objects"' /tmp/stonks-manifest.json
+    rm -rf \
+      "$deploy_dir/node_modules" \
+      "$deploy_dir/apps/web/node_modules" \
+      "$deploy_dir/apps/web/.generated-public" \
+      "$deploy_dir/apps/backend_elixir/deps" \
+      "$deploy_dir/apps/backend_elixir/_build" \
+      "$deploy_dir/apps/backend_elixir/.elixir_ls"
+
+    if [[ "$(cd "$source_dir" && pwd -P)" != "$(cd "$deploy_dir" && pwd -P)" ]]; then
+      rm -rf "$deploy_dir/apps/web/dist"
+    fi
+
+    for volume in stonks-radar_snapshot-artifacts stonks-radar_published-snapshots; do
+      mountpoint="$(docker volume inspect "$volume" --format "{{ .Mountpoint }}" 2>/dev/null || true)"
+      if [[ -n "$mountpoint" && -d "$mountpoint" ]]; then
+        "${sudo_cmd[@]}" find "$mountpoint" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+      fi
+    done
+
+    docker image rm -f stonks-radar-api-elixir || true
+  else
+    docker container prune -f || true
+  fi
+
+  df -h / /opt /tmp || true
+}
+
+sync_release() {
+  if [[ "$(cd "$source_dir" && pwd -P)" != "$(cd "$deploy_dir" && pwd -P)" ]]; then
+    rsync -az --delete \
+      --exclude '.git' \
+      --exclude '.gitnexus' \
+      --exclude '.deploy-old-assets' \
+      --exclude '.secrets' \
+      --exclude '.env' \
+      --exclude '.env.*' \
+      --exclude 'node_modules' \
+      --exclude 'apps/backend_elixir/deps' \
+      --exclude 'apps/backend_elixir/_build' \
+      --exclude 'apps/backend_elixir/.elixir_ls' \
+      --exclude 'artifacts' \
+      --exclude 'playwright-report' \
+      --exclude 'test-results' \
+      "$source_dir/" "$deploy_dir/"
+  fi
+}
+
+install_env() {
+  mkdir -p "$deploy_dir/apps/web/dist/assets" "$deploy_dir/.secrets"
+  install -m 600 "$env_file" "$deploy_dir/.env"
+  install -m 600 "$env_file" "$deploy_dir/.secrets/stonks-radar.production.env"
+}
+
+build_api() {
+  cd "$deploy_dir"
+  COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 docker compose "${compose_files[@]}" build api-elixir
+}
+
+migrate() {
+  cd "$deploy_dir"
+  COMPOSE_PARALLEL_LIMIT=1 docker compose "${compose_files[@]}" up -d postgres valkey
+  docker compose "${compose_files[@]}" run --rm --no-deps api-elixir \
+    /app/bin/stonks_backend eval 'StonksBackend.Release.migrate()'
+}
+
+start_services() {
+  cd "$deploy_dir"
+  COMPOSE_PARALLEL_LIMIT=1 docker compose "${compose_files[@]}" up -d api-elixir caddy
+  df -h / /opt /tmp || true
+}
+
+refresh_snapshots() {
+  docker run --rm \
+    -v stonks-radar_published-snapshots:/dest \
+    -v "$deploy_dir/apps/web/public/public:/src:ro" \
+    alpine:3.24 \
+    sh -lc 'set -e; rm -rf /dest/* /dest/.[!.]* /dest/..?* 2>/dev/null || true; cp -a /src/. /dest/; test -s /dest/latest/manifest.json'
+}
+
+smoke() {
+  local public_hostname
+
+  cd "$deploy_dir"
+  public_hostname="$(awk -F= '$1=="PUBLIC_HOSTNAME"{print $2}' .env)"
+  public_hostname="$(printf '%s' "$public_hostname" | tr -d '[:space:]"')"
+  public_hostname="$(printf '%s' "$public_hostname" | tr -d "'")"
+  if [[ -z "$public_hostname" ]]; then
+    echo "PUBLIC_HOSTNAME is missing from production env" >&2
+    exit 1
+  fi
+
+  curl -fsS --resolve "$public_hostname:443:127.0.0.1" "https://$public_hostname/" >/dev/null
+  curl -fsS --resolve "$public_hostname:443:127.0.0.1" "https://$public_hostname/api/public/health" \
+    | grep -q '"status":"ok"'
+  curl -fsS --resolve "$public_hostname:443:127.0.0.1" "https://$public_hostname/api/public/status" \
+    | grep -q '"status":"ok"'
+  curl -fsS --resolve "$public_hostname:443:127.0.0.1" "https://$public_hostname/public/latest/manifest.json" \
+    | tee /tmp/stonks-manifest.json >/dev/null
+  grep -q '"current_version"' /tmp/stonks-manifest.json
+  grep -q '"objects"' /tmp/stonks-manifest.json
+  curl -fsS --resolve "$public_hostname:443:127.0.0.1" "https://$public_hostname/api/instruments/search?q=IBM&limit=1&context=BUILDER" \
+    | grep -q 'IBM'
+  curl -fsS --resolve "$public_hostname:443:127.0.0.1" "https://$public_hostname/en/curves" >/dev/null
+}
+
+run_phase prepare-host prepare_host
+run_phase sync-release sync_release
+run_phase install-env install_env
+run_phase build-or-pull-api build_api
+run_phase migrate migrate
+run_phase start start_services
+run_phase refresh-snapshots refresh_snapshots
+run_phase smoke smoke

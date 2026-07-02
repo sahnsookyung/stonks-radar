@@ -37,14 +37,33 @@ rotated, update both locations and restart the Phoenix/Oban runtime stack.
 The deploy workflow is manual-only: `.github/workflows/deploy.yml`.
 
 Default execution path: `self-hosted`.
+Default deployment mode: `fast`.
 
 The self-hosted path runs on the OCI instance with runner labels
 `self-hosted`, `linux`, and `stonks-radar-deploy`. This avoids GitHub-hosted
 runner minutes and keeps deploys available when GitHub-hosted jobs are blocked
-by account billing/spending-limit state. It checks out the repository, runs the
-normal test/build gates, syncs the checked-out release into `/opt/stonks-radar`,
-writes the production env file, runs Docker Compose, refreshes the published
-snapshot volume, and verifies local origin health.
+by account billing/spending-limit state. It checks out the repository, builds
+the web assets, syncs the checked-out release into `/opt/stonks-radar`, writes
+the production env file, runs Docker Compose, refreshes the published snapshot
+volume, and verifies local origin health.
+
+Deployment modes:
+
+- `fast`: normal production path. Requires green CI and SonarQube for the target
+  SHA, skips redundant Playwright/full test verification inside the deploy job,
+  preserves Docker builder cache and Elixir build cache, and runs production
+  smoke checks after start.
+- `clean`: recovery path for disk pressure, suspected stale build state, or
+  dependency weirdness. It reruns the full deploy verification gate and performs
+  aggressive cache/image cleanup before rebuilding.
+
+Set `verify=true` on a manual dispatch to run the full in-deploy verification
+without switching to clean mode. This is useful when you want fast-mode cache
+preservation but still want the extra test gate.
+
+Every deploy emits phase timings for `prepare-host`, `sync-release`,
+`build-or-pull-api`, `migrate`, `start`, `refresh-snapshots`, and `smoke` in the
+GitHub job summary.
 
 Required repository or environment secrets:
 
@@ -87,6 +106,13 @@ changed after Docker was installed.
 Use the `github-hosted` workflow input only when GitHub-hosted runner billing is
 healthy. Production deploys are intentionally not scheduled; they require manual
 dispatch.
+
+Manual host deploys use the same mode names:
+
+```bash
+STONKS_DEPLOY_MODE=fast scripts/deploy.sh
+STONKS_DEPLOY_MODE=clean STONKS_DEPLOY_VERIFY=true scripts/deploy.sh
+```
 
 ## GitHub Actions Terraform Plans
 

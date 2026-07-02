@@ -11,6 +11,23 @@ on:
         options:
           - self-hosted
           - github-hosted
+      mode:
+        description: "Deployment mode"
+        required: true
+        default: fast
+        type: choice
+        options:
+          - fast
+          - clean
+      verify:
+        description: "Run full in-deploy verification even in fast mode"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  actions: read
+  contents: read
 
 concurrency:
   group: stonks-radar-production
@@ -27,6 +44,59 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Require green CI and SonarQube for fast deploy
+        if: ${{ inputs.mode == 'fast' && !inputs.verify }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const required = [
+              { workflow_id: "ci.yml", label: "ci" },
+              { workflow_id: "sonarqube.yml", label: "sonarqube" },
+            ];
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const head_sha = context.sha;
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            for (let attempt = 1; attempt <= 60; attempt += 1) {
+              const pending = [];
+
+              for (const check of required) {
+                const { data } = await github.rest.actions.listWorkflowRuns({
+                  owner,
+                  repo,
+                  workflow_id: check.workflow_id,
+                  head_sha,
+                  per_page: 10,
+                });
+
+                const latest = data.workflow_runs.find((run) => run.head_sha === head_sha);
+                if (!latest) {
+                  pending.push(check.label);
+                  continue;
+                }
+
+                if (latest.status === "completed" && latest.conclusion !== "success") {
+                  core.setFailed(`${check.label} completed with ${latest.conclusion}: ${latest.html_url}`);
+                  return;
+                }
+
+                if (latest.status !== "completed") {
+                  pending.push(check.label);
+                }
+              }
+
+              if (pending.length === 0) {
+                core.info(`CI and SonarQube are green for ${head_sha}.`);
+                return;
+              }
+
+              core.info(`Waiting for ${pending.join(", ")} on ${head_sha} (attempt ${attempt}/60).`);
+              await sleep(20_000);
+            }
+
+            core.setFailed(`Timed out waiting for CI and SonarQube to pass for ${head_sha}.`);
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -41,9 +111,11 @@ jobs:
         run: npm install
 
       - name: Install Playwright browser
+        if: ${{ inputs.mode == 'clean' || inputs.verify }}
         run: npx playwright install --with-deps chromium
 
       - name: Verify
+        if: ${{ inputs.mode == 'clean' || inputs.verify }}
         run: npm run web:test && npm run backend:check
 
       - name: Build web assets
@@ -60,6 +132,7 @@ jobs:
       - name: Deploy local OCI compose stack
         env:
           STONKS_DEPLOY_DIR: /opt/stonks-radar
+          STONKS_DEPLOY_MODE: ${{ inputs.mode }}
         run: scripts/deploy_self_hosted_runner.sh /tmp/stonks-production.env
 
   deploy-github-hosted:
@@ -71,6 +144,68 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+
+      - name: Initialize deploy timing summary
+        run: |
+          {
+            echo "### Deploy phase timings"
+            echo
+            echo "| Phase | Duration |"
+            echo "| --- | ---: |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Require green CI and SonarQube for fast deploy
+        if: ${{ inputs.mode == 'fast' && !inputs.verify }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const required = [
+              { workflow_id: "ci.yml", label: "ci" },
+              { workflow_id: "sonarqube.yml", label: "sonarqube" },
+            ];
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const head_sha = context.sha;
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            for (let attempt = 1; attempt <= 60; attempt += 1) {
+              const pending = [];
+
+              for (const check of required) {
+                const { data } = await github.rest.actions.listWorkflowRuns({
+                  owner,
+                  repo,
+                  workflow_id: check.workflow_id,
+                  head_sha,
+                  per_page: 10,
+                });
+
+                const latest = data.workflow_runs.find((run) => run.head_sha === head_sha);
+                if (!latest) {
+                  pending.push(check.label);
+                  continue;
+                }
+
+                if (latest.status === "completed" && latest.conclusion !== "success") {
+                  core.setFailed(`${check.label} completed with ${latest.conclusion}: ${latest.html_url}`);
+                  return;
+                }
+
+                if (latest.status !== "completed") {
+                  pending.push(check.label);
+                }
+              }
+
+              if (pending.length === 0) {
+                core.info(`CI and SonarQube are green for ${head_sha}.`);
+                return;
+              }
+
+              core.info(`Waiting for ${pending.join(", ")} on ${head_sha} (attempt ${attempt}/60).`);
+              await sleep(20_000);
+            }
+
+            core.setFailed(`Timed out waiting for CI and SonarQube to pass for ${head_sha}.`);
 
       - uses: actions/setup-node@v4
         with:
@@ -86,9 +221,11 @@ jobs:
         run: npm install
 
       - name: Install Playwright browser
+        if: ${{ inputs.mode == 'clean' || inputs.verify }}
         run: npx playwright install --with-deps chromium
 
       - name: Verify
+        if: ${{ inputs.mode == 'clean' || inputs.verify }}
         run: npm run web:test && npm run backend:check
 
       - name: Build web assets
@@ -113,25 +250,41 @@ jobs:
           chmod 600 ~/.ssh/stonks_deploy_key
           ssh-keyscan -H "$STONKS_HOST" >> ~/.ssh/known_hosts
 
-      - name: Sync release to OCI
+      - name: Prepare host
         env:
           STONKS_HOST: ${{ secrets.STONKS_HOST }}
           STONKS_USER: ${{ secrets.STONKS_USER }}
+          STONKS_DEPLOY_MODE: ${{ inputs.mode }}
         run: |
           set -euo pipefail
-          SSH_OPTS="-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes"
-          ssh $SSH_OPTS -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" '
-            set -euo pipefail
+          start="$(date +%s)"
+          SSH_OPTS=(-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes)
+          ssh "${SSH_OPTS[@]}" -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+            "STONKS_DEPLOY_MODE='$STONKS_DEPLOY_MODE' bash -s" <<'REMOTE'
+          set -euo pipefail
+          deploy_dir="${STONKS_DEPLOY_DIR:-/opt/stonks-radar}"
+          mkdir -p "$deploy_dir"
+          if [ "${STONKS_DEPLOY_MODE:-fast}" = "clean" ]; then
+            if [ -f "$deploy_dir/compose.yaml" ]; then
+              (cd "$deploy_dir" && docker compose -f compose.yaml -f infra/docker-compose.prod.yml down --remove-orphans || true)
+            fi
             rm -rf \
               /tmp/stonks-radar-old-assets \
-              /opt/stonks-radar/.deploy-old-assets \
-              /opt/stonks-radar/node_modules \
-              /opt/stonks-radar/apps/web/node_modules \
-              /opt/stonks-radar/apps/web/dist \
-              /opt/stonks-radar/apps/web/.generated-public \
-              /opt/stonks-radar/apps/backend_elixir/deps \
-              /opt/stonks-radar/apps/backend_elixir/_build \
-              /opt/stonks-radar/apps/backend_elixir/.elixir_ls
+              "$deploy_dir/.deploy-old-assets" \
+              "$deploy_dir/node_modules" \
+              "$deploy_dir/apps/web/node_modules" \
+              "$deploy_dir/apps/web/dist" \
+              "$deploy_dir/apps/web/.generated-public" \
+              "$deploy_dir/apps/backend_elixir/deps" \
+              "$deploy_dir/apps/backend_elixir/_build" \
+              "$deploy_dir/apps/backend_elixir/.elixir_ls"
+            for volume in stonks-radar_snapshot-artifacts stonks-radar_published-snapshots; do
+              mountpoint=$(docker volume inspect "$volume" --format "{{ .Mountpoint }}" 2>/dev/null || true)
+              if [ -n "$mountpoint" ] && [ -d "$mountpoint" ]; then
+                sudo find "$mountpoint" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+              fi
+            done
+            docker image rm -f stonks-radar-api-elixir || true
             docker container prune -f || true
             docker builder prune -af || true
             docker image prune -af || true
@@ -139,14 +292,22 @@ jobs:
             sudo journalctl --vacuum-size=100M || true
             sudo find /var/log -type f \( -name "*.gz" -o -name "*.1" -o -name "*.old" \) -delete || true
             sudo find /tmp -mindepth 1 -maxdepth 1 -exec rm -rf {} + || true
-            for volume in stonks-radar_snapshot-artifacts stonks-radar_published-snapshots; do
-              mountpoint=$(docker volume inspect "$volume" --format "{{ .Mountpoint }}" 2>/dev/null || true)
-              if [ -n "$mountpoint" ] && [ -d "$mountpoint" ]; then
-                sudo find "$mountpoint" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-              fi
-            done
-            df -h / /opt /tmp || true
-          '
+          else
+            docker container prune -f || true
+          fi
+          df -h / /opt /tmp || true
+          REMOTE
+          duration="$(( $(date +%s) - start ))"
+          echo "| prepare-host | ${duration}s |" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Sync release to OCI
+        env:
+          STONKS_HOST: ${{ secrets.STONKS_HOST }}
+          STONKS_USER: ${{ secrets.STONKS_USER }}
+        run: |
+          set -euo pipefail
+          start="$(date +%s)"
+          RSYNC_SSH="ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes -i ~/.ssh/stonks_deploy_key"
           rsync -az --delete \
             --exclude '.git' \
             --exclude '.gitnexus' \
@@ -161,8 +322,10 @@ jobs:
             --exclude 'artifacts' \
             --exclude 'playwright-report' \
             --exclude 'test-results' \
-            -e "ssh $SSH_OPTS -i ~/.ssh/stonks_deploy_key" \
+            -e "$RSYNC_SSH" \
             ./ "$STONKS_USER@$STONKS_HOST:/opt/stonks-radar/"
+          duration="$(( $(date +%s) - start ))"
+          echo "| sync-release | ${duration}s |" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Write production env
         env:
@@ -170,44 +333,49 @@ jobs:
           STONKS_USER: ${{ secrets.STONKS_USER }}
         run: |
           set -euo pipefail
-          SSH_OPTS="-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes"
-          scp $SSH_OPTS -i ~/.ssh/stonks_deploy_key /tmp/stonks-production.env "$STONKS_USER@$STONKS_HOST:/tmp/stonks-production.env"
-          ssh $SSH_OPTS -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+          SSH_OPTS=(-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes)
+          scp "${SSH_OPTS[@]}" -i ~/.ssh/stonks_deploy_key /tmp/stonks-production.env "$STONKS_USER@$STONKS_HOST:/tmp/stonks-production.env"
+          ssh "${SSH_OPTS[@]}" -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
             'sudo install -m 600 -o ubuntu -g ubuntu /tmp/stonks-production.env /opt/stonks-radar/.env && rm /tmp/stonks-production.env'
 
-      - name: Deploy compose stack
+      - name: Build API image
         env:
           STONKS_HOST: ${{ secrets.STONKS_HOST }}
           STONKS_USER: ${{ secrets.STONKS_USER }}
         run: |
           set -euo pipefail
-          SSH_OPTS="-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes"
-          ssh $SSH_OPTS -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
-            'set -euo pipefail
-             cd /opt/stonks-radar
-             docker compose -f compose.yaml -f infra/docker-compose.prod.yml down --remove-orphans || true
-             for volume in stonks-radar_snapshot-artifacts stonks-radar_published-snapshots; do
-               mountpoint=$(docker volume inspect "$volume" --format "{{ .Mountpoint }}" 2>/dev/null || true)
-               if [ -n "$mountpoint" ] && [ -d "$mountpoint" ]; then
-                 sudo find "$mountpoint" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-               fi
-             done
-             docker image rm -f stonks-radar-api-elixir || true
-             docker container prune -f || true
-             docker builder prune -af || true
-             docker image prune -af || true
-             sudo apt-get clean || true
-             sudo journalctl --vacuum-size=100M || true
-             sudo find /var/log -type f \( -name "*.gz" -o -name "*.1" -o -name "*.old" \) -delete || true
-             sudo find /tmp -mindepth 1 -maxdepth 1 -exec rm -rf {} + || true
-             df -h / /opt /tmp || true
-             COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml build api-elixir
-             docker builder prune -af || true
-             COMPOSE_PARALLEL_LIMIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d postgres valkey
-             docker compose -f compose.yaml -f infra/docker-compose.prod.yml run --rm --no-deps api-elixir /app/bin/stonks_backend eval "StonksBackend.Release.migrate()"
-             COMPOSE_PARALLEL_LIMIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d api-elixir caddy
-             docker image prune -f || true
-             df -h / /opt /tmp || true'
+          start="$(date +%s)"
+          SSH_OPTS=(-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes)
+          ssh "${SSH_OPTS[@]}" -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+            'cd /opt/stonks-radar && COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml build api-elixir'
+          duration="$(( $(date +%s) - start ))"
+          echo "| build-or-pull-api | ${duration}s |" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Run migrations
+        env:
+          STONKS_HOST: ${{ secrets.STONKS_HOST }}
+          STONKS_USER: ${{ secrets.STONKS_USER }}
+        run: |
+          set -euo pipefail
+          start="$(date +%s)"
+          SSH_OPTS=(-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes)
+          ssh "${SSH_OPTS[@]}" -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+            'cd /opt/stonks-radar && COMPOSE_PARALLEL_LIMIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d postgres valkey && docker compose -f compose.yaml -f infra/docker-compose.prod.yml run --rm --no-deps api-elixir /app/bin/stonks_backend eval "StonksBackend.Release.migrate()"'
+          duration="$(( $(date +%s) - start ))"
+          echo "| migrate | ${duration}s |" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Start services
+        env:
+          STONKS_HOST: ${{ secrets.STONKS_HOST }}
+          STONKS_USER: ${{ secrets.STONKS_USER }}
+        run: |
+          set -euo pipefail
+          start="$(date +%s)"
+          SSH_OPTS=(-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes)
+          ssh "${SSH_OPTS[@]}" -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+            'cd /opt/stonks-radar && COMPOSE_PARALLEL_LIMIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d api-elixir caddy && df -h / /opt /tmp || true'
+          duration="$(( $(date +%s) - start ))"
+          echo "| start | ${duration}s |" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Refresh published snapshots
         env:
@@ -215,9 +383,12 @@ jobs:
           STONKS_USER: ${{ secrets.STONKS_USER }}
         run: |
           set -euo pipefail
-          SSH_OPTS="-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes"
-          ssh $SSH_OPTS -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+          start="$(date +%s)"
+          SSH_OPTS=(-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes)
+          ssh "${SSH_OPTS[@]}" -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
             'docker run --rm -v stonks-radar_published-snapshots:/dest -v /opt/stonks-radar/apps/web/public/public:/src:ro alpine:3.24 sh -lc '\''set -e; rm -rf /dest/* /dest/.[!.]* /dest/..?* 2>/dev/null || true; cp -a /src/. /dest/; test -s /dest/latest/manifest.json'\'''
+          duration="$(( $(date +%s) - start ))"
+          echo "| refresh-snapshots | ${duration}s |" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Verify origin health
         env:
@@ -225,6 +396,19 @@ jobs:
           STONKS_USER: ${{ secrets.STONKS_USER }}
         run: |
           set -euo pipefail
-          SSH_OPTS="-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes"
-          ssh $SSH_OPTS -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
-            'cd /opt/stonks-radar && PUBLIC_HOSTNAME=$(awk -F= '\''$1=="PUBLIC_HOSTNAME"{print $2}'\'' .env) && test -n "$PUBLIC_HOSTNAME" && curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/api/public/health" >/dev/null && curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/public/latest/manifest.json" | tee /tmp/stonks-manifest.json >/dev/null && grep -q "\"current_version\"" /tmp/stonks-manifest.json && grep -q "\"objects\"" /tmp/stonks-manifest.json'
+          start="$(date +%s)"
+          SSH_OPTS=(-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes)
+          ssh "${SSH_OPTS[@]}" -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+            'cd /opt/stonks-radar
+             PUBLIC_HOSTNAME=$(awk -F= '\''$1=="PUBLIC_HOSTNAME"{print $2}'\'' .env)
+             test -n "$PUBLIC_HOSTNAME"
+             curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/" >/dev/null
+             curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/api/public/health" | grep -q "\"status\":\"ok\""
+             curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/api/public/status" | grep -q "\"status\":\"ok\""
+             curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/public/latest/manifest.json" | tee /tmp/stonks-manifest.json >/dev/null
+             grep -q "\"current_version\"" /tmp/stonks-manifest.json
+             grep -q "\"objects\"" /tmp/stonks-manifest.json
+             curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/api/instruments/search?q=IBM&limit=1&context=BUILDER" | grep -q "IBM"
+             curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/en/curves" >/dev/null'
+          duration="$(( $(date +%s) - start ))"
+          echo "| smoke | ${duration}s |" >> "$GITHUB_STEP_SUMMARY"
