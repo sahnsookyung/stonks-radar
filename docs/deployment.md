@@ -44,18 +44,36 @@ The self-hosted path runs on the OCI instance with runner labels
 runner minutes and keeps deploys available when GitHub-hosted jobs are blocked
 by account billing/spending-limit state. It checks out the repository, builds
 the web assets, syncs the checked-out release into `/opt/stonks-radar`, writes
-the production env file, runs Docker Compose, refreshes the published snapshot
-volume, and verifies local origin health.
+the production env file, pulls the prebuilt Elixir API image for fast deploys,
+runs Docker Compose, refreshes the published snapshot volume, and verifies local
+origin health.
 
 Deployment modes:
 
 - `fast`: normal production path. Requires green CI and SonarQube for the target
   SHA, skips redundant Playwright/full test verification inside the deploy job,
-  preserves Docker builder cache and Elixir build cache, and runs production
-  smoke checks after start.
+  pulls `ghcr.io/<owner>/stonks-radar-api-elixir:<sha>`, preserves Docker
+  builder cache and Elixir build cache, and runs production smoke checks after
+  start.
 - `clean`: recovery path for disk pressure, suspected stale build state, or
   dependency weirdness. It reruns the full deploy verification gate and performs
-  aggressive cache/image cleanup before rebuilding.
+  aggressive cache/image cleanup before rebuilding the API image on the OCI
+  host.
+
+The `ci.yml` ARM64 API-image job publishes these tags on pushes to `main`:
+
+- `ghcr.io/sahnsookyung/stonks-radar-api-elixir:<commit-sha>`
+- `ghcr.io/sahnsookyung/stonks-radar-api-elixir:main`
+
+Fast deploys should use the immutable commit-SHA tag. The deploy workflow passes
+that tag automatically through `STONKS_API_IMAGE`; manual host deploys can do the
+same explicitly:
+
+```bash
+STONKS_DEPLOY_MODE=fast \
+  STONKS_API_IMAGE=ghcr.io/sahnsookyung/stonks-radar-api-elixir:<commit-sha> \
+  scripts/deploy.sh
+```
 
 Set `verify=true` on a manual dispatch to run the full in-deploy verification
 without switching to clean mode. This is useful when you want fast-mode cache
@@ -113,6 +131,10 @@ Manual host deploys use the same mode names:
 STONKS_DEPLOY_MODE=fast scripts/deploy.sh
 STONKS_DEPLOY_MODE=clean STONKS_DEPLOY_VERIFY=true scripts/deploy.sh
 ```
+
+If `STONKS_API_IMAGE` is omitted, fast mode falls back to a local Compose build.
+That fallback is useful for emergency host-only releases, but the normal path is
+to let CI publish the ARM64 image first and then deploy the exact published SHA.
 
 ## GitHub Actions Terraform Plans
 

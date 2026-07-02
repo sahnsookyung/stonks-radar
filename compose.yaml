@@ -18,6 +18,7 @@ services:
     command: ["valkey-server", "--save", "", "--appendonly", "no", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
 
   api-elixir:
+    image: ${API_ELIXIR_IMAGE:-stonks-radar-api-elixir}
     build:
       context: .
       dockerfile: apps/backend_elixir/Dockerfile

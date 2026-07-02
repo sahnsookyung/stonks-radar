@@ -5,6 +5,9 @@ env_file="${1:-/tmp/stonks-production.env}"
 source_dir="${GITHUB_WORKSPACE:-$(pwd)}"
 deploy_dir="${STONKS_DEPLOY_DIR:-/opt/stonks-radar}"
 deploy_mode="${STONKS_DEPLOY_MODE:-fast}"
+api_image="${STONKS_API_IMAGE:-}"
+ghcr_actor="${STONKS_GHCR_ACTOR:-${GITHUB_ACTOR:-}}"
+ghcr_token="${STONKS_GHCR_TOKEN:-${GITHUB_TOKEN:-}}"
 compose_files=(-f compose.yaml -f infra/docker-compose.prod.yml)
 summary_started=0
 
@@ -12,6 +15,14 @@ if [[ "$deploy_mode" != "fast" && "$deploy_mode" != "clean" ]]; then
   echo "STONKS_DEPLOY_MODE must be fast or clean, got: $deploy_mode" >&2
   exit 1
 fi
+
+compose() {
+  if [[ "$deploy_mode" == "fast" && -n "$api_image" ]]; then
+    API_ELIXIR_IMAGE="$api_image" docker compose "${compose_files[@]}" "$@"
+  else
+    docker compose "${compose_files[@]}" "$@"
+  fi
+}
 
 record_phase() {
   local name="$1"
@@ -86,7 +97,7 @@ prepare_host() {
 
   if [[ "$deploy_mode" == "clean" ]]; then
     if [[ -f "$deploy_dir/compose.yaml" ]]; then
-      (cd "$deploy_dir" && docker compose "${compose_files[@]}" down --remove-orphans || true)
+      (cd "$deploy_dir" && compose down --remove-orphans || true)
     fi
 
     docker container prune -f || true
@@ -148,19 +159,28 @@ install_env() {
 
 build_api() {
   cd "$deploy_dir"
-  COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 docker compose "${compose_files[@]}" build api-elixir
+
+  if [[ "$deploy_mode" == "fast" && -n "$api_image" ]]; then
+    if [[ -n "$ghcr_actor" && -n "$ghcr_token" ]]; then
+      printf '%s\n' "$ghcr_token" | docker login ghcr.io -u "$ghcr_actor" --password-stdin
+    fi
+
+    docker pull "$api_image"
+  else
+    COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 compose build api-elixir
+  fi
 }
 
 migrate() {
   cd "$deploy_dir"
-  COMPOSE_PARALLEL_LIMIT=1 docker compose "${compose_files[@]}" up -d postgres valkey
-  docker compose "${compose_files[@]}" run --rm --no-deps api-elixir \
+  COMPOSE_PARALLEL_LIMIT=1 compose up -d postgres valkey
+  compose run --rm --no-deps api-elixir \
     /app/bin/stonks_backend eval 'StonksBackend.Release.migrate()'
 }
 
 start_services() {
   cd "$deploy_dir"
-  COMPOSE_PARALLEL_LIMIT=1 docker compose "${compose_files[@]}" up -d api-elixir caddy
+  COMPOSE_PARALLEL_LIMIT=1 compose up -d api-elixir caddy
   df -h / /opt /tmp || true
 }
 

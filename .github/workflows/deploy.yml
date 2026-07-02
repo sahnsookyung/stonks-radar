@@ -28,6 +28,7 @@ on:
 permissions:
   actions: read
   contents: read
+  packages: read
 
 concurrency:
   group: stonks-radar-production
@@ -133,6 +134,9 @@ jobs:
         env:
           STONKS_DEPLOY_DIR: /opt/stonks-radar
           STONKS_DEPLOY_MODE: ${{ inputs.mode }}
+          STONKS_API_IMAGE: ghcr.io/${{ github.repository_owner }}/stonks-radar-api-elixir:${{ github.sha }}
+          STONKS_GHCR_ACTOR: ${{ github.actor }}
+          STONKS_GHCR_TOKEN: ${{ github.token }}
         run: scripts/deploy_self_hosted_runner.sh /tmp/stonks-production.env
 
   deploy-github-hosted:
@@ -338,16 +342,27 @@ jobs:
           ssh "${SSH_OPTS[@]}" -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
             'sudo install -m 600 -o ubuntu -g ubuntu /tmp/stonks-production.env /opt/stonks-radar/.env && rm /tmp/stonks-production.env'
 
-      - name: Build API image
+      - name: Build or pull API image
         env:
           STONKS_HOST: ${{ secrets.STONKS_HOST }}
           STONKS_USER: ${{ secrets.STONKS_USER }}
+          STONKS_DEPLOY_MODE: ${{ inputs.mode }}
+          STONKS_API_IMAGE: ghcr.io/${{ github.repository_owner }}/stonks-radar-api-elixir:${{ github.sha }}
+          STONKS_GHCR_ACTOR: ${{ github.actor }}
+          STONKS_GHCR_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           start="$(date +%s)"
           SSH_OPTS=(-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes)
-          ssh "${SSH_OPTS[@]}" -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
-            'cd /opt/stonks-radar && COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml build api-elixir'
+          if [[ "$STONKS_DEPLOY_MODE" == "fast" ]]; then
+            printf '%s\n' "$STONKS_GHCR_TOKEN" | ssh "${SSH_OPTS[@]}" -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+              "docker login ghcr.io -u '$STONKS_GHCR_ACTOR' --password-stdin"
+            ssh "${SSH_OPTS[@]}" -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+              "docker pull '$STONKS_API_IMAGE'"
+          else
+            ssh "${SSH_OPTS[@]}" -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
+              'cd /opt/stonks-radar && COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml build api-elixir'
+          fi
           duration="$(( $(date +%s) - start ))"
           echo "| build-or-pull-api | ${duration}s |" >> "$GITHUB_STEP_SUMMARY"
 
@@ -355,12 +370,23 @@ jobs:
         env:
           STONKS_HOST: ${{ secrets.STONKS_HOST }}
           STONKS_USER: ${{ secrets.STONKS_USER }}
+          STONKS_DEPLOY_MODE: ${{ inputs.mode }}
+          STONKS_API_IMAGE: ghcr.io/${{ github.repository_owner }}/stonks-radar-api-elixir:${{ github.sha }}
         run: |
           set -euo pipefail
           start="$(date +%s)"
           SSH_OPTS=(-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes)
           ssh "${SSH_OPTS[@]}" -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
-            'cd /opt/stonks-radar && COMPOSE_PARALLEL_LIMIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d postgres valkey && docker compose -f compose.yaml -f infra/docker-compose.prod.yml run --rm --no-deps api-elixir /app/bin/stonks_backend eval "StonksBackend.Release.migrate()"'
+            "STONKS_DEPLOY_MODE='$STONKS_DEPLOY_MODE' STONKS_API_IMAGE='$STONKS_API_IMAGE' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd /opt/stonks-radar
+          if [[ "${STONKS_DEPLOY_MODE:-fast}" == "fast" ]]; then
+            export API_ELIXIR_IMAGE="$STONKS_API_IMAGE"
+          fi
+          COMPOSE_PARALLEL_LIMIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d postgres valkey
+          docker compose -f compose.yaml -f infra/docker-compose.prod.yml run --rm --no-deps api-elixir \
+            /app/bin/stonks_backend eval "StonksBackend.Release.migrate()"
+          REMOTE
           duration="$(( $(date +%s) - start ))"
           echo "| migrate | ${duration}s |" >> "$GITHUB_STEP_SUMMARY"
 
@@ -368,12 +394,22 @@ jobs:
         env:
           STONKS_HOST: ${{ secrets.STONKS_HOST }}
           STONKS_USER: ${{ secrets.STONKS_USER }}
+          STONKS_DEPLOY_MODE: ${{ inputs.mode }}
+          STONKS_API_IMAGE: ghcr.io/${{ github.repository_owner }}/stonks-radar-api-elixir:${{ github.sha }}
         run: |
           set -euo pipefail
           start="$(date +%s)"
           SSH_OPTS=(-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes)
           ssh "${SSH_OPTS[@]}" -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
-            'cd /opt/stonks-radar && COMPOSE_PARALLEL_LIMIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d api-elixir caddy && df -h / /opt /tmp || true'
+            "STONKS_DEPLOY_MODE='$STONKS_DEPLOY_MODE' STONKS_API_IMAGE='$STONKS_API_IMAGE' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd /opt/stonks-radar
+          if [[ "${STONKS_DEPLOY_MODE:-fast}" == "fast" ]]; then
+            export API_ELIXIR_IMAGE="$STONKS_API_IMAGE"
+          fi
+          COMPOSE_PARALLEL_LIMIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d api-elixir caddy
+          df -h / /opt /tmp || true
+          REMOTE
           duration="$(( $(date +%s) - start ))"
           echo "| start | ${duration}s |" >> "$GITHUB_STEP_SUMMARY"
 

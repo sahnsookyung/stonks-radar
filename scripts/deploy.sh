@@ -5,12 +5,23 @@ cd "$(dirname "$0")/.."
 
 deploy_mode="${STONKS_DEPLOY_MODE:-fast}"
 deploy_verify="${STONKS_DEPLOY_VERIFY:-false}"
+api_image="${STONKS_API_IMAGE:-}"
+ghcr_actor="${STONKS_GHCR_ACTOR:-${GITHUB_ACTOR:-}}"
+ghcr_token="${STONKS_GHCR_TOKEN:-${GITHUB_TOKEN:-}}"
 compose_files=(-f compose.yaml -f infra/docker-compose.prod.yml)
 
 if [[ "$deploy_mode" != "fast" && "$deploy_mode" != "clean" ]]; then
   echo "STONKS_DEPLOY_MODE must be fast or clean, got: $deploy_mode" >&2
   exit 1
 fi
+
+compose() {
+  if [[ "$deploy_mode" == "fast" && -n "$api_image" ]]; then
+    API_ELIXIR_IMAGE="$api_image" docker compose "${compose_files[@]}" "$@"
+  else
+    docker compose "${compose_files[@]}" "$@"
+  fi
+}
 
 if [[ "$deploy_mode" == "clean" || "$deploy_verify" == "true" ]]; then
   npm run web:test
@@ -24,8 +35,17 @@ if [[ "$deploy_mode" == "clean" ]]; then
   docker image prune -af || true
 fi
 
-COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 docker compose "${compose_files[@]}" build api-elixir
-COMPOSE_PARALLEL_LIMIT=1 docker compose "${compose_files[@]}" up -d postgres valkey
-docker compose "${compose_files[@]}" run --rm --no-deps api-elixir \
+if [[ "$deploy_mode" == "fast" && -n "$api_image" ]]; then
+  if [[ -n "$ghcr_actor" && -n "$ghcr_token" ]]; then
+    printf '%s\n' "$ghcr_token" | docker login ghcr.io -u "$ghcr_actor" --password-stdin
+  fi
+
+  docker pull "$api_image"
+else
+  COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 compose build api-elixir
+fi
+
+COMPOSE_PARALLEL_LIMIT=1 compose up -d postgres valkey
+compose run --rm --no-deps api-elixir \
   /app/bin/stonks_backend eval 'StonksBackend.Release.migrate()'
-COMPOSE_PARALLEL_LIMIT=1 docker compose "${compose_files[@]}" up -d api-elixir caddy
+COMPOSE_PARALLEL_LIMIT=1 compose up -d api-elixir caddy
