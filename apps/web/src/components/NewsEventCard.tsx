@@ -20,11 +20,12 @@ export function NewsEventCard({
   const claimLevel = event.claim_level ?? "source_only";
   const evidenceMatchStatus = event.evidence_match_status ?? "unverified";
   const isSourceOnly = claimLevel === "source_only";
+  const scoreLabel = newsScoreLabel(isSourceOnly, locale);
   return (
     <article className="panel min-w-0 p-4">
       <div className="flex flex-wrap items-center gap-2">
         <NewsScoreBadge
-          label={isSourceOnly ? (locale === "ko" ? "발견" : "Discovery") : (locale === "ko" ? "속보" : "Breaking")}
+          label={scoreLabel}
           value={event.breaking_score}
         />
         <NewsScoreBadge label={locale === "ko" ? "신뢰" : "Trust"} value={event.trust_score} />
@@ -83,6 +84,11 @@ function newsScoreTone(value: number) {
   if (value >= 80) return "border-danger/50 bg-danger/10 text-danger";
   if (value >= 60) return "border-warning/50 bg-warning/10 text-warning";
   return "border-line bg-panelAlt text-muted";
+}
+
+function newsScoreLabel(isSourceOnly: boolean, locale: "en" | "ko") {
+  if (isSourceOnly) return locale === "ko" ? "발견" : "Discovery";
+  return locale === "ko" ? "속보" : "Breaking";
 }
 
 export function SourcePill({ source }: Readonly<{ source: NewsSourceRef }>) {
