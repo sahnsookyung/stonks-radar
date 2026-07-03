@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ExternalLink } from "lucide-react";
 import type { NewsEventListItem, NewsRegionRelation, NewsSourceRef } from "@frw/shared-types";
 import { EntityLink } from "./EntityLink";
+import { safeExternalUrl } from "../lib/safeExternalUrl";
 
 export function NewsEventCard({
   event,
@@ -14,7 +15,7 @@ export function NewsEventCard({
 }>) {
   const primarySources = event.source_links.filter((source) => source.is_primary);
   const displayedSources = (primarySources.length ? primarySources : event.source_links)
-    .filter((source) => safeSourceUrl(source.url))
+    .filter((source) => safeExternalUrl(source.url))
     .slice(0, 3);
   return (
     <article className="panel min-w-0 p-4">
@@ -77,7 +78,7 @@ function newsScoreTone(value: number) {
 }
 
 export function SourcePill({ source }: Readonly<{ source: NewsSourceRef }>) {
-  const href = safeSourceUrl(source.url);
+  const href = safeExternalUrl(source.url);
   if (!href) return null;
   return (
     <a
@@ -92,15 +93,6 @@ export function SourcePill({ source }: Readonly<{ source: NewsSourceRef }>) {
       <ExternalLink className="h-3.5 w-3.5 shrink-0" />
     </a>
   );
-}
-
-function safeSourceUrl(value: string) {
-  try {
-    const parsed = new URL(value);
-    return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.href : null;
-  } catch {
-    return null;
-  }
 }
 
 function trustTierLabel(tier: string) {

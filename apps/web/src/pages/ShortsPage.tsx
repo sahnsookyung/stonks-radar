@@ -7,6 +7,7 @@ import { SeverityBadge, SourceBadge } from "../components/Badge";
 import { ErrorState, LoadingState } from "../components/LoadingState";
 import { SnapshotBanner } from "../components/SnapshotBanner";
 import { useLocale } from "../lib/locale";
+import { safeExternalUrl } from "../lib/safeExternalUrl";
 import { snapshotQueries } from "../lib/snapshots";
 import { entityDisplayName, trackedTickers } from "../lib/trackedTickers";
 
@@ -141,6 +142,7 @@ function LaneCard({ lane }: Readonly<{ lane?: AlternativeSignalLane }>) {
 }
 
 function SignalItem({ item, context }: Readonly<{ item: AlternativeSignalItem; context: string }>) {
+  const sourceHref = safeExternalUrl(item.source_url);
   const content = (
     <>
       <div className="flex items-start justify-between gap-2">
@@ -150,14 +152,14 @@ function SignalItem({ item, context }: Readonly<{ item: AlternativeSignalItem; c
       <p className="safe-text mt-1 text-xs leading-5 text-muted">{item.detail}</p>
       <div className="mt-2 flex items-center justify-between gap-2 text-[11px] leading-4 text-muted">
         <span className="safe-text min-w-0">{context}</span>
-        {item.source_url ? <ExternalLink className="h-3.5 w-3.5 text-accent" /> : null}
+        {sourceHref ? <ExternalLink className="h-3.5 w-3.5 text-accent" /> : null}
       </div>
     </>
   );
   const className = "focus-ring min-h-11 rounded-md border border-line bg-panelAlt px-3 py-2 hover:border-accent";
-  if (item.source_url) {
+  if (sourceHref) {
     return (
-      <a className={className} href={item.source_url} target="_blank" rel="noreferrer">
+      <a className={className} href={sourceHref} target="_blank" rel="noreferrer">
         {content}
       </a>
     );

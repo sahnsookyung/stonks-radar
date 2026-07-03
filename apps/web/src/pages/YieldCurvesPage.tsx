@@ -5,6 +5,7 @@ import { ExternalLink, LineChart, SlidersHorizontal, Table2, TrendingDown, Trend
 import { ErrorState, LoadingState } from "../components/LoadingState";
 import { SnapshotBanner } from "../components/SnapshotBanner";
 import { useLocale } from "../lib/locale";
+import { safeExternalUrl } from "../lib/safeExternalUrl";
 import { snapshotQueries } from "../lib/snapshots";
 
 type CurveObservation = {
@@ -231,7 +232,7 @@ function buildCurve(
       value,
       updatedAt: tile.updated_at,
       source: tile.source,
-      sourceUrl: tile.source_url,
+      sourceUrl: safeExternalUrl(tile.source_url) ?? undefined,
       freshness: tile.freshness,
       history: normalizeHistory(tile.points, tile.updated_at, value)
     });
@@ -316,22 +317,31 @@ function CurvePanel({ title, detail, points }: Readonly<{ title: string; detail:
         </div>
       </div>
       <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-        {points.map((point) => (
-          <a
-            key={point.key}
-            href={point.sourceUrl || "#"}
-            target={point.sourceUrl ? "_blank" : undefined}
-            rel={point.sourceUrl ? "noreferrer" : undefined}
-            className="rounded-md border border-line bg-panelAlt p-3 hover:border-accent"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-semibold text-muted">{point.label}</span>
-              <span className="text-xs uppercase text-muted">{point.freshness}</span>
-            </div>
-            <div className="mt-2 text-2xl font-bold">{point.value.toFixed(2)}%</div>
-            <div className="safe-text mt-1 text-xs leading-5 text-muted">{point.source}</div>
-          </a>
-        ))}
+        {points.map((point) => {
+          const content = (
+            <>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold text-muted">{point.label}</span>
+                <span className="text-xs uppercase text-muted">{point.freshness}</span>
+              </div>
+              <div className="mt-2 text-2xl font-bold">{point.value.toFixed(2)}%</div>
+              <div className="safe-text mt-1 text-xs leading-5 text-muted">{point.source}</div>
+            </>
+          );
+          const className = "rounded-md border border-line bg-panelAlt p-3 hover:border-accent";
+          if (!point.sourceUrl) return <article key={point.key} className={className}>{content}</article>;
+          return (
+            <a
+              key={point.key}
+              href={point.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className={className}
+            >
+              {content}
+            </a>
+          );
+        })}
       </div>
     </section>
   );

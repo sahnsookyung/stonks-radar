@@ -9,6 +9,7 @@ import { SnapshotBanner } from "../components/SnapshotBanner";
 import { apiGet } from "../lib/api";
 import { disclosureTransactionBucket, disclosureTransactionCaveat, disclosureTransactionLabel } from "../lib/disclosureLabels";
 import { useLocale } from "../lib/locale";
+import { safeExternalUrl } from "../lib/safeExternalUrl";
 import { snapshotQueries } from "../lib/snapshots";
 
 interface DisclosureSummary {
@@ -240,14 +241,10 @@ export function TrumpFilingsPage() { // NOSONAR - disclosure page coordinates fi
                   {locale === "ko" ? "최신 SEC 공시 보유량" : "Latest SEC-disclosed holdings"}
                 </h3>
                 <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-                  {disclosedHoldings.slice(0, 6).map((holding) => (
-                    <a
-                      key={holding.key}
-                      className="focus-ring block min-h-11 rounded-md border border-line bg-panel px-3 py-2 hover:border-accent"
-                      href={holding.source_url}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
+                  {disclosedHoldings.slice(0, 6).map((holding) => {
+                    const sourceHref = safeExternalUrl(holding.source_url);
+                    const className = "focus-ring block min-h-11 rounded-md border border-line bg-panel px-3 py-2 hover:border-accent";
+                    const content = (
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="safe-text text-xs font-semibold uppercase leading-5 text-muted">{holding.date}</div>
@@ -259,8 +256,20 @@ export function TrumpFilingsPage() { // NOSONAR - disclosure page coordinates fi
                           <div className="safe-text text-xs leading-5 text-accent">{holding.ticker}</div>
                         </div>
                       </div>
-                    </a>
-                  ))}
+                    );
+                    if (!sourceHref) return <article key={holding.key} className={className}>{content}</article>;
+                    return (
+                      <a
+                        key={holding.key}
+                        className={className}
+                        href={sourceHref}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {content}
+                      </a>
+                    );
+                  })}
                 </div>
                 <p className="safe-text mt-3 text-xs leading-5 text-muted">
                   {locale === "ko"
@@ -457,13 +466,10 @@ function TransactionRow({
   const summary = transactionSummary(transaction, locale);
   const owner = transaction.owner_name || transaction.person_name;
   const ownership = ownershipLabel(transaction, locale);
-  return (
-    <a
-      className="focus-ring grid min-h-11 gap-4 rounded-md border border-line bg-panelAlt p-4 hover:border-accent md:grid-cols-[170px_minmax(0,1fr)_220px]"
-      href={transaction.source_url}
-      target="_blank"
-      rel="noreferrer"
-    >
+  const sourceHref = safeExternalUrl(transaction.source_url);
+  const className = "focus-ring grid min-h-11 gap-4 rounded-md border border-line bg-panelAlt p-4 hover:border-accent md:grid-cols-[170px_minmax(0,1fr)_220px]";
+  const content = (
+    <>
       <div className="min-w-0">
         <div className="text-xs font-semibold uppercase leading-5 text-muted">
           {locale === "ko" ? "발생일" : "Date"}
@@ -511,18 +517,25 @@ function TransactionRow({
           <ExternalLink className="h-3.5 w-3.5" />
         </div>
       </div>
+    </>
+  );
+  if (!sourceHref) return <article className={className}>{content}</article>;
+  return (
+    <a
+      className={className}
+      href={sourceHref}
+      target="_blank"
+      rel="noreferrer"
+    >
+      {content}
     </a>
   );
 }
 
 function FilingRow({ filing, locale }: Readonly<{ filing: DisclosureFiling; locale: "en" | "ko" }>) {
-  return (
-    <a
-      className="focus-ring block min-h-11 rounded-md border border-line bg-panelAlt p-4 hover:border-accent"
-      href={filing.source_url}
-      target="_blank"
-      rel="noreferrer"
-    >
+  const sourceHref = safeExternalUrl(filing.source_url);
+  const className = "focus-ring block min-h-11 rounded-md border border-line bg-panelAlt p-4 hover:border-accent";
+  const content = (
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -542,6 +555,16 @@ function FilingRow({ filing, locale }: Readonly<{ filing: DisclosureFiling; loca
           <div className="mt-1 text-sm font-bold leading-5">{filing.transaction_count}</div>
         </div>
       </div>
+  );
+  if (!sourceHref) return <article className={className}>{content}</article>;
+  return (
+    <a
+      className={className}
+      href={sourceHref}
+      target="_blank"
+      rel="noreferrer"
+    >
+      {content}
     </a>
   );
 }
@@ -569,6 +592,7 @@ function WatchPerson({ person }: Readonly<{ person: WatchedPerson }>) {
 }
 
 function FallbackCard({ item, locale }: Readonly<{ item: AlternativeSignalItem; locale: "en" | "ko" }>) {
+  const sourceHref = safeExternalUrl(item.source_url);
   const content = (
     <>
       <div className="flex items-start justify-between gap-3">
@@ -576,7 +600,7 @@ function FallbackCard({ item, locale }: Readonly<{ item: AlternativeSignalItem; 
         <div className="safe-text shrink-0 text-xs font-semibold leading-5 text-accent">{item.value}</div>
       </div>
       <p className="safe-text mt-2 text-xs leading-5 text-muted">{item.detail}</p>
-      {item.source_url && (
+      {sourceHref && (
         <div className="mt-3 flex items-center gap-1 text-xs font-semibold leading-5 text-accent">
           {locale === "ko" ? "출처" : "Source"}
           <ExternalLink className="h-3.5 w-3.5" />
@@ -585,9 +609,9 @@ function FallbackCard({ item, locale }: Readonly<{ item: AlternativeSignalItem; 
     </>
   );
   const className = "focus-ring block min-h-[160px] rounded-md border border-line bg-panelAlt p-4 hover:border-accent";
-  if (item.source_url) {
+  if (sourceHref) {
     return (
-      <a className={className} href={item.source_url} target="_blank" rel="noreferrer">
+      <a className={className} href={sourceHref} target="_blank" rel="noreferrer">
         {content}
       </a>
     );

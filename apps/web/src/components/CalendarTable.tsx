@@ -1,6 +1,7 @@
 import type { CalendarItem } from "@frw/shared-types";
 import { ExternalLink } from "lucide-react";
 import { FreshnessBadge, SourceBadge } from "./Badge";
+import { safeExternalUrl } from "../lib/safeExternalUrl";
 
 export function CalendarTable({ items }: Readonly<{ items: CalendarItem[] }>) {
   return (
@@ -89,11 +90,12 @@ export function CalendarTable({ items }: Readonly<{ items: CalendarItem[] }>) {
 }
 
 function CalendarSourceLink({ item }: Readonly<{ item: CalendarItem }>) {
-  if (!item.source_url) return <SourceBadge label={item.source} />;
+  const sourceHref = safeExternalUrl(item.source_url);
+  if (!sourceHref) return <SourceBadge label={item.source} />;
   return (
     <a
-      href={item.source_url}
-      target={item.source_url.startsWith("http") ? "_blank" : undefined}
+      href={sourceHref}
+      target="_blank"
       rel="noreferrer"
       className="focus-ring inline-flex min-h-11 items-center gap-1 rounded px-3 text-xs font-semibold text-accent hover:text-accentSoft"
     >

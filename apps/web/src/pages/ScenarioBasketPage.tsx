@@ -7,6 +7,7 @@ import { NewsEventCard } from "../components/NewsEventCard";
 import { ErrorState, LoadingState } from "../components/LoadingState";
 import { SnapshotBanner } from "../components/SnapshotBanner";
 import { useLocale } from "../lib/locale";
+import { safeExternalUrl } from "../lib/safeExternalUrl";
 import { snapshotQueries } from "../lib/snapshots";
 
 export function ScenarioBasketPage() {
@@ -21,6 +22,8 @@ export function ScenarioBasketPage() {
   if (query.isLoading) return <LoadingState />;
   if (query.isError || !query.data) return <ErrorState error={query.error} />;
   const data = query.data.data;
+  const primarySourceHref = safeExternalUrl(data.primary_source_url);
+  const externalTrackerHref = safeExternalUrl(data.external_tracker_url);
 
   return (
     <div className="grid min-w-0 gap-6">
@@ -54,12 +57,14 @@ export function ScenarioBasketPage() {
             <h2 className="font-semibold">Methodology</h2>
             <p className="safe-text mt-2 text-sm leading-6 text-muted">{data.methodology}</p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <a href={data.primary_source_url} target={data.primary_source_url.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="secondary-action">
-                Primary source
-                <ExternalLink className="h-4 w-4" />
-              </a>
-              {data.external_tracker_url ? (
-                <a href={data.external_tracker_url} target="_blank" rel="noreferrer" className="secondary-action">
+              {primarySourceHref ? (
+                <a href={primarySourceHref} target="_blank" rel="noreferrer" className="secondary-action">
+                  Primary source
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              ) : null}
+              {externalTrackerHref ? (
+                <a href={externalTrackerHref} target="_blank" rel="noreferrer" className="secondary-action">
                   External tracker
                   <ExternalLink className="h-4 w-4" />
                 </a>
@@ -106,25 +111,25 @@ function TrackerSection({ section }: Readonly<{ section: ScenarioTrackerSection 
         </div>
       ) : null}
       <div className="mt-5 flex flex-wrap gap-2">
-        {section.source_links.map((source) => (
-          <a key={`${source.source_key}-${source.url}`} href={source.url} target="_blank" rel="noreferrer" className="secondary-action">
-            {source.label}
-            <ExternalLink className="h-4 w-4" />
-          </a>
-        ))}
+        {section.source_links.map((source) => {
+          const sourceHref = safeExternalUrl(source.url);
+          if (!sourceHref) return <SourceBadge key={`${source.source_key}-${source.url}`} label={source.label} />;
+          return (
+            <a key={`${source.source_key}-${source.url}`} href={sourceHref} target="_blank" rel="noreferrer" className="secondary-action">
+              {source.label}
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          );
+        })}
       </div>
     </article>
   );
 }
 
 function MetricRow({ row }: Readonly<{ row: ScenarioTrackerMetricRow }>) {
-  return (
-    <a
-      href={row.source_url}
-      target={row.source_url.startsWith("http") ? "_blank" : undefined}
-      rel="noreferrer"
-      className="focus-ring block rounded-md border border-line bg-panelAlt p-3 hover:border-accent"
-    >
+  const sourceHref = safeExternalUrl(row.source_url);
+  const content = (
+    <>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="safe-text text-sm font-semibold">{row.label}</div>
@@ -140,6 +145,18 @@ function MetricRow({ row }: Readonly<{ row: ScenarioTrackerMetricRow }>) {
         <SourceBadge label={row.coverage_status.replace("_", " ")} />
         <SourceBadge label={row.as_of_date.slice(0, 10)} />
       </div>
+    </>
+  );
+  const className = "focus-ring block rounded-md border border-line bg-panelAlt p-3 hover:border-accent";
+  if (!sourceHref) return <div className={className}>{content}</div>;
+  return (
+    <a
+      href={sourceHref}
+      target="_blank"
+      rel="noreferrer"
+      className={className}
+    >
+      {content}
     </a>
   );
 }

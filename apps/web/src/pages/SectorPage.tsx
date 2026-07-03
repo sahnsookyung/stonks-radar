@@ -8,6 +8,7 @@ import { ErrorState, LoadingState } from "../components/LoadingState";
 import { NewsEventCard } from "../components/NewsEventCard";
 import { SnapshotBanner } from "../components/SnapshotBanner";
 import { useLocale } from "../lib/locale";
+import { safeExternalUrl } from "../lib/safeExternalUrl";
 import { snapshotQueries } from "../lib/snapshots";
 import type { ShortFact, TickerCalendarItem } from "@frw/shared-types";
 
@@ -147,6 +148,7 @@ export function SectorPage() {
 }
 
 function TickerCalendarCard({ item, locale }: Readonly<{ item: TickerCalendarItem; locale: "en" | "ko" }>) {
+  const sourceHref = safeExternalUrl(item.source_url);
   return (
     <div className="grid min-h-11 gap-2 rounded-md border border-line bg-panelAlt px-3 py-2">
       <div className="flex min-w-0 items-start justify-between gap-3">
@@ -158,10 +160,14 @@ function TickerCalendarCard({ item, locale }: Readonly<{ item: TickerCalendarIte
             <span>{item.catalyst_type.replaceAll("_", " ")}</span>
           </div>
         </div>
-        <a className="focus-ring inline-flex min-h-11 shrink-0 items-center gap-1 rounded-md text-xs font-semibold text-accent hover:underline" href={item.source_url} target="_blank" rel="noreferrer">
-          {locale === "ko" ? "원문" : "Source"}
-          <ExternalLink className="h-4 w-4" />
-        </a>
+        {sourceHref ? (
+          <a className="focus-ring inline-flex min-h-11 shrink-0 items-center gap-1 rounded-md text-xs font-semibold text-accent hover:underline" href={sourceHref} target="_blank" rel="noreferrer">
+            {locale === "ko" ? "원문" : "Source"}
+            <ExternalLink className="h-4 w-4" />
+          </a>
+        ) : (
+          <SourceBadge label={item.source} />
+        )}
       </div>
     </div>
   );
@@ -170,6 +176,7 @@ function TickerCalendarCard({ item, locale }: Readonly<{ item: TickerCalendarIte
 function ShortFactCard({ fact, locale }: Readonly<{ fact: ShortFact; locale: "en" | "ko" }>) {
   const label = shortFactLabel(fact.fact_type, locale);
   const sourceLabel = shortFactSourceLabel(fact, locale);
+  const sourceHref = safeExternalUrl(fact.source_url);
   return (
     <div className="grid min-h-11 gap-1 rounded-md border border-line bg-panelAlt px-3 py-2">
       <div className="flex items-start justify-between gap-3">
@@ -185,10 +192,14 @@ function ShortFactCard({ fact, locale }: Readonly<{ fact: ShortFact; locale: "en
           <div className="text-[11px] text-muted">{fact.freshness}</div>
         </div>
       </div>
-      <a className="focus-ring inline-flex min-h-11 w-fit items-center gap-1 rounded-md text-xs font-semibold text-accent hover:underline" href={fact.source_url} target="_blank" rel="noreferrer">
-        {sourceLabel}
-        <ExternalLink className="h-4 w-4" />
-      </a>
+      {sourceHref ? (
+        <a className="focus-ring inline-flex min-h-11 w-fit items-center gap-1 rounded-md text-xs font-semibold text-accent hover:underline" href={sourceHref} target="_blank" rel="noreferrer">
+          {sourceLabel}
+          <ExternalLink className="h-4 w-4" />
+        </a>
+      ) : (
+        <SourceBadge label={sourceLabel} />
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ defmodule StonksBackendWeb.InternalController do
   alias StonksBackend.News.EmailAlerts
 
   def receive_news_email_alert(conn, params) do
-    {:ok, body, conn} = Plug.Conn.read_body(conn)
+    body = StonksBackendWeb.Endpoint.raw_body(conn)
 
     case EmailAlerts.verify(Map.new(conn.req_headers), body) do
       :ok ->
@@ -27,5 +27,6 @@ defmodule StonksBackendWeb.InternalController do
        do: 401
 
   defp email_error_status("recipient_not_allowed"), do: 403
+  defp email_error_status("email_webhook_nonce_store_unavailable"), do: 503
   defp email_error_status(_), do: 400
 end

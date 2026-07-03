@@ -75,7 +75,10 @@ defmodule StonksBackend.SafeFetch do
        ) do
     with {:ok, decision_ips} <- assert_url_allowed(current_url, resolver),
          request_ips <- MapSet.union(resolved_ips, MapSet.new(decision_ips)),
-         {:ok, response} <- request_url(current_url, request_fun, timeout_ms) do
+         {:ok, response} <-
+           request_url(current_url, decision_ips, request_fun, timeout_ms, max_bytes),
+         {:ok, confirmed_ips} <- assert_url_allowed(current_url, resolver),
+         request_ips <- MapSet.union(request_ips, MapSet.new(confirmed_ips)) do
       case maybe_redirect(response) do
         {:redirect, location} ->
           with {:ok, next_url} <- next_redirect_url(current_url, location, redirects) do
@@ -94,7 +97,7 @@ defmodule StonksBackend.SafeFetch do
 
         :not_redirect ->
           with :ok <- ok_status(response),
-               {:ok, body} <- capped_body(response.body, max_bytes) do
+               {:ok, body} <- capped_body(response, max_bytes) do
             {:ok, payload(original_url, current_url, response, body, request_ips, text_max_chars)}
           end
 
@@ -104,23 +107,70 @@ defmodule StonksBackend.SafeFetch do
     end
   end
 
-  defp request_url(url, request_fun, timeout_ms) do
+  defp request_url(url, decision_ips, request_fun, timeout_ms, max_bytes) do
+    {request_url, host_headers, connect_options} = guarded_request_target(url, decision_ips)
+
     options = [
-      headers: [{"user-agent", @user_agent}],
+      headers: [{"user-agent", @user_agent} | host_headers],
+      connect_options: connect_options,
       redirect: false,
       retry: false,
-      receive_timeout: timeout_ms
+      receive_timeout: timeout_ms,
+      raw: true,
+      into: stream_limited_body(max_bytes)
     ]
 
-    case request_fun.(url, options) do
+    case request_fun.(request_url, options) do
       {:ok, response} ->
         {:ok, response}
 
       {:error, exception} ->
-        {:error, {:safe_fetch_unavailable, Exception.message(exception)}}
+        {:error, {:safe_fetch_unavailable, exception_message(exception)}}
 
       other ->
         {:error, {:safe_fetch_unavailable, "unexpected fetch response: #{inspect(other)}"}}
+    end
+  end
+
+  defp guarded_request_target(url, decision_ips) do
+    parsed = URI.parse(url)
+    ip = List.first(decision_ips)
+    request_url = %{parsed | host: ip} |> URI.to_string()
+    host_headers = [{"host", host_header(parsed)}]
+    connect_options = [hostname: parsed.host]
+
+    {request_url, host_headers, connect_options}
+  end
+
+  defp host_header(parsed) do
+    host =
+      if String.contains?(parsed.host, ":") do
+        "[#{parsed.host}]"
+      else
+        parsed.host
+      end
+
+    port = parsed.port || default_port(parsed.scheme)
+    if port == default_port(parsed.scheme), do: host, else: "#{host}:#{port}"
+  end
+
+  defp default_port("https"), do: 443
+  defp default_port(_scheme), do: 80
+
+  defp stream_limited_body(max_bytes) do
+    fn {:data, data}, {request, response} ->
+      data = IO.iodata_to_binary(data)
+      size = Req.Response.get_private(response, :safe_fetch_body_size, 0)
+      next_size = size + byte_size(data)
+      response = Req.Response.put_private(response, :safe_fetch_body_size, next_size)
+
+      if next_size > max_bytes do
+        response = Req.Response.put_private(response, :safe_fetch_body_too_large, true)
+        {:halt, {request, response}}
+      else
+        response = Req.Response.update_private(response, :safe_fetch_body, [data], &[&1, data])
+        {:cont, {request, response}}
+      end
     end
   end
 
@@ -234,8 +284,15 @@ defmodule StonksBackend.SafeFetch do
     end
   end
 
-  defp capped_body(body, max_bytes) do
-    body = body_to_binary(body)
+  defp capped_body(%{private: %{safe_fetch_body_too_large: true}}, _max_bytes),
+    do: {:error, {:safe_fetch_denied, 400, "Response exceeded byte cap"}}
+
+  defp capped_body(response, max_bytes) do
+    body =
+      case response do
+        %{private: %{safe_fetch_body: streamed_body}} -> IO.iodata_to_binary(streamed_body)
+        %{body: body} -> body_to_binary(body)
+      end
 
     if byte_size(body) > max_bytes do
       {:error, {:safe_fetch_denied, 400, "Response exceeded byte cap"}}
@@ -246,6 +303,14 @@ defmodule StonksBackend.SafeFetch do
 
   defp body_to_binary(body) when is_binary(body), do: body
   defp body_to_binary(body), do: Jason.encode!(body)
+
+  defp exception_message(%module{} = exception) do
+    if function_exported?(module, :message, 1),
+      do: Exception.message(exception),
+      else: inspect(exception)
+  end
+
+  defp exception_message(exception), do: inspect(exception)
 
   defp extract_document(body, content_type, text_max_chars) do
     if String.contains?(String.downcase(to_string(content_type)), "html") do

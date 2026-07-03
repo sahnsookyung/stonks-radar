@@ -5,7 +5,7 @@ defmodule StonksBackend.SafeFetchTest do
 
   test "fetch_url returns SafeFetch metadata without raw html" do
     request_fun = fn url, opts ->
-      assert url == "https://example.com/story"
+      assert_bound_request(url, opts, "https://93.184.216.34/story", "example.com")
       assert opts[:redirect] == false
 
       {:ok,
@@ -65,10 +65,12 @@ defmodule StonksBackend.SafeFetchTest do
 
   test "fetch_url revalidates redirects and preserves final URL" do
     request_fun = fn
-      "https://example.com/start", _opts ->
+      "https://93.184.216.34/start", opts ->
+        assert_request_host(opts, "example.com")
         {:ok, %{status: 302, headers: %{"location" => ["/final"]}, body: ""}}
 
-      "https://example.com/final", _opts ->
+      "https://93.184.216.34/final", opts ->
+        assert_request_host(opts, "example.com")
         {:ok, %{status: 200, headers: %{"content-type" => ["text/plain"]}, body: "done"}}
     end
 
@@ -97,5 +99,68 @@ defmodule StonksBackend.SafeFetchTest do
                resolver: resolver,
                max_bytes: 5
              )
+  end
+
+  test "fetch_url streams response chunks through the byte cap" do
+    request_fun = fn _, opts ->
+      assert opts[:raw] == true
+      assert is_function(opts[:into], 2)
+
+      request = %Req.Request{}
+      response = %Req.Response{status: 200, headers: %{"content-type" => ["text/plain"]}}
+
+      {:cont, {_request, response}} = opts[:into].({:data, "abc"}, {request, response})
+      {:halt, {_request, response}} = opts[:into].({:data, "def"}, {request, response})
+
+      {:ok, response}
+    end
+
+    resolver = fn "example.com", 443 -> {:ok, [{93, 184, 216, 34}]} end
+
+    assert {:error, {:safe_fetch_denied, 400, "Response exceeded byte cap"}} =
+             SafeFetch.fetch_url("https://example.com/story",
+               request_fun: request_fun,
+               resolver: resolver,
+               max_bytes: 5
+             )
+  end
+
+  test "fetch_url rejects hosts that re-resolve to private IPs after the response" do
+    parent = self()
+
+    request_fun = fn url, opts ->
+      assert_bound_request(url, opts, "https://93.184.216.34/story", "example.com")
+      send(parent, :request_called)
+      {:ok, %{status: 200, headers: %{"content-type" => ["text/plain"]}, body: "done"}}
+    end
+
+    resolver = fn "example.com", 443 ->
+      count = Process.get(:safe_fetch_resolve_count, 0) + 1
+      Process.put(:safe_fetch_resolve_count, count)
+
+      case count do
+        1 -> {:ok, [{93, 184, 216, 34}]}
+        _ -> {:ok, [{127, 0, 0, 1}]}
+      end
+    end
+
+    assert {:error, {:safe_fetch_denied, 400, detail}} =
+             SafeFetch.fetch_url("https://example.com/story",
+               request_fun: request_fun,
+               resolver: resolver
+             )
+
+    assert detail =~ "blocked"
+    assert_received :request_called
+  end
+
+  defp assert_bound_request(url, opts, expected_url, expected_host) do
+    assert url == expected_url
+    assert_request_host(opts, expected_host)
+  end
+
+  defp assert_request_host(opts, expected_host) do
+    assert {"host", expected_host} in opts[:headers]
+    assert Keyword.fetch!(opts[:connect_options], :hostname) == expected_host
   end
 end

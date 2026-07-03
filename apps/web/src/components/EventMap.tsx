@@ -2,6 +2,7 @@ import type { NewsMapPoint, PublicEvent, WatchedRegionCoverage } from "@frw/shar
 import type { Feature, Geometry } from "geojson";
 import type maplibregl from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { safeExternalUrl } from "../lib/safeExternalUrl";
 import { naturalEarthNamesForCoverage } from "../lib/watchedRegions";
 
 type MutableRef<T> = { current: T };
@@ -901,13 +902,7 @@ function safeProperty(properties: Record<string, unknown> | null | undefined, ke
 }
 
 function safeHttpUrl(value: string) {
-  try {
-    const url = new URL(value);
-    if (url.protocol !== "https:" && url.protocol !== "http:") return "";
-    return url.toString();
-  } catch {
-    return "";
-  }
+  return safeExternalUrl(value) ?? "";
 }
 
 function createEventPopup(event: PublicEvent) {

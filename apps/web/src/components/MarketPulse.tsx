@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import type { MetricTile } from "@frw/shared-types";
 import { LineChart } from "./LineChart";
 import { useLocale } from "../lib/locale";
+import { safeExternalUrl } from "../lib/safeExternalUrl";
 
 export const marketOrder = [
   "nasdaq_composite",
@@ -199,6 +200,7 @@ function MarketPulseMiniTile({
   const delta = metricDelta(tile);
   const unavailable = isUnavailableTile(tile);
   const update = metricUpdate(tile, locale, now);
+  const sourceHref = safeExternalUrl(tile.source_url);
   const body = (
     <>
       <div className="h-8 w-16 shrink-0 sm:h-9 sm:w-20">
@@ -230,11 +232,11 @@ function MarketPulseMiniTile({
 
   const className =
     "focus-ring flex h-[72px] w-[min(220px,75vw)] shrink-0 snap-start items-center gap-3 rounded-md border border-line bg-panelAlt px-3 py-2 transition-colors hover:border-accent sm:h-[78px] sm:w-[250px]";
-  if (tile.source_url && !unavailable) {
+  if (sourceHref && !unavailable) {
     return (
       <a
         className={className}
-        href={tile.source_url}
+        href={sourceHref}
         target="_blank"
         rel="noreferrer"
         aria-label={`${tile.label} source`}
@@ -258,6 +260,7 @@ function MarketPulseCard({
   const unavailable = isUnavailableTile(tile);
   const delta = metricDelta(tile);
   const update = metricUpdate(tile, locale, now);
+  const sourceHref = safeExternalUrl(tile.source_url);
   const unavailableBadge = unavailable ? (
     <span className="rounded border border-warning/40 bg-warning/10 px-2 py-1 text-[11px] font-semibold uppercase leading-4 text-warning">
       {marketLocaleText(locale, "gap", "공백")}
@@ -326,11 +329,11 @@ function MarketPulseCard({
   );
   const className =
     "panel focus-ring flex min-h-[230px] min-w-0 flex-col p-4 transition-colors hover:border-accent sm:min-h-[260px]";
-  if (tile.source_url && !unavailable) {
+  if (sourceHref && !unavailable) {
     return (
       <a
         className={className}
-        href={tile.source_url}
+        href={sourceHref}
         target="_blank"
         rel="noreferrer"
         aria-label={`${tile.label} source`}

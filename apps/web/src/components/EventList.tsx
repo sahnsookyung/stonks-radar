@@ -1,6 +1,7 @@
 import type { PublicEvent } from "@frw/shared-types";
 import { ExternalLink } from "lucide-react";
 import { FreshnessBadge, SeverityBadge, SourceBadge } from "./Badge";
+import { safeExternalUrl } from "../lib/safeExternalUrl";
 
 export function EventList({ events }: Readonly<{ events: PublicEvent[] }>) {
   return (
@@ -22,18 +23,22 @@ export function EventList({ events }: Readonly<{ events: PublicEvent[] }>) {
             <span>{event.evidence_count} evidence items</span>
           </div>
           <div className="mt-3 flex flex-wrap gap-3 text-sm">
-            {event.source_links.map((source) => (
-              <a
-                key={`${event.id}-${source.source_key}`}
-                className="focus-ring inline-flex min-h-11 items-center gap-1 rounded-md px-2 text-accent hover:underline"
-                href={source.url}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {source.label}
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            ))}
+            {event.source_links.map((source) => {
+              const sourceHref = safeExternalUrl(source.url);
+              if (!sourceHref) return <SourceBadge key={`${event.id}-${source.source_key}`} label={source.label} />;
+              return (
+                <a
+                  key={`${event.id}-${source.source_key}`}
+                  className="focus-ring inline-flex min-h-11 items-center gap-1 rounded-md px-2 text-accent hover:underline"
+                  href={sourceHref}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {source.label}
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              );
+            })}
           </div>
         </article>
       ))}
