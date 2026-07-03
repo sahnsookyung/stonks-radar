@@ -14,8 +14,7 @@ import type {
   ScenarioBasketSnapshotData,
   SectorSnapshotData,
   SnapshotEnvelope,
-  SnapshotManifest,
-  SourceStatusSnapshotData
+  SnapshotManifest
 } from "@frw/shared-types";
 
 const manifestUrl = "/public/latest/manifest.json";
@@ -74,7 +73,6 @@ export const snapshotQueries = {
     getSnapshot<SectorSnapshotData>(`sector_${key}`, locale),
   scenarioBasket: (key: string, locale: Locale) =>
     getSnapshot<ScenarioBasketSnapshotData>(`scenario_basket_${key}`, locale),
-  status: (locale: Locale) => getSnapshot<SourceStatusSnapshotData>("source_status", locale),
   corrections: (locale: Locale) => getSnapshot<{ entries: unknown[] }>("correction_log", locale),
   newsIndex: (locale: Locale) => getSnapshot<NewsIndexSnapshotData>("news_index", locale),
   newsEvent: (eventId: string, locale: Locale) =>

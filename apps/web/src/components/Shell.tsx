@@ -3,8 +3,6 @@ import {
   Activity,
   BriefcaseBusiness,
   Calculator,
-  Database,
-  Globe2,
   LayoutDashboard,
   Map,
   Newspaper,
@@ -188,24 +186,6 @@ export function Shell({ children }: Readonly<{ children: React.ReactNode }>) {
               label={compactNavLabels.funds}
             />
             <NavLink
-              active={activePrimaryNavKey === "sources"}
-              navKey="sources"
-              registerRef={registerPrimaryNavRef}
-              to="/$locale/sources"
-              params={{ locale }}
-              icon={<Database />}
-              label={t("sources")}
-            />
-            <NavLink
-              active={activePrimaryNavKey === "status"}
-              navKey="status"
-              registerRef={registerPrimaryNavRef}
-              to="/$locale/status"
-              params={{ locale }}
-              icon={<Globe2 />}
-              label={t("status")}
-            />
-            <NavLink
               active={activePrimaryNavKey === "legal"}
               navKey="legal"
               registerRef={registerPrimaryNavRef}
@@ -356,8 +336,6 @@ function getActivePrimaryNavKey(pathname: string) {
   if (path.startsWith("/tickers")) return "tickers";
   if (path.startsWith("/news")) return "news";
   if (path.startsWith("/shorts")) return "shorts";
-  if (path.startsWith("/sources")) return "sources";
-  if (path.startsWith("/status")) return "status";
   if (
     path.startsWith("/financial-disclaimer") ||
     path.startsWith("/terms") ||

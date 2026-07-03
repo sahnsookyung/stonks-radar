@@ -26,7 +26,6 @@ const NewsPage = lazyRoute(() => import("./pages/NewsPage"), "NewsPage");
 const NewsEventPage = lazyRoute(() => import("./pages/NewsEventPage"), "NewsEventPage");
 const ShortsPage = lazyRoute(() => import("./pages/ShortsPage"), "ShortsPage");
 const TrumpFilingsPage = lazyRoute(() => import("./pages/TrumpFilingsPage"), "TrumpFilingsPage");
-const SourcesPage = lazyRoute(() => import("./pages/SourcesPage"), "SourcesPage");
 const CountryPage = lazyRoute(async () => {
   const module = await import("./pages/CountryRegionPage");
   return { default: () => <module.CountryRegionPage type="country" /> };
@@ -38,7 +37,6 @@ const RegionPage = lazyRoute(async () => {
 const SectorPage = lazyRoute(() => import("./pages/SectorPage"), "SectorPage");
 const ScenarioBasketPage = lazyRoute(() => import("./pages/ScenarioBasketPage"), "ScenarioBasketPage");
 const MethodologyPage = lazyRoute(() => import("./pages/MethodologyPage"), "MethodologyPage");
-const SourceStatusPage = lazyRoute(() => import("./pages/SourceStatusPage"), "SourceStatusPage");
 const LegalPage = lazyRoute(() => import("./pages/LegalPage"), "LegalPage");
 const AdminLogin = lazyRoute(() => import("./pages/AdminLogin"), "AdminLogin");
 const AdminDashboard = lazyRoute(() => import("./pages/AdminDashboard"), "AdminDashboard");
@@ -275,7 +273,9 @@ const trumpFilingsRoute = createRoute({
 const sourcesRoute = createRoute({
   getParentRoute: () => localeRoute,
   path: "sources",
-  component: SourcesPage
+  beforeLoad: () => {
+    throw redirect({ to: "/admin/data-sources" });
+  }
 });
 
 const countryRoute = createRoute({
@@ -311,7 +311,9 @@ const methodologyRoute = createRoute({
 const statusRoute = createRoute({
   getParentRoute: () => localeRoute,
   path: "status",
-  component: SourceStatusPage
+  beforeLoad: () => {
+    throw redirect({ to: "/admin/system-config" });
+  }
 });
 
 const legalRoute = createRoute({

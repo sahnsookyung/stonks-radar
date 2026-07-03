@@ -11,8 +11,6 @@ defmodule StonksBackendWeb.Router do
 
     scope "/public" do
       get "/health", PublicController, :health
-      get "/status", PublicController, :status
-      get "/provider-status", PublicController, :provider_status
       get "/snapshot-manifest-proxy", PublicController, :snapshot_manifest_proxy
       get "/trump-disclosures/summary", PublicController, :trump_disclosures_summary
       get "/filings", PublicController, :filings

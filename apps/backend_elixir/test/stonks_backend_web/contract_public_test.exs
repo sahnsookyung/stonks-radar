@@ -34,28 +34,18 @@ defmodule StonksBackendWeb.ContractPublicTest do
       response_cookies: :none
     },
     %{
-      matrix_id: "public.status.db_free_shape",
+      matrix_id: "public.status_removed",
       method: :get,
       path: "/api/public/status",
-      status: 200,
-      json_subset: %{
-        "status" => "ok",
-        "public_pages_depend_on_backend" => false,
-        "snapshot_storage" => "local_oci"
-      },
-      json_keys: ["metrics"],
-      response_headers: @public_no_store_headers,
+      status: 404,
       absent_response_headers: ["set-cookie"],
       response_cookies: :none
     },
     %{
-      matrix_id: "public.provider_status.db_free_shape",
+      matrix_id: "public.provider_status_removed",
       method: :get,
       path: "/api/public/provider-status",
-      status: 200,
-      json_subset: %{"status" => "ok"},
-      json_keys: ["market_data_providers"],
-      response_headers: @public_no_store_headers,
+      status: 404,
       absent_response_headers: ["set-cookie"],
       response_cookies: :none
     },

@@ -92,9 +92,9 @@ Phoenix owns `/api/*` through `apps/backend_elixir/lib/stonks_backend_web`.
 
 Route families:
 
-- `/api/public/*`: health, status, provider status, market history, search,
-  filings, transactions, insiders, disclosure summaries, and the manifest proxy
-  diagnostic.
+- `/api/public/*`: health, market history, search, filings, transactions,
+  insiders, disclosure summaries, and the manifest proxy diagnostic. Operational
+  status and provider/source details live behind authenticated admin routes.
 - `/api/auth/*`: password login, logout, current user, Google OAuth
   config/start/callback.
 - `/api/admin/*`: authenticated admin dashboard, providers, sources,
@@ -251,7 +251,7 @@ flowchart LR
   Runner["Oban queue runner"]
   Worker["GenericWorker.perform"]
   Lock["RuntimeLock"]
-  Domain["Snapshots / News / MarketData / Sources / Instruments"]
+  Domain["Snapshots / News / Shorts / MarketData / Sources / Instruments"]
 
   Trigger --> Jobs
   Jobs --> ObanTable
@@ -268,6 +268,7 @@ Queue routing is based on job type:
 - market data: `market_data.*`
 - instruments: instrument search/index refresh
 - disclosures: disclosure jobs
+- shorts: FINRA daily short-sale volume and delayed short-interest metadata jobs
 - maintenance/default: everything else
 
 `job_runtime_lock` enforces provider, source, and global running limits. Snapshot
@@ -479,8 +480,8 @@ Before staging or production promotion:
 4. `/api/public/health` must report healthy through the production hostname.
 5. `/public/latest/manifest.json` must be served by Caddy from the published
    snapshot volume and include `current_version` plus `objects`.
-6. `/api/public/status` should be checked for snapshot age, dead-letter jobs,
-   quota waits, open provider circuits, stale series, and source-health issues.
+6. Authenticated admin checks should be used for snapshot age, dead-letter jobs,
+   quota waits, provider circuits, stale series, and source-health issues.
 
 ## Current Architectural Caveats
 

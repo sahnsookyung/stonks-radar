@@ -149,16 +149,32 @@ test("public routes render from snapshots", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Funds Tracker" }),
   ).toBeVisible();
-  await expect(page.getByText("Public fund filings", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Source and limits" })).toBeVisible();
-  await expect(page.getByText("not a real-time portfolio").first()).toBeVisible();
+  await expect(page.getByText("Leopold Aschenbrenner").filter({ visible: true })).toHaveCount(1);
+  await expect(page.getByText("Situational Awareness").filter({ visible: true })).toHaveCount(1);
+  await expect(page.getByRole("link", { name: /HedgeFollow/ }).filter({ visible: true }).first()).toHaveAttribute("href", /hedgefollow\.com\/funds/);
+  await expect(page.getByText("not a live portfolio feed").first()).toBeVisible();
+  await expect(page.getByText("Top public-equity allocation")).toHaveCount(0);
   await page.goto("/en/funds/situational-awareness");
-  await expect(
-    page.getByText("Leopold Aschenbrenner 13F Portfolio"),
-  ).toBeVisible();
-  await expect(page.getByText("Public portfolio filings")).toBeVisible();
+  await expect(page.getByText("The previous internal 13F portfolio view")).toBeVisible();
+  await expect(page.getByText("Leopold Aschenbrenner")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Open HedgeFollow/ })).toHaveAttribute("href", /Situational%2BAwareness/);
+  await expect(page.getByText("Leopold Aschenbrenner 13F Portfolio")).toHaveCount(0);
+  await expect(page.getByText("Public portfolio filings")).toHaveCount(0);
+  await page.goto("/en");
+  await expect(page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Sources" })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Status" })).toHaveCount(0);
   await page.goto("/en/sources");
-  await expect(page.getByText("Source registry")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Admin session required" })).toBeVisible();
+  await expect(page).toHaveURL(/\/admin\/data-sources$/);
+  await page.goto("/en/status");
+  await expect(page.getByRole("heading", { name: "Admin session required" })).toBeVisible();
+  await expect(page).toHaveURL(/\/admin\/system-config$/);
+  await page.goto("/ko/sources");
+  await expect(page.getByRole("heading", { name: "Admin session required" })).toBeVisible();
+  await expect(page).toHaveURL(/\/admin\/data-sources$/);
+  await page.goto("/ko/status");
+  await expect(page.getByRole("heading", { name: "Admin session required" })).toBeVisible();
+  await expect(page).toHaveURL(/\/admin\/system-config$/);
   await page.goto("/ko");
   await expect(page.getByText("글로벌 시장 인텔리전스 대시보드")).toBeVisible();
   await page.goto("/ko/news");

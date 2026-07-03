@@ -30,6 +30,12 @@ defmodule StonksBackend.SafeFetch do
       |> normalize_int(@default_max_bytes)
       |> max(1)
 
+    text_max_chars =
+      opts
+      |> Keyword.get(:text_max_chars, Settings.get(:source_fetch_text_max_chars, 20_000))
+      |> normalize_int(20_000)
+      |> max(1)
+
     fetch_loop(
       normalize_url(url),
       normalize_url(url),
@@ -37,6 +43,7 @@ defmodule StonksBackend.SafeFetch do
       resolver,
       timeout_ms,
       max_bytes,
+      text_max_chars,
       MapSet.new(),
       0
     )
@@ -49,6 +56,7 @@ defmodule StonksBackend.SafeFetch do
          _resolver,
          _timeout_ms,
          _max_bytes,
+         _text_max_chars,
          _ips,
          _redirects
        ),
@@ -61,6 +69,7 @@ defmodule StonksBackend.SafeFetch do
          resolver,
          timeout_ms,
          max_bytes,
+         text_max_chars,
          resolved_ips,
          redirects
        ) do
@@ -77,6 +86,7 @@ defmodule StonksBackend.SafeFetch do
               resolver,
               timeout_ms,
               max_bytes,
+              text_max_chars,
               request_ips,
               redirects + 1
             )
@@ -85,7 +95,7 @@ defmodule StonksBackend.SafeFetch do
         :not_redirect ->
           with :ok <- ok_status(response),
                {:ok, body} <- capped_body(response.body, max_bytes) do
-            {:ok, payload(original_url, current_url, response, body, request_ips)}
+            {:ok, payload(original_url, current_url, response, body, request_ips, text_max_chars)}
           end
 
         {:error, _reason} = error ->
@@ -143,9 +153,9 @@ defmodule StonksBackend.SafeFetch do
   defp ok_status(%{status: status}),
     do: {:error, {:safe_fetch_denied, status, "source returned HTTP #{status}"}}
 
-  defp payload(original_url, final_url, response, body, resolved_ips) do
+  defp payload(original_url, final_url, response, body, resolved_ips, text_max_chars) do
     content_type = header_value(response.headers, "content-type") || ""
-    extracted = extract_document(body, content_type)
+    extracted = extract_document(body, content_type, text_max_chars)
 
     %{
       "url" => original_url,
@@ -155,7 +165,7 @@ defmodule StonksBackend.SafeFetch do
       "content_type" => content_type,
       "content_hash" => "sha256:" <> Base.encode16(:crypto.hash(:sha256, body), case: :lower),
       "title" => extracted.title,
-      "text" => String.slice(extracted.text || "", 0, 20_000),
+      "text" => String.slice(extracted.text, 0, text_max_chars),
       "raw_html_returned" => false
     }
   end
@@ -237,15 +247,15 @@ defmodule StonksBackend.SafeFetch do
   defp body_to_binary(body) when is_binary(body), do: body
   defp body_to_binary(body), do: Jason.encode!(body)
 
-  defp extract_document(body, content_type) do
+  defp extract_document(body, content_type, text_max_chars) do
     if String.contains?(String.downcase(to_string(content_type)), "html") do
-      extract_html_document(body)
+      extract_html_document(body, text_max_chars)
     else
-      %{title: nil, text: String.slice(to_string(body), 0, 20_000)}
+      %{title: nil, text: String.slice(to_string(body), 0, text_max_chars)}
     end
   end
 
-  defp extract_html_document(body) do
+  defp extract_html_document(body, text_max_chars) do
     with {:ok, document} <- Floki.parse_document(body) do
       scrubbed =
         document
@@ -262,10 +272,14 @@ defmodule StonksBackend.SafeFetch do
 
       %{
         title: extract_title(document),
-        text: text_root |> Floki.text(sep: " ") |> normalize_whitespace()
+        text:
+          text_root
+          |> Floki.text(sep: " ")
+          |> normalize_whitespace()
+          |> String.slice(0, text_max_chars)
       }
     else
-      _ -> %{title: nil, text: String.slice(to_string(body), 0, 20_000)}
+      _ -> %{title: nil, text: String.slice(to_string(body), 0, text_max_chars)}
     end
   end
 

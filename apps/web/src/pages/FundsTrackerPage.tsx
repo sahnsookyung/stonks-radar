@@ -1,29 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  Database,
-  FileSpreadsheet,
-} from "lucide-react";
+import { Database, ExternalLink, Search } from "lucide-react";
 import type { ReactNode } from "react";
-import type { FundPortfolioSnapshotData, Locale } from "@frw/shared-types";
-import { FreshnessBadge, SourceBadge } from "../components/Badge";
-import { LoadingState } from "../components/LoadingState";
-import { TermTooltip } from "../components/TermTooltip";
+import { SourceBadge } from "../components/Badge";
+import { fundLinks, type FundLinkEntry } from "../lib/fundLinks";
 import { useLocale } from "../lib/locale";
-import { snapshotQueries } from "../lib/snapshots";
 
 export function FundsTrackerPage() {
   const locale = useLocale();
   const isKo = locale === "ko";
-  const fundQuery = useQuery({
-    queryKey: ["snapshot", "fund-portfolio", "situational-awareness", locale],
-    queryFn: () => snapshotQueries.fundPortfolio("situational-awareness", locale)
-  });
-
-  const fundData = fundQuery.data?.data;
-
-  if (fundQuery.isLoading) return <LoadingState />;
 
   return (
     <div className="grid min-w-0 gap-7">
@@ -31,121 +14,113 @@ export function FundsTrackerPage() {
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-accent">
             <Database className="h-4 w-4" />
-            {isKo ? "공개 펀드 및 공시 추적" : "Public funds and disclosure tracker"}
+            {isKo ? "공개 펀드 링크 디렉터리" : "Public fund links directory"}
           </div>
           <h1 className="safe-text mt-3 text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
             Funds Tracker
           </h1>
           <p className="safe-text mt-3 max-w-5xl text-sm leading-6 text-muted md:text-base md:leading-7">
             {isKo
-              ? "분기 13F 포트폴리오와 최신 Schedule 13G 수익소유 공시를 함께 보는 공개 파일링 화면입니다. 실시간 포트폴리오나 투자 복제 도구가 아닙니다."
-              : "A public-filing surface for delayed 13F portfolios plus newer Schedule 13G beneficial-ownership rows. This is not a real-time portfolio, not a live holdings feed, and not a copy-trading product."}
+              ? "지연된 13F 및 공개 공시 기반 외부 트래커로 이동하는 출처 링크 디렉터리입니다. 실시간 포트폴리오나 투자 복제 도구가 아닙니다."
+              : "A source-linked directory to delayed 13F and public-filing trackers. This is not a live portfolio feed or a copy-trading product."}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <SourceBadge label={isKo ? "공개 원문 연결" : "source-linked public filings"} />
-          <SourceBadge label={isKo ? "지연 데이터" : "delayed data"} />
-          <FreshnessBadge value={fundData?.freshness ?? "watch"} />
+          <SourceBadge label={isKo ? "외부 링크 전용" : "outbound links only"} />
+          <SourceBadge label={isKo ? "수집/스크래핑 없음" : "no scraping"} />
+          <SourceBadge label={isKo ? "지연 공시" : "delayed filings"} />
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.45fr)]">
-        <LeopoldFundCard data={fundData} locale={locale} loading={fundQuery.isLoading} error={fundQuery.error} />
-        <section className="panel content-start p-5">
+      <section className="signal-warning p-4">
+        <div className="flex items-start gap-3">
+          <Search className="mt-1 h-4 w-4 shrink-0" />
+          <p className="safe-text text-sm leading-6">
+            {isKo
+              ? "아래 링크는 외부 리서치 화면으로 이동합니다. Stonks Radar는 HedgeFollow 표를 복사하거나 수집하지 않으며, 각 외부 사이트의 지연/범위/계산 방식을 별도로 확인해야 합니다."
+              : "These links open external research pages. Stonks Radar does not copy or ingest HedgeFollow tables; verify each external site's filing lag, coverage, and calculation policy."}
+          </p>
+        </div>
+      </section>
+
+      <section className="panel min-w-0 p-5">
+        <div className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-3">
           <h2 className="safe-text text-lg font-bold">
-            {isKo ? "출처와 한계" : "Source and limits"}
+            {isKo ? "큐레이션된 펀드 링크" : "Curated fund links"}
           </h2>
-          <div className="mt-4 grid gap-2 text-sm leading-6 text-muted">
-            {(fundData?.caveats ?? []).map((caveat) => (
-              <p key={caveat} className="safe-text rounded-md border border-line bg-panelAlt px-3 py-2">
-                {caveat}
-              </p>
-            ))}
-          </div>
-        </section>
+          <span className="badge border-line bg-panelAlt text-muted">
+            {fundLinks.length} {isKo ? "개 링크" : "links"}
+          </span>
+        </div>
+
+        <div className="grid gap-3 md:hidden">
+          {fundLinks.map((entry) => (
+            <FundLinkCard key={entry.key} entry={entry} locale={locale} />
+          ))}
+        </div>
+
+        <div className="hidden overflow-x-auto rounded-md border border-line md:block" data-allow-horizontal-scroll aria-label={isKo ? "펀드 링크 표" : "fund links table"}>
+          <table className="min-w-[920px] w-full text-left text-sm">
+            <thead className="bg-panelAlt text-xs uppercase text-muted">
+              <tr>
+                <th className="px-3 py-3">{isKo ? "사람 / 매니저" : "Human / manager"}</th>
+                <th className="px-3 py-3">{isKo ? "펀드" : "Fund"}</th>
+                <th className="px-3 py-3">{isKo ? "주요 트래커" : "Primary tracker"}</th>
+                <th className="px-3 py-3">{isKo ? "출처 유형" : "Source type"}</th>
+                <th className="px-3 py-3">{isKo ? "메모" : "Notes"}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {fundLinks.map((entry) => (
+                <tr key={entry.key} className="border-t border-line">
+                  <td className="safe-text px-3 py-3 font-semibold">{entry.human_name}</td>
+                  <td className="safe-text px-3 py-3">{entry.fund_name}</td>
+                  <td className="px-3 py-3">
+                    <SafeExternalAnchor
+                      className="focus-ring inline-flex min-h-11 items-center gap-2 font-semibold text-accent hover:text-ink"
+                      href={entry.primary_url}
+                    >
+                      {entry.source_label}
+                      <ExternalLink className="h-4 w-4" />
+                    </SafeExternalAnchor>
+                  </td>
+                  <td className="px-3 py-3 text-muted">
+                    {isKo ? "외부 13F 트래커" : "External 13F tracker"}
+                  </td>
+                  <td className="safe-text px-3 py-3 text-muted">{entry.note}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   );
 }
 
-function LeopoldFundCard({
-  data,
-  locale,
-  loading,
-  error
-}: Readonly<{
-  data?: FundPortfolioSnapshotData;
-  locale: Locale;
-  loading: boolean;
-  error: unknown;
-}>) {
+function FundLinkCard({ entry, locale }: Readonly<{ entry: FundLinkEntry; locale: "en" | "ko" }>) {
   const isKo = locale === "ko";
   return (
-    <article className="panel min-w-0 p-5">
-      <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-sm font-semibold uppercase text-accent">
-            <FileSpreadsheet className="h-4 w-4" />
-            {isKo ? "공개 펀드 공시" : "Public fund filings"}
-          </div>
-          <h2 className="safe-text mt-3 text-2xl font-bold">
-            {data?.display_name ?? (isKo ? "레오폴드 아셴브레너" : "Leopold Aschenbrenner")}
-          </h2>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <SourceBadge label="SEC EDGAR 13F" />
-          <SourceBadge label="Schedule 13G" />
-          <SourceBadge label={isKo ? "분기 지연" : "quarterly lag"} />
-        </div>
+    <article className="grid gap-3 rounded-md border border-line bg-panelAlt p-4">
+      <div className="min-w-0">
+        <div className="safe-text text-base font-bold">{entry.human_name}</div>
+        <div className="safe-text mt-1 text-sm leading-6 text-muted">{entry.fund_name}</div>
       </div>
-      {loading && <p className="mt-4 text-sm text-muted">{isKo ? "불러오는 중..." : "Loading..."}</p>}
-      {Boolean(error) && (
-        <p className="safe-text mt-4 rounded-md border border-line bg-panelAlt p-3 text-sm leading-6 text-muted">
-          {isKo ? "13F 스냅샷을 읽지 못했습니다." : "Could not load the 13F snapshot."}
-        </p>
-      )}
-      {data && (
-        <>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <Metric label={isKo ? "롱 주식 가치" : "Long equity value"} value={formatUsd(data.summary_metrics.long_equity_value_usd)} termKey="portfolio_value" />
-            <Metric label={isKo ? "보유 행" : "Holding rows"} value={String(data.summary_metrics.holding_count)} termKey="data_quality" />
-            <Metric label={isKo ? "보고일" : "Report date"} value={data.filing?.report_date ?? "pending"} />
-            <Metric label={isKo ? "공시일" : "Filed"} value={data.filing?.filed_at ?? "pending"} />
-          </div>
-          <div className="mt-5 grid gap-2">
-            {data.top_equity_holdings.slice(0, 5).map((holding) => (
-              <SafeExternalAnchor
-                key={holding.id}
-                className="focus-ring grid min-h-11 grid-cols-[minmax(0,1fr)_auto] gap-3 rounded-md border border-line bg-panelAlt px-3 py-2 hover:border-accent"
-                href={holding.source_url}
-              >
-                <div className="min-w-0">
-                  <div className="safe-text text-sm font-bold">{holding.symbol ?? holding.cusip}</div>
-                  <div className="safe-text text-xs leading-5 text-muted">{holding.issuer_name}</div>
-                </div>
-                <div className="text-right text-sm font-semibold">{formatPercent(holding.portfolio_weight)}</div>
-              </SafeExternalAnchor>
-            ))}
-          </div>
-        </>
-      )}
-      <Link className="secondary-action mt-5 min-h-11 px-3 py-2" to="/$locale/funds/$fundKey" params={{ locale, fundKey: "situational-awareness" }}>
-        {isKo ? "13F 상세 보기" : "Open 13F details"}
-        <ArrowRight className="h-4 w-4" />
-      </Link>
+      <div className="flex flex-wrap gap-2">
+        <span className="badge border-line bg-panel text-muted">{entry.source_label}</span>
+        <span className="badge border-line bg-panel text-muted">
+          {isKo ? "외부 13F 트래커" : "External 13F tracker"}
+        </span>
+      </div>
+      <p className="safe-text text-sm leading-6 text-muted">{entry.note}</p>
+      <SafeExternalAnchor
+        className="secondary-action min-h-11 px-3 py-2"
+        href={entry.primary_url}
+      >
+        {isKo ? `${entry.source_label}에서 열기` : `Open ${entry.source_label}`}
+        <ExternalLink className="h-4 w-4" />
+      </SafeExternalAnchor>
     </article>
-  );
-}
-
-function Metric({ label, value, termKey }: Readonly<{ label: string; value: string; termKey?: string }>) {
-  return (
-    <div className="rounded-md border border-line bg-panelAlt p-3">
-      <div className="flex items-center gap-1 text-xs font-semibold uppercase text-muted">
-        {label}
-        {termKey ? <TermTooltip termKey={termKey} /> : null}
-      </div>
-      <div className="safe-text mt-1 text-xl font-bold">{value}</div>
-    </div>
   );
 }
 
@@ -153,9 +128,9 @@ function SafeExternalAnchor({ href, className, children }: Readonly<{ href: stri
   const safeHref = safeExternalHref(href);
   if (!safeHref) {
     return (
-      <div className={`${className} cursor-not-allowed opacity-80`} aria-disabled="true">
+      <span className={`${className} cursor-not-allowed opacity-80`} aria-disabled="true">
         {children}
-      </div>
+      </span>
     );
   }
   return (
@@ -172,18 +147,4 @@ function safeExternalHref(value: string) {
   } catch {
     return null;
   }
-}
-
-function formatUsd(value: number) {
-  if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-  return `$${formatNumber(value)}`;
-}
-
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
-}
-
-function formatPercent(value: number) {
-  return `${(value * 100).toFixed(value >= 0.1 ? 1 : 2)}%`;
 }

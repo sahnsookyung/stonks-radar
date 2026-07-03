@@ -2,7 +2,7 @@ defmodule StonksBackend.Jobs.Workers.GenericWorker do
   @moduledoc "Oban worker dispatch surface for migrated backend job components."
   use Oban.Worker, max_attempts: 5
 
-  alias StonksBackend.{Instruments, MarketData, News, Snapshots, Sources}
+  alias StonksBackend.{Instruments, MarketData, News, Shorts, Snapshots, Sources}
   alias StonksBackend.Jobs.RuntimeLock
 
   require Logger
@@ -47,6 +47,9 @@ defmodule StonksBackend.Jobs.Workers.GenericWorker do
       "instrument_search_index_update" -> Instruments.refresh_index(payload)
       "market_data.refresh_history" -> MarketData.refresh_history(payload)
       "trump_disclosures_ingest" -> Sources.ingest_disclosures(payload)
+      "shorts.finra_daily_short_volume" -> Shorts.fetch_daily_short_volume(payload)
+      "shorts.finra_short_interest_release" -> Shorts.fetch_short_interest_release(payload)
+      "shorts.short_research_metadata" -> Shorts.refresh_short_research_metadata(payload)
       "news.fetch_source" -> News.fetch_source(payload)
       "news.read_pages" -> News.read_pages(payload)
       "news.purge_email_raw" -> News.purge_email_raw(payload)

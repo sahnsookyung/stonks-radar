@@ -112,7 +112,7 @@ describe("snapshot freshness helpers", () => {
               current_version: 1,
               generated_at: "2026-06-04T00:00:00Z",
               locales: ["en"],
-              objects: { status: { en: "public/v1/en/status.json" } }
+              objects: { news: { en: "public/v1/en/news.json" } }
             }),
             { status: 200, headers: { "Content-Type": "application/json" } }
           );
@@ -155,7 +155,6 @@ describe("snapshot freshness helpers", () => {
       "region_TOP30",
       "sector_space",
       "scenario_basket_ai_capex",
-      "source_status",
       "correction_log",
       "news_index",
       "news_event_abc",
@@ -200,7 +199,6 @@ describe("snapshot freshness helpers", () => {
     await expect(snapshotQueries.scenarioBasket("ai_capex", "en")).resolves.toMatchObject({
       object_key: "scenario_basket_ai_capex"
     });
-    await expect(snapshotQueries.status("en")).resolves.toMatchObject({ object_key: "source_status" });
     await expect(snapshotQueries.corrections("en")).resolves.toMatchObject({ object_key: "correction_log" });
     await expect(snapshotQueries.newsIndex("en")).resolves.toMatchObject({ object_key: "news_index" });
     await expect(snapshotQueries.newsEvent("abc", "en")).resolves.toMatchObject({ object_key: "news_event_abc" });

@@ -109,6 +109,30 @@ defmodule StonksBackend.SnapshotsTest do
     assert message =~ "entries"
   end
 
+  test "snapshot tree validation rejects public operational status snapshots", %{
+    published_root: root
+  } do
+    write_manifest!(root, %{
+      "source_status" => %{"en" => "public/v1/en/status.json"}
+    })
+
+    write_snapshot!(root, "v1/en/status.json", %{
+      "object_type" => "source_status",
+      "object_key" => "source_status",
+      "data" => %{"providers" => []}
+    })
+
+    assert {:error, message} = Snapshots.validate_snapshot_tree(root)
+    assert message =~ "references prohibited public operational snapshot"
+
+    write_manifest!(root, %{
+      "home" => %{"en" => "public/v1/en/status.json"}
+    })
+
+    assert {:error, message} = Snapshots.validate_snapshot_tree(root)
+    assert message =~ "contains prohibited public operational snapshot"
+  end
+
   test "snapshot tree validation requires manifest references to resolve inside the tree", %{
     published_root: root
   } do
@@ -273,10 +297,10 @@ defmodule StonksBackend.SnapshotsTest do
     try do
       write_manifest!(source)
       write_snapshot!(source, "v1/en/home.json", %{"data" => %{"entries" => []}})
-      write_snapshot!(source, "v1/en/status.json", %{"data" => %{"entries" => []}})
+      write_snapshot!(source, "v1/en/secondary.json", %{"data" => %{"entries" => []}})
 
       write_json!(destination, "v1/en/home.json", %{"data" => %{"headline" => "old"}})
-      File.mkdir_p!(Path.join(destination, "v1/en/status.json"))
+      File.mkdir_p!(Path.join(destination, "v1/en/secondary.json"))
 
       assert {:error, message} = Snapshots.refresh_published_volume(source, destination)
       assert message =~ "Could not back up"

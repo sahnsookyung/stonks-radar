@@ -36,50 +36,20 @@ defmodule StonksBackendWeb.PublicControllerTest do
            }
   end
 
-  test "public status preserves shape and no-store security headers without a live db" do
-    conn =
+  test "public status is not exposed" do
+    assert_raise Phoenix.Router.NoRouteError, fn ->
       :get
       |> conn("/api/public/status")
       |> dispatch()
-
-    assert conn.status == 200
-    assert get_resp_header(conn, "cache-control") == ["no-store"]
-
-    assert get_resp_header(conn, "strict-transport-security") == [
-             "max-age=31536000; includeSubDomains; preload"
-           ]
-
-    assert get_resp_header(conn, "x-content-type-options") == ["nosniff"]
-
-    body = Jason.decode!(conn.resp_body)
-    assert body["status"] == "ok"
-    assert body["public_pages_depend_on_backend"] == false
-    assert body["snapshot_storage"] == "local_oci"
-    assert is_map(body["metrics"])
-    assert Map.has_key?(body["metrics"], "dead_letter_jobs")
+    end
   end
 
-  test "provider status keeps public provider keys and route security headers" do
-    conn =
+  test "provider status is not exposed" do
+    assert_raise Phoenix.Router.NoRouteError, fn ->
       :get
       |> conn("/api/public/provider-status")
       |> dispatch()
-
-    assert conn.status == 200
-    assert get_resp_header(conn, "cache-control") == ["no-store"]
-
-    body = Jason.decode!(conn.resp_body)
-    assert body["status"] == "ok"
-    assert [%{} = first | _] = body["market_data_providers"]
-
-    assert Map.keys(first) |> Enum.sort() == [
-             "attribution_required",
-             "endpoint_key",
-             "provider_key",
-             "public_display_allowed",
-             "refresh_interval",
-             "source_checked_at"
-           ]
+    end
   end
 
   test "public search rejects missing or short queries and keeps stable result envelope" do

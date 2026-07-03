@@ -440,7 +440,8 @@ jobs:
              test -n "$PUBLIC_HOSTNAME"
              curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/" >/dev/null
              curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/api/public/health" | grep -q "\"status\":\"ok\""
-             curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/api/public/status" | grep -q "\"status\":\"ok\""
+             test "$(curl -sS -o /dev/null -w "%{http_code}" --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/api/public/status")" = "404"
+             test "$(curl -sS -o /dev/null -w "%{http_code}" --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/api/public/provider-status")" = "404"
              curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/public/latest/manifest.json" | tee /tmp/stonks-manifest.json >/dev/null
              grep -q "\"current_version\"" /tmp/stonks-manifest.json
              grep -q "\"objects\"" /tmp/stonks-manifest.json

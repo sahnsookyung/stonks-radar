@@ -53,6 +53,22 @@ defmodule StonksBackend.JobsWorkerTest do
     assert result.reason == "llm_summary_translation_requires_policy_and_prompt_parity"
   end
 
+  test "shorts metadata jobs dispatch to metadata-only source discovery" do
+    job = %Oban.Job{
+      id: 128,
+      args: %{
+        "job_type" => "shorts.short_research_metadata",
+        "payload" => %{}
+      }
+    }
+
+    assert {:ok, result} = GenericWorker.perform(job)
+    assert result.status == "ready"
+    assert result.source_key == "short_research_metadata"
+    assert result.metadata_only == true
+    assert length(result.sources) >= 3
+  end
+
   test "unsupported jobs discard explicitly instead of reporting success" do
     job = %Oban.Job{id: 125, args: %{"job_type" => "legacy.unknown", "payload" => %{}}}
 

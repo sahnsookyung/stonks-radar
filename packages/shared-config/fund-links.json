@@ -1,0 +1,90 @@
+[
+  {
+    "key": "situational-awareness",
+    "human_name": "Leopold Aschenbrenner",
+    "fund_name": "Situational Awareness",
+    "primary_url": "https://hedgefollow.com/funds/Situational%2BAwareness",
+    "source_label": "HedgeFollow",
+    "note": "Outbound 13F tracker; not ingested or scraped."
+  },
+  {
+    "key": "berkshire-hathaway",
+    "human_name": "Warren Buffett",
+    "fund_name": "Berkshire Hathaway",
+    "primary_url": "https://hedgefollow.com/funds/Berkshire%2BHathaway",
+    "source_label": "HedgeFollow",
+    "note": "Outbound 13F tracker; not ingested or scraped."
+  },
+  {
+    "key": "duquesne-family-office",
+    "human_name": "Stanley Druckenmiller",
+    "fund_name": "Duquesne Family Office",
+    "primary_url": "https://hedgefollow.com/funds/Duquesne%2BFamily%2BOffice",
+    "source_label": "HedgeFollow",
+    "note": "Outbound 13F tracker; not ingested or scraped."
+  },
+  {
+    "key": "pershing-square-capital-management",
+    "human_name": "Bill Ackman",
+    "fund_name": "Pershing Square Capital Management",
+    "primary_url": "https://hedgefollow.com/funds/Pershing%2BSquare%2BCapital%2BManagement",
+    "source_label": "HedgeFollow",
+    "note": "Outbound 13F tracker; not ingested or scraped."
+  },
+  {
+    "key": "bridgewater-associates",
+    "human_name": "Ray Dalio",
+    "fund_name": "Bridgewater Associates",
+    "primary_url": "https://hedgefollow.com/funds/Bridgewater%2BAssociates",
+    "source_label": "HedgeFollow",
+    "note": "Outbound 13F tracker; not ingested or scraped."
+  },
+  {
+    "key": "renaissance-technologies",
+    "human_name": "Jim Simons",
+    "fund_name": "Renaissance Technologies",
+    "primary_url": "https://hedgefollow.com/funds/Renaissance%2BTechnologies",
+    "source_label": "HedgeFollow",
+    "note": "Outbound 13F tracker; not ingested or scraped."
+  },
+  {
+    "key": "blackrock",
+    "human_name": "BlackRock Inc.",
+    "fund_name": "BlackRock",
+    "primary_url": "https://hedgefollow.com/funds/BlackRock",
+    "source_label": "HedgeFollow",
+    "note": "Outbound 13F tracker; not ingested or scraped."
+  },
+  {
+    "key": "altimeter-capital-management",
+    "human_name": "Brad Gerstner",
+    "fund_name": "Altimeter Capital Management",
+    "primary_url": "https://hedgefollow.com/funds/Altimeter%2BCapital%2BManagement",
+    "source_label": "HedgeFollow",
+    "note": "Outbound 13F tracker; not ingested or scraped."
+  },
+  {
+    "key": "tci-fund-management",
+    "human_name": "Chris Hohn",
+    "fund_name": "TCI Fund Management",
+    "primary_url": "https://hedgefollow.com/funds/TCI%2BFund%2BManagement",
+    "source_label": "HedgeFollow",
+    "note": "Outbound 13F tracker; not ingested or scraped."
+  },
+  {
+    "key": "appaloosa",
+    "human_name": "David Tepper",
+    "fund_name": "Appaloosa",
+    "primary_url": "https://hedgefollow.com/funds/Appaloosa",
+    "source_label": "HedgeFollow",
+    "note": "Outbound 13F tracker; not ingested or scraped."
+  },
+  {
+    "key": "tudor-investment",
+    "human_name": "Paul Tudor Jones",
+    "fund_name": "Tudor Investment",
+    "primary_url": "https://hedgefollow.com/funds/Tudor%2BInvestment",
+    "source_label": "HedgeFollow",
+    "note": "Outbound 13F tracker; not ingested or scraped."
+  }
+]

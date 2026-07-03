@@ -40,6 +40,11 @@
 		file_server
 	}
 
+	@legacy_public_ops path_regexp ^/public/v[^/]+/(en|ko)/status\.json$
+	handle @legacy_public_ops {
+		respond 404
+	}
+
 	handle /public/* {
 		root * /srv/web
 		header Cache-Control "public, max-age=60, stale-while-revalidate=300"

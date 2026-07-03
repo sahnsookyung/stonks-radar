@@ -1,7 +1,7 @@
 defmodule StonksBackend.Jobs.Scheduler do
   @moduledoc "Elixir job-spec generator for Oban-backed scheduled backend components."
 
-  alias StonksBackend.{Jobs, News.SourceFetcher, Settings}
+  alias StonksBackend.{Jobs, News.SourceFetcher, Settings, Shorts}
 
   @market_history_window_key "rolling_3y"
 
@@ -12,6 +12,7 @@ defmodule StonksBackend.Jobs.Scheduler do
       snapshot_refresh_job_specs(opts) ++
         market_history_job_specs(opts) ++
         instrument_search_index_job_specs(opts) ++
+        shorts_job_specs(opts) ++
         news_fetch_job_specs(opts)
 
     ids = enqueue_specs(leading_specs, enqueue, [])
@@ -239,6 +240,49 @@ defmodule StonksBackend.Jobs.Scheduler do
           priority: 85,
           provider_key: "instrument_universe",
           run_after: DateTime.add(window_start, offset, :second)
+        }
+      ]
+    else
+      []
+    end
+  end
+
+  def shorts_job_specs(opts \\ []) do
+    settings = Keyword.get(opts, :settings)
+
+    if scheduler_enabled?(settings) and truthy_setting?(settings, :shorts_ingestion_enabled, true) do
+      now = now(opts)
+      trade_date = Shorts.default_trade_date(now)
+      date_key = Date.to_iso8601(trade_date)
+      short_interest_window = div(DateTime.to_unix(now), 86_400)
+
+      [
+        %{
+          job_type: "shorts.finra_daily_short_volume",
+          idempotency_key: "shorts:finra-daily-short-volume:#{date_key}",
+          payload: %{"date" => date_key},
+          job_group: "shorts",
+          priority: 70,
+          provider_key: "finra",
+          run_after: Shorts.finra_daily_publication_anchor(trade_date)
+        },
+        %{
+          job_type: "shorts.finra_short_interest_release",
+          idempotency_key: "shorts:finra-short-interest:#{short_interest_window}",
+          payload: %{},
+          job_group: "shorts",
+          priority: 75,
+          provider_key: "finra",
+          run_after: DateTime.add(now, 300, :second)
+        },
+        %{
+          job_type: "shorts.short_research_metadata",
+          idempotency_key: "shorts:short-research-metadata:#{short_interest_window}",
+          payload: %{},
+          job_group: "shorts",
+          priority: 90,
+          provider_key: "public_web",
+          run_after: DateTime.add(now, 600, :second)
         }
       ]
     else

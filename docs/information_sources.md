@@ -1,7 +1,7 @@
 # Information Sources
 
-This is the operator-facing source map for Stonks Radar. The public `/sources`
-page mirrors the high-level categories; this file records why each class exists.
+This is the operator-facing source map for Stonks Radar. Source and provider
+operations are admin-only; this file records why each source class exists.
 
 ## Provider Order
 
@@ -9,9 +9,9 @@ page mirrors the high-level categories; this file records why each class exists.
   secondary, `Financial Modeling Prep` tertiary. Keys stay server-side and the
   browser calls `/api/public/market/history`.
 - Short pressure: FINRA short interest for open positions, FINRA Reg SHO daily
-  short sale volume for monitored ticker flow. These require FINRA OAuth
-  credentials (`FINRA_API_CLIENT_ID` and `FINRA_API_CLIENT_SECRET`) or a legacy
-  pre-issued `FINRA_API_TOKEN`, and must never be conflated.
+  short sale volume for monitored ticker flow. Authenticated FINRA access uses
+  server-side configured credentials when available, and these signals must
+  never be conflated.
 - Filings: SEC EDGAR submissions/companyfacts for issuer, insider, and
   beneficial-ownership monitoring. The production user agent must include a
   working contact.

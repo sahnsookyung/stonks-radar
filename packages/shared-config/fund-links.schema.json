@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["key", "human_name", "fund_name", "primary_url", "source_label", "note"],
+    "properties": {
+      "key": {
+        "type": "string",
+        "pattern": "^[a-z0-9-]+$"
+      },
+      "human_name": {
+        "type": "string",
+        "minLength": 1
+      },
+      "fund_name": {
+        "type": "string",
+        "minLength": 1
+      },
+      "primary_url": {
+        "type": "string",
+        "format": "uri"
+      },
+      "source_label": {
+        "type": "string",
+        "minLength": 1
+      },
+      "note": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "additionalProperties": false
+  },
+  "minItems": 1
+}

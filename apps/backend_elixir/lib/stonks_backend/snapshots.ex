@@ -20,6 +20,8 @@ defmodule StonksBackend.Snapshots do
     "restricted_source_text",
     "secret"
   ]
+  @prohibited_public_object_types ["source_status"]
+  @prohibited_public_object_keys ["source_status"]
   @schema_by_object_type %{
     "calendar_upcoming" => "calendar_snapshot.schema.json",
     "correction_log" => "correction_log_snapshot.schema.json",
@@ -34,8 +36,7 @@ defmodule StonksBackend.Snapshots do
     "news_topic" => "news_topic_snapshot.schema.json",
     "reference_entity" => "reference_entity_snapshot.schema.json",
     "scenario_basket" => "scenario_basket_snapshot.schema.json",
-    "sector_page" => "sector_snapshot.schema.json",
-    "source_status" => "source_status_snapshot.schema.json"
+    "sector_page" => "sector_snapshot.schema.json"
   }
 
   def published_root, do: Settings.get(:published_snapshot_dir, "apps/web/public/public")
@@ -105,6 +106,9 @@ defmodule StonksBackend.Snapshots do
     }
 
     (seed_manifest["objects"] || %{})
+    |> Enum.reject(fn {object_key, _locale_paths} ->
+      prohibited_public_object_key?(object_key)
+    end)
     |> Enum.reduce_while({:ok, [], manifest}, fn {object_key, locale_paths},
                                                  {:ok, files, manifest} ->
       case write_template_locale_snapshots(
@@ -225,18 +229,9 @@ defmodule StonksBackend.Snapshots do
       |> ensure_map()
       |> maybe_put_existing("generated_label", iso8601(context.generated_at))
       |> update_snapshot_health(context)
+      |> StonksBackend.Shorts.enrich_home_snapshot_data()
       |> maybe_enrich_yield_curves()
     end)
-  end
-
-  defp apply_template_runtime_data(
-         %{"object_type" => "source_status"} = snapshot,
-         _object_key,
-         _locale,
-         _context
-       ) do
-    seed_status = if is_map(snapshot["data"]), do: snapshot["data"], else: %{}
-    Map.put(snapshot, "data", source_status_data(seed_status))
   end
 
   defp apply_template_runtime_data(
@@ -576,6 +571,7 @@ defmodule StonksBackend.Snapshots do
     else
       with {:ok, snapshot} <- read_snapshot(path),
            :ok <- validate_snapshot_envelope(snapshot, path),
+           :ok <- assert_not_prohibited_public_snapshot(snapshot, path),
            :ok <- assert_no_public_raw_private(snapshot, path),
            :ok <- validate_snapshot_schema(snapshot, path) do
         :ok
@@ -604,6 +600,9 @@ defmodule StonksBackend.Snapshots do
 
       !is_map(manifest["objects"]) or map_size(manifest["objects"]) == 0 ->
         {:error, "#{path} is not a valid snapshot manifest"}
+
+      prohibited_manifest_object_key(manifest) ->
+        {:error, "#{path} references prohibited public operational snapshot"}
 
       true ->
         :ok
@@ -655,6 +654,31 @@ defmodule StonksBackend.Snapshots do
         {:error, reason}
     end
   end
+
+  defp assert_not_prohibited_public_snapshot(snapshot, path) do
+    cond do
+      prohibited_public_object_type?(snapshot["object_type"]) ->
+        {:error, "#{path} contains prohibited public operational snapshot"}
+
+      prohibited_public_object_key?(snapshot["object_key"]) ->
+        {:error, "#{path} contains prohibited public operational snapshot"}
+
+      true ->
+        :ok
+    end
+  end
+
+  defp prohibited_manifest_object_key(manifest) do
+    manifest
+    |> Map.get("objects", %{})
+    |> Map.keys()
+    |> Enum.any?(&prohibited_public_object_key?/1)
+  end
+
+  defp prohibited_public_object_key?(key), do: to_string(key) in @prohibited_public_object_keys
+
+  defp prohibited_public_object_type?(type),
+    do: to_string(type) in @prohibited_public_object_types
 
   defp require_manifest_snapshot_file(snapshot_path, public_path, object_key, locale) do
     if File.regular?(snapshot_path) do
@@ -864,121 +888,6 @@ defmodule StonksBackend.Snapshots do
         "summary" => to_string(row["summary"] || "")
       }
     end)
-  end
-
-  defp source_status_data(seed_status) do
-    providers_by_key =
-      seed_status
-      |> Map.get("providers", [])
-      |> Enum.reduce(provider_status_rows(), &merge_seed_provider_status/2)
-
-    operations = operation_status_rows()
-
-    %{
-      "snapshot_age_minutes" => 0,
-      "degraded_mode" => degraded_operations?(operations),
-      "backend_required_for_public_pages" => false,
-      "providers" =>
-        providers_by_key
-        |> Map.values()
-        |> Enum.sort_by(& &1["provider_key"]),
-      "operations" => %{
-        "disk_watermark" => Map.get(operations, "disk_watermark", "unknown_until_monitor_runs"),
-        "snapshot_storage_status" => Map.get(operations, "snapshot_storage", "local_oci"),
-        "backup_status" =>
-          Map.get(operations, "backup", "local_encrypted_backups_not_configured"),
-        "restore_drill_at" => Map.get(operations, "restore_drill_at")
-      }
-    }
-  end
-
-  defp provider_status_rows do
-    """
-    select provider_key, provider_type, routing_mode, kill_switch_enabled,
-           current_period_usage, hard_limit, last_verified_at
-    from provider_budget
-    order by provider_key
-    """
-    |> Sql.all()
-    |> Map.new(fn row ->
-      provider_key = to_string(row["provider_key"])
-
-      {provider_key,
-       %{
-         "provider_key" => provider_key,
-         "provider_type" => to_string(row["provider_type"] || "unknown"),
-         "status" => if(truthy?(row["kill_switch_enabled"]), do: "kill_switch", else: "ready"),
-         "mode" => to_string(row["routing_mode"] || "FREE_ONLY"),
-         "last_verified_at" => row["last_verified_at"],
-         "warning" => provider_warning(row)
-       }}
-    end)
-  end
-
-  defp merge_seed_provider_status(provider, providers_by_key) when is_map(provider) do
-    key = provider["provider_key"]
-
-    if is_binary(key) and key != "" do
-      Map.update(providers_by_key, key, seed_provider_status(provider), fn existing ->
-        existing
-        |> maybe_put_non_ready_status(provider["status"])
-        |> maybe_put_missing("warning", provider["warning"])
-        |> maybe_put_missing("provider_type", provider["provider_type"])
-      end)
-    else
-      providers_by_key
-    end
-  end
-
-  defp merge_seed_provider_status(_provider, providers_by_key), do: providers_by_key
-
-  defp seed_provider_status(provider) do
-    %{
-      "provider_key" => provider["provider_key"],
-      "provider_type" => provider["provider_type"] || "unknown",
-      "status" => provider["status"] || "ready",
-      "mode" => provider["mode"] || "FREE_ONLY",
-      "last_verified_at" => provider["last_verified_at"],
-      "warning" => provider["warning"]
-    }
-  end
-
-  defp provider_warning(row) do
-    usage = to_int(row["current_period_usage"], 0)
-    hard_limit = to_int(row["hard_limit"], 0)
-
-    cond do
-      hard_limit > 0 and usage >= hard_limit -> "quota_exhausted"
-      hard_limit > 0 and usage / hard_limit >= 0.8 -> "quota_near_limit"
-      true -> nil
-    end
-  end
-
-  defp operation_status_rows do
-    "select status_key, status_value from operation_status"
-    |> Sql.all()
-    |> Map.new(fn row -> {to_string(row["status_key"]), row["status_value"]} end)
-  end
-
-  defp degraded_operations?(operations) do
-    Enum.any?(operations, fn {_key, value} ->
-      value in ["critical_warning", "degraded_read_only", "failed"]
-    end)
-  end
-
-  defp maybe_put_non_ready_status(existing, status) when status in [nil, "", "ready"],
-    do: existing
-
-  defp maybe_put_non_ready_status(existing, status), do: Map.put(existing, "status", status)
-
-  defp maybe_put_missing(existing, _key, value) when value in [nil, ""], do: existing
-
-  defp maybe_put_missing(existing, key, value) do
-    if existing[key] in [nil, ""] do
-      Map.put(existing, key, value)
-    else
-      existing
-    end
   end
 
   defp ensure_map(value) when is_map(value), do: value

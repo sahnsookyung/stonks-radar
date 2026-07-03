@@ -206,10 +206,6 @@
       "en": "public/v1/en/scenario-baskets/asia-semiconductor-risk.json",
       "ko": "public/v1/ko/scenario-baskets/asia-semiconductor-risk.json"
     },
-    "source_status": {
-      "en": "public/v1/en/status.json",
-      "ko": "public/v1/ko/status.json"
-    },
     "correction_log": {
       "en": "public/v1/en/corrections.json",
       "ko": "public/v1/ko/corrections.json"

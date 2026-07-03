@@ -48,8 +48,8 @@ means staging/prod deployment behavior is part of acceptance.
 | ID | Method and path | React callers | Status and body contract | Header, cookie, and cache contract | Fixture tier |
 | --- | --- | --- | --- | --- | --- |
 | `public.health` | `GET /api/public/health` | deploy smoke | `200`; JSON includes `status=ok`, `service=stonks-radar-api`, `public_read_path=snapshot-first`, ISO `time`. | JSON, common security/CORS headers, no cookies. | L0 |
-| `public.status` | `GET /api/public/status` | source/status ops | `200`; JSON includes `public_pages_depend_on_backend=false`, `snapshot_storage=local_oci`, `metrics` keys for snapshot age, dead letters, quotas, circuits, stale series, conflicts. | JSON, common headers, no cookies; fixture must cover missing manifest and present manifest. | L1 |
-| `public.provider_status` | `GET /api/public/provider-status` | public diagnostics | `200`; JSON includes only public market-data provider entries. | JSON, common headers, no cookies; no private provider secrets. | L1 |
+| `public.status_removed` | `GET /api/public/status` | none | `404`; operational status moved to authenticated admin surfaces. | Common headers, no cookies. | L0 |
+| `public.provider_status_removed` | `GET /api/public/provider-status` | none | `404`; provider/source diagnostics moved to authenticated admin surfaces. | Common headers, no cookies. | L0 |
 | `public.snapshot_manifest_proxy` | `GET /api/public/snapshot-manifest-proxy` | deploy smoke | `200`; JSON exactly identifies `/public/latest/manifest.json` and `local_oci`. | JSON, common headers, no cookies. | L0 |
 | `public.trump_disclosures_summary` | `GET /api/public/trump-disclosures/summary?limit=80` | `FundsTrackerPage`, `TrumpFilingsPage` | `200`; preserves disclosure summary envelope and limit bounds `1..250`; validation errors keep the legacy-compatible shape until a deliberate frontend change is accepted. | JSON, common headers, no cookies. | L1 |
 | `public.filings` | `GET /api/public/filings` | `TickerDetailPage` | `200`; supports `person`, `ticker`, `source=OGE|SEC`, `limit=1..250`; returns filings envelope. | JSON, common headers, no cookies. | L1 |
@@ -136,10 +136,9 @@ Run these checks before staging or production promotion:
    `APP_ENV=production|prod`. Base Compose must not provide development
    fallbacks for those secrets.
 3. `api-elixir` must report healthy through `/api/public/health`.
-4. Queue and snapshot readiness remain acceptance checks through
-   `/api/public/status`: snapshot age, dead-letter jobs, quota-wait jobs, open
-   provider circuits, stale series, and conflicts must be reviewed during
-   staging and production go/no-go.
+4. Queue, source, provider, and snapshot readiness are admin-only acceptance
+   checks through `/admin/data-sources`, `/admin/system-config`, and
+   authenticated `/api/admin/*` endpoints.
 
 ## Production Acceptance Criteria
 

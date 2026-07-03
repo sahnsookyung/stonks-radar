@@ -9,6 +9,6 @@ describe("ErrorState", () => {
 
     expect(screen.getByRole("heading", { name: /Public data passed/i })).toBeInTheDocument();
     expect(screen.getByText("home")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Open status page/i })).toHaveAttribute("href", "/en/status");
+    expect(screen.getByRole("link", { name: /Open admin system status/i })).toHaveAttribute("href", "/admin/system-config");
   });
 });

@@ -207,8 +207,8 @@ smoke() {
   curl -fsS --resolve "$public_hostname:443:127.0.0.1" "https://$public_hostname/" >/dev/null
   curl -fsS --resolve "$public_hostname:443:127.0.0.1" "https://$public_hostname/api/public/health" \
     | grep -q '"status":"ok"'
-  curl -fsS --resolve "$public_hostname:443:127.0.0.1" "https://$public_hostname/api/public/status" \
-    | grep -q '"status":"ok"'
+  test "$(curl -sS -o /dev/null -w '%{http_code}' --resolve "$public_hostname:443:127.0.0.1" "https://$public_hostname/api/public/status")" = "404"
+  test "$(curl -sS -o /dev/null -w '%{http_code}' --resolve "$public_hostname:443:127.0.0.1" "https://$public_hostname/api/public/provider-status")" = "404"
   curl -fsS --resolve "$public_hostname:443:127.0.0.1" "https://$public_hostname/public/latest/manifest.json" \
     | tee /tmp/stonks-manifest.json >/dev/null
   grep -q '"current_version"' /tmp/stonks-manifest.json

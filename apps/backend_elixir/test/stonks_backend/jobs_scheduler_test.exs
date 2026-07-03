@@ -23,6 +23,7 @@ defmodule StonksBackend.JobsSchedulerTest do
         news_gdelt_enabled: false,
         news_public_health_enabled: true,
         gdelt_bulk_runtime_enabled: false,
+        shorts_ingestion_enabled: true,
         market_data_scheduled_refresh_enabled: true,
         market_data_refresh_symbol_list: [],
         market_data_refresh_spread_minutes: 240,
@@ -180,6 +181,7 @@ defmodule StonksBackend.JobsSchedulerTest do
             snapshot_refresh_seconds: 0,
             news_source_refresh_seconds: 0,
             news_pipeline_runtime_enabled: true,
+            shorts_ingestion_enabled: false,
             trump_disclosure_sec_poll_seconds: 0,
             trump_disclosure_oge_poll_seconds: 0,
             instrument_universe_refresh_seconds: 0
@@ -209,6 +211,30 @@ defmodule StonksBackend.JobsSchedulerTest do
     assert calls
            |> Enum.drop(1)
            |> Enum.all?(fn {_job_type, depends_on} -> is_binary(depends_on) end)
+  end
+
+  test "shorts specs schedule FINRA daily files after the official publication window" do
+    specs =
+      Scheduler.shorts_job_specs(now: ~U[2026-07-02 21:59:00Z], settings: settings())
+
+    by_type = Map.new(specs, &{&1.job_type, &1})
+
+    daily = by_type["shorts.finra_daily_short_volume"]
+    assert daily.idempotency_key == "shorts:finra-daily-short-volume:2026-07-01"
+    assert daily.payload == %{"date" => "2026-07-01"}
+    assert daily.job_group == "shorts"
+    assert daily.provider_key == "finra"
+    assert daily.run_after == ~U[2026-07-01 22:30:00Z]
+
+    short_interest = by_type["shorts.finra_short_interest_release"]
+    assert short_interest.job_group == "shorts"
+    assert short_interest.provider_key == "finra"
+    assert short_interest.run_after == ~U[2026-07-02 22:04:00Z]
+
+    metadata = by_type["shorts.short_research_metadata"]
+    assert metadata.job_group == "shorts"
+    assert metadata.provider_key == "public_web"
+    assert metadata.run_after == ~U[2026-07-02 22:09:00Z]
   end
 
   test "market history specs stagger rolling refreshes after US close" do

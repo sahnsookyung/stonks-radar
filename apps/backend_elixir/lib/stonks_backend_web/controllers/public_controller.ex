@@ -1,7 +1,7 @@
 defmodule StonksBackendWeb.PublicController do
   use StonksBackendWeb, :controller
 
-  alias StonksBackend.{MarketData, Providers, Snapshots, Sources, Sql}
+  alias StonksBackend.{MarketData, Sources, Sql}
 
   @disclosure_sources ["OGE", "SEC"]
   @public_search_limit 20
@@ -17,52 +17,6 @@ defmodule StonksBackendWeb.PublicController do
       time: DateTime.utc_now() |> DateTime.to_iso8601()
     })
   end
-
-  def status(conn, _params) do
-    manifest = Snapshots.manifest_status()
-    db_snapshot_age = db_snapshot_age()
-
-    metrics = %{
-      snapshot_age_minutes: (manifest && manifest.age_minutes) || db_snapshot_age,
-      published_file_snapshot_age_minutes: manifest && manifest.age_minutes,
-      published_file_generated_at: manifest && manifest.generated_at,
-      db_snapshot_age_minutes: db_snapshot_age,
-      dead_letter_jobs:
-        Sql.scalar("select count(*) from job_queue where status = 'dead_letter'", [], 0),
-      quota_wait_jobs:
-        Sql.scalar("select count(*) from job_queue where status = 'quota_wait'", [], 0),
-      open_provider_circuits:
-        Sql.scalar(
-          "select count(*) from provider_runtime_state where circuit_state = 'open'",
-          [],
-          0
-        ),
-      stale_series_count:
-        Sql.scalar(
-          "select count(*) from latest_series_state where freshness_status = 'stale'",
-          [],
-          0
-        ),
-      conflict_count:
-        Sql.scalar(
-          "select count(*) from latest_series_state where conflict_present = true",
-          [],
-          0
-        )
-    }
-
-    conn
-    |> put_public_status_headers()
-    |> json(%{
-      status: "ok",
-      public_pages_depend_on_backend: false,
-      snapshot_storage: "local_oci",
-      metrics: metrics
-    })
-  end
-
-  def provider_status(conn, _params),
-    do: conn |> put_public_status_headers() |> json(Providers.public_status())
 
   def snapshot_manifest_proxy(conn, _params) do
     conn
@@ -177,18 +131,6 @@ defmodule StonksBackendWeb.PublicController do
         end
     end
   end
-
-  defp db_snapshot_age do
-    "select extract(epoch from now() - max(generated_at))/60 from publication_snapshot"
-    |> Sql.scalar([], 0)
-    |> json_number(0)
-  end
-
-  defp json_number(%Decimal{} = decimal, default),
-    do: decimal |> Decimal.to_float() |> json_number(default)
-
-  defp json_number(value, _default) when is_integer(value) or is_float(value), do: value
-  defp json_number(_value, default), do: default
 
   defp put_resp_headers(conn, headers),
     do: Enum.reduce(headers, conn, fn {key, value}, acc -> put_resp_header(acc, key, value) end)

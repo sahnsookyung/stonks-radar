@@ -21,7 +21,6 @@ export function ErrorState({ error }: Readonly<{ error: unknown }>) {
 
 export function SnapshotExpiredState({ error }: Readonly<{ error: SnapshotHardExpiredError }>) {
   const isKo = globalThis.window?.location.pathname.startsWith("/ko") ?? false;
-  const statusHref = isKo ? "/ko/status" : "/en/status";
   return (
     <section className="mx-auto grid min-h-[60vh] max-w-2xl place-items-center px-4 py-10">
       <div className="w-full rounded-md border border-danger/40 bg-danger/10 p-5 text-sm text-ink shadow-soft">
@@ -48,9 +47,9 @@ export function SnapshotExpiredState({ error }: Readonly<{ error: SnapshotHardEx
         </dl>
         <a
           className="mt-5 inline-flex min-h-11 items-center rounded-md border border-line bg-panel px-4 font-semibold text-cyan hover:border-cyan"
-          href={statusHref}
+          href="/admin/system-config"
         >
-          {isKo ? "상태 페이지 보기" : "Open status page"}
+          {isKo ? "관리자 시스템 상태 보기" : "Open admin system status"}
         </a>
       </div>
     </section>
