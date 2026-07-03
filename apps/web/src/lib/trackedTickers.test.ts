@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  entityDisplayName,
   getTrackedTicker,
   relatedTrackedEntities,
   resolveTrackedEntity,
@@ -36,6 +37,9 @@ describe("tracked entity registry helpers", () => {
   });
 
   it("matches ticker filters by symbol and route key", () => {
+    expect(tickerMatchesFilterValue("NVDA", undefined)).toBe(true);
+    expect(tickerMatchesFilterValue("NVDA", "")).toBe(true);
+    expect(tickerMatchesFilterValue("UNKNOWN", "UNKNOWN")).toBe(true);
     expect(tickerMatchesFilterValue("005930.KS", "005930_KS")).toBe(true);
     expect(tickerMatchesFilterValue("RKLB", "RKLB")).toBe(true);
     expect(tickerMatchesFilterValue("NVDA", "RKLB")).toBe(false);
@@ -44,5 +48,15 @@ describe("tracked entity registry helpers", () => {
   it("searches configured tickers by company aliases", () => {
     expect(searchTrackedTickers("rocket").map((ticker) => ticker.symbol)).toContain("RKLB");
     expect(searchTrackedTickers("semiconductor").map((ticker) => ticker.symbol)).toContain("NVDA");
+    expect(searchTrackedTickers("", 2)).toHaveLength(2);
+    expect(searchTrackedTickers("rocket", -1)).toHaveLength(0);
+    expect(searchTrackedTickers("no such ticker")).toHaveLength(0);
+  });
+
+  it("localizes tracked entity display names", () => {
+    const rklb = getTrackedTicker("RKLB");
+    expect(rklb).toBeDefined();
+    expect(entityDisplayName(rklb!, "en")).toBe(rklb!.name);
+    expect(entityDisplayName(rklb!, "ko")).toBe(rklb!.nameKo);
   });
 });

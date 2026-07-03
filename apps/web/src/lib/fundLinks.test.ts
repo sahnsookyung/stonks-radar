@@ -36,7 +36,14 @@ describe("fund links registry", () => {
   });
 
   it("rejects missing or unsafe links", () => {
+    expect(() => validateFundLinks("not a registry")).toThrow("must be an array");
+    expect(() => validateFundLinks([null])).toThrow("entry 0 must be an object");
+    expect(() => validateFundLinks([[fundLinks[0]]])).toThrow("entry 0 must be an object");
+    expect(() => validateFundLinks([{ ...fundLinks[0], key: "Bad Key" }])).toThrow("invalid key");
     expect(() => validateFundLinks([{ ...fundLinks[0], primary_url: "http://example.com" }])).toThrow(
+      "invalid primary_url",
+    );
+    expect(() => validateFundLinks([{ ...fundLinks[0], primary_url: "https://[::1" }])).toThrow(
       "invalid primary_url",
     );
     expect(() => validateFundLinks([{ ...fundLinks[0], human_name: "" }])).toThrow("missing human_name");
