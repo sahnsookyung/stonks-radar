@@ -17,7 +17,7 @@ export function getFundLinkByKey(key: string) {
 
 export function validateFundLinks(value: unknown): FundLinkEntry[] {
   if (!Array.isArray(value)) {
-    throw new Error("fund links registry must be an array");
+    throw new TypeError("fund links registry must be an array");
   }
 
   const seen = new Set<string>();
