@@ -7,6 +7,7 @@ import { ErrorState, LoadingState } from "../components/LoadingState";
 import { SnapshotBanner } from "../components/SnapshotBanner";
 import { useLocale } from "../lib/locale";
 import { snapshotQueries } from "../lib/snapshots";
+import { tickerMatchesFilterValue, trackedTickerFilterOptions } from "../lib/trackedTickers";
 
 type TimeRange = "all" | "24h" | "7d" | "30d";
 
@@ -108,6 +109,7 @@ export function NewsPage() { // NOSONAR - filter state, URL sync, and snapshot r
     return <ErrorState error={newsQuery.error} />;
 
   const filters = newsQuery.data.data.filters;
+  const tickerOptions = trackedTickerFilterOptions(filters.tickers);
   const activeFilterCount = [
     query.trim(),
     ticker,
@@ -137,7 +139,7 @@ export function NewsPage() { // NOSONAR - filter state, URL sync, and snapshot r
           {isKo ? "글로벌 뉴스 레이더" : "Global News Radar"}
         </div>
         <h1 className="safe-text mt-2 text-3xl font-bold sm:text-4xl">
-          {isKo ? "출처 연결 이벤트 뉴스" : "Source-Linked Event News"}
+          {isKo ? "출처 연결 뉴스 레이더" : "Source-Linked News Radar"}
         </h1>
         <p className="safe-text mt-3 max-w-4xl text-sm leading-6 text-muted sm:text-base">
           {isKo
@@ -199,7 +201,7 @@ export function NewsPage() { // NOSONAR - filter state, URL sync, and snapshot r
             label={isKo ? "티커" : "Ticker"}
             value={ticker}
             onChange={setTicker}
-            options={filters.tickers}
+            options={tickerOptions}
             allLabel={isKo ? "모든 티커" : "All tickers"}
           />
           <FilterSelect
@@ -257,7 +259,7 @@ export function NewsPage() { // NOSONAR - filter state, URL sync, and snapshot r
 
       <section className="grid min-w-0 gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-bold">{isKo ? "이벤트" : "Events"}</h2>
+          <h2 className="text-xl font-bold">{isKo ? "출처 연결 항목" : "Source-linked items"}</h2>
           <span className="badge border-line bg-panelAlt text-muted">
             {isKo
               ? `${filteredEvents.length}개 표시`
@@ -272,8 +274,8 @@ export function NewsPage() { // NOSONAR - filter state, URL sync, and snapshot r
         {filteredEvents.length === 0 && (
           <div className="panel border-dashed p-5 text-sm leading-6 text-muted">
             {isKo
-              ? "선택한 필터와 일치하는 뉴스 이벤트가 없습니다."
-              : "No news events match the selected filters."}
+              ? "선택한 필터와 일치하는 출처 연결 항목이 없습니다."
+              : "No source-linked items match the selected filters."}
           </div>
         )}
       </section>
@@ -362,9 +364,7 @@ function matchesKeyword(haystack: string, value: string) {
 
 function matchesTicker(event: NewsEventListItem, value: string) {
   if (!value) return true;
-  return event.tickers.some(
-    (ticker) => ticker.symbol.toUpperCase() === value.toUpperCase(),
-  );
+  return event.tickers.some((ticker) => tickerMatchesFilterValue(ticker.symbol, value));
 }
 
 function matchesRegion(event: NewsEventListItem, value: string) {

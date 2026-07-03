@@ -16,6 +16,15 @@
     "marketDirection": {
       "enum": ["bullish", "bearish", "mixed", "unclear"]
     },
+    "itemKind": {
+      "enum": ["source_discovery", "event_candidate", "reviewed_event", "filing_update", "official_update"]
+    },
+    "claimLevel": {
+      "enum": ["source_only", "clustered_candidate", "reviewed", "published"]
+    },
+    "evidenceMatchStatus": {
+      "enum": ["matched", "weak_match", "mismatch", "unverified"]
+    },
     "regionRelation": {
       "enum": [
         "source_region",
@@ -92,6 +101,9 @@
         "title",
         "summary",
         "event_type",
+        "item_kind",
+        "claim_level",
+        "evidence_match_status",
         "first_seen_at",
         "last_seen_at",
         "published_at",
@@ -112,6 +124,9 @@
         "title": { "type": "string" },
         "summary": { "type": "string" },
         "event_type": { "type": "string" },
+        "item_kind": { "$ref": "#/$defs/itemKind" },
+        "claim_level": { "$ref": "#/$defs/claimLevel" },
+        "evidence_match_status": { "$ref": "#/$defs/evidenceMatchStatus" },
         "first_seen_at": { "type": "string" },
         "last_seen_at": { "type": "string" },
         "published_at": { "type": "string" },

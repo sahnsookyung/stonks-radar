@@ -26,7 +26,8 @@ defmodule StonksBackend.News do
         max_documents: max_documents,
         cycle_budget: Settings.get(:gdelt_doc_cycle_budget, 10),
         provider_cap: Settings.get(:gdelt_doc_max_records, 250),
-        cycle_index: cycle_index
+        cycle_index: cycle_index,
+        timespan: gdelt_doc_timespan(payload)
       )
 
     cond do
@@ -70,7 +71,12 @@ defmodule StonksBackend.News do
           Gdelt.fetch_doc_documents(summary,
             endpoint:
               Settings.get(:gdelt_doc_api_url, "https://api.gdeltproject.org/api/v2/doc/doc"),
-            max_documents: max_documents
+            max_documents: max_documents,
+            title_fetch_limit: Settings.get(:gdelt_title_fetch_limit, 20),
+            title_fetch_timeout_seconds: Settings.get(:gdelt_title_fetch_timeout_seconds, 8),
+            title_fetch_max_bytes: Settings.get(:gdelt_title_fetch_max_bytes, 131_072),
+            title_per_host_interval_seconds:
+              Settings.get(:gdelt_title_per_host_interval_seconds, 2)
           )
 
         persisted = Sources.persist_metadata_documents("gdelt", documents)
@@ -165,6 +171,7 @@ defmodule StonksBackend.News do
   def translate_summary(payload), do: Pipeline.translate_summary(payload)
   def rebuild_search_index(payload), do: Pipeline.rebuild_search_index(payload)
   def backfill_source(payload), do: Pipeline.backfill_source(payload)
+  def prune_metadata(payload), do: Pipeline.prune_metadata(payload)
 
   defp record_source_health(source_key, status, details) do
     status = normalize_health_status(status)
@@ -226,6 +233,9 @@ defmodule StonksBackend.News do
       query_pack: summary.query_pack,
       query_count: summary.query_count,
       candidate_records_per_query: summary.candidate_records_per_query,
+      timespan: Map.get(summary, :timespan),
+      query_buckets: Map.get(summary, :query_buckets, []),
+      coverage_window: "36h",
       elixir_component: "gdelt_query_pack"
     }
   end
@@ -236,6 +246,19 @@ defmodule StonksBackend.News do
 
   defp gdelt_enabled? do
     Settings.truthy?(Settings.get(:news_gdelt_enabled, "false"))
+  end
+
+  defp gdelt_doc_timespan(payload) do
+    cond do
+      is_binary(payload["timespan"]) and String.trim(payload["timespan"]) != "" ->
+        payload["timespan"]
+
+      payload["mode"] in ["backfill", "manual_backfill"] or payload["backfill"] == true ->
+        Settings.get(:gdelt_doc_backfill_timespan, "7d")
+
+      true ->
+        Settings.get(:gdelt_doc_timespan, "36h")
+    end
   end
 
   defp current_cycle_index do

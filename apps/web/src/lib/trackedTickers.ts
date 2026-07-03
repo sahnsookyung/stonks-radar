@@ -9,6 +9,12 @@ export interface TrackedTicker extends TrackedEntity {
   tradingViewSymbol: string;
 }
 
+export interface TickerFilterOption {
+  key: string;
+  label: string;
+  count: number;
+}
+
 export const trackedEntities: TrackedEntity[] = generatedTrackedEntities.map((entity) => ({ ...entity }));
 
 export const trackedTickers: TrackedTicker[] = trackedEntities.filter(isTickerEntity);
@@ -55,6 +61,39 @@ export function getTrackedTicker(symbol: string | undefined): TrackedTicker | un
   return entity && isTickerEntity(entity) ? entity : undefined;
 }
 
+export function trackedTickerFilterOptions(options: TickerFilterOption[] = []): TickerFilterOption[] {
+  const snapshotOptions = new Map(options.map((option) => [normalizeTickerSymbol(option.key), option]));
+  const merged = trackedTickers.map((ticker) => {
+    const existing = snapshotOptions.get(normalizeTickerSymbol(ticker.symbol));
+    return {
+      key: ticker.symbol,
+      label: existing?.label || ticker.name,
+      count: existing?.count ?? 0
+    };
+  });
+  return merged.sort((left, right) => {
+    const countDelta = right.count - left.count;
+    return countDelta || left.key.localeCompare(right.key);
+  });
+}
+
+export function tickerMatchesFilterValue(symbol: string | undefined, value: string | undefined): boolean {
+  const ticker = getTrackedTicker(value);
+  const normalizedSymbol = normalizeTickerSymbol(symbol);
+  const normalizedValue = normalizeTickerSymbol(value);
+  if (!normalizedValue) return true;
+  if (!ticker) return normalizedSymbol === normalizedValue;
+  return normalizedSymbol === normalizeTickerSymbol(ticker.symbol) || normalizedSymbol === normalizeTickerSymbol(ticker.routeKey);
+}
+
+export function searchTrackedTickers(query: string, limit = trackedTickers.length): TrackedTicker[] {
+  const normalizedQuery = query.trim().toLowerCase();
+  const matches = normalizedQuery
+    ? trackedTickers.filter((ticker) => tickerSearchText(ticker).includes(normalizedQuery))
+    : trackedTickers;
+  return matches.slice(0, Math.max(0, limit));
+}
+
 export function relatedTrackedEntities(entity: TrackedEntity, limit = 10): TrackedEntity[] {
   const symbols = new Set<string>(entity.related);
   for (const item of trackedEntities) {
@@ -80,4 +119,19 @@ export function entityDisplayName(entity: TrackedEntity, locale: "en" | "ko") {
 
 function isTickerEntity(entity: TrackedEntity): entity is TrackedTicker {
   return entity.routeKind === "ticker" && Boolean(entity.tradingViewSymbol);
+}
+
+function tickerSearchText(ticker: TrackedTicker): string {
+  return [
+    ticker.symbol,
+    ticker.displaySymbol,
+    ticker.routeKey,
+    ticker.name,
+    ticker.nameKo,
+    ticker.exchange,
+    ticker.sector,
+    ticker.industry,
+    ...ticker.aliases,
+    ...ticker.tags
+  ].join(" ").toLowerCase();
 }

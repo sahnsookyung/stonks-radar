@@ -17,11 +17,19 @@ export function NewsEventCard({
   const displayedSources = (primarySources.length ? primarySources : event.source_links)
     .filter((source) => safeExternalUrl(source.url))
     .slice(0, 3);
+  const claimLevel = event.claim_level ?? "source_only";
+  const evidenceMatchStatus = event.evidence_match_status ?? "unverified";
+  const isSourceOnly = claimLevel === "source_only";
   return (
     <article className="panel min-w-0 p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <NewsScoreBadge label={locale === "ko" ? "속보" : "Breaking"} value={event.breaking_score} />
+        <NewsScoreBadge
+          label={isSourceOnly ? (locale === "ko" ? "발견" : "Discovery") : (locale === "ko" ? "속보" : "Breaking")}
+          value={event.breaking_score}
+        />
         <NewsScoreBadge label={locale === "ko" ? "신뢰" : "Trust"} value={event.trust_score} />
+        <span className="badge border-line bg-panelAlt text-muted">{claimLevelLabel(claimLevel, locale)}</span>
+        <span className="badge border-line bg-panelAlt text-muted">{evidenceMatchLabel(evidenceMatchStatus, locale)}</span>
         <span className="badge border-line bg-panelAlt text-muted">{event.severity}</span>
         <span className="badge border-line bg-panelAlt text-muted">{Math.round(event.confidence * 100)}%</span>
       </div>
@@ -93,6 +101,28 @@ export function SourcePill({ source }: Readonly<{ source: NewsSourceRef }>) {
       <ExternalLink className="h-3.5 w-3.5 shrink-0" />
     </a>
   );
+}
+
+export function claimLevelLabel(level: string, locale: "en" | "ko") {
+  const labels: Record<string, [string, string]> = {
+    source_only: ["source only", "출처 전용"],
+    clustered_candidate: ["candidate", "후보"],
+    reviewed: ["reviewed", "검토됨"],
+    published: ["published", "게시됨"]
+  };
+  const [en, ko] = labels[level] ?? [level, level];
+  return locale === "ko" ? ko : en;
+}
+
+export function evidenceMatchLabel(status: string, locale: "en" | "ko") {
+  const labels: Record<string, [string, string]> = {
+    matched: ["matched", "일치"],
+    weak_match: ["weak match", "약한 일치"],
+    mismatch: ["mismatch", "불일치"],
+    unverified: ["unverified", "미검증"]
+  };
+  const [en, ko] = labels[status] ?? [status, status];
+  return locale === "ko" ? ko : en;
 }
 
 function trustTierLabel(tier: string) {

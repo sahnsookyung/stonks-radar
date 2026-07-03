@@ -2,6 +2,7 @@ defmodule StonksBackend.News.SourceFetcherTest do
   use ExUnit.Case, async: true
 
   alias StonksBackend.News.SourceFetcher
+  alias StonksBackend.TrackedTickers
 
   test "RSS feeds are parsed into metadata-only source documents" do
     xml = """
@@ -62,6 +63,29 @@ defmodule StonksBackend.News.SourceFetcherTest do
     assert sec_profile.rate_limit_provider_key == "sec_edgar"
     assert google_profile.default_query =~ "NVIDIA Corporation"
     assert google_profile.rate_limit_provider_key == "google_news_rss"
+  end
+
+  test "every configured ticker has runtime discovery and source profiles" do
+    profiles = SourceFetcher.all_profiles()
+
+    for ticker <- TrackedTickers.ticker_entities() do
+      symbol = ticker["symbol"]
+      symbol_key = symbol |> String.replace(~r/[^A-Za-z0-9]+/, "_") |> String.trim("_")
+
+      assert SourceFetcher.profile_for("google_news_#{symbol_key}"),
+             "#{symbol} should have a Google News discovery profile"
+
+      assert SourceFetcher.profile_for("yahoo_finance_#{symbol_key}"),
+             "#{symbol} should have a Yahoo Finance discovery profile"
+
+      source_keys =
+        profiles
+        |> Map.values()
+        |> Enum.filter(&(&1[:symbol] == symbol))
+        |> Enum.map(& &1.source_key)
+
+      assert source_keys != [], "#{symbol} should have at least one source profile"
+    end
   end
 
   test "Google News RSS fetch uses bounded query metadata and injected request function" do

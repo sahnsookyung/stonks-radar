@@ -1,7 +1,7 @@
 defmodule StonksBackend.News.Pipeline do
   @moduledoc "Metadata-only news normalization, classification, clustering, and scoring."
 
-  alias StonksBackend.{News.SourceFetcher, Sql}
+  alias StonksBackend.{News.SourceFetcher, Settings, Sql, TrackedTickers}
 
   @region_keywords %{
     "USA" => ["united states", "u.s.", "us ", "federal reserve", "washington", "sec"],
@@ -90,6 +90,51 @@ defmodule StonksBackend.News.Pipeline do
   def rebuild_search_index(payload), do: ok_stage("news.rebuild_search_index", payload)
   def backfill_source(payload), do: ok_stage("news.backfill_source", payload)
 
+  def prune_metadata(payload) do
+    discovery_days =
+      payload
+      |> Map.get("discovery_retention_days", Settings.get(:news_discovery_retention_days, 30))
+      |> to_int()
+      |> max(1)
+
+    metadata_days =
+      payload
+      |> Map.get("metadata_retention_days", Settings.get(:news_metadata_retention_days, 90))
+      |> to_int()
+      |> max(discovery_days)
+
+    event_days =
+      payload
+      |> Map.get("event_retention_days", Settings.get(:news_event_retention_days, 365))
+      |> to_int()
+      |> max(metadata_days)
+
+    weak_documents_deleted =
+      prune_source_documents(
+        discovery_days,
+        "coalesce(d.metadata->>'discovery_only', 'false') = 'true'"
+      )
+
+    metadata_documents_deleted =
+      prune_source_documents(
+        metadata_days,
+        "coalesce(d.metadata->>'discovery_only', 'false') <> 'true'"
+      )
+
+    archived_candidate_events = archive_old_candidate_events(event_days)
+
+    {:ok,
+     %{
+       status: "ready",
+       weak_discovery_documents_deleted: weak_documents_deleted,
+       metadata_documents_deleted: metadata_documents_deleted,
+       candidate_events_archived: archived_candidate_events,
+       discovery_retention_days: discovery_days,
+       metadata_retention_days: metadata_days,
+       event_retention_days: event_days
+     }}
+  end
+
   def normalize_documents(payload) do
     rows = news_documents(limit(payload), require_unclassified: false)
     now = now_iso8601()
@@ -130,7 +175,10 @@ defmodule StonksBackend.News.Pipeline do
             "news_classified_at" => now,
             "news_entities" => classification.entities,
             "news_regions" => classification.regions,
-            "news_topics" => classification.topics
+            "news_topics" => classification.topics,
+            "news_item_kind" => news_item_kind(row),
+            "news_claim_level" => news_claim_level(row),
+            "news_evidence_match_status" => evidence_match_status(classification)
           },
           "classified"
         )
@@ -246,8 +294,8 @@ defmodule StonksBackend.News.Pipeline do
 
   def classify_entities(document) do
     profiles =
-      SourceFetcher.all_profiles()
-      |> Map.values()
+      TrackedTickers.ticker_profiles()
+      |> Enum.concat(SourceFetcher.all_profiles() |> Map.values())
       |> Enum.filter(&present?(&1[:symbol]))
       |> Enum.uniq_by(&String.upcase(to_string(&1[:symbol])))
 
@@ -260,10 +308,11 @@ defmodule StonksBackend.News.Pipeline do
     profiles
     |> Enum.flat_map(fn profile ->
       symbol = profile[:symbol] |> to_string() |> String.upcase()
-      official = host != "" and String.contains?(host, symbol |> String.downcase())
+      official = official_host?(host, profile)
       source_match = present?(source_symbol) and String.upcase(to_string(source_symbol)) == symbol
       cashtag? = Regex.match?(~r/(?<![A-Z0-9])\$#{Regex.escape(symbol)}(?![A-Z0-9])/i, raw_text)
       bare_ticker? = Regex.match?(~r/(?<![A-Z0-9])#{Regex.escape(symbol)}(?![A-Z0-9])/, raw_text)
+      company_match? = Enum.any?(company_terms(profile), &keyword_matches?(text, &1))
 
       sector_context? =
         Enum.any?(
@@ -272,13 +321,13 @@ defmodule StonksBackend.News.Pipeline do
         )
 
       cond do
-        source_match or official ->
+        source_match or official or company_match? ->
           [
             %{
               symbol: symbol,
               relationship: "direct_subject",
-              confidence: 0.92,
-              reason: "source_profile"
+              confidence: if(company_match?, do: 0.82, else: 0.92),
+              reason: direct_subject_reason(source_match, official, company_match?)
             }
           ]
 
@@ -464,6 +513,48 @@ defmodule StonksBackend.News.Pipeline do
     _ -> :error
   end
 
+  defp prune_source_documents(retention_days, condition_sql) do
+    Sql.scalar(
+      """
+      with deleted as (
+        delete from source_document d
+        where d.acquisition_mode = 'news_metadata'
+          and d.retention_class = 'metadata_only'
+          and d.public_allowed = false
+          and not exists (
+            select 1 from news_event_document ed where ed.document_id = d.id
+          )
+          and coalesce(d.source_published_at, d.fetched_at, d.created_at) <
+            now() - ($1::int * interval '1 day')
+          and #{condition_sql}
+        returning 1
+      )
+      select count(*) from deleted
+      """,
+      [retention_days],
+      0
+    )
+  end
+
+  defp archive_old_candidate_events(retention_days) do
+    Sql.scalar(
+      """
+      with archived as (
+        update news_event_cluster
+        set status = 'archived',
+            updated_at = now()
+        where status = 'active'
+          and review_state = 'candidate'
+          and last_seen_at < now() - ($1::int * interval '1 day')
+        returning 1
+      )
+      select count(*) from archived
+      """,
+      [retention_days],
+      0
+    )
+  end
+
   defp document_payload(row) do
     metadata = metadata(row)
 
@@ -483,6 +574,55 @@ defmodule StonksBackend.News.Pipeline do
       "entities" => metadata["news_entities"] || [],
       "source_key" => row["source_key"] || metadata["source_key"]
     }
+  end
+
+  defp news_item_kind(row) do
+    metadata = metadata(row)
+    tier = to_string(metadata["trust_tier"])
+
+    cond do
+      metadata["discovery_only"] == true or metadata["discovery_only"] == "true" ->
+        "source_discovery"
+
+      String.starts_with?(tier, "T0_") ->
+        "official_update"
+
+      String.starts_with?(tier, "T1_") ->
+        "filing_update"
+
+      true ->
+        "event_candidate"
+    end
+  end
+
+  defp news_claim_level(row) do
+    metadata = metadata(row)
+    tier = to_string(metadata["trust_tier"])
+
+    cond do
+      metadata["discovery_only"] == true or metadata["discovery_only"] == "true" ->
+        "source_only"
+
+      String.starts_with?(tier, "T0_") or String.starts_with?(tier, "T1_") ->
+        "clustered_candidate"
+
+      true ->
+        "source_only"
+    end
+  end
+
+  defp evidence_match_status(%{entities: entities}) do
+    max_confidence =
+      entities
+      |> List.wrap()
+      |> Enum.map(&to_float(&1[:confidence] || &1["confidence"]))
+      |> Enum.max(fn -> 0.0 end)
+
+    cond do
+      max_confidence >= 0.75 -> "matched"
+      max_confidence > 0 -> "weak_match"
+      true -> "unverified"
+    end
   end
 
   defp cluster_event_payload(cluster, cluster_rows) do
@@ -932,6 +1072,34 @@ defmodule StonksBackend.News.Pipeline do
     tier = to_string(metadata["trust_tier"] || metadata[:trust_tier])
     String.starts_with?(tier, "T0_") or String.starts_with?(tier, "T1_")
   end
+
+  defp official_host?("", _profile), do: false
+
+  defp official_host?(host, profile) do
+    domains =
+      profile
+      |> Map.get(:official_domains, [])
+      |> List.wrap()
+      |> Enum.map(&(to_string(&1) |> String.downcase()))
+      |> Enum.reject(&(&1 == ""))
+
+    symbol = profile[:symbol] |> to_string() |> String.downcase()
+
+    Enum.any?(domains, &(host == &1 or String.ends_with?(host, "." <> &1))) or
+      (symbol != "" and String.contains?(host, symbol))
+  end
+
+  defp company_terms(profile) do
+    [profile[:legal_name], profile[:name] | List.wrap(profile[:aliases])]
+    |> Enum.map(&(to_string(&1) |> String.trim()))
+    |> Enum.reject(&(String.length(&1) < 3))
+    |> Enum.uniq()
+  end
+
+  defp direct_subject_reason(true, _official, _company), do: "source_profile"
+  defp direct_subject_reason(_source, true, _company), do: "official_domain"
+  defp direct_subject_reason(_source, _official, true), do: "company_name_or_alias"
+  defp direct_subject_reason(_, _, _), do: "direct_match"
 
   defp searchable_text(document) do
     document

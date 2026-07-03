@@ -37,8 +37,8 @@ export function FundsTrackerPage() {
           <Search className="mt-1 h-4 w-4 shrink-0" />
           <p className="safe-text text-sm leading-6">
             {isKo
-              ? "아래 링크는 외부 리서치 화면으로 이동합니다. Stonks Radar는 HedgeFollow 표를 복사하거나 수집하지 않으며, 각 외부 사이트의 지연/범위/계산 방식을 별도로 확인해야 합니다."
-              : "These links open external research pages. Stonks Radar does not copy or ingest HedgeFollow tables; verify each external site's filing lag, coverage, and calculation policy."}
+              ? "아래 링크는 외부 리서치 화면으로 이동합니다. Stonks Radar는 외부 트래커 표를 복사하거나 수집하지 않으며, 각 외부 사이트의 지연/범위/계산 방식을 별도로 확인해야 합니다."
+              : "These links open external research pages. Stonks Radar does not copy or ingest external tracker tables; verify each external site's filing lag, coverage, and calculation policy."}
           </p>
         </div>
       </section>
@@ -85,7 +85,7 @@ export function FundsTrackerPage() {
                     </SafeExternalAnchor>
                   </td>
                   <td className="px-3 py-3 text-muted">
-                    {isKo ? "외부 13F 트래커" : "External 13F tracker"}
+                    {entry.source_type}
                   </td>
                   <td className="safe-text px-3 py-3 text-muted">{entry.note}</td>
                 </tr>
@@ -108,9 +108,7 @@ function FundLinkCard({ entry, locale }: Readonly<{ entry: FundLinkEntry; locale
       </div>
       <div className="flex flex-wrap gap-2">
         <span className="badge border-line bg-panel text-muted">{entry.source_label}</span>
-        <span className="badge border-line bg-panel text-muted">
-          {isKo ? "외부 13F 트래커" : "External 13F tracker"}
-        </span>
+        <span className="badge border-line bg-panel text-muted">{entry.source_type}</span>
       </div>
       <p className="safe-text text-sm leading-6 text-muted">{entry.note}</p>
       <SafeExternalAnchor

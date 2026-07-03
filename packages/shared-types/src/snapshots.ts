@@ -88,6 +88,14 @@ export type NewsTrustTier =
   | "T6_BLOCKED";
 
 export type NewsMarketDirection = "bullish" | "bearish" | "mixed" | "unclear";
+export type NewsItemKind =
+  | "source_discovery"
+  | "event_candidate"
+  | "reviewed_event"
+  | "filing_update"
+  | "official_update";
+export type NewsClaimLevel = "source_only" | "clustered_candidate" | "reviewed" | "published";
+export type EvidenceMatchStatus = "matched" | "weak_match" | "mismatch" | "unverified";
 export type BreakingMarketLabel = "breaking" | "developing" | "latest" | "stale" | "unmappable";
 export type NewsMapPointRelation = "event_location" | "chokepoint" | "affected_market" | "source_region";
 
@@ -138,6 +146,9 @@ export interface NewsEventListItem {
   title: string;
   summary: string;
   event_type: string;
+  item_kind: NewsItemKind;
+  claim_level: NewsClaimLevel;
+  evidence_match_status: EvidenceMatchStatus;
   first_seen_at: string;
   last_seen_at: string;
   published_at: string;

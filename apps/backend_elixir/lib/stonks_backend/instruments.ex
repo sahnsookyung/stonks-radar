@@ -1,7 +1,7 @@
 defmodule StonksBackend.Instruments do
   @moduledoc "Instrument search/resolve compatibility."
 
-  alias StonksBackend.{Settings, Sql}
+  alias StonksBackend.{Settings, Sql, TrackedTickers}
 
   @index_schema_version 1
   @index_last_updated_at "2026-05-25T00:00:00Z"
@@ -351,7 +351,7 @@ defmodule StonksBackend.Instruments do
   end
 
   defp watchlist_entries do
-    case watchlist_payload() do
+    case TrackedTickers.payload() do
       {:ok, %{"entities" => entities}} when is_list(entities) ->
         entities
         |> Enum.flat_map(&watchlist_entry/1)
@@ -380,9 +380,9 @@ defmodule StonksBackend.Instruments do
           asset_class: asset_class_from_watchlist(entity["asset_type"]),
           instrument_type: instrument_type_from_watchlist(entity["asset_type"]),
           sector: Map.get(entity, "sector") || "Unclassified",
-          quality_level: "PARTIAL",
+          quality_level: "SOURCE_BACKED",
           quality_message:
-            "Tracked ticker metadata from the shared watchlist. Price data requires stored market history or provider lookup.",
+            "Tracked ticker metadata from the shared watchlist with TradingView and configured news/source identifiers.",
           aliases:
             [
               Map.get(entity, "name_en"),
@@ -398,48 +398,6 @@ defmodule StonksBackend.Instruments do
   end
 
   defp watchlist_entry(_entity), do: []
-
-  defp watchlist_payload do
-    watchlist_path_candidates()
-    |> Enum.find_value(fn
-      nil ->
-        nil
-
-      path ->
-        if File.regular?(path) do
-          path
-          |> File.read()
-          |> case do
-            {:ok, content} -> Jason.decode(content)
-            _ -> nil
-          end
-          |> case do
-            {:ok, %{"entities" => entities} = payload} when is_list(entities) -> {:ok, payload}
-            _ -> nil
-          end
-        end
-    end)
-    |> case do
-      nil -> {:error, :watchlist_missing}
-      result -> result
-    end
-  end
-
-  defp watchlist_path_candidates do
-    [
-      Settings.get(:news_ticker_watchlist_path),
-      app_priv_path("ticker_watchlist.generated.json"),
-      Path.expand("packages/shared-config/ticker-watchlist.generated.json", File.cwd!()),
-      Path.expand("../../packages/shared-config/ticker-watchlist.generated.json", File.cwd!())
-    ]
-    |> Enum.reject(&blank?/1)
-  end
-
-  defp app_priv_path(filename) do
-    Application.app_dir(:stonks_backend, Path.join(["priv", "news_sources", filename]))
-  rescue
-    _ -> nil
-  end
 
   defp watchlist_identifiers(entity) do
     [

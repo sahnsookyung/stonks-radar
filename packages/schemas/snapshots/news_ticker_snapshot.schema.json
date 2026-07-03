@@ -13,6 +13,7 @@
             "symbol": { "type": "string" },
             "name": { "type": "string" },
             "generated_label": { "type": "string" },
+            "coverage_window": { "type": "string" },
             "summary": { "type": "string" },
             "events": {
               "type": "array",

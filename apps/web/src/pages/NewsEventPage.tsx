@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import { ArrowLeft, FileSearch, Newspaper, Sparkles, TrendingUp } from "lucide-react";
-import { NewsEventCard, NewsScoreBadge, SourcePill, formatNewsDate, marketDirectionLabel, regionRelationLabel } from "../components/NewsEventCard";
+import { NewsEventCard, NewsScoreBadge, SourcePill, claimLevelLabel, evidenceMatchLabel, formatNewsDate, marketDirectionLabel, regionRelationLabel } from "../components/NewsEventCard";
 import { ErrorState, LoadingState } from "../components/LoadingState";
 import { SnapshotBanner } from "../components/SnapshotBanner";
 import { useLocale } from "../lib/locale";
@@ -23,6 +23,9 @@ export function NewsEventPage() { // NOSONAR - event detail page coordinates sna
   if (query.isError || !query.data) return <ErrorState error={query.error} />;
   const event = query.data.data;
   const tickerImplications = event.ticker_implications ?? [];
+  const claimLevel = event.claim_level ?? "source_only";
+  const evidenceMatchStatus = event.evidence_match_status ?? "unverified";
+  const isSourceOnly = claimLevel === "source_only";
 
   return (
     <div className="grid min-w-0 gap-5">
@@ -40,8 +43,10 @@ export function NewsEventPage() { // NOSONAR - event detail page coordinates sna
         <h1 className="safe-text mt-3 text-3xl font-bold leading-tight sm:text-4xl">{event.title}</h1>
         <p className="safe-text mt-3 max-w-4xl text-base leading-7 text-muted">{event.one_sentence_summary}</p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <NewsScoreBadge label={isKo ? "속보" : "Breaking"} value={event.breaking_score} />
+          <NewsScoreBadge label={isSourceOnly ? (isKo ? "발견" : "Discovery") : (isKo ? "속보" : "Breaking")} value={event.breaking_score} />
           <NewsScoreBadge label={isKo ? "신뢰" : "Trust"} value={event.trust_score} />
+          <span className="badge border-line bg-panelAlt text-muted">{claimLevelLabel(claimLevel, locale)}</span>
+          <span className="badge border-line bg-panelAlt text-muted">{evidenceMatchLabel(evidenceMatchStatus, locale)}</span>
           <span className="badge border-line bg-panelAlt text-muted">{event.severity}</span>
           <span className="badge border-line bg-panelAlt text-muted">{Math.round(event.confidence * 100)}%</span>
           <span className="badge border-line bg-panelAlt text-muted">{formatNewsDate(event.last_seen_at)}</span>
@@ -51,19 +56,23 @@ export function NewsEventPage() { // NOSONAR - event detail page coordinates sna
       <section className="panel min-w-0 border-accent/40 bg-accentSoft p-5">
         <div className="flex items-center gap-2 text-sm font-semibold text-accent">
           <Sparkles className="h-4 w-4" />
-          {isKo ? "AI 기사 분석" : "AI Article Analysis"}
+          {isSourceOnly ? (isKo ? "출처 연결 맥락" : "Source-linked context") : (isKo ? "AI 기사 분석" : "AI Article Analysis")}
         </div>
         <p className="safe-text mt-2 text-sm leading-6 text-ink">
-          {isKo
-            ? "승인된 공개 사실만 사용해 기사 핵심과 티커별 가능한 영향을 사전 생성했습니다."
-            : "Pre-generated from approved public facts only: article essence plus possible ticker implications."}
+          {isSourceOnly
+            ? (isKo
+                ? "이 항목은 출처 메타데이터와 링크를 묶은 발견 항목이며 검증된 시장 이벤트가 아닙니다."
+                : "This item groups source metadata and links for discovery; it is not a verified market event.")
+            : (isKo
+                ? "승인된 공개 사실만 사용해 기사 핵심과 티커별 가능한 영향을 사전 생성했습니다."
+                : "Pre-generated from approved public facts only: article essence plus possible ticker implications.")}
         </p>
         <p className="safe-text mt-2 text-xs leading-5 text-muted">{event.disclaimer}</p>
       </section>
 
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="grid min-w-0 gap-5">
-          <DetailBlock title={isKo ? "무슨 일이 있었나" : "What Happened"} items={event.what_happened} />
+          <DetailBlock title={isSourceOnly ? (isKo ? "출처 맥락" : "Source Context") : (isKo ? "무슨 일이 있었나" : "What Happened")} items={event.what_happened} />
           <DetailBlock title={isKo ? "왜 중요한가" : "Why It Matters"} items={event.why_it_matters} />
           {tickerImplications.length > 0 && (
             <section className="panel min-w-0 p-5">
@@ -145,7 +154,7 @@ export function NewsEventPage() { // NOSONAR - event detail page coordinates sna
 
       {event.related_events.length > 0 && (
         <section className="grid gap-3">
-          <h2 className="text-xl font-bold">{isKo ? "관련 이벤트" : "Related Events"}</h2>
+          <h2 className="text-xl font-bold">{isKo ? "관련 항목" : "Related Items"}</h2>
           {event.related_events.map((related) => <NewsEventCard key={related.id} event={related} locale={locale} compact />)}
         </section>
       )}

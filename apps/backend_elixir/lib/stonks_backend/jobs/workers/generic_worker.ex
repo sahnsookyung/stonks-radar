@@ -53,6 +53,7 @@ defmodule StonksBackend.Jobs.Workers.GenericWorker do
       "news.fetch_source" -> News.fetch_source(payload)
       "news.read_pages" -> News.read_pages(payload)
       "news.purge_email_raw" -> News.purge_email_raw(payload)
+      "news.prune_metadata" -> News.prune_metadata(payload)
       "news.normalize_document" -> News.normalize_documents(payload)
       "news.extract_evidence" -> News.normalize_documents(payload)
       "news.classify_entities" -> News.classify_documents(payload)

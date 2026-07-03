@@ -274,18 +274,34 @@ defmodule StonksBackendWeb.AdminController do
 
   def snapshots_publish(conn, %{"snapshot_version" => version}) do
     with_csrf(conn, @admin_roles, fn _ ->
-      case Snapshots.publish(to_int(version)) do
-        {:ok, result} -> json(conn, result)
-        {:error, error} -> conn |> put_status(400) |> json(%{detail: error})
+      case Snapshots.parse_positive_snapshot_version(version) do
+        {:ok, version} ->
+          case Snapshots.publish(version) do
+            {:ok, result} -> json(conn, result)
+            {:error, error} -> conn |> put_status(400) |> json(%{detail: error})
+          end
+
+        :error ->
+          conn
+          |> put_status(400)
+          |> json(%{detail: "snapshot_version must be a positive integer"})
       end
     end)
   end
 
   def snapshots_rollback(conn, %{"snapshot_version" => version}) do
     with_csrf(conn, @admin_roles, fn _ ->
-      case Snapshots.rollback(to_int(version)) do
-        {:ok, result} -> json(conn, result)
-        {:error, error} -> conn |> put_status(400) |> json(%{detail: error})
+      case Snapshots.parse_positive_snapshot_version(version) do
+        {:ok, version} ->
+          case Snapshots.rollback(version) do
+            {:ok, result} -> json(conn, result)
+            {:error, error} -> conn |> put_status(400) |> json(%{detail: error})
+          end
+
+        :error ->
+          conn
+          |> put_status(400)
+          |> json(%{detail: "snapshot_version must be a positive integer"})
       end
     end)
   end
@@ -385,7 +401,4 @@ defmodule StonksBackendWeb.AdminController do
         conn |> put_status(401) |> json(%{detail: "Not authenticated"})
     end
   end
-
-  defp to_int(value) when is_integer(value), do: value
-  defp to_int(value), do: String.to_integer(to_string(value))
 end

@@ -5,7 +5,8 @@
     "fund_name": "Situational Awareness",
     "primary_url": "https://hedgefollow.com/funds/Situational%2BAwareness",
     "source_label": "HedgeFollow",
-    "note": "Outbound 13F tracker; not ingested or scraped."
+    "note": "Outbound 13F tracker; not ingested or scraped.",
+    "source_type": "External 13F tracker"
   },
   {
     "key": "berkshire-hathaway",
@@ -13,7 +14,8 @@
     "fund_name": "Berkshire Hathaway",
     "primary_url": "https://hedgefollow.com/funds/Berkshire%2BHathaway",
     "source_label": "HedgeFollow",
-    "note": "Outbound 13F tracker; not ingested or scraped."
+    "note": "Outbound 13F tracker; not ingested or scraped.",
+    "source_type": "External 13F tracker"
   },
   {
     "key": "duquesne-family-office",
@@ -21,7 +23,8 @@
     "fund_name": "Duquesne Family Office",
     "primary_url": "https://hedgefollow.com/funds/Duquesne%2BFamily%2BOffice",
     "source_label": "HedgeFollow",
-    "note": "Outbound 13F tracker; not ingested or scraped."
+    "note": "Outbound 13F tracker; not ingested or scraped.",
+    "source_type": "External 13F tracker"
   },
   {
     "key": "pershing-square-capital-management",
@@ -29,7 +32,8 @@
     "fund_name": "Pershing Square Capital Management",
     "primary_url": "https://hedgefollow.com/funds/Pershing%2BSquare%2BCapital%2BManagement",
     "source_label": "HedgeFollow",
-    "note": "Outbound 13F tracker; not ingested or scraped."
+    "note": "Outbound 13F tracker; not ingested or scraped.",
+    "source_type": "External 13F tracker"
   },
   {
     "key": "bridgewater-associates",
@@ -37,7 +41,8 @@
     "fund_name": "Bridgewater Associates",
     "primary_url": "https://hedgefollow.com/funds/Bridgewater%2BAssociates",
     "source_label": "HedgeFollow",
-    "note": "Outbound 13F tracker; not ingested or scraped."
+    "note": "Outbound 13F tracker; not ingested or scraped.",
+    "source_type": "External 13F tracker"
   },
   {
     "key": "renaissance-technologies",
@@ -45,7 +50,8 @@
     "fund_name": "Renaissance Technologies",
     "primary_url": "https://hedgefollow.com/funds/Renaissance%2BTechnologies",
     "source_label": "HedgeFollow",
-    "note": "Outbound 13F tracker; not ingested or scraped."
+    "note": "Outbound 13F tracker; not ingested or scraped.",
+    "source_type": "External 13F tracker"
   },
   {
     "key": "blackrock",
@@ -53,7 +59,8 @@
     "fund_name": "BlackRock",
     "primary_url": "https://hedgefollow.com/funds/BlackRock",
     "source_label": "HedgeFollow",
-    "note": "Outbound 13F tracker; not ingested or scraped."
+    "note": "Outbound 13F tracker; not ingested or scraped.",
+    "source_type": "External 13F tracker"
   },
   {
     "key": "altimeter-capital-management",
@@ -61,7 +68,8 @@
     "fund_name": "Altimeter Capital Management",
     "primary_url": "https://hedgefollow.com/funds/Altimeter%2BCapital%2BManagement",
     "source_label": "HedgeFollow",
-    "note": "Outbound 13F tracker; not ingested or scraped."
+    "note": "Outbound 13F tracker; not ingested or scraped.",
+    "source_type": "External 13F tracker"
   },
   {
     "key": "tci-fund-management",
@@ -69,7 +77,8 @@
     "fund_name": "TCI Fund Management",
     "primary_url": "https://hedgefollow.com/funds/TCI%2BFund%2BManagement",
     "source_label": "HedgeFollow",
-    "note": "Outbound 13F tracker; not ingested or scraped."
+    "note": "Outbound 13F tracker; not ingested or scraped.",
+    "source_type": "External 13F tracker"
   },
   {
     "key": "appaloosa",
@@ -77,7 +86,8 @@
     "fund_name": "Appaloosa",
     "primary_url": "https://hedgefollow.com/funds/Appaloosa",
     "source_label": "HedgeFollow",
-    "note": "Outbound 13F tracker; not ingested or scraped."
+    "note": "Outbound 13F tracker; not ingested or scraped.",
+    "source_type": "External 13F tracker"
   },
   {
     "key": "tudor-investment",
@@ -85,6 +95,16 @@
     "fund_name": "Tudor Investment",
     "primary_url": "https://hedgefollow.com/funds/Tudor%2BInvestment",
     "source_label": "HedgeFollow",
-    "note": "Outbound 13F tracker; not ingested or scraped."
+    "note": "Outbound 13F tracker; not ingested or scraped.",
+    "source_type": "External 13F tracker"
+  },
+  {
+    "key": "donald-trump",
+    "human_name": "Donald Trump",
+    "fund_name": "Donald Trump Stock Trades",
+    "primary_url": "https://www.quiverquant.com/Donald-Trump-Stock-Trades/",
+    "source_label": "QuiverQuant",
+    "source_type": "External public-trade tracker",
+    "note": "Outbound public-disclosure tracker; not ingested or scraped."
   }
 ]

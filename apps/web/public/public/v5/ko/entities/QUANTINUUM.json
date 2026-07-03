@@ -1,0 +1,213 @@
+{
+  "content_hash": "sha256:8c43505d874073e4bec40b4b7d9735e3d54569af6d3e8e5918820115146dd925",
+  "corrections": [],
+  "data": {
+    "caveats": [
+      "참고 엔티티는 거래 가능한 공개 증권을 의미하지 않습니다.",
+      "출처 연결 공개 업데이트만 표시합니다."
+    ],
+    "entity": {
+      "display_symbol": "Quantinuum",
+      "entity_id": "QUANTINUUM",
+      "freshness": "watch",
+      "name": "퀀티넘",
+      "route_key": "QUANTINUUM",
+      "route_kind": "reference_entity",
+      "sector_keys": [
+        "quantum"
+      ],
+      "source_strength": "registry",
+      "symbol": "QUANTINUUM",
+      "tags": [
+        "quantum",
+        "private-reference",
+        "official-news"
+      ]
+    },
+    "freshness": "watch",
+    "latest_news": [],
+    "related_entities": [
+      {
+        "display_symbol": "IONQ",
+        "entity_id": "IONQ",
+        "freshness": "watch",
+        "name": "아이온큐",
+        "route_key": "IONQ",
+        "route_kind": "ticker",
+        "sector_keys": [
+          "quantum"
+        ],
+        "source_strength": "registry",
+        "symbol": "IONQ",
+        "tags": [
+          "quantum",
+          "government-funding",
+          "high-volatility"
+        ]
+      },
+      {
+        "display_symbol": "RGTI",
+        "entity_id": "RGTI",
+        "freshness": "watch",
+        "name": "리게티 컴퓨팅",
+        "route_key": "RGTI",
+        "route_kind": "ticker",
+        "sector_keys": [
+          "quantum"
+        ],
+        "source_strength": "registry",
+        "symbol": "RGTI",
+        "tags": [
+          "quantum",
+          "small-cap",
+          "high-volatility"
+        ]
+      },
+      {
+        "display_symbol": "QBTS",
+        "entity_id": "QBTS",
+        "freshness": "watch",
+        "name": "디웨이브 퀀텀",
+        "route_key": "QBTS",
+        "route_kind": "ticker",
+        "sector_keys": [
+          "quantum"
+        ],
+        "source_strength": "registry",
+        "symbol": "QBTS",
+        "tags": [
+          "quantum",
+          "small-cap",
+          "high-volatility"
+        ]
+      }
+    ],
+    "source_links": [
+      {
+        "label": "Quantinuum Newsroom",
+        "policy_version": 1,
+        "source_key": "quantinuum_newsroom",
+        "url": "https://www.quantinuum.com/news/news"
+      }
+    ],
+    "summary": "퀀티넘은 참고 엔티티로 추적됩니다. 비상장 또는 비거래 대상일 수 있어 시장가격 위젯은 표시하지 않습니다.",
+    "ticker_calendar_items": []
+  },
+  "generated_at": "2026-07-03T11:31:55.000229Z",
+  "hard_expires_at": "2026-07-10T11:31:55.000229Z",
+  "locale": "ko",
+  "object_key": "QUANTINUUM",
+  "object_type": "reference_entity",
+  "schema_version": "1.0",
+  "snapshot_version": 5,
+  "source_policy_versions": [
+    {
+      "policy_version": 1,
+      "source_key": "federal_reserve"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "sec_edgar"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "eia"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "world_bank"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "gdelt"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "google_news_rss"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "yahoo_finance_rss"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "yahoo_finance_delayed_quote"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "stooq_delayed_quote"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "treasury_xml_feed"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "krx_open_api"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "data_go_kr"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "japan_mof_jgb_csv"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bis"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "who"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "cdc"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "company_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "ecb"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bank_of_korea"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bank_of_japan"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bcb"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "rocket_lab_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "ionq_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "iea"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "source_policy"
+    }
+  ],
+  "stale_after": "2026-07-03T23:31:55.000229Z",
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "시장 지표는 라이선스가 없는 한 지연/참조 데이터입니다.",
+      "severity": "info"
+    }
+  ]
+}

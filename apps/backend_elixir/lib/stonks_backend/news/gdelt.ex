@@ -1,12 +1,26 @@
 defmodule StonksBackend.News.Gdelt do
   @moduledoc "GDELT discovery query-pack logic ported from the Python news ingestion path."
 
-  alias StonksBackend.WatchedRegions
+  alias StonksBackend.{SafeFetch, Sql, TrackedTickers, WatchedRegions}
 
   @doc_provider_cap 250
   @country_chunk_size 6
+  @ticker_chunk_size 5
   @diversified_floor 25
   @doc_api_url "https://api.gdeltproject.org/api/v2/doc/doc"
+  @default_doc_timespan "36h"
+  @fair_bucket_order [
+    "top_gdp_regions",
+    "tracked_tickers",
+    "top_gdp_regions",
+    "strategic_themes",
+    "top_gdp_regions",
+    "regional_reserve",
+    "tracked_tickers",
+    "top_gdp_regions",
+    "strategic_themes",
+    "tracked_tickers"
+  ]
 
   @theme_queries [
     ~s|(markets OR stocks OR energy OR commodities OR rates OR sanctions OR trade)|,
@@ -15,47 +29,41 @@ defmodule StonksBackend.News.Gdelt do
   ]
 
   def tracked_country_terms, do: WatchedRegions.tracked_country_terms()
+
+  def tracked_ticker_terms, do: TrackedTickers.gdelt_terms()
+
   def theme_queries, do: @theme_queries
 
   def doc_queries(cycle_budget), do: doc_queries("market_watch", cycle_budget, [])
   def doc_queries(pack_name, cycle_budget), do: doc_queries(pack_name, cycle_budget, [])
 
   def doc_queries(pack_name, cycle_budget, opts) do
-    pack = doc_query_pack(pack_name)
-    cycle_budget = normalize_int(cycle_budget, 0)
-
-    cond do
-      cycle_budget <= 0 ->
-        []
-
-      cycle_budget >= length(pack) ->
-        pack
-
-      true ->
-        budget = min(cycle_budget, length(pack))
-        cycle_index = opts |> Keyword.get(:cycle_index, 0) |> normalize_int(0) |> max(0)
-        start = rem(cycle_index * budget, length(pack))
-
-        Enum.map(0..(budget - 1), fn offset ->
-          Enum.at(pack, rem(start + offset, length(pack)))
-        end)
-    end
+    pack_name
+    |> doc_query_entries(cycle_budget, opts)
+    |> Enum.map(& &1.query)
   end
 
-  def doc_request_params(query, max_records) do
+  def doc_request_params(query, max_records, opts \\ []) do
     max_records =
       max_records
       |> normalize_int(@doc_provider_cap)
       |> max(1)
       |> min(@doc_provider_cap)
 
-    %{
+    timespan =
+      opts
+      |> Keyword.get(:timespan, @default_doc_timespan)
+      |> normalize_timespan(@default_doc_timespan)
+
+    params = %{
       "query" => query,
       "mode" => "ArtList",
       "format" => "json",
       "maxrecords" => to_string(max_records),
       "sort" => "DateDesc"
     }
+
+    if timespan == "", do: params, else: Map.put(params, "timespan", timespan)
   end
 
   def records_per_query(max_documents, query_count, provider_cap \\ @doc_provider_cap) do
@@ -76,18 +84,27 @@ defmodule StonksBackend.News.Gdelt do
     cycle_budget = Keyword.get(opts, :cycle_budget, 10) |> normalize_int(10)
     cycle_index = Keyword.get(opts, :cycle_index, 0) |> normalize_int(0)
 
+    timespan =
+      Keyword.get(opts, :timespan, @default_doc_timespan)
+      |> normalize_timespan(@default_doc_timespan)
+
     provider_cap =
       Keyword.get(opts, :provider_cap, @doc_provider_cap) |> normalize_int(@doc_provider_cap)
 
-    queries = doc_queries(pack_name, cycle_budget, cycle_index: cycle_index)
+    entries = doc_query_entries(pack_name, cycle_budget, cycle_index: cycle_index)
+    queries = Enum.map(entries, & &1.query)
     records_per_query = records_per_query(max_documents, length(queries), provider_cap)
 
     %{
       query_pack: normalize_pack_name(pack_name),
       query_count: length(queries),
       candidate_records_per_query: records_per_query,
+      timespan: timespan,
       queries: queries,
-      requests: Enum.map(queries, &doc_request_params(&1, records_per_query))
+      query_buckets:
+        Enum.map(entries, &Map.take(&1, [:bucket_name, :bucket_budget, :coverage_window])),
+      requests:
+        Enum.map(entries, &doc_request_params(&1.query, records_per_query, timespan: timespan))
     }
   end
 
@@ -104,7 +121,7 @@ defmodule StonksBackend.News.Gdelt do
         else
           case request_fun.(endpoint, params: request, headers: [{"accept", "application/json"}]) do
             {:ok, %{status: status, body: body}} when status in 200..299 ->
-              parsed = parse_doc_payload(body, max_documents * 2)
+              {parsed, parse_stats} = parse_doc_payload_with_discovery(body, max_documents * 2)
 
               merged =
                 dedupe_documents(documents ++ parsed)
@@ -116,6 +133,8 @@ defmodule StonksBackend.News.Gdelt do
                 discovery
                 |> Map.update!(:fetched, &(&1 + 1))
                 |> Map.update!(:parsed, &(&1 + length(parsed)))
+                |> Map.update!(:irrelevant_dropped, &(&1 + parse_stats.irrelevant_dropped))
+                |> Map.update!(:no_geo_dropped, &(&1 + parse_stats.no_geo_dropped))
                 |> Map.put(:deduped, max(0, discovery.parsed + length(parsed) - length(merged)))
                 |> Map.put(:published_or_projected, length(merged))}}
 
@@ -132,18 +151,53 @@ defmodule StonksBackend.News.Gdelt do
         end
       end)
 
+    {documents, enrichment} = enrich_document_titles(documents, opts)
+
+    discovery =
+      discovery
+      |> Map.update!(:title_enriched, &(&1 + enrichment.title_enriched))
+      |> Map.update!(:blocked_or_denied, &(&1 + enrichment.blocked_or_denied))
+      |> Map.put(:title_fallback, fallback_title_count(documents))
+
     {documents, discovery}
   end
 
   def parse_doc_payload(%{"articles" => rows}, max_documents) when is_list(rows) do
-    rows
-    |> Enum.flat_map(&doc_row_to_document/1)
-    |> dedupe_documents()
-    |> rank_documents()
-    |> Enum.take(max_documents)
+    {documents, _stats} = parse_doc_payload_with_discovery(%{"articles" => rows}, max_documents)
+    documents
   end
 
   def parse_doc_payload(_payload, _max_documents), do: []
+
+  defp parse_doc_payload_with_discovery(%{"articles" => rows}, max_documents)
+       when is_list(rows) do
+    {documents, stats} =
+      Enum.reduce(rows, {[], %{irrelevant_dropped: 0, no_geo_dropped: 0}}, fn row,
+                                                                              {documents, stats} ->
+        case doc_row_to_document(row) do
+          {:ok, document} ->
+            {[document | documents], stats}
+
+          {:drop, :no_geo} ->
+            {documents, Map.update!(stats, :no_geo_dropped, &(&1 + 1))}
+
+          {:drop, _reason} ->
+            {documents, Map.update!(stats, :irrelevant_dropped, &(&1 + 1))}
+        end
+      end)
+
+    documents =
+      documents
+      |> Enum.reverse()
+      |> dedupe_documents()
+      |> rank_documents()
+      |> Enum.take(max_documents)
+
+    {documents, stats}
+  end
+
+  defp parse_doc_payload_with_discovery(_payload, _max_documents),
+    do: {[], %{irrelevant_dropped: 0, no_geo_dropped: 0}}
 
   def discovery_zero do
     %{
@@ -169,10 +223,10 @@ defmodule StonksBackend.News.Gdelt do
 
     cond do
       language not in ["", "english", "en"] ->
-        []
+        {:drop, :language}
 
       not public_http_url?(url) ->
-        []
+        {:drop, :url}
 
       true ->
         title =
@@ -182,32 +236,233 @@ defmodule StonksBackend.News.Gdelt do
           |> Kernel.||(title_from_url_path(url))
           |> Kernel.||(source_report_title(url, row["sourcecountry"]))
 
-        [
-          %{
-            "title" => title,
-            "url" => url,
-            "canonical_url" => url,
-            "snippet" => row["seendate"] || row["domain"] || "",
-            "published_at" => gdelt_datetime(row["seendate"]),
-            "source_region" => row["sourcecountry"],
-            "language" => row["language"],
-            "source_key" => "gdelt",
-            "trust_tier" => "T4_WEAK_SIGNAL",
-            "copyright_mode" => "metadata_only",
-            "discovery_only" => true,
-            "dedupe_key" => "gdelt:doc:" <> sha256(String.downcase(url)),
-            "metadata" => %{
-              "gdelt_domain" => row["domain"],
-              "gdelt_query_source" => "doc_api",
-              "gdelt_title_source" =>
-                if(clean_title(row["title"]), do: "doc_api", else: "fallback")
-            }
-          }
-        ]
+        if String.trim(to_string(row["sourcecountry"])) == "" do
+          {:drop, :no_geo}
+        else
+          {:ok,
+           %{
+             "title" => title,
+             "url" => url,
+             "canonical_url" => url,
+             "snippet" => row["seendate"] || row["domain"] || "",
+             "published_at" => gdelt_datetime(row["seendate"]),
+             "source_region" => row["sourcecountry"],
+             "language" => row["language"],
+             "source_key" => "gdelt",
+             "trust_tier" => "T4_WEAK_SIGNAL",
+             "copyright_mode" => "metadata_only",
+             "discovery_only" => true,
+             "item_kind" => "source_discovery",
+             "claim_level" => "source_only",
+             "evidence_match_status" => "unverified",
+             "dedupe_key" => "gdelt:doc:" <> sha256(String.downcase(url)),
+             "metadata" => %{
+               "gdelt_domain" => row["domain"],
+               "gdelt_query_source" => "doc_api",
+               "gdelt_title_source" =>
+                 if(clean_title(row["title"]), do: "doc_api", else: "fallback")
+             }
+           }}
+        end
     end
   end
 
-  defp doc_row_to_document(_), do: []
+  defp doc_row_to_document(_), do: {:drop, :malformed}
+
+  defp enrich_document_titles(documents, opts) do
+    limit = opts |> Keyword.get(:title_fetch_limit, 0) |> normalize_int(0) |> max(0)
+
+    timeout_seconds =
+      opts |> Keyword.get(:title_fetch_timeout_seconds, 8) |> normalize_int(8) |> max(1)
+
+    max_bytes =
+      opts |> Keyword.get(:title_fetch_max_bytes, 131_072) |> normalize_int(131_072) |> max(4096)
+
+    per_host_interval =
+      opts |> Keyword.get(:title_per_host_interval_seconds, 0) |> normalize_int(0) |> max(0)
+
+    fetch_fun = Keyword.get(opts, :title_fetch_fun, &SafeFetch.fetch_url/2)
+
+    {documents, stats, _seen_hosts, _remaining} =
+      Enum.reduce(
+        documents,
+        {[], %{title_enriched: 0, blocked_or_denied: 0}, %{}, limit},
+        fn document, {acc, stats, seen_hosts, remaining} ->
+          if remaining <= 0 or not title_enrichment_needed?(document) do
+            {[document | acc], stats, seen_hosts, remaining}
+          else
+            url = document["canonical_url"] || document["url"]
+            host = host_for_url(url)
+            maybe_wait_for_host(host, seen_hosts, per_host_interval)
+
+            fetch_opts = [
+              timeout_seconds: timeout_seconds,
+              max_bytes: max_bytes,
+              text_max_chars: 512
+            ]
+
+            case title_cache_hit(document, opts) do
+              {:hit, cached} ->
+                {[cached | acc], Map.update!(stats, :title_enriched, &(&1 + 1)),
+                 Map.put(seen_hosts, host, true), remaining}
+
+              :miss ->
+                fetch_enriched_title(
+                  document,
+                  url,
+                  host,
+                  fetch_fun,
+                  fetch_opts,
+                  acc,
+                  stats,
+                  seen_hosts,
+                  remaining
+                )
+            end
+          end
+        end
+      )
+
+    {Enum.reverse(documents), stats}
+  end
+
+  defp fetch_enriched_title(
+         document,
+         url,
+         host,
+         fetch_fun,
+         fetch_opts,
+         acc,
+         stats,
+         seen_hosts,
+         remaining
+       ) do
+    case fetch_fun.(url, fetch_opts) do
+      {:ok, fetched} ->
+        title = clean_title(fetched["title"])
+
+        if title do
+          canonical_url = fetched["canonical_url"] || fetched["final_url"] || url
+
+          enriched =
+            document
+            |> Map.put("title", title)
+            |> Map.put("canonical_url", canonical_url)
+            |> maybe_put_published_at(fetched["published_at"])
+            |> put_title_cache(title, canonical_url, fetched)
+
+          {[enriched | acc], Map.update!(stats, :title_enriched, &(&1 + 1)),
+           Map.put(seen_hosts, host, true), remaining - 1}
+        else
+          blocked = put_title_fetch_failure(document, url, "empty_title")
+          {[blocked | acc], stats, Map.put(seen_hosts, host, true), remaining - 1}
+        end
+
+      {:error, _reason} ->
+        blocked = put_title_fetch_failure(document, url, "blocked_or_denied")
+
+        {[blocked | acc], Map.update!(stats, :blocked_or_denied, &(&1 + 1)),
+         Map.put(seen_hosts, host, true), remaining - 1}
+    end
+  end
+
+  defp title_enrichment_needed?(document) do
+    source = get_in(document, ["metadata", "gdelt_title_source"])
+    title = document["title"] |> to_string() |> String.downcase()
+    source != "doc_api" or String.starts_with?(title, "gdelt ")
+  end
+
+  defp title_cache_hit(document, opts) do
+    cache_get_fun = Keyword.get(opts, :title_cache_get_fun, &default_title_cache_get/1)
+
+    document
+    |> title_cache_key()
+    |> cache_get_fun.()
+    |> case do
+      %{"title" => title} = cache when is_binary(title) and title != "" ->
+        canonical_url = cache["canonical_url"] || document["canonical_url"] || document["url"]
+
+        {:hit,
+         document
+         |> Map.put("title", title)
+         |> Map.put("canonical_url", canonical_url)
+         |> maybe_put_published_at(cache["published_at"])
+         |> put_in(["metadata", "gdelt_title_source"], "persistent_title_cache")
+         |> put_in(["metadata", "gdelt_title_cache"], cache)}
+
+      _ ->
+        :miss
+    end
+  end
+
+  defp default_title_cache_get(nil), do: nil
+
+  defp default_title_cache_get(cache_key) do
+    Sql.scalar(
+      """
+      select metadata->'gdelt_title_cache'
+      from source_document
+      where dedupe_key = $1
+        and metadata ? 'gdelt_title_cache'
+      order by updated_at desc
+      limit 1
+      """,
+      [cache_key]
+    )
+  rescue
+    _ -> nil
+  end
+
+  defp title_cache_key(document) do
+    document["dedupe_key"] ||
+      "gdelt:doc:" <> sha256(String.downcase(document["canonical_url"] || document["url"] || ""))
+  end
+
+  defp put_title_cache(document, title, canonical_url, fetched) do
+    cache = %{
+      "url_hash" => sha256(String.downcase(canonical_url || document["url"] || "")),
+      "title" => title,
+      "canonical_url" => canonical_url,
+      "source_domain" => fetched["source_domain"] || host_for_url(canonical_url),
+      "published_at" => fetched["published_at"],
+      "cached_at" => DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.to_iso8601()
+    }
+
+    document
+    |> put_in(["metadata", "gdelt_title_source"], "safe_fetch_metadata")
+    |> put_in(["metadata", "gdelt_title_cache"], cache)
+  end
+
+  defp put_title_fetch_failure(document, url, reason) do
+    put_in(document, ["metadata", "gdelt_title_fetch_failure"], %{
+      "url_hash" => sha256(String.downcase(url || "")),
+      "source_domain" => host_for_url(url),
+      "reason" => reason,
+      "failed_at" => DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.to_iso8601()
+    })
+  end
+
+  defp maybe_put_published_at(document, nil), do: document
+  defp maybe_put_published_at(document, ""), do: document
+
+  defp maybe_put_published_at(document, published_at),
+    do: Map.put(document, "published_at", published_at)
+
+  defp maybe_wait_for_host(host, seen_hosts, interval_seconds) do
+    if host && Map.has_key?(seen_hosts, host) && interval_seconds > 0 do
+      Process.sleep(interval_seconds * 1000)
+    end
+  end
+
+  defp fallback_title_count(documents) do
+    Enum.count(documents, fn document ->
+      get_in(document, ["metadata", "gdelt_title_source"]) in [
+        "fallback",
+        "source_report",
+        "url_slug"
+      ]
+    end)
+  end
 
   defp dedupe_documents(documents) do
     documents
@@ -387,67 +642,153 @@ defmodule StonksBackend.News.Gdelt do
     |> Base.encode16(case: :lower)
   end
 
+  defp doc_query_entries(pack_name, cycle_budget, opts) do
+    pack = doc_query_pack(pack_name)
+    cycle_budget = normalize_int(cycle_budget, 0)
+
+    cond do
+      cycle_budget <= 0 or pack == [] ->
+        []
+
+      cycle_budget >= length(pack) ->
+        pack
+
+      true ->
+        budget = min(cycle_budget, length(pack))
+        cycle_index = opts |> Keyword.get(:cycle_index, 0) |> normalize_int(0) |> max(0)
+        start = rem(cycle_index * budget, length(pack))
+
+        Enum.map(0..(budget - 1), fn offset ->
+          Enum.at(pack, rem(start + offset, length(pack)))
+        end)
+    end
+  end
+
   defp market_watch_pack do
-    country_market_queries = country_theme_queries([Enum.at(@theme_queries, 0)])
+    top_gdp_queries =
+      tracked_region_queries(["top_30_gdp", "high_priority"], [Enum.at(@theme_queries, 0)])
+
+    reserve_queries =
+      tracked_region_queries(
+        ["rotating_reserve", "smaller_economy"],
+        Enum.drop(@theme_queries, 1)
+      )
+
+    ticker_queries = tracked_ticker_queries()
 
     thematic_queries = [
       ~s|(hormuz OR "red sea" OR oil OR lng OR pipeline OR refinery OR shipping)|,
       ~s|(semiconductor OR chip OR "export control" OR BIS OR Taiwan OR Korea OR Japan)|,
       ~s|("AI infrastructure" OR datacenter OR "data center" OR capex OR HBM OR accelerator)|,
-      ~s|("central bank" OR rates OR inflation OR treasury OR yen OR dollar)|
+      ~s|("central bank" OR rates OR inflation OR treasury OR yen OR dollar)|,
+      ~s|(outbreak OR pandemic OR WHO OR avian OR vaccine OR public health)|
     ]
 
-    country_risk_queries = country_theme_queries(Enum.drop(@theme_queries, 1))
-
-    broad_risk_queries = [
-      ~s|(sanctions OR tariff OR "trade war" OR blockade OR missile OR conflict)|,
-      ~s|(outbreak OR pandemic OR WHO OR avian OR vaccine OR public health)|,
-      ~s|(NVDA OR AMD OR MSFT OR AAPL OR TSMC OR Samsung OR ASML OR RKLB OR IONQ OR RGTI OR QBTS OR LUNR OR ASTS OR RDW OR DJT)|
+    [
+      {"top_gdp_regions", 45, top_gdp_queries, "36h"},
+      {"tracked_tickers", 25, ticker_queries, "36h"},
+      {"strategic_themes", 20, thematic_queries, "36h"},
+      {"regional_reserve", 10, reserve_queries, "36h"}
     ]
-
-    interleave_query_groups([
-      country_market_queries,
-      thematic_queries,
-      country_risk_queries,
-      broad_risk_queries
-    ])
+    |> Enum.map(fn {bucket_name, bucket_budget, queries, coverage_window} ->
+      Enum.map(queries, fn query ->
+        %{
+          query: query,
+          bucket_name: bucket_name,
+          bucket_budget: bucket_budget,
+          coverage_window: coverage_window
+        }
+      end)
+    end)
+    |> fair_interleave_bucket_entries()
   end
 
-  defp country_theme_queries(theme_queries) do
-    chunks = Enum.chunk_every(tracked_country_terms(), @country_chunk_size)
+  defp tracked_region_queries(groups, theme_queries) do
+    terms =
+      WatchedRegions.all()
+      |> Enum.filter(&(Map.get(&1, "gather_news") != false))
+      |> Enum.filter(fn region ->
+        region_groups = Map.get(region, "groups", [])
+        priority = region |> Map.get("priority", 0) |> normalize_int(0)
+        gdp_rank = region |> Map.get("gdp_rank", nil) |> normalize_int(999)
+
+        cond do
+          "top_30_gdp" in groups -> gdp_rank <= 30 or priority >= 80
+          "high_priority" in groups -> priority >= 80
+          "rotating_reserve" in groups -> gdp_rank > 30 and priority < 80
+          true -> Enum.any?(groups, &(&1 in region_groups))
+        end
+      end)
+      |> Enum.flat_map(fn region ->
+        region
+        |> Map.get("gdelt_terms", [])
+        |> List.wrap()
+        |> Enum.map(&gdelt_term/1)
+      end)
+      |> Enum.reject(&(&1 == ""))
+      |> Enum.uniq()
+
+    chunks = Enum.chunk_every(terms, @country_chunk_size)
 
     for theme <- theme_queries, chunk <- chunks do
       "(#{Enum.join(chunk, " OR ")}) AND #{theme}"
     end
   end
 
-  defp interleave_query_groups(groups) do
-    groups
-    |> Enum.map(&List.wrap/1)
-    |> do_interleave_query_groups([])
-    |> Enum.reverse()
+  defp tracked_ticker_queries do
+    tracked_ticker_terms()
+    |> Enum.uniq()
+    |> Enum.chunk_every(@ticker_chunk_size)
+    |> Enum.map(fn chunk ->
+      "(#{Enum.join(chunk, " OR ")}) AND (acquisition OR merger OR earnings OR guidance OR contract OR launch OR supply OR export OR filing OR stock)"
+    end)
   end
 
-  defp do_interleave_query_groups(groups, acc) do
-    {next_groups, acc} =
-      Enum.reduce(groups, {[], acc}, fn
-        [], {next_groups, acc} ->
-          {next_groups, acc}
+  defp gdelt_term(value) do
+    value =
+      value
+      |> to_string()
+      |> String.replace(~r/["]/, " ")
+      |> String.replace(~r/\s+/, " ")
+      |> String.trim()
 
-        [query | rest], {next_groups, acc} ->
-          {[rest | next_groups], [query | acc]}
+    cond do
+      value == "" -> ""
+      String.contains?(value, " ") -> ~s|"#{value}"|
+      true -> value
+    end
+  end
+
+  defp fair_interleave_bucket_entries(bucket_entries) do
+    buckets =
+      bucket_entries
+      |> List.flatten()
+      |> Enum.group_by(& &1.bucket_name)
+
+    do_fair_interleave_bucket_entries(buckets, [])
+  end
+
+  defp do_fair_interleave_bucket_entries(buckets, acc) when map_size(buckets) == 0,
+    do: Enum.reverse(acc)
+
+  defp do_fair_interleave_bucket_entries(buckets, acc) do
+    {buckets, acc} =
+      Enum.reduce(@fair_bucket_order, {buckets, acc}, fn bucket_name, {buckets, acc} ->
+        case Map.get(buckets, bucket_name, []) do
+          [] ->
+            {Map.delete(buckets, bucket_name), acc}
+
+          [entry | rest] ->
+            {Map.put(buckets, bucket_name, rest), [entry | acc]}
+        end
       end)
 
-    next_groups =
-      next_groups
-      |> Enum.reverse()
-      |> Enum.reject(&(&1 == []))
+    buckets =
+      buckets
+      |> Enum.reject(fn {_name, entries} -> entries == [] end)
+      |> Map.new()
 
-    if next_groups == [] do
-      acc
-    else
-      do_interleave_query_groups(next_groups, acc)
-    end
+    do_fair_interleave_bucket_entries(buckets, acc)
   end
 
   defp normalize_pack_name(value) do
@@ -466,4 +807,17 @@ defmodule StonksBackend.News.Gdelt do
   end
 
   defp normalize_int(_, default), do: default
+
+  defp normalize_timespan(value, default) do
+    value = value |> to_string() |> String.trim() |> String.downcase()
+
+    if Regex.match?(~r/^\d+[mhd]$/, value), do: value, else: default
+  end
+
+  defp host_for_url(url) do
+    case URI.parse(to_string(url)) do
+      %URI{host: host} when is_binary(host) -> String.downcase(host)
+      _ -> nil
+    end
+  end
 end

@@ -210,6 +210,9 @@ defmodule StonksBackend.SafeFetch do
     %{
       "url" => original_url,
       "final_url" => final_url,
+      "canonical_url" => extracted.canonical_url || final_url,
+      "source_domain" => source_domain(extracted.canonical_url || final_url),
+      "published_at" => extracted.published_at,
       "resolved_ips" => resolved_ips |> MapSet.to_list() |> Enum.sort(),
       "status_code" => response.status,
       "content_type" => content_type,
@@ -316,7 +319,7 @@ defmodule StonksBackend.SafeFetch do
     if String.contains?(String.downcase(to_string(content_type)), "html") do
       extract_html_document(body, text_max_chars)
     else
-      %{title: nil, text: String.slice(to_string(body), 0, text_max_chars)}
+      empty_document_metadata(String.slice(to_string(body), 0, text_max_chars))
     end
   end
 
@@ -337,6 +340,8 @@ defmodule StonksBackend.SafeFetch do
 
       %{
         title: extract_title(document),
+        canonical_url: extract_canonical_url(document),
+        published_at: extract_published_at(document),
         text:
           text_root
           |> Floki.text(sep: " ")
@@ -344,7 +349,7 @@ defmodule StonksBackend.SafeFetch do
           |> String.slice(0, text_max_chars)
       }
     else
-      _ -> %{title: nil, text: String.slice(to_string(body), 0, text_max_chars)}
+      _ -> empty_document_metadata(String.slice(to_string(body), 0, text_max_chars))
     end
   end
 
@@ -374,10 +379,73 @@ defmodule StonksBackend.SafeFetch do
 
   defp title_value(node, :text), do: node |> Floki.text() |> normalize_title()
 
+  defp extract_canonical_url(document) do
+    [
+      {"link[rel=\"canonical\"]", :href},
+      {"meta[property=\"og:url\"]", :content}
+    ]
+    |> Enum.find_value(fn {selector, mode} ->
+      document
+      |> Floki.find(selector)
+      |> List.first()
+      |> metadata_value(mode)
+    end)
+  end
+
+  defp extract_published_at(document) do
+    [
+      {"meta[property=\"article:published_time\"]", :content},
+      {"meta[name=\"article:published_time\"]", :content},
+      {"meta[name=\"pubdate\"]", :content},
+      {"meta[name=\"date\"]", :content},
+      {"time[datetime]", :datetime}
+    ]
+    |> Enum.find_value(fn {selector, mode} ->
+      document
+      |> Floki.find(selector)
+      |> List.first()
+      |> metadata_value(mode)
+    end)
+  end
+
+  defp metadata_value(nil, _mode), do: nil
+
+  defp metadata_value(node, :content) do
+    node
+    |> Floki.attribute("content")
+    |> List.first()
+    |> normalize_metadata_value()
+  end
+
+  defp metadata_value(node, :href) do
+    node
+    |> Floki.attribute("href")
+    |> List.first()
+    |> normalize_metadata_value()
+  end
+
+  defp metadata_value(node, :datetime) do
+    node
+    |> Floki.attribute("datetime")
+    |> List.first()
+    |> normalize_metadata_value()
+  end
+
+  defp empty_document_metadata(text) do
+    %{title: nil, canonical_url: nil, published_at: nil, text: text}
+  end
+
   defp normalize_title(nil), do: nil
 
   defp normalize_title(value) do
     value = value |> normalize_whitespace() |> String.slice(0, 500)
+    if value == "", do: nil, else: value
+  end
+
+  defp normalize_metadata_value(nil), do: nil
+
+  defp normalize_metadata_value(value) do
+    value = normalize_whitespace(value)
     if value == "", do: nil, else: value
   end
 
@@ -389,6 +457,13 @@ defmodule StonksBackend.SafeFetch do
   end
 
   defp normalize_url(value), do: value |> to_string() |> String.trim()
+
+  defp source_domain(url) do
+    case URI.parse(to_string(url)) do
+      %URI{host: host} when is_binary(host) -> String.downcase(host)
+      _ -> nil
+    end
+  end
 
   defp header_value(headers, key) when is_map(headers) do
     key = String.downcase(key)

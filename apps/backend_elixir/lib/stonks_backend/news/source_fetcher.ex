@@ -3,7 +3,7 @@ defmodule StonksBackend.News.SourceFetcher do
 
   import SweetXml
 
-  alias StonksBackend.Settings
+  alias StonksBackend.{Settings, TrackedTickers}
 
   @sec_news_forms ~w(8-K 6-K 10-K 10-Q DEF 14A SC 13D SC 13G SCHEDULE 13D SCHEDULE 13G 4)
 
@@ -185,7 +185,7 @@ defmodule StonksBackend.News.SourceFetcher do
   end
 
   defp watchlist_profiles do
-    case watchlist_payload() do
+    case TrackedTickers.payload() do
       {:ok, %{"entities" => entities}} when is_list(entities) ->
         entities
         |> Enum.flat_map(&watchlist_entity_sources/1)
@@ -196,60 +196,6 @@ defmodule StonksBackend.News.SourceFetcher do
       _ ->
         %{}
     end
-  end
-
-  defp watchlist_payload do
-    watchlist_path_candidates()
-    |> Enum.find_value(fn
-      nil ->
-        nil
-
-      path ->
-        if File.regular?(path) do
-          case File.read(path) do
-            {:ok, content} ->
-              case Jason.decode(content) do
-                {:ok, %{"entities" => entities} = payload} when is_list(entities) ->
-                  {:ok, payload}
-
-                _ ->
-                  nil
-              end
-
-            _ ->
-              nil
-          end
-        end
-    end)
-    |> case do
-      nil -> {:error, :watchlist_missing}
-      result -> result
-    end
-  end
-
-  defp watchlist_path_candidates do
-    [
-      Settings.get(:news_ticker_watchlist_path),
-      app_priv_path("ticker_watchlist.generated.json"),
-      app_priv_path("tracked_entities.json"),
-      Path.expand(
-        "packages/shared-config/ticker-watchlist.generated.json",
-        File.cwd!()
-      ),
-      Path.expand(
-        "../../packages/shared-config/ticker-watchlist.generated.json",
-        File.cwd!()
-      ),
-      Path.expand("../config/tracked_entities.json", File.cwd!()),
-      Path.expand("../../config/tracked_entities.json", File.cwd!())
-    ]
-    |> Enum.reject(&blank?/1)
-  end
-
-  defp app_priv_path(filename) do
-    Application.app_dir(:stonks_backend, Path.join(["priv", "news_sources", filename]))
-  rescue
-    _ -> nil
   end
 
   defp watchlist_entity_sources(entity) when is_map(entity) do

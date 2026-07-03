@@ -12,6 +12,7 @@
           "required": ["generated_label", "filters", "events"],
           "properties": {
             "generated_label": { "type": "string" },
+            "coverage_window": { "type": "string" },
             "filters": {
               "type": "object",
               "required": ["regions", "topics", "tickers", "trust_tiers"],

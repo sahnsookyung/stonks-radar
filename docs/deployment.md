@@ -34,7 +34,14 @@ rotated, update both locations and restart the Phoenix/Oban runtime stack.
 
 ## GitHub Actions Deploy
 
-The deploy workflow is manual-only: `.github/workflows/deploy.yml`.
+Production deploys are handled by two workflows:
+
+- `.github/workflows/production-autodeploy.yml`: watches `ci` and `sonarqube`
+  workflow completions on `main`, verifies both are green for the same current
+  commit SHA, then dispatches the deploy workflow once for that SHA.
+- `.github/workflows/deploy.yml`: performs the OCI deployment and remains
+  manually dispatchable for recovery, clean deploys, or explicit verification
+  runs.
 
 Default execution path: `github-hosted`.
 Default deployment mode: `fast`.
@@ -123,9 +130,10 @@ The runner service must have Docker access and write access to
 that group exists; log out/in or restart the service if group membership was
 changed after Docker was installed.
 
-Use the `self-hosted` workflow input only when the OCI runner is online.
-Production deploys are intentionally not scheduled; they require manual
-dispatch.
+Use the `self-hosted` workflow input only when the OCI runner is online. Normal
+production deploys are automatic after green `main` CI and SonarQube gates. Use
+manual dispatch when you need `clean` mode, `verify=true`, or an explicit
+redeploy of a known-good SHA.
 
 Manual host deploys use the same mode names:
 

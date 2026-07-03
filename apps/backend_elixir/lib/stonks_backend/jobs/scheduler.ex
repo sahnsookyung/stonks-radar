@@ -159,6 +159,19 @@ defmodule StonksBackend.Jobs.Scheduler do
           job_group: "news",
           priority: 68,
           provider_key: "local"
+        },
+        %{
+          job_type: "news.prune_metadata",
+          idempotency_key: "news-prune-metadata:#{purge_window}",
+          payload: %{
+            "discovery_retention_days" =>
+              int_setting(settings, :news_discovery_retention_days, 30),
+            "metadata_retention_days" => int_setting(settings, :news_metadata_retention_days, 90),
+            "event_retention_days" => int_setting(settings, :news_event_retention_days, 365)
+          },
+          job_group: "news",
+          priority: 40,
+          provider_key: "local"
         }
       ]
     else

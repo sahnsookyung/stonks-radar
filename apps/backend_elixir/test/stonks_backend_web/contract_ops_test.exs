@@ -91,6 +91,28 @@ defmodule StonksBackendWeb.ContractOpsTest do
     assert ci_workflow =~ "apps/backend_elixir/Dockerfile"
   end
 
+  test "production autodeploy waits for green main CI and Sonar before dispatching deploy" do
+    auto_deploy_workflow = read_repo_file(".github/workflows/production-autodeploy.yml")
+
+    assert auto_deploy_workflow =~ "workflow_run:"
+    assert auto_deploy_workflow =~ "- ci"
+    assert auto_deploy_workflow =~ "- sonarqube"
+    assert auto_deploy_workflow =~ "head_branch == 'main'"
+    assert auto_deploy_workflow =~ "github.event.workflow_run.event == 'push'"
+    assert auto_deploy_workflow =~ ~s(ref: "heads/main")
+    assert auto_deploy_workflow =~ ~s(workflow_id: "ci.yml")
+    assert auto_deploy_workflow =~ ~s(workflow_id: "sonarqube.yml")
+    assert auto_deploy_workflow =~ ~s(const deployWorkflow = "deploy.yml")
+    assert auto_deploy_workflow =~ "listWorkflowRuns"
+    assert auto_deploy_workflow =~ "createWorkflowDispatch"
+    assert auto_deploy_workflow =~ ~s(runner: "github-hosted")
+    assert auto_deploy_workflow =~ ~s(mode: "fast")
+    assert auto_deploy_workflow =~ ~s(verify: "false")
+    assert auto_deploy_workflow =~ "Deploy already exists"
+    assert auto_deploy_workflow =~ "Skipping stale SHA"
+    assert auto_deploy_workflow =~ "Waiting for deploy run to appear"
+  end
+
   test "production runtime cannot bypass required secrets by downgrading APP_ENV" do
     runtime = read_repo_file("apps/backend_elixir/config/runtime.exs")
 

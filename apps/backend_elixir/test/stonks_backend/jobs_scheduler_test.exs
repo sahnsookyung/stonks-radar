@@ -152,11 +152,13 @@ defmodule StonksBackend.JobsSchedulerTest do
              "news.classify_entities",
              "news.cluster_events",
              "news.score_events",
-             "news.purge_email_raw"
+             "news.purge_email_raw",
+             "news.prune_metadata"
            ]
 
     assert Enum.map(specs, & &1.provider_key) == [
              "company_ir",
+             "local",
              "local",
              "local",
              "local",
@@ -190,12 +192,12 @@ defmodule StonksBackend.JobsSchedulerTest do
       )
 
     calls =
-      for _ <- 1..6 do
+      for _ <- 1..7 do
         assert_receive {:enqueue, job_type, _payload, opts}
         {job_type, opts[:depends_on_job_id]}
       end
 
-    assert length(ids) == 6
+    assert length(ids) == 7
 
     assert calls |> Enum.map(&elem(&1, 0)) == [
              "news.read_pages",
@@ -203,7 +205,8 @@ defmodule StonksBackend.JobsSchedulerTest do
              "news.classify_entities",
              "news.cluster_events",
              "news.score_events",
-             "news.purge_email_raw"
+             "news.purge_email_raw",
+             "news.prune_metadata"
            ]
 
     assert calls |> Enum.map(&elem(&1, 1)) |> hd() == nil

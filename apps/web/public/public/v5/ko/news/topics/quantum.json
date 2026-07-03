@@ -1,0 +1,218 @@
+{
+  "content_hash": "sha256:26adf5098163114a4668895be2e16f2497e15958dcb6ca1c2cea815c3ec10132",
+  "corrections": [],
+  "data": {
+    "coverage_window": "7d",
+    "events": [
+      {
+        "breaking_score": 61,
+        "claim_level": "clustered_candidate",
+        "confidence": 0.76,
+        "event_type": "company_update",
+        "evidence_match_status": "matched",
+        "first_seen_at": "2026-06-30T18:08:56Z",
+        "freshness": "watch",
+        "id": "ionq_contract_watch_seed",
+        "item_kind": "official_update",
+        "last_seen_at": "2026-07-01T08:08:56Z",
+        "market_direction": "mixed",
+        "published_at": "2026-07-01T08:08:56Z",
+        "regions": [
+          {
+            "confidence": 0.88,
+            "key": "USA",
+            "name": "미국",
+            "relation": "company_region"
+          },
+          {
+            "confidence": 0.88,
+            "key": "USA",
+            "name": "미국",
+            "relation": "market_region"
+          },
+          {
+            "confidence": 0.42,
+            "key": "EU",
+            "name": "유럽연합",
+            "relation": "affected_region"
+          },
+          {
+            "confidence": 0.3,
+            "key": "KOR",
+            "name": "대한민국",
+            "relation": "mentioned_region"
+          }
+        ],
+        "severity": "medium",
+        "source_count": 2,
+        "source_links": [
+          {
+            "is_primary": true,
+            "label": "IonQ",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "ionq_ir",
+            "title": "아이온큐 뉴스",
+            "trust_tier": "T0_OFFICIAL",
+            "url": "https://ionq.com/news"
+          },
+          {
+            "is_primary": false,
+            "label": "SEC EDGAR",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "sec_edgar",
+            "title": "아이온큐 SEC 공시",
+            "trust_tier": "T1_REGULATED_FILING",
+            "url": "https://www.sec.gov/edgar/browse/?CIK=1824920"
+          }
+        ],
+        "summary": "IONQ는 회사, 공시, 섹터 맥락 근거가 있을 때만 티커 뉴스 레이어에 표시됩니다.",
+        "tickers": [
+          {
+            "confidence": 0.9,
+            "exchange": "NYSE",
+            "name": "아이온큐",
+            "relationship": "direct_subject",
+            "symbol": "IONQ"
+          }
+        ],
+        "title": "아이온큐 계약 및 자금 뉴스가 양자 섹터 티커 맥락으로 분류",
+        "topics": [
+          {
+            "confidence": 0.96,
+            "key": "quantum",
+            "label": "양자"
+          },
+          {
+            "confidence": 0.38,
+            "key": "macro",
+            "label": "거시"
+          }
+        ],
+        "trust_score": 88
+      }
+    ],
+    "generated_label": "2026-07-01T12:08:56Z",
+    "key": "quantum",
+    "label": "양자",
+    "topic_brief": "양자에는 공개 메타데이터에서 만든 검토된 출처 연결 이벤트 클러스터 1건이 포함됩니다."
+  },
+  "generated_at": "2026-07-03T11:31:55.000229Z",
+  "hard_expires_at": "2026-07-10T11:31:55.000229Z",
+  "locale": "ko",
+  "object_key": "news_topic_quantum",
+  "object_type": "news_topic",
+  "schema_version": "1.0",
+  "snapshot_version": 5,
+  "source_policy_versions": [
+    {
+      "policy_version": 1,
+      "source_key": "federal_reserve"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "sec_edgar"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "eia"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "world_bank"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "gdelt"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "google_news_rss"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "yahoo_finance_rss"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "yahoo_finance_delayed_quote"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "stooq_delayed_quote"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "treasury_xml_feed"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "krx_open_api"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "data_go_kr"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "japan_mof_jgb_csv"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bis"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "who"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "cdc"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "company_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "ecb"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bank_of_korea"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bank_of_japan"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bcb"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "rocket_lab_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "ionq_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "iea"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "source_policy"
+    }
+  ],
+  "stale_after": "2026-07-03T23:31:55.000229Z",
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "시장 지표는 라이선스가 없는 한 지연/참조 데이터입니다.",
+      "severity": "info"
+    }
+  ]
+}

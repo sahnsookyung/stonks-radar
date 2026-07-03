@@ -16,6 +16,8 @@ defmodule StonksBackend.SafeFetchTest do
          <html>
            <head>
              <meta property="og:title" content="Example OG Title">
+             <meta property="article:published_time" content="2026-07-01T10:00:00Z">
+             <link rel="canonical" href="https://example.com/canonical-story">
              <title>Fallback</title>
            </head>
            <body>
@@ -40,6 +42,9 @@ defmodule StonksBackend.SafeFetchTest do
     assert payload["final_url"] == "https://example.com/story"
     assert payload["status_code"] == 200
     assert payload["title"] == "Example OG Title"
+    assert payload["canonical_url"] == "https://example.com/canonical-story"
+    assert payload["source_domain"] == "example.com"
+    assert payload["published_at"] == "2026-07-01T10:00:00Z"
     assert payload["text"] =~ "Visible Headline"
     assert payload["text"] =~ "Useful paragraph"
     refute payload["text"] =~ "secret"

@@ -17,6 +17,7 @@ import {
   Newspaper,
   PlusCircle,
   RefreshCw,
+  Search,
   ShieldAlert,
   Sparkles,
   StickyNote,
@@ -32,7 +33,7 @@ import { disclosureTransactionBucket, disclosureTransactionCaveat, disclosureTra
 import { useLocale } from "../lib/locale";
 import { safeExternalUrl } from "../lib/safeExternalUrl";
 import { snapshotQueries } from "../lib/snapshots";
-import { getTrackedTicker, relatedTrackedEntities, resolveTrackedEntity, trackedTickers, type TrackedEntity, type TrackedTicker } from "../lib/trackedTickers";
+import { getTrackedTicker, relatedTrackedEntities, resolveTrackedEntity, searchTrackedTickers, type TrackedEntity, type TrackedTicker } from "../lib/trackedTickers";
 
 interface MarketHistoryResponse {
   status: string;
@@ -516,14 +517,30 @@ function UnknownTicker({ symbol, locale }: Readonly<{ symbol?: string; locale: "
 }
 
 function TickerStrip({ activeSymbol, locale }: Readonly<{ activeSymbol: string; locale: "en" | "ko" }>) {
+  const [query, setQuery] = useState("");
+  const visibleTickers = useMemo(() => searchTrackedTickers(query), [query]);
+  const isKo = locale === "ko";
   return (
-    <nav className="panel min-w-0 overflow-hidden p-2" aria-label={locale === "ko" ? "추적 티커" : "Tracked tickers"}>
+    <nav className="panel min-w-0 overflow-hidden p-2" aria-label={isKo ? "추적 티커" : "Tracked tickers"}>
+      <label className="mb-2 grid gap-1 px-1 text-xs font-semibold uppercase text-muted">
+        {isKo ? "티커 검색" : "Search tickers"}
+        <span className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-line bg-paper px-3">
+          <Search className="h-4 w-4 text-muted" />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            className="min-h-10 min-w-0 bg-transparent text-sm font-semibold text-ink outline-none"
+            placeholder={isKo ? "심볼, 회사, 테마" : "symbol, company, theme"}
+          />
+          <span className="badge border-line bg-panelAlt text-muted">{visibleTickers.length}</span>
+        </span>
+      </label>
       <div
         className="scroll-fade-x flex gap-2 overflow-x-auto"
         data-allow-horizontal-scroll
-        aria-label={locale === "ko" ? "추적 티커 목록" : "Tracked ticker list"}
+        aria-label={isKo ? "추적 티커 목록" : "Tracked ticker list"}
       >
-        {trackedTickers.map((ticker) => (
+        {visibleTickers.map((ticker) => (
           <Link
             key={ticker.symbol}
             to="/$locale/tickers/$symbol"
@@ -540,6 +557,11 @@ function TickerStrip({ activeSymbol, locale }: Readonly<{ activeSymbol: string; 
             <span className="max-w-[160px] truncate text-xs font-medium">{ticker.name}</span>
           </Link>
         ))}
+        {visibleTickers.length === 0 && (
+          <span className="min-h-11 px-3 py-2 text-sm font-semibold text-muted">
+            {isKo ? "일치하는 추적 티커가 없습니다." : "No configured ticker matches."}
+          </span>
+        )}
       </div>
     </nav>
   );
@@ -964,7 +986,7 @@ function NewsPanel({
   locale: "en" | "ko";
 }>) {
   const isKo = locale === "ko";
-  const events = tickerNews?.events ?? [];
+  const events = (tickerNews?.events ?? []).filter((event) => directlyMatchesTicker(event, ticker));
   let newsContent: ReactNode;
   if (newsLoading) {
     newsContent = <EmptyState text={localeText(locale, "Loading ticker news snapshot.", "티커 뉴스 스냅샷을 불러오는 중입니다.")} />;
@@ -1083,6 +1105,25 @@ function ShortsPanel({ ticker, shortItems, locale }: Readonly<{ ticker: TrackedT
 
 function TickerNewsEvent({ event, locale }: Readonly<{ event: NewsEventListItem; locale: "en" | "ko" }>) {
   return <NewsEventCard event={event} locale={locale} compact />;
+}
+
+function directlyMatchesTicker(event: NewsEventListItem, ticker: TrackedTicker) {
+  if (event.evidence_match_status !== "matched") return false;
+
+  const acceptedSymbols = new Set([
+    ticker.symbol.toUpperCase(),
+    ticker.displaySymbol.toUpperCase(),
+    ticker.tradingViewSymbol.split(":").pop()?.toUpperCase() ?? ""
+  ]);
+
+  return event.tickers.some((eventTicker) => {
+    const symbol = eventTicker.symbol.toUpperCase();
+    return (
+      acceptedSymbols.has(symbol) &&
+      eventTicker.confidence >= 0.75 &&
+      ["direct_subject", "affected_company"].includes(eventTicker.relationship)
+    );
+  });
 }
 
 function FilingsPanel({
@@ -1296,13 +1337,32 @@ function ResearchSidebar({ // NOSONAR - sidebar groups watchlist, quick read, an
   locale: "en" | "ko";
 }>) {
   const isKo = locale === "ko";
-  const railTickers = sidebarTickerList(ticker);
+  const [tickerQuery, setTickerQuery] = useState("");
+  const relatedRailTickers = useMemo(() => sidebarTickerList(ticker), [ticker]);
+  const railTickers = useMemo(
+    () => (tickerQuery.trim() ? searchTrackedTickers(tickerQuery, 20) : relatedRailTickers),
+    [relatedRailTickers, tickerQuery],
+  );
   return (
     <aside className="grid content-start gap-3 xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto xl:pr-1">
       <div className="panel h-[300px] overflow-y-auto">
-        <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
-          <h2 className="text-sm font-semibold">{isKo ? "관심 티커" : "Watchlist"}</h2>
-          <span className="badge border-line bg-panelAlt text-muted">{railTickers.length}</span>
+        <div className="grid gap-3 border-b border-line px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold">{isKo ? "관심 티커" : "Watchlist"}</h2>
+            <span className="badge border-line bg-panelAlt text-muted">{railTickers.length}</span>
+          </div>
+          <label className="grid gap-1 text-xs font-semibold uppercase text-muted">
+            {isKo ? "티커 검색" : "Search tickers"}
+            <span className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-md border border-line bg-paper px-3">
+              <Search className="h-4 w-4 text-muted" />
+              <input
+                value={tickerQuery}
+                onChange={(event) => setTickerQuery(event.target.value)}
+                className="min-h-10 min-w-0 bg-transparent text-sm font-semibold text-ink outline-none"
+                placeholder={isKo ? "심볼, 회사, 테마" : "symbol, company, theme"}
+              />
+            </span>
+          </label>
         </div>
         <div className="divide-y divide-line">
           {railTickers.map((item) => {
@@ -1324,6 +1384,11 @@ function ResearchSidebar({ // NOSONAR - sidebar groups watchlist, quick read, an
               </EntityLink>
             );
           })}
+          {railTickers.length === 0 && (
+            <div className="px-4 py-5 text-sm font-semibold text-muted">
+              {isKo ? "일치하는 추적 티커가 없습니다." : "No configured ticker matches."}
+            </div>
+          )}
         </div>
       </div>
 

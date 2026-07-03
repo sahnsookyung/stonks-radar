@@ -6,6 +6,7 @@ export type FundLinkEntry = {
   fund_name: string;
   primary_url: string;
   source_label: string;
+  source_type: string;
   note: string;
 };
 
@@ -32,6 +33,7 @@ export function validateFundLinks(value: unknown): FundLinkEntry[] {
       fund_name: requiredString(entry, "fund_name", index),
       primary_url: requiredString(entry, "primary_url", index),
       source_label: requiredString(entry, "source_label", index),
+      source_type: requiredString(entry, "source_type", index),
       note: requiredString(entry, "note", index),
     };
 

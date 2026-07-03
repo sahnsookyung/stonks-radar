@@ -1,9 +1,8 @@
 defmodule StonksBackend.Shorts do
   @moduledoc "Official short-pressure ingestion and snapshot projection helpers."
 
-  alias StonksBackend.{SafeFetch, Sql}
+  alias StonksBackend.{SafeFetch, Sql, TrackedTickers}
 
-  @repo_root Path.expand("../../../..", __DIR__)
   @daily_short_volume_source "https://www.finra.org/finra-data/browse-catalog/short-sale-volume-data/daily-short-sale-volume-files"
   @short_interest_source "https://www.finra.org/filing-reporting/regulatory-filing-systems/short-interest"
   @short_interest_guardrail_source "https://www.finra.org/investors/insights/short-interest"
@@ -193,9 +192,7 @@ defmodule StonksBackend.Shorts do
   def enrich_home_snapshot_data(data), do: data
 
   def tracked_symbols do
-    tracked_entities_path()
-    |> read_json_file()
-    |> Map.get("entities", [])
+    TrackedTickers.ticker_entities()
     |> Enum.filter(&(Map.get(&1, "country") == "USA"))
     |> Enum.map(&Map.get(&1, "symbol"))
     |> Enum.map(&normalize_symbol/1)
@@ -669,35 +666,6 @@ defmodule StonksBackend.Shorts do
       {float, _} -> "#{Float.round(float * 100, 1)}%"
       _ -> "n/a"
     end
-  end
-
-  defp tracked_entities_path do
-    candidates =
-      [
-        System.get_env("TRACKED_ENTITIES_PATH"),
-        Path.join([@repo_root, "config", "tracked_entities.json"]),
-        priv_news_source_path("tracked_entities.json")
-      ]
-      |> Enum.reject(&is_nil/1)
-
-    Enum.find(candidates, &File.exists?/1) || List.first(candidates)
-  end
-
-  defp priv_news_source_path(file_name) do
-    case :code.priv_dir(:stonks_backend) do
-      {:error, _} -> nil
-      path -> Path.join([to_string(path), "news_sources", file_name])
-    end
-  end
-
-  defp read_json_file(nil), do: %{}
-
-  defp read_json_file(path) do
-    path
-    |> File.read!()
-    |> Jason.decode!()
-  rescue
-    _ -> %{}
   end
 
   defp eastern_local_date(now) do

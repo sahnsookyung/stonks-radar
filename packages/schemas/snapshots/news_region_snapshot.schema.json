@@ -13,6 +13,7 @@
             "key": { "type": "string" },
             "name": { "type": "string" },
             "generated_label": { "type": "string" },
+            "coverage_window": { "type": "string" },
             "regional_brief": { "type": "string" },
             "events": {
               "type": "array",

@@ -53,6 +53,26 @@ defmodule StonksBackend.JobsWorkerTest do
     assert result.reason == "llm_summary_translation_requires_policy_and_prompt_parity"
   end
 
+  test "news prune metadata jobs dispatch to retention policy cleanup" do
+    job = %Oban.Job{
+      id: 129,
+      args: %{
+        "job_type" => "news.prune_metadata",
+        "payload" => %{
+          "discovery_retention_days" => 30,
+          "metadata_retention_days" => 90,
+          "event_retention_days" => 365
+        }
+      }
+    }
+
+    assert {:ok, result} = GenericWorker.perform(job)
+    assert result.status == "ready"
+    assert result.discovery_retention_days == 30
+    assert result.metadata_retention_days == 90
+    assert result.event_retention_days == 365
+  end
+
   test "shorts metadata jobs dispatch to metadata-only source discovery" do
     job = %Oban.Job{
       id: 128,

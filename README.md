@@ -67,8 +67,10 @@ npm run test:all           # frontend unit + backend + Playwright checks
 npm run build              # map assets + static web build
 ```
 
-Deployment remains approval-gated through `.github/workflows/deploy.yml` and
-the OCI Compose stack.
+Production deploys run automatically after `main` passes CI and SonarQube via
+`.github/workflows/production-autodeploy.yml`; `.github/workflows/deploy.yml`
+remains available for manual clean, verify, or redeploy runs against the OCI
+Compose stack.
 
 Production target domain: `https://stonks.sookyungahn.com`.
 

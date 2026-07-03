@@ -19,6 +19,22 @@ defmodule StonksBackend.NewsPipelineTest do
     assert Enum.any?(result.topics, &(&1.key == "trade_policy"))
   end
 
+  test "classify_document marks Rocket Lab acquisition headlines as direct ticker matches" do
+    result =
+      Pipeline.classify_document(%{
+        "source_key" => "gdelt",
+        "title" => "Rocket Lab announces acquisition of satellite communications provider",
+        "snippet" => "RKLB said the deal expands its space systems backlog.",
+        "url" => "https://example.com/rocket-lab-acquisition",
+        "published_at" => "2026-07-01T12:00:00Z"
+      })
+
+    assert Enum.any?(result.entities, fn entity ->
+             entity.symbol == "RKLB" and entity.relationship == "direct_subject" and
+               entity.confidence >= 0.75
+           end)
+  end
+
   test "cluster_documents groups related event metadata by entity region topic and date" do
     documents = [
       %{

@@ -1,0 +1,212 @@
+{
+  "content_hash": "sha256:67c85bcc98a335e0e0f0e4363db50df771e7a346aa925fcaceeb20718d3f5da7",
+  "corrections": [],
+  "data": {
+    "coverage_window": "7d",
+    "events": [
+      {
+        "breaking_score": 68,
+        "claim_level": "source_only",
+        "confidence": 0.8,
+        "event_type": "company_update",
+        "evidence_match_status": "weak_match",
+        "first_seen_at": "2026-06-30T18:08:56Z",
+        "freshness": "fresh",
+        "id": "rklb_launch_window_seed",
+        "item_kind": "source_discovery",
+        "last_seen_at": "2026-07-01T12:08:56Z",
+        "market_direction": "mixed",
+        "published_at": "2026-07-01T12:08:56Z",
+        "regions": [
+          {
+            "confidence": 0.84,
+            "key": "USA",
+            "name": "United States",
+            "relation": "company_region"
+          },
+          {
+            "confidence": 0.84,
+            "key": "USA",
+            "name": "United States",
+            "relation": "market_region"
+          },
+          {
+            "confidence": 0.48,
+            "key": "JPN",
+            "name": "Japan",
+            "relation": "affected_region"
+          }
+        ],
+        "severity": "medium",
+        "source_count": 2,
+        "source_links": [
+          {
+            "is_primary": true,
+            "label": "Rocket Lab",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "rocket_lab_ir",
+            "title": "Rocket Lab updates",
+            "trust_tier": "T0_OFFICIAL",
+            "url": "https://www.rocketlabusa.com/updates/"
+          },
+          {
+            "is_primary": false,
+            "label": "SEC EDGAR",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "sec_edgar",
+            "title": "Rocket Lab SEC filings",
+            "trust_tier": "T1_REGULATED_FILING",
+            "url": "https://www.sec.gov/edgar/browse/?CIK=1819994"
+          }
+        ],
+        "summary": "This is a source-linked watch item built from Rocket Lab IR and SEC links; it is not a verified launch-window event.",
+        "tickers": [
+          {
+            "confidence": 0.92,
+            "exchange": "NASDAQ",
+            "name": "Rocket Lab USA, Inc.",
+            "relationship": "direct_subject",
+            "symbol": "RKLB"
+          }
+        ],
+        "title": "Rocket Lab source links for RKLB filings and company updates",
+        "topics": [
+          {
+            "confidence": 0.94,
+            "key": "space",
+            "label": "Space"
+          },
+          {
+            "confidence": 0.44,
+            "key": "supply_chain",
+            "label": "Supply chain"
+          }
+        ],
+        "trust_score": 90
+      }
+    ],
+    "generated_label": "2026-07-01T12:08:56Z",
+    "name": "Rocket Lab USA, Inc.",
+    "summary": "Rocket Lab USA, Inc. has 1 approved, source-linked news event(s) in the public snapshot.",
+    "symbol": "RKLB"
+  },
+  "generated_at": "2026-07-03T11:31:55.000229Z",
+  "hard_expires_at": "2026-07-10T11:31:55.000229Z",
+  "locale": "en",
+  "object_key": "news_ticker_RKLB",
+  "object_type": "news_ticker",
+  "schema_version": "1.0",
+  "snapshot_version": 5,
+  "source_policy_versions": [
+    {
+      "policy_version": 1,
+      "source_key": "federal_reserve"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "sec_edgar"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "eia"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "world_bank"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "gdelt"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "google_news_rss"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "yahoo_finance_rss"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "yahoo_finance_delayed_quote"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "stooq_delayed_quote"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "treasury_xml_feed"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "krx_open_api"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "data_go_kr"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "japan_mof_jgb_csv"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bis"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "who"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "cdc"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "company_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "ecb"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bank_of_korea"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bank_of_japan"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bcb"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "rocket_lab_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "ionq_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "iea"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "source_policy"
+    }
+  ],
+  "stale_after": "2026-07-03T23:31:55.000229Z",
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "Market indicators are delayed/reference unless licensed.",
+      "severity": "info"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 defmodule StonksBackend.Snapshots do
   @moduledoc "Snapshot candidate/publish compatibility for the local OCI volume model."
 
-  alias StonksBackend.{Repo, Settings, Sql}
+  alias StonksBackend.{Repo, Settings, Sql, TrackedTickers}
   alias StonksBackend.Snapshots.SchemaResolver
 
   @manifest_filename "manifest.json"
@@ -229,6 +229,7 @@ defmodule StonksBackend.Snapshots do
       |> ensure_map()
       |> maybe_put_existing("generated_label", iso8601(context.generated_at))
       |> update_snapshot_health(context)
+      |> enrich_home_news_data(context.generated_at)
       |> StonksBackend.Shorts.enrich_home_snapshot_data()
       |> maybe_enrich_yield_curves()
     end)
@@ -243,12 +244,391 @@ defmodule StonksBackend.Snapshots do
     put_in(snapshot, ["data", "entries"], context.corrections)
   end
 
+  defp apply_template_runtime_data(
+         %{"object_type" => object_type} = snapshot,
+         _object_key,
+         _locale,
+         context
+       )
+       when object_type in ["news_index", "news_region", "news_ticker", "news_topic"] do
+    update_in(snapshot, ["data"], fn data ->
+      data
+      |> ensure_map()
+      |> enrich_news_list_data(object_type, context.generated_at)
+    end)
+  end
+
+  defp apply_template_runtime_data(
+         %{"object_type" => "map_events"} = snapshot,
+         _object_key,
+         _locale,
+         context
+       ) do
+    update_in(snapshot, ["data"], fn data ->
+      data
+      |> ensure_map()
+      |> enrich_map_news_data(context.generated_at)
+    end)
+  end
+
+  defp apply_template_runtime_data(
+         %{"object_type" => "news_event"} = snapshot,
+         _object_key,
+         _locale,
+         _context
+       ) do
+    update_in(snapshot, ["data"], fn data ->
+      data
+      |> ensure_map()
+      |> enrich_news_detail_data()
+    end)
+  end
+
+  defp apply_template_runtime_data(
+         %{"object_type" => "scenario_basket"} = snapshot,
+         _object_key,
+         _locale,
+         _context
+       ) do
+    update_in(snapshot, ["data"], fn data ->
+      data
+      |> ensure_map()
+      |> enrich_scenario_news_items()
+    end)
+  end
+
+  defp apply_template_runtime_data(
+         %{"object_type" => "sector_page"} = snapshot,
+         _object_key,
+         _locale,
+         _context
+       ) do
+    update_in(snapshot, ["data"], fn data ->
+      data
+      |> ensure_map()
+      |> enrich_news_collection("sector_news")
+      |> enrich_ticker_calendar_items()
+    end)
+  end
+
+  defp apply_template_runtime_data(
+         %{"object_type" => "reference_entity"} = snapshot,
+         _object_key,
+         _locale,
+         _context
+       ) do
+    update_in(snapshot, ["data"], fn data ->
+      data
+      |> ensure_map()
+      |> enrich_news_collection("latest_news")
+    end)
+  end
+
   defp apply_template_runtime_data(snapshot, _object_key, _locale, _context), do: snapshot
 
   defp maybe_enrich_yield_curves(data) do
     case StonksBackend.YieldCurves.enrich_home_snapshot_data(data) do
       {:ok, enriched_data} -> enriched_data
     end
+  end
+
+  defp enrich_home_news_data(data, generated_at) do
+    data
+    |> update_event_collection("breaking_market_events", "breaking_latest", generated_at, false)
+    |> update_in(["breaking_market_map"], fn map ->
+      map
+      |> ensure_map()
+      |> update_event_collection("events", "breaking_latest", generated_at, false)
+      |> update_event_collection("map_points", "breaking_latest", generated_at, false)
+      |> refresh_breaking_market_map_counts()
+    end)
+  end
+
+  defp enrich_map_news_data(data, generated_at) do
+    data
+    |> update_event_collection("events", "breaking_latest", generated_at, false)
+    |> update_event_collection("breaking_market_events", "breaking_latest", generated_at, false)
+    |> update_in(["breaking_market_map"], fn map ->
+      map
+      |> ensure_map()
+      |> update_event_collection("events", "breaking_latest", generated_at, false)
+      |> update_event_collection("map_points", "breaking_latest", generated_at, false)
+      |> refresh_breaking_market_map_counts()
+    end)
+  end
+
+  defp update_event_collection(data, key, window_kind, generated_at, enrich?) do
+    if Map.has_key?(data, key) do
+      update_in(data, [key], fn items ->
+        items
+        |> List.wrap()
+        |> Enum.filter(&is_map/1)
+        |> maybe_enrich_news_items(enrich?)
+        |> filter_news_items(window_kind, generated_at)
+      end)
+    else
+      data
+    end
+  end
+
+  defp refresh_breaking_market_map_counts(map) do
+    mapped_count =
+      map
+      |> Map.get("map_points", [])
+      |> List.wrap()
+      |> Enum.count(&is_map/1)
+
+    map
+    |> maybe_put_existing("shown_count", mapped_count)
+    |> maybe_put_existing("total_count", mapped_count)
+  end
+
+  defp maybe_enrich_news_items(items, true), do: Enum.map(items, &enrich_news_item/1)
+  defp maybe_enrich_news_items(items, false), do: items
+
+  defp enrich_news_list_data(data, object_type, generated_at) do
+    window_kind = news_window_kind(object_type)
+
+    events =
+      data
+      |> Map.get("events", [])
+      |> List.wrap()
+      |> Enum.filter(&is_map/1)
+      |> Enum.map(&enrich_news_item/1)
+      |> filter_news_items(window_kind, generated_at)
+
+    data
+    |> Map.put("events", events)
+    |> Map.put("coverage_window", news_window_label(window_kind))
+    |> maybe_enrich_news_filters(object_type, events)
+  end
+
+  defp maybe_enrich_news_filters(data, "news_index", events) do
+    update_in(data, ["filters"], fn filters ->
+      filters
+      |> ensure_map()
+      |> Map.put("tickers", news_ticker_filter_options(events, filters))
+    end)
+  end
+
+  defp maybe_enrich_news_filters(data, _object_type, _events), do: data
+
+  defp enrich_news_detail_data(data) do
+    data
+    |> enrich_news_item()
+    |> enrich_news_collection("related_events")
+  end
+
+  defp enrich_scenario_news_items(data) do
+    update_in(data, ["tracker_sections"], fn sections ->
+      sections
+      |> List.wrap()
+      |> Enum.filter(&is_map/1)
+      |> Enum.map(fn section ->
+        update_in(section, ["news_events"], fn events ->
+          events
+          |> List.wrap()
+          |> Enum.filter(&is_map/1)
+          |> Enum.map(&enrich_news_item/1)
+        end)
+      end)
+    end)
+  end
+
+  defp enrich_news_collection(data, key) do
+    update_in(data, [key], fn events ->
+      events
+      |> List.wrap()
+      |> Enum.filter(&is_map/1)
+      |> Enum.map(&enrich_news_item/1)
+    end)
+  end
+
+  defp enrich_ticker_calendar_items(data) do
+    update_in(data, ["ticker_calendar_items"], fn items ->
+      items
+      |> List.wrap()
+      |> Enum.filter(&is_map/1)
+      |> Enum.map(&enrich_ticker_calendar_item/1)
+    end)
+  end
+
+  defp enrich_ticker_calendar_item(%{"id" => id, "symbol" => "RKLB"} = item)
+       when is_binary(id) do
+    if String.contains?(id, "rklb_launch_window_seed") do
+      item
+      |> Map.put("title", "RKLB: Rocket Lab official updates and filings source watch")
+      |> Map.put("catalyst_type", "source_review")
+    else
+      item
+    end
+  end
+
+  defp enrich_ticker_calendar_item(item), do: item
+
+  defp news_window_kind("news_index"), do: "search_archive"
+  defp news_window_kind("news_region"), do: "analysis"
+  defp news_window_kind("news_ticker"), do: "analysis"
+  defp news_window_kind("news_topic"), do: "analysis"
+  defp news_window_kind(_), do: "breaking_latest"
+
+  defp news_window_label("breaking_latest"),
+    do: "#{Settings.get(:news_breaking_window_hours, 24)}h"
+
+  defp news_window_label("analysis"), do: "#{Settings.get(:news_analysis_window_days, 7)}d"
+  defp news_window_label("search_archive"), do: "#{Settings.get(:news_search_window_days, 30)}d"
+
+  defp filter_news_items(items, window_kind, generated_at) do
+    hours = news_window_hours(window_kind)
+    cutoff = DateTime.add(generated_at, -hours, :hour)
+
+    Enum.filter(items, fn item ->
+      case news_item_datetime(item) do
+        nil -> true
+        observed_at -> DateTime.compare(observed_at, cutoff) != :lt
+      end
+    end)
+  end
+
+  defp news_window_hours("breaking_latest") do
+    Settings.get(:news_breaking_window_hours, 24)
+    |> to_int(24)
+    |> max(1)
+  end
+
+  defp news_window_hours("analysis") do
+    Settings.get(:news_analysis_window_days, 7)
+    |> to_int(7)
+    |> max(1)
+    |> Kernel.*(24)
+  end
+
+  defp news_window_hours("search_archive") do
+    Settings.get(:news_search_window_days, 30)
+    |> to_int(30)
+    |> max(1)
+    |> Kernel.*(24)
+  end
+
+  defp news_item_datetime(item) do
+    [
+      item["last_seen_at"],
+      item["observed_at"],
+      item["source_published_at"],
+      item["published_at"],
+      item["first_seen_at"]
+    ]
+    |> Enum.find_value(&parse_iso8601_datetime/1)
+  end
+
+  defp parse_iso8601_datetime(value) when is_binary(value) do
+    value = String.trim(value)
+
+    with false <- value == "",
+         {:ok, datetime, _offset} <- DateTime.from_iso8601(value) do
+      datetime
+    else
+      _ -> nil
+    end
+  end
+
+  defp parse_iso8601_datetime(_), do: nil
+
+  defp enrich_news_item(%{"id" => "rklb_launch_window_seed"} = item) do
+    item
+    |> Map.put("title", "Rocket Lab source links for RKLB filings and company updates")
+    |> Map.put(
+      "summary",
+      "This is a source-linked watch item built from Rocket Lab IR and SEC links; it is not a verified launch-window event."
+    )
+    |> put_news_claim_defaults("source_discovery", "source_only", "weak_match")
+  end
+
+  defp enrich_news_item(item) when is_map(item) do
+    item
+    |> put_news_claim_defaults(
+      infer_news_item_kind(item),
+      infer_news_claim_level(item),
+      infer_evidence_match_status(item)
+    )
+  end
+
+  defp enrich_news_item(other), do: other
+
+  defp put_news_claim_defaults(item, item_kind, claim_level, evidence_match_status) do
+    item
+    |> Map.put_new("item_kind", item_kind)
+    |> Map.put_new("claim_level", claim_level)
+    |> Map.put_new("evidence_match_status", evidence_match_status)
+  end
+
+  defp infer_news_item_kind(item) do
+    source_links = List.wrap(item["source_links"])
+
+    cond do
+      Enum.any?(source_links, &(Map.get(&1, "trust_tier") == "T0_OFFICIAL")) ->
+        "official_update"
+
+      Enum.any?(source_links, &(Map.get(&1, "trust_tier") == "T1_REGULATED_FILING")) ->
+        "filing_update"
+
+      true ->
+        "source_discovery"
+    end
+  end
+
+  defp infer_news_claim_level(item) do
+    item_kind = infer_news_item_kind(item)
+    source_count = to_int(item["source_count"], 0)
+    trust_score = to_int(item["trust_score"], 0)
+
+    cond do
+      item_kind == "source_discovery" ->
+        "source_only"
+
+      source_count >= 2 and trust_score >= 85 ->
+        "clustered_candidate"
+
+      true ->
+        "source_only"
+    end
+  end
+
+  defp infer_evidence_match_status(item) do
+    confidences =
+      item
+      |> Map.get("tickers", [])
+      |> List.wrap()
+      |> Enum.map(&to_float(&1["confidence"]))
+
+    max_confidence = Enum.max(confidences, fn -> 0.0 end)
+
+    cond do
+      max_confidence >= 0.75 -> "matched"
+      max_confidence > 0 -> "weak_match"
+      true -> "unverified"
+    end
+  end
+
+  defp news_ticker_filter_options(events, filters) do
+    event_counts =
+      events
+      |> Enum.flat_map(&(Map.get(&1, "tickers", []) |> List.wrap()))
+      |> Enum.map(&(&1["symbol"] || &1["key"]))
+      |> Enum.reject(&is_nil/1)
+      |> Enum.map(&(to_string(&1) |> String.trim()))
+      |> Enum.reject(&(&1 == ""))
+      |> Enum.frequencies()
+
+    labels =
+      filters
+      |> ensure_map()
+      |> Map.get("tickers", [])
+      |> List.wrap()
+      |> Enum.filter(&is_map/1)
+      |> Map.new(fn option -> {to_string(option["key"]), option["label"] || option["key"]} end)
+
+    TrackedTickers.ticker_filter_options(event_counts, labels)
   end
 
   defp write_snapshot(candidate_root, relative, snapshot) do
@@ -334,13 +714,15 @@ defmodule StonksBackend.Snapshots do
   end
 
   def publish_from_payload(%{"snapshot_version" => version}) do
-    case parse_positive_int(version) do
+    case parse_positive_snapshot_version(version) do
       {:ok, version} -> publish(version)
       :error -> {:error, "snapshot_publish requires positive snapshot_version"}
     end
   end
 
   def publish_from_payload(_), do: {:error, "snapshot_publish requires snapshot_version"}
+
+  def parse_positive_snapshot_version(value), do: parse_positive_int(value)
 
   def refresh(payload \\ %{}) do
     with {:ok, result} <- build_candidate(payload),
@@ -448,9 +830,26 @@ defmodule StonksBackend.Snapshots do
   defp file_stat_time_to_datetime(_mtime), do: :error
 
   defp next_snapshot_version do
-    (Sql.scalar("select coalesce(max(snapshot_version), 0) + 1 from publication_manifest", [], 1) ||
-       1)
-    |> to_int()
+    if snapshot_db_recording_enabled?() do
+      (Sql.scalar(
+         "select coalesce(max(snapshot_version), 0) + 1 from publication_manifest",
+         [],
+         1
+       ) ||
+         1)
+      |> to_int()
+    else
+      published_manifest_version() + 1
+    end
+  end
+
+  defp published_manifest_version do
+    published_manifest_path()
+    |> read_snapshot()
+    |> case do
+      {:ok, %{"current_version" => version}} -> to_int(version, 0)
+      _ -> 0
+    end
   end
 
   defp record_manifest(candidate_root, version, status, generated_by) do
@@ -535,6 +934,14 @@ defmodule StonksBackend.Snapshots do
   end
 
   defp mark_published(version) do
+    if snapshot_db_recording_enabled?() do
+      mark_published_rows(version)
+    else
+      :ok
+    end
+  end
+
+  defp mark_published_rows(version) do
     Repo.transaction(fn ->
       Sql.execute(
         "update publication_manifest set publication_status = 'rolled_back' where publication_status = 'published'"
@@ -1220,4 +1627,17 @@ defmodule StonksBackend.Snapshots do
   end
 
   defp to_int(_, default), do: default
+
+  defp to_float(value) when is_float(value), do: value
+  defp to_float(value) when is_integer(value), do: value / 1
+  defp to_float(%Decimal{} = value), do: Decimal.to_float(value)
+
+  defp to_float(value) when is_binary(value) do
+    case Float.parse(String.trim(value)) do
+      {float, _} -> float
+      _ -> 0.0
+    end
+  end
+
+  defp to_float(_), do: 0.0
 end
