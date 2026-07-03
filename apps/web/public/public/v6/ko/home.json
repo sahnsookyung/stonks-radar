@@ -1,0 +1,4343 @@
+{
+  "content_hash": "sha256:625ad8c3045004b3e08ab5e6e3c5a61a634a8532941a4d77781ce841b7f0de9b",
+  "corrections": [],
+  "data": {
+    "alternative_signals": [
+      {
+        "cadence": "FINRA 공매도 잔고는 결제일 보고 후 월 2회 공개됩니다.",
+        "freshness": "watch",
+        "items": [
+          {
+            "dataset": "finra_short_interest",
+            "detail": "Use daily short-sale volume as same-day flow context only. It is not a substitute for open short interest.",
+            "freshness": "watch",
+            "key": "highest_short_interest_release_lag",
+            "label": "Official short interest is delayed",
+            "severity": "medium",
+            "source": "FINRA",
+            "source_url": "https://www.finra.org/investors/insights/short-interest",
+            "updated_at": "2026-07-03T16:29:14.926431Z",
+            "value": "not realtime"
+          },
+          {
+            "dataset": "nasdaq_short_interest",
+            "detail": "Nasdaq Trader can be used as a twice-monthly listed-issue reference where available.",
+            "freshness": "watch",
+            "key": "highest_short_interest_nasdaq_fallback",
+            "label": "Nasdaq Trader issue reference",
+            "severity": "medium",
+            "source": "Nasdaq Trader",
+            "source_url": "https://www.nasdaqtrader.com/Trader.aspx?id=ShortInterest",
+            "updated_at": "2026-07-03T16:29:14.926431Z",
+            "value": "fallback"
+          }
+        ],
+        "key": "highest_short_interest",
+        "refresh_seconds": 43200,
+        "severity": "medium",
+        "source": "FINRA consolidated short interest",
+        "source_url": "https://www.finra.org/filing-reporting/regulatory-filing-systems/short-interest",
+        "summary": "Official short interest is delayed twice-monthly open-position data; no tracked rows are available in this snapshot.",
+        "title": "공매도 잔고 워치",
+        "value": "twice monthly"
+      },
+      {
+        "cadence": "FINRA 파일 공개 후 매일 갱신, 동부시간 오후 6시 이전 공개.",
+        "freshness": "unsupported",
+        "items": [
+          {
+            "dataset": "finra_daily_short_sale_volume",
+            "detail": "FINRA daily short-sale volume is same-day transaction flow after publication, not live intraday short interest.",
+            "freshness": "unsupported",
+            "key": "short_volume_monitor_coverage_gap",
+            "label": "Official daily short-volume rows unavailable",
+            "severity": "medium",
+            "source": "FINRA",
+            "source_url": "https://www.finra.org/finra-data/browse-catalog/short-sale-volume-data/daily-short-sale-volume-files",
+            "updated_at": "2026-07-03T16:29:14.926431Z",
+            "value": "coverage gap"
+          }
+        ],
+        "key": "short_volume_monitor",
+        "refresh_seconds": 900,
+        "severity": "medium",
+        "source": "FINRA daily short sale volume",
+        "source_url": "https://www.finra.org/finra-data/browse-catalog/short-sale-volume-data/daily-short-sale-volume-files",
+        "summary": "No tracked-symbol FINRA daily short-sale volume rows are available in this snapshot.",
+        "title": "일별 공매도 거래량",
+        "value": "coverage gap"
+      },
+      {
+        "cadence": "5분 목표; 최대 24시간 이내 헤드라인만 속보로 표시합니다.",
+        "freshness": "fresh",
+        "items": [
+          {
+            "detail": "지정학 시장 리스크; news.google.com; 관측 Tue, 30 Jun 2026 19:33:24 GMT",
+            "freshness": "fresh",
+            "key": "breaking_market_news_google_geopolitical_5499b2368993",
+            "label": "After U.S.-Iran War, Oman Is Said to Propose Strait of Hormuz Fee Plan - The New York Times",
+            "severity": "high",
+            "source": "Google News RSS",
+            "source_url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxQWU5DMS1mNG9RNm8yTTkzclFNMWVNRmtCNmI0M1kxdEF4RkdrTlJBV1lCeTFpUGVFcDVRRzdoSDZBYkJYbWRKaEJOWTBwREZUS3ZEMFlCYWU3N2F3eGREWHJBM0l4Q09lLWItS3VvenpzUjlJbTAyc0pzNi1zaVNKS1FwTTF3MUkxX2FTX1k0LUcyTm4xMkxscmd3?oc=5",
+            "updated_at": "2026-06-30T19:33:24Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "지정학 시장 리스크; news.google.com; 관측 Wed, 01 Jul 2026 10:46:23 GMT",
+            "freshness": "fresh",
+            "key": "breaking_market_news_google_geopolitical_8573cb8625a7",
+            "label": "Iran’s Oil Money Is Coming Back. Its Main Street Will Have to Wait. - WSJ",
+            "severity": "high",
+            "source": "Google News RSS",
+            "source_url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE8zUnhnQzdFX0Jib2NXOEllYW9hLWFoLTFoYlFlN3FkNDMtMmk2TXFaMWd0NFRKVkhtS2MyamY1anFZelJkQjdRUUpFWkdzZmstLWNBYlZQS3E0UGs0Q1doVWJseW13QU1SbnBlYzZDS0QwaXRNYmdZOA?oc=5",
+            "updated_at": "2026-07-01T10:46:23Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "지정학 시장 리스크; news.google.com; 관측 Wed, 01 Jul 2026 08:34:42 GMT",
+            "freshness": "fresh",
+            "key": "breaking_market_news_google_geopolitical_37738174e9fb",
+            "label": "Oil prices wobble as uncertainty persists over U.S.-Iran talks in Qatar - CNBC",
+            "severity": "high",
+            "source": "Google News RSS",
+            "source_url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE84NFprZ2x2NVJUeWFTSWhwME5lZWF0TlVLZGRlcHhZRXVLcmJFXzQxM0t1QXRSTmRLOFBzVmxTTkZ3bExIbGtpYi12R1NCWTMtNUpocEg4WHp4NlJXeWp5bWF5UG5LZ1A0OVJ4d0Q4Q3hCNnJUSlRwbmpoYVpOWFXSAYQBQVVfeXFMUE41elFEWXRjNmxCaXdJamtTVWxoYkZwQnJsQXl1bEgxX0RFS3RRTlEtR2dhemtZOGxiV0R3ZzNSbnp6aTViQ0xtR2llUDN5anZscTlnemQ5cGJKUm1JdVA5alE2UzYyOW9SWGhZSHl1TEFQYnVkcGllSnBkTHlseEVabG16?oc=5",
+            "updated_at": "2026-07-01T08:34:42Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "지정학 시장 리스크; news.google.com; 관측 Wed, 01 Jul 2026 10:51:51 GMT",
+            "freshness": "fresh",
+            "key": "breaking_market_news_google_geopolitical_bfae1db1ee3b",
+            "label": "US and Iran enter technical talks to secure peace deal, shipping restart - Reuters",
+            "severity": "high",
+            "source": "Google News RSS",
+            "source_url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxNR2I3cUEydmhlWVB5bmFRM1JuTXZVRHdDVFV6MTFjWHc0V3NFeDBCNFR0ZEJ0U2NjR213NWJwYlQwb0pNQjZmbU1tdlJjRlF2ZUZKZjBBRmpteTM1SUthZV9ESXZpaVRvSVhUaUYxb1lFenoxLUU2MklQd0I1OC1XR1NGSVo4b29CdVZ5ZzQ0QXp4MFdlMnoyRS1Rak0tTVNvYVU1RVhtb29hdENLeldfakJsMHNNaWNkQ0Uw?oc=5",
+            "updated_at": "2026-07-01T10:51:51Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "지정학 시장 리스크; news.google.com; 관측 Wed, 01 Jul 2026 05:00:00 GMT",
+            "freshness": "fresh",
+            "key": "breaking_market_news_google_geopolitical_f83d555bc25a",
+            "label": "US, Iran Indirect Talks Under Way In Doha - Radio Free Europe/Radio Liberty",
+            "severity": "high",
+            "source": "Google News RSS",
+            "source_url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxQWnhyaS1tS3NVV19VeVRlS1RUeUhFblVCTkRCWmg2Z2YwTW1uR051ZFctc3F2eEcyN29hbkJkLUY3THpPVzVaYVRlcTRybGlrTGVsX3ZvTFJyQmRELVNHckg3Nk9uOUw3V2RyN2lZY0dIMW1jLWVQSUVTdXBTZGpuVE55cDBQcG01?oc=5",
+            "updated_at": "2026-07-01T05:00:00Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "지정학 시장 리스크; news.google.com; 관측 Wed, 01 Jul 2026 11:44:31 GMT",
+            "freshness": "fresh",
+            "key": "breaking_market_news_google_geopolitical_c837f4110059",
+            "label": "How Iran could try to control the Strait of Hormuz - and profit from it - CBS News",
+            "severity": "high",
+            "source": "Google News RSS",
+            "source_url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1zTlNweGtCZ19hT3czVXdKUUROWkpFX01MTDhMcjRKQURpRzVON0RZRzhmV2Z6ZWVWUW5KVGNxdl9zOG56bnBaTTFQblVaUUY1U0swVDlMQXl5ajA2X0Yzc1QtelRmUEdVYUk3Zl93UFBURi1LUFg1UEJYNW03ME0?oc=5",
+            "updated_at": "2026-07-01T11:44:31Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "지정학 시장 리스크; news.google.com; 관측 Tue, 30 Jun 2026 17:01:00 GMT",
+            "freshness": "fresh",
+            "key": "breaking_market_news_google_geopolitical_2d3c950fc9c0",
+            "label": "Strait of Hormuz shipping traffic rebounds after strikes between Iran, US - The Hill",
+            "severity": "high",
+            "source": "Google News RSS",
+            "source_url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxPS25lV1lKcWtseDZJam9DQmxCNGVibFZLWEJCWm84ZkRRYUNwaVV2SkVGcHIyOXZGLVVyTkgzVDFTZ21YYmUwa0R2YWc4dTRBeGN6bWhwU0J0WnQtUkN3R0xkZ1RvaDFnZnd6QWctM3B3SWZIeUNqcjdHcXVxS20yOGU3dE1zZERrRUNSSE12azloSUM2WDBFOHcyUUs1YjdvUWlpNkNNc0xWRWvSAbABQVVfeXFMUDByR0RkZlJyTkdWSWFWNzJQbVhsMC02blppelVkVEdOUVJRWXpmZ1BiNW00cmFhQnMtTzBpblljcVk5M3dHLVdCMXFCaFF5eU5XbXk2SVYwZzNCbzZ5MldpaVlNd1ZKYVV0Q05DWDdlekN6VUtZVEJadm82Z1N6b2tvQUtfSFFCWXg1Yk1NV3BmTlNKTFh3Nmp3X3VITDBOYTRMN0I2VkNwUG53dVJ5QkM?oc=5",
+            "updated_at": "2026-06-30T17:01:00Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "지정학 시장 리스크; news.google.com; 관측 Tue, 30 Jun 2026 20:38:41 GMT",
+            "freshness": "fresh",
+            "key": "breaking_market_news_google_geopolitical_79ccc84a8e4a",
+            "label": "Strait of Hormuz oil flowing back to pre-Iran war levels, Vance says - New York Post",
+            "severity": "high",
+            "source": "Google News RSS",
+            "source_url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxQTWpKcUY5THFiNHhJVXZQZnFycVRUQnNmZkp5ZHcwYU93dTIxWWVaMVItOEIxSjN1dGFoLUV5dHJ5d3dZYURyeWhSZ2RDeW5QWW5QMmRxcTFmSEZqNEJCWnZQUW5XbXU5UnJsZWVjWUNKVzZISVdWaFZXSzBMUWJpeng5TG16QzgtbEttSzZaamlYS3VaWmtXalZ4NHNwVzAwUkV5dVBZWk5nZw?oc=5",
+            "updated_at": "2026-06-30T20:38:41Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "지정학 시장 리스크; news.google.com; 관측 Wed, 01 Jul 2026 05:25:03 GMT",
+            "freshness": "fresh",
+            "key": "breaking_market_news_google_geopolitical_d5869533a3c5",
+            "label": "Iran’s leverage over Strait of Hormuz snarls Trump’s push for a deal - The Washington Post",
+            "severity": "high",
+            "source": "Google News RSS",
+            "source_url": "https://news.google.com/rss/articles/CBMiogFBVV95cUxOZ1NVSUdldGtJbzRleXBNU2JlNVBCOUlmNXNlcVBVWmFvY1BlQl9TM2RROTJrZDRhbGVIYXpKQXdRLUwxVUpoWmJtWTJ1Q1RHdlFGUndibXN5TGpKbEJEZGJKSkRZNFZPdWo3R1ladmZnUFZMRUhfdFNUc2FidjV3Y1RUVWJONFFyUHh1MWFjMzdNZjdaS0h0T1JHYWJvSkhiVFE?oc=5",
+            "updated_at": "2026-07-01T05:25:03Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "지정학 시장 리스크; news.google.com; 관측 Wed, 01 Jul 2026 02:41:00 GMT",
+            "freshness": "fresh",
+            "key": "breaking_market_news_google_geopolitical_d671fdf7a098",
+            "label": "Iran says it is selling oil at 20% premium as end of U.S. blockade sees 40 million barrels exported - CNBC",
+            "severity": "high",
+            "source": "Google News RSS",
+            "source_url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxNcjN3dG1HWmVmbnJSS09hVUM4UGFtVmdZVjB6VDYwRzRLMm9tVmI0aEpoU3hyc045RWl1TjVheFlPMEFvNWVYR19ZQi1IQmR4dXRVcktQemdqMWtFMmZPUUNOUUlxOU84QWI0RDI5eWs5QXRtUHdyelczYm1Ua3VMaFk0Z0dHUkphTWd6dlplZ1Q1TE9wOGI3XzB30gGfAUFVX3lxTE5ENU44TFRkTTROYUpKcnBrOUoxMjkyUDNXUlM1cWswSzdIQnhoelhaRVdDTVZCem4zMS1IcGIxZzNjTWtwamZ1OHE1MS1sUk9RV2xBdmZzai1BZFdpbGhmNUl4NlAyZjBnMHVBZzlNekRhS2JSVFhiREE0Uy0xbzh3QWhTOUNIVFpVSnR0U1BBXy0weFZ6cVlXXzFuTVZIUQ?oc=5",
+            "updated_at": "2026-07-01T02:41:00Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "지정학 시장 리스크; news.google.com; 관측 Wed, 01 Jul 2026 09:55:00 GMT",
+            "freshness": "fresh",
+            "key": "breaking_market_news_google_geopolitical_5892e7bfa306",
+            "label": "Iran sold 50 million barrels of oil since the lifting of the American blockade - The Jerusalem Post",
+            "severity": "high",
+            "source": "Google News RSS",
+            "source_url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxOcnhsbGZjTzZHNko0c1hjaURUSHBlSnE2b3hOaHRURld3c1dpWTA4UHFwcDRXNlA0SDZTQUpwT2g5bVZMWjVudUxPa2dSbmpLbUlBNHExVldXbHpaMElOWmtyY2x2RlZkbWdfUzkwWktsZkYxMFpXVjZhWXVDeGhEU2VUcXB2LXhMSEdNR2lubw?oc=5",
+            "updated_at": "2026-07-01T09:55:00Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "지정학 시장 리스크; news.google.com; 관측 Wed, 01 Jul 2026 06:00:00 GMT",
+            "freshness": "fresh",
+            "key": "breaking_market_news_google_geopolitical_d7008ed03611",
+            "label": "Oil Prices Reflect Optimism That Hormuz Has Yet to Justify - Crude Oil Prices Today | OilPrice.com",
+            "severity": "high",
+            "source": "Google News RSS",
+            "source_url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxNbVVYX2Z6eUNxQUxYLXJidi02T3BqcFpCY1VzeE5wMThXdTBFX3VKTFJOOFFQUTBGVmxpMmwxVHkzbTF0aTN2SEZPMDF3dl9CdkJubE5ybGhRQXNiWHZjM2Y3VDhCenJKZG45ZENyWWlRS2w2bnk4YTJvVDZ4N29JaWg5RmNLaGJ0NDVLcVhVUzRfQzJTdm0weHlyNUk1enUwNGdSejUxOUhZNm50S2hsTl9ncWzSAboBQVVfeXFMTTRTRDBSTnA2OGtZcVg1X3lDdm1rdlNDZVRhMDZUYldfTXRtX0NYMi1RZmRXZXdkVGlWNEFJT3lmZHp0R1FyemthUUg3VkprZzFzUDZkUEVITFZ5c3lJQ3FCOXpNWl9taG5wRzhvNlp4Q0JGRTlHdFFDZmRzZ2F3RnJXdHFYaTJXNVdZdFVOWTFaQTNaNGE0bHJQbkw2SG1iSjlxQU0wY0dzc2EtQlFRVDk2Qy01bW1LVFln?oc=5",
+            "updated_at": "2026-07-01T06:00:00Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "지정학 시장 리스크; news.google.com; 관측 Wed, 01 Jul 2026 07:26:27 GMT",
+            "freshness": "fresh",
+            "key": "breaking_market_news_google_geopolitical_0c892ffb998a",
+            "label": "UNCTAD Warns of Lasting Impact from Hormuz Shipping Crisis - Egypt Oil & Gas",
+            "severity": "high",
+            "source": "Google News RSS",
+            "source_url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxPSVBsMUpHVW81Y210NVZFdTRmSGhYa2UyZ2pCZ2xpYURVMTBNbVVGTFV2eTd6ZlVhdk9mbEw2NTVMWjVsdE1xOHVraXRTclpjc1ZjT290VS1rMlhBWU5oSmZhZ1p1ZXJvcFdHNGFFcEw5bVdyNzNuNGZUcVFxTE5ibnp5ajhKZWxVTzlJVTlzZTJiWjg?oc=5",
+            "updated_at": "2026-07-01T07:26:27Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "지정학 시장 리스크; news.google.com; 관측 Tue, 30 Jun 2026 22:14:49 GMT",
+            "freshness": "fresh",
+            "key": "breaking_market_news_google_geopolitical_f800dd406438",
+            "label": "Fact Checking Trump’s Claims About the Strait of Hormuz - The Dispatch",
+            "severity": "high",
+            "source": "Google News RSS",
+            "source_url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE55R0gzT0F6ZDZmYWwyS3lOakV6eVdkNTBVR3FqWGNjdDhBTlFNSUdzSUhFcV9CaUYzbmhJZ0xDYXFESXowY2otTVQ3dktKU21ISEVfeUpLVmVKYURmUGhWRnRWMGJZSnluT0JsdFZKSG9pUWhI?oc=5",
+            "updated_at": "2026-06-30T22:14:49Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "지정학 시장 리스크; news.google.com; 관측 Wed, 01 Jul 2026 10:23:50 GMT",
+            "freshness": "fresh",
+            "key": "breaking_market_news_google_geopolitical_a2c0cea61569",
+            "label": "Oil prices edge higher as uncertainty over Iran-US talks fuels supply concerns - Yahoo Finance",
+            "severity": "high",
+            "source": "Google News RSS",
+            "source_url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxORHdQcXJ4SWNXQmVTdkU5SGExVmRONFpkdHB5NXBKRkRWV2kzVE5peGRZV3oxQWdfZTBxVmhkVlFLTXAzY3p1MkFoM1NoN3JRTG1zQXgtZl96WjRrdWxIMFJjYmRsU25PdC1oc0pjTnNYeFpBdlc1UDh4Um5xTWR2azlmMHpfSGp4bzJKNjg1Tzl6b1NwSUE?oc=5",
+            "updated_at": "2026-07-01T10:23:50Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "지정학 시장 리스크; news.google.com; 관측 Wed, 01 Jul 2026 11:25:24 GMT",
+            "freshness": "fresh",
+            "key": "breaking_market_news_google_geopolitical_8a7c51cac7f3",
+            "label": "Breakingviews - Tanker data is better Hormuz gauge than oil prices - Reuters",
+            "severity": "high",
+            "source": "Google News RSS",
+            "source_url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxNZExLMmZZZjZSSE9MLXV6WEl6QnVqOWlfOG1NWDZtNUZsclF0YjJuR0k4ZTh1WTUzUGp4S2NyTXdrdVlpYWpTSmxZcjBDTUZ0NlIybjBScXNJVTRCcWotd0pQQkVWMmVXV2xSc1ptV1Zrd19ma0RkbE5rRmpKY0x3STNpZEJ6eGNaTlZDMENTUks2SDFOZFJPRTg5bFh3NmRNT2FRNkpTZ3N5VlZoeUxyQQ?oc=5",
+            "updated_at": "2026-07-01T11:25:24Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "추적 티커 헤드라인; www.fool.com; 관측 Wed, 01 Jul 2026 12:06:00 +0000",
+            "freshness": "fresh",
+            "key": "breaking_market_news_yahoo_tickers_22f5e1545340",
+            "label": "Is Solana Poised for a Massive Breakout Rally?",
+            "severity": "medium",
+            "source": "Yahoo Finance RSS",
+            "source_url": "https://www.fool.com/investing/2026/07/01/is-solana-poised-for-a-massive-breakout-rally/?.tsrc=rss",
+            "updated_at": "2026-07-01T12:06:00Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "추적 티커 헤드라인; finance.yahoo.com; 관측 Wed, 01 Jul 2026 12:03:11 +0000",
+            "freshness": "fresh",
+            "key": "breaking_market_news_yahoo_tickers_8f1901d568da",
+            "label": "Big Tech's first half was a story of hardware versus software",
+            "severity": "medium",
+            "source": "Yahoo Finance RSS",
+            "source_url": "https://finance.yahoo.com/technology/article/big-techs-first-half-was-a-story-of-hardware-versus-software-120311290.html?.tsrc=rss",
+            "updated_at": "2026-07-01T12:03:11Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "추적 티커 헤드라인; finance.yahoo.com; 관측 Wed, 01 Jul 2026 12:00:00 +0000",
+            "freshness": "fresh",
+            "key": "breaking_market_news_yahoo_tickers_b0aa7eb841ae",
+            "label": "SpaceX has 5 key dates in Q3 that investors need to be watching",
+            "severity": "medium",
+            "source": "Yahoo Finance RSS",
+            "source_url": "https://finance.yahoo.com/video/spacex-5-key-dates-q3-120000787.html?.tsrc=rss",
+            "updated_at": "2026-07-01T12:00:00Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "추적 티커 헤드라인; qz.com; 관측 Wed, 01 Jul 2026 11:58:28 +0000",
+            "freshness": "fresh",
+            "key": "breaking_market_news_yahoo_tickers_40be0e43c461",
+            "label": "Micron, Intel, AMD stock surge Q2 2026 AI chip rally",
+            "severity": "medium",
+            "source": "Yahoo Finance RSS",
+            "source_url": "https://qz.com/micron-intel-amd-stock-market-cap-ai-chip-rally-070126?.tsrc=rss",
+            "updated_at": "2026-07-01T11:58:28Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "추적 티커 헤드라인; 247wallst.com; 관측 Wed, 01 Jul 2026 11:55:56 +0000",
+            "freshness": "fresh",
+            "key": "breaking_market_news_yahoo_tickers_e800811e7be1",
+            "label": "MTUM Investors: Watch Micron’s Weight at the November Reconstitution",
+            "severity": "medium",
+            "source": "Yahoo Finance RSS",
+            "source_url": "https://247wallst.com/investing/2026/07/01/mtum-investors-watch-microns-weight-at-the-november-reconstitution/?.tsrc=rss",
+            "updated_at": "2026-07-01T11:55:56Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "추적 티커 헤드라인; www.fool.com; 관측 Wed, 01 Jul 2026 11:55:00 +0000",
+            "freshness": "fresh",
+            "key": "breaking_market_news_yahoo_tickers_fe812796fa05",
+            "label": "Here's What History Says Comes Next For Dogecoin in July",
+            "severity": "medium",
+            "source": "Yahoo Finance RSS",
+            "source_url": "https://www.fool.com/investing/2026/07/01/heres-what-history-says-comes-next-for-dogecoin-in/?.tsrc=rss",
+            "updated_at": "2026-07-01T11:55:00Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "추적 티커 헤드라인; www.fool.com; 관측 Wed, 01 Jul 2026 11:50:00 +0000",
+            "freshness": "fresh",
+            "key": "breaking_market_news_yahoo_tickers_db4a4b0ae76d",
+            "label": "Should You Forget Altcoins and Just Buy Bitcoin Instead?",
+            "severity": "medium",
+            "source": "Yahoo Finance RSS",
+            "source_url": "https://www.fool.com/investing/2026/07/01/should-you-forget-altcoins-and-just-buy-bitcoin-in/?.tsrc=rss",
+            "updated_at": "2026-07-01T11:50:00Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "추적 티커 헤드라인; www.fool.com; 관측 Wed, 01 Jul 2026 11:45:00 +0000",
+            "freshness": "fresh",
+            "key": "breaking_market_news_yahoo_tickers_5f4d3a333848",
+            "label": "The Market Has Punished Sweetgreen -- Is That Your Buying Opportunity?",
+            "severity": "medium",
+            "source": "Yahoo Finance RSS",
+            "source_url": "https://www.fool.com/investing/2026/07/01/the-market-has-punished-sweetgreen-is-that-your-bu/?.tsrc=rss",
+            "updated_at": "2026-07-01T11:45:00Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "추적 티커 헤드라인; www.proactiveinvestors.com; 관측 Wed, 01 Jul 2026 11:43:00 +0000",
+            "freshness": "fresh",
+            "key": "breaking_market_news_yahoo_tickers_2a4255dc6ea4",
+            "label": "New Era Energy & Digital names Charlie Nelson as chief executive",
+            "severity": "medium",
+            "source": "Yahoo Finance RSS",
+            "source_url": "https://www.proactiveinvestors.com/companies/news/1094797/new-era-energy-digital-names-charlie-nelson-as-chief-executive-1094797.html?.tsrc=rss",
+            "updated_at": "2026-07-01T11:43:00Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "추적 티커 헤드라인; finance.yahoo.com; 관측 Wed, 01 Jul 2026 11:39:00 +0000",
+            "freshness": "fresh",
+            "key": "breaking_market_news_yahoo_tickers_1b60e016fd91",
+            "label": "Nike, Alcoa, AMD, Micron, and More Stocks That Explain Today’s Market",
+            "severity": "medium",
+            "source": "Yahoo Finance RSS",
+            "source_url": "https://finance.yahoo.com/m/26af6cb5-b001-39d1-9b15-23b6f2600a7c/nike%2C-alcoa%2C-amd%2C-micron%2C-and.html?.tsrc=rss",
+            "updated_at": "2026-07-01T11:39:00Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "추적 티커 헤드라인; finance.yahoo.com; 관측 Wed, 01 Jul 2026 11:38:08 +0000",
+            "freshness": "fresh",
+            "key": "breaking_market_news_yahoo_tickers_3af58775c242",
+            "label": "AI Chips Update - Etched Unveils AI Chip with $1 Billion in Contracts",
+            "severity": "medium",
+            "source": "Yahoo Finance RSS",
+            "source_url": "https://finance.yahoo.com/technology/ai/articles/ai-chips-etched-unveils-ai-113808491.html?.tsrc=rss",
+            "updated_at": "2026-07-01T11:38:08Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "추적 티커 헤드라인; 247wallst.com; 관측 Wed, 01 Jul 2026 11:35:53 +0000",
+            "freshness": "fresh",
+            "key": "breaking_market_news_yahoo_tickers_b6d4b88a4f57",
+            "label": "The Bill Miller Playbook: How Lincoln Financial, Strategy, and Nabors Stack Up for Retirement Investors",
+            "severity": "medium",
+            "source": "Yahoo Finance RSS",
+            "source_url": "https://247wallst.com/investing/2026/07/01/the-bill-miller-playbook-how-lincoln-financial-strategy-and-nabors-stack-up-for-retirement-investors/?.tsrc=rss",
+            "updated_at": "2026-07-01T11:35:53Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "추적 티커 헤드라인; finance.yahoo.com; 관측 Wed, 01 Jul 2026 11:35:00 +0000",
+            "freshness": "fresh",
+            "key": "breaking_market_news_yahoo_tickers_1ba053d1bb0a",
+            "label": "South Korea to the rescue: The world's biggest chipmakers will drop $590 billion to end RAMageddon, but there's a catch",
+            "severity": "medium",
+            "source": "Yahoo Finance RSS",
+            "source_url": "https://finance.yahoo.com/technology/articles/south-korea-rescue-worlds-biggest-113500553.html?.tsrc=rss",
+            "updated_at": "2026-07-01T11:35:00Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "추적 티커 헤드라인; www.fool.com; 관측 Wed, 01 Jul 2026 11:35:00 +0000",
+            "freshness": "fresh",
+            "key": "breaking_market_news_yahoo_tickers_73fd4dfaa2db",
+            "label": "Would You Like $3,000 in Passive Income Each Year? Buy 2,239 Shares of This Top High-Yield Dividend Stock.",
+            "severity": "medium",
+            "source": "Yahoo Finance RSS",
+            "source_url": "https://www.fool.com/investing/2026/07/01/would-you-like-3000-in-passive-income-each-year-bu/?.tsrc=rss",
+            "updated_at": "2026-07-01T11:35:00Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "추적 티커 헤드라인; 247wallst.com; 관측 Wed, 01 Jul 2026 11:30:47 +0000",
+            "freshness": "fresh",
+            "key": "breaking_market_news_yahoo_tickers_83aa0564a503",
+            "label": "Here’s How Much Money You Need to Replace a $50,000 Income With Dividends",
+            "severity": "medium",
+            "source": "Yahoo Finance RSS",
+            "source_url": "https://247wallst.com/investing/2026/07/01/heres-how-much-money-you-need-to-replace-a-50000-income-with-dividends/?.tsrc=rss",
+            "updated_at": "2026-07-01T11:30:47Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "추적 티커 헤드라인; www.fool.com; 관측 Wed, 01 Jul 2026 11:20:00 +0000",
+            "freshness": "fresh",
+            "key": "breaking_market_news_yahoo_tickers_5b8eebb5073a",
+            "label": "If a Stock Market Crash Is Coming, History Says Investors Who Do This 1 Thing Will Win Out",
+            "severity": "medium",
+            "source": "Yahoo Finance RSS",
+            "source_url": "https://www.fool.com/investing/2026/07/01/if-a-stock-market-crash-is-coming-history-says-inv/?.tsrc=rss",
+            "updated_at": "2026-07-01T11:20:00Z",
+            "value": "헤드라인"
+          },
+          {
+            "detail": "출처 연결 기사; www.arabnews.com; 관측 2026-07-01T12:08:56Z",
+            "freshness": "fresh",
+            "key": "breaking_market_news_gdelt_bulk_94ac62729c8c",
+            "label": "Arab News source report: Berlin / Ukraine",
+            "severity": "medium",
+            "source": "GDELT linked sources",
+            "source_url": "https://www.arabnews.com/node/2649248/world",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "출처 연결 기사"
+          },
+          {
+            "detail": "출처 연결 기사; www.theatlantic.com; 관측 2026-07-01T12:08:56Z",
+            "freshness": "fresh",
+            "key": "breaking_market_news_gdelt_bulk_4e9a21448dc6",
+            "label": "The Young Republicans Who Think Trump Hasn’t Gone Far Enough",
+            "severity": "medium",
+            "source": "GDELT linked sources",
+            "source_url": "https://www.theatlantic.com/ideas/2026/07/young-republicans-trump-iran/687746/",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "출처 연결 기사"
+          },
+          {
+            "detail": "출처 연결 기사; www.marinelink.com; 관측 2026-07-01T12:08:56Z",
+            "freshness": "fresh",
+            "key": "breaking_market_news_gdelt_bulk_05e99a47426c",
+            "label": "Nord Gas to Supply LNG Regasification System for Exmar FSRU Conversion",
+            "severity": "medium",
+            "source": "GDELT linked sources",
+            "source_url": "https://www.marinelink.com/news/nord-gas-supply-lng-regasification-system-540816",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "출처 연결 기사"
+          },
+          {
+            "detail": "출처 연결 기사; www.techtimes.com; 관측 2026-07-01T12:08:56Z",
+            "freshness": "fresh",
+            "key": "breaking_market_news_gdelt_bulk_4be7ed05039c",
+            "label": "War Force Pentagon Recruits AI Engineers After Shedding 5700 Tech Workers",
+            "severity": "medium",
+            "source": "GDELT linked sources",
+            "source_url": "https://www.techtimes.com/articles/319429/20260701/war-force-pentagon-recruits-ai-engineers-after-shedding-5700-tech-workers.htm",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "출처 연결 기사"
+          },
+          {
+            "detail": "출처 연결 기사; www.rttnews.com; 관측 2026-07-01T12:08:56Z",
+            "freshness": "fresh",
+            "key": "breaking_market_news_gdelt_bulk_8254e61671f2",
+            "label": "Gold Edges Lower On Fed Rate Hike Bets, US-Iran Tensions",
+            "severity": "medium",
+            "source": "GDELT linked sources",
+            "source_url": "https://www.rttnews.com/3663943/gold-edges-lower-on-fed-rate-hike-bets-us-iran-tensions.aspx",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "출처 연결 기사"
+          },
+          {
+            "detail": "출처 연결 기사; www.swissinfo.ch; 관측 2026-07-01T12:08:56Z",
+            "freshness": "fresh",
+            "key": "breaking_market_news_gdelt_bulk_855747aae808",
+            "label": "Swiss High Court Upholds Asset Freezes For Russian Metals Oligarch",
+            "severity": "medium",
+            "source": "GDELT linked sources",
+            "source_url": "https://www.swissinfo.ch/eng/foreign-affairs/swiss-high-court-upholds-asset-freezes-for-russian-metals-oligarch/91681170",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "출처 연결 기사"
+          },
+          {
+            "detail": "출처 연결 기사; www.politico.eu; 관측 2026-07-01T12:08:56Z",
+            "freshness": "fresh",
+            "key": "breaking_market_news_gdelt_bulk_102a00c70682",
+            "label": "Russia Suspends Railway Border Crossings Finland Baltic Neighbors",
+            "severity": "medium",
+            "source": "GDELT linked sources",
+            "source_url": "https://www.politico.eu/article/russia-suspends-railway-border-crossings-finland-baltic-neighbors/",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "출처 연결 기사"
+          },
+          {
+            "detail": "출처 연결 기사; nypost.com; 관측 2026-07-01T12:08:56Z",
+            "freshness": "fresh",
+            "key": "breaking_market_news_gdelt_bulk_62f85af2711d",
+            "label": "Powerful Iranian Clerics Call For Assassination Of Trump Netanyahu Send Them To Hell",
+            "severity": "high",
+            "source": "GDELT linked sources",
+            "source_url": "https://nypost.com/2026/07/01/world-news/powerful-iranian-clerics-call-for-assassination-of-trump-netanyahu-send-them-to-hell/",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "출처 연결 기사"
+          },
+          {
+            "detail": "출처 연결 기사; www.ipswichstar.co.uk; 관측 2026-07-01T12:08:56Z",
+            "freshness": "fresh",
+            "key": "breaking_market_news_gdelt_bulk_c3cf1f0fa9da",
+            "label": "26239358.ipswich Cornhill Protest Palantir Nhs Contract",
+            "severity": "medium",
+            "source": "GDELT linked sources",
+            "source_url": "https://www.ipswichstar.co.uk/news/26239358.ipswich-cornhill-protest-palantir-nhs-contract/",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "출처 연결 기사"
+          },
+          {
+            "detail": "출처 연결 기사; www.theweek.in; 관측 2026-07-01T12:08:56Z",
+            "freshness": "fresh",
+            "key": "breaking_market_news_gdelt_bulk_30c8510cb4e8",
+            "label": "Russia ready to immediately deliver 36 to 60 Su-57E stealth jets to India: Report",
+            "severity": "medium",
+            "source": "GDELT linked sources",
+            "source_url": "https://www.theweek.in/news/defence/2026/07/01/russia-ready-to-immediately-deliver-36-to-60-su-57e-stealth-jets-to-india-report.html",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "출처 연결 기사"
+          },
+          {
+            "detail": "출처 연결 기사; www.techtimes.com; 관측 2026-07-01T12:08:56Z",
+            "freshness": "fresh",
+            "key": "breaking_market_news_gdelt_bulk_33e259b6bfc8",
+            "label": "AI Exploit Speed Forces Apple Push 29 Ios 2652 Patches Before Attackers Strike",
+            "severity": "medium",
+            "source": "GDELT linked sources",
+            "source_url": "https://www.techtimes.com/articles/319418/20260701/ai-exploit-speed-forces-apple-push-29-ios-2652-patches-before-attackers-strike.htm",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "출처 연결 기사"
+          },
+          {
+            "detail": "출처 연결 기사; article.wn.com; 관측 2026-07-01T12:08:56Z",
+            "freshness": "fresh",
+            "key": "breaking_market_news_gdelt_bulk_556f10358e93",
+            "label": "Ukraine requests EU peace fund",
+            "severity": "medium",
+            "source": "GDELT linked sources",
+            "source_url": "https://article.wn.com/view/2026/07/01/Ukraine_requests_EU_peace_funds_66B_euros_to_boost_war_effor/",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "출처 연결 기사"
+          },
+          {
+            "detail": "출처 연결 기사; nypost.com; 관측 2026-07-01T12:08:56Z",
+            "freshness": "fresh",
+            "key": "breaking_market_news_gdelt_bulk_31be3d87725c",
+            "label": "Melat Kiros Gen Z Socialist Who Ousted 15 Term Colorado Incumbent Has Cutting Message For Hakeem Jeffries",
+            "severity": "medium",
+            "source": "GDELT linked sources",
+            "source_url": "https://nypost.com/2026/07/01/us-news/melat-kiros-gen-z-socialist-who-ousted-15-term-colorado-incumbent-has-cutting-message-for-hakeem-jeffries/",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "출처 연결 기사"
+          }
+        ],
+        "key": "breaking_market_news",
+        "refresh_seconds": 300,
+        "severity": "high",
+        "source": "GDELT DOC, Event Files, and public RSS",
+        "source_url": "https://www.gdeltproject.org/",
+        "summary": "지정학 요충지, 제재, 수출통제, 추적 티커 촉매에 대한 GDELT 및 공개 RSS 헤드라인 메타데이터입니다.",
+        "title": "시장 속보",
+        "value": "헤드라인 45개"
+      },
+      {
+        "cadence": "라이브 수집 활성화 후 15분 간격으로 출처를 점검합니다.",
+        "freshness": "watch",
+        "items": [
+          {
+            "detail": "공개 숏 논지와 포렌식 보고서로 알려진 출처입니다.",
+            "freshness": "watch",
+            "key": "short_research_reports_muddy_waters",
+            "label": "머디 워터스",
+            "severity": "high",
+            "source": "Muddy Waters",
+            "source_url": "https://www.muddywatersresearch.com/",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "active watch"
+          },
+          {
+            "detail": "공개 액티비스트 숏 리서치 발행사로 알려져 있습니다.",
+            "freshness": "watch",
+            "key": "short_research_reports_viceroy",
+            "label": "바이스로이 리서치",
+            "severity": "medium",
+            "source": "Viceroy",
+            "source_url": "https://viceroyresearch.org/",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "active watch"
+          },
+          {
+            "detail": "긴 공개 보고서는 출처 정책 검토 후 요약할 수 있으며 제한 원문은 외부 제공자에게 보내지 않습니다.",
+            "freshness": "fresh",
+            "key": "short_research_reports_ai_summary",
+            "label": "AI 보고서 요약",
+            "severity": "medium",
+            "source": "LLM router",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "준비됨"
+          },
+          {
+            "detail": "공개 포렌식 숏 리서치 출처입니다.",
+            "freshness": "watch",
+            "key": "short_research_reports_spruce_point",
+            "label": "스프루스 포인트",
+            "severity": "medium",
+            "source": "Spruce Point",
+            "source_url": "https://www.sprucepointcap.com/",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "active watch"
+          },
+          {
+            "detail": "롱/숏 리서치 레터를 공개합니다.",
+            "freshness": "watch",
+            "key": "short_research_reports_kerrisdale",
+            "label": "케리스데일 캐피털",
+            "severity": "medium",
+            "source": "Kerrisdale",
+            "source_url": "https://www.kerrisdalecap.com/",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "active watch"
+          },
+          {
+            "detail": "공개 숏 리서치 발행사입니다.",
+            "freshness": "watch",
+            "key": "short_research_reports_culper",
+            "label": "컬퍼 리서치",
+            "severity": "medium",
+            "source": "Culper",
+            "source_url": "https://culperresearch.com/",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "active watch"
+          },
+          {
+            "detail": "공개 숏 보고서로 알려져 있습니다.",
+            "freshness": "watch",
+            "key": "short_research_reports_blue_orca",
+            "label": "블루 오르카 캐피털",
+            "severity": "medium",
+            "source": "Blue Orca",
+            "source_url": "https://www.blueorcacapital.com/",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "active watch"
+          },
+          {
+            "detail": "공개 숏 리서치 출처입니다.",
+            "freshness": "watch",
+            "key": "short_research_reports_grizzly",
+            "label": "그리즐리 리서치",
+            "severity": "medium",
+            "source": "Grizzly",
+            "source_url": "https://grizzlyreports.com/",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "active watch"
+          }
+        ],
+        "key": "short_research_reports",
+        "refresh_seconds": 900,
+        "severity": "high",
+        "source": "public research websites/RSS/news",
+        "summary": "액티비스트 숏셀러와 포렌식 리서치 발행사의 공개 보고서를 추적합니다.",
+        "title": "공개 숏 리서치",
+        "value": "7개 출처"
+      },
+      {
+        "cadence": "SEC submissions 스냅샷이며 설정된 공정 접근 주기보다 빠르게 폴링하지 않습니다.",
+        "freshness": "fresh",
+        "items": [
+          {
+            "detail": "Trump Media & Technology Group Corp. 425 · 접수번호 0001140361-26-027019",
+            "freshness": "fresh",
+            "key": "trump_filings_425_0",
+            "label": "DJT 425",
+            "severity": "medium",
+            "source": "SEC EDGAR submissions API",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000114036126027019/ef20077163_425.htm",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "filed 2026-07-01"
+          },
+          {
+            "detail": "Trump Media & Technology Group Corp. 4 · 접수번호 0001437749-26-021440",
+            "freshness": "fresh",
+            "key": "trump_filings_4_1",
+            "label": "DJT 4",
+            "severity": "medium",
+            "source": "SEC EDGAR submissions API",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000143774926021440/xslF345X06/rdgdoc.xml",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "filed 2026-06-23"
+          },
+          {
+            "detail": "Trump Media & Technology Group Corp. 4 · 접수번호 0001437749-26-021439",
+            "freshness": "fresh",
+            "key": "trump_filings_4_2",
+            "label": "DJT 4",
+            "severity": "medium",
+            "source": "SEC EDGAR submissions API",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1849635/000143774926021439/xslF345X06/rdgdoc.xml",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "filed 2026-06-23"
+          },
+          {
+            "detail": "수익소유 공시와 확인되지 않은 13F 운용사 가정은 분리합니다.",
+            "freshness": "watch",
+            "key": "trump_filings_trust",
+            "label": "도널드 J. 트럼프 취소가능 신탁",
+            "severity": "medium",
+            "source": "SEC EDGAR",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "entity caveat"
+          },
+          {
+            "detail": "AI 요약은 출처에 묶이며 비밀이 아니라 승인된 공개 사실 또는 추출 전용 로컬 텍스트에서 생성합니다.",
+            "freshness": "fresh",
+            "key": "trump_filings_ai_summary",
+            "label": "장문 공시 요약",
+            "severity": "medium",
+            "source": "LLM router",
+            "updated_at": "2026-07-01T12:08:56Z",
+            "value": "준비됨"
+          }
+        ],
+        "key": "trump_filings",
+        "refresh_seconds": 900,
+        "severity": "medium",
+        "source": "SEC EDGAR / OGE disclosures",
+        "source_url": "https://www.sec.gov/search-filings",
+        "summary": "추적 중인 트럼프 관련 공개 엔티티의 SEC 공시 요약이며 미확정 엔티티 주의사항을 함께 표시합니다.",
+        "title": "트럼프 일가 공시",
+        "value": "425 2026-07-01"
+      }
+    ],
+    "breaking_market_events": [],
+    "breaking_market_map": {
+      "coverage_gaps": [
+        {
+          "coverage_window_days": 7,
+          "label": "중국",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "CHN"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "대만",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "TWN"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "중동 / OPEC+ / GCC",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "MIDDLE_EAST_OPEC_GCC"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "일본",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "JPN"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "사우디아라비아",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "SAU"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "프랑스",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "FRA"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "아랍에미리트",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "ARE"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "이탈리아",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "ITA"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "캐나다",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "CAN"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "유럽연합",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "EU"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "브라질",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "BRA"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "튀르키예",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "TUR"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "멕시코",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "MEX"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "호주",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "AUS"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "네덜란드",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "NLD"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "인도네시아",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "IDN"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "스페인",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "ESP"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "폴란드",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "POL"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "싱가포르",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "SGP"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "남아프리카공화국",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "ZAF"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "노르웨이",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "NOR"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "벨기에",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "BEL"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "아르헨티나",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "ARG"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "아일랜드",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "IRL"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "스웨덴",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "SWE"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "오스트리아",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "AUT"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "태국",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "THA"
+        }
+      ],
+      "events": [],
+      "generated_at": "2026-07-01T12:08:56Z",
+      "map_points": [],
+      "ranking_cutoff": null,
+      "regional_briefs": [
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 5,
+          "evidence": [
+            {
+              "event_id": "seed_4f5d1821967f03",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.techtimes.com/articles/319429/20260701/war-force-pentagon-recruits-ai-engineers-after-shedding-5700-tech-workers.htm",
+              "title": "War Force Pentagon Recruits AI Engineers After Shedding 5700 Tech Workers"
+            },
+            {
+              "event_id": "seed_21c563df35df9f",
+              "severity": "high",
+              "source_published_at": "2026-07-01T08:34:42Z",
+              "source_url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE84NFprZ2x2NVJUeWFTSWhwME5lZWF0TlVLZGRlcHhZRXVLcmJFXzQxM0t1QXRSTmRLOFBzVmxTTkZ3bExIbGtpYi12R1NCWTMtNUpocEg4WHp4NlJXeWp5bWF5UG5LZ1A0OVJ4d0Q4Q3hCNnJUSlRwbmpoYVpOWFXSAYQBQVVfeXFMUE41elFEWXRjNmxCaXdJamtTVWxoYkZwQnJsQXl1bEgxX0RFS3RRTlEtR2dhemtZOGxiV0R3ZzNSbnp6aTViQ0xtR2llUDN5anZscTlnemQ5cGJKUm1JdVA5alE2UzYyOW9SWGhZSHl1TEFQYnVkcGllSnBkTHlseEVabG16",
+              "title": "Oil prices wobble as uncertainty persists over U.S.-Iran talks in Qatar - CNBC"
+            },
+            {
+              "event_id": "seed_8b4096903dffde",
+              "severity": "high",
+              "source_published_at": "2026-07-01T05:25:03Z",
+              "source_url": "https://news.google.com/rss/articles/CBMiogFBVV95cUxOZ1NVSUdldGtJbzRleXBNU2JlNVBCOUlmNXNlcVBVWmFvY1BlQl9TM2RROTJrZDRhbGVIYXpKQXdRLUwxVUpoWmJtWTJ1Q1RHdlFGUndibXN5TGpKbEJEZGJKSkRZNFZPdWo3R1ladmZnUFZMRUhfdFNUc2FidjV3Y1RUVWJONFFyUHh1MWFjMzdNZjdaS0h0T1JHYWJvSkhiVFE",
+              "title": "Iran’s leverage over Strait of Hormuz snarls Trump’s push for a deal - The Washington Post"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "미국",
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "region_key": "USA",
+          "source_count": 5,
+          "summary": "미국에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 5건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 3,
+          "evidence": [
+            {
+              "event_id": "seed_f72a99e0ace4b8",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.swissinfo.ch/eng/foreign-affairs/swiss-high-court-upholds-asset-freezes-for-russian-metals-oligarch/91681170",
+              "title": "Swiss High Court Upholds Asset Freezes For Russian Metals Oligarch"
+            },
+            {
+              "event_id": "seed_77e1aea3700330",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.politico.eu/article/russia-suspends-railway-border-crossings-finland-baltic-neighbors/",
+              "title": "Russia Suspends Railway Border Crossings Finland Baltic Neighbors"
+            },
+            {
+              "event_id": "seed_8b89b7f17afc2e",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.theweek.in/news/defence/2026/07/01/russia-ready-to-immediately-deliver-36-to-60-su-57e-stealth-jets-to-india-report.html",
+              "title": "Russia ready to immediately deliver 36 to 60 Su-57E stealth jets to India: Report"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "러시아",
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "region_key": "RUS",
+          "source_count": 3,
+          "summary": "러시아에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 3건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "evidence": [
+            {
+              "event_id": "seed_8d4b6aa455ff27",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.arabnews.com/node/2649248/world",
+              "title": "Arab News source report: Berlin / Ukraine"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "독일",
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "region_key": "DEU",
+          "source_count": 1,
+          "summary": "독일에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 1건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "evidence": [
+            {
+              "event_id": "seed_8b89b7f17afc2e",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.theweek.in/news/defence/2026/07/01/russia-ready-to-immediately-deliver-36-to-60-su-57e-stealth-jets-to-india-report.html",
+              "title": "Russia ready to immediately deliver 36 to 60 Su-57E stealth jets to India: Report"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "인도",
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "region_key": "IND",
+          "source_count": 1,
+          "summary": "인도에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 1건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "evidence": [
+            {
+              "event_id": "seed_42d17588441829",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T11:35:00Z",
+              "source_url": "https://finance.yahoo.com/technology/articles/south-korea-rescue-worlds-biggest-113500553.html",
+              "title": "South Korea to the rescue: The world's biggest chipmakers will drop $590 billion to end RAMageddon, but there's a catch"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "대한민국",
+          "newest_source_published_at": "2026-07-01T11:35:00Z",
+          "region_key": "KOR",
+          "source_count": 1,
+          "summary": "대한민국에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 1건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "evidence": [
+            {
+              "event_id": "seed_be1a67729f09c7",
+              "severity": "high",
+              "source_published_at": "2026-07-01T09:55:00Z",
+              "source_url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxOcnhsbGZjTzZHNko0c1hjaURUSHBlSnE2b3hOaHRURld3c1dpWTA4UHFwcDRXNlA0SDZTQUpwT2g5bVZMWjVudUxPa2dSbmpLbUlBNHExVldXbHpaMElOWmtyY2x2RlZkbWdfUzkwWktsZkYxMFpXVjZhWXVDeGhEU2VUcXB2LXhMSEdNR2lubw",
+              "title": "Iran sold 50 million barrels of oil since the lifting of the American blockade - The Jerusalem Post"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "이스라엘",
+          "newest_source_published_at": "2026-07-01T09:55:00Z",
+          "region_key": "ISR",
+          "source_count": 1,
+          "summary": "이스라엘에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 1건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "evidence": [
+            {
+              "event_id": "seed_482b89b9a6f2d8",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.ipswichstar.co.uk/news/26239358.ipswich-cornhill-protest-palantir-nhs-contract/",
+              "title": "26239358.ipswich Cornhill Protest Palantir Nhs Contract"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "영국",
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "region_key": "GBR",
+          "source_count": 1,
+          "summary": "영국에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 1건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "evidence": [
+            {
+              "event_id": "seed_8d4b6aa455ff27",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.arabnews.com/node/2649248/world",
+              "title": "Arab News source report: Berlin / Ukraine"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "유로존",
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "region_key": "EUROZONE",
+          "source_count": 1,
+          "summary": "유로존에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 1건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "evidence": [
+            {
+              "event_id": "seed_f72a99e0ace4b8",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.swissinfo.ch/eng/foreign-affairs/swiss-high-court-upholds-asset-freezes-for-russian-metals-oligarch/91681170",
+              "title": "Swiss High Court Upholds Asset Freezes For Russian Metals Oligarch"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "스위스",
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "region_key": "CHE",
+          "source_count": 1,
+          "summary": "스위스에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 1건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "중국",
+          "newest_source_published_at": null,
+          "region_key": "CHN",
+          "source_count": 0,
+          "summary": "중국은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "대만",
+          "newest_source_published_at": null,
+          "region_key": "TWN",
+          "source_count": 0,
+          "summary": "대만은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "중동 / OPEC+ / GCC",
+          "newest_source_published_at": null,
+          "region_key": "MIDDLE_EAST_OPEC_GCC",
+          "source_count": 0,
+          "summary": "중동 / OPEC+ / GCC은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "일본",
+          "newest_source_published_at": null,
+          "region_key": "JPN",
+          "source_count": 0,
+          "summary": "일본은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "사우디아라비아",
+          "newest_source_published_at": null,
+          "region_key": "SAU",
+          "source_count": 0,
+          "summary": "사우디아라비아은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "프랑스",
+          "newest_source_published_at": null,
+          "region_key": "FRA",
+          "source_count": 0,
+          "summary": "프랑스은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "아랍에미리트",
+          "newest_source_published_at": null,
+          "region_key": "ARE",
+          "source_count": 0,
+          "summary": "아랍에미리트은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "이탈리아",
+          "newest_source_published_at": null,
+          "region_key": "ITA",
+          "source_count": 0,
+          "summary": "이탈리아은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "캐나다",
+          "newest_source_published_at": null,
+          "region_key": "CAN",
+          "source_count": 0,
+          "summary": "캐나다은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "유럽연합",
+          "newest_source_published_at": null,
+          "region_key": "EU",
+          "source_count": 0,
+          "summary": "유럽연합은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "브라질",
+          "newest_source_published_at": null,
+          "region_key": "BRA",
+          "source_count": 0,
+          "summary": "브라질은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "튀르키예",
+          "newest_source_published_at": null,
+          "region_key": "TUR",
+          "source_count": 0,
+          "summary": "튀르키예은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "멕시코",
+          "newest_source_published_at": null,
+          "region_key": "MEX",
+          "source_count": 0,
+          "summary": "멕시코은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "호주",
+          "newest_source_published_at": null,
+          "region_key": "AUS",
+          "source_count": 0,
+          "summary": "호주은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "네덜란드",
+          "newest_source_published_at": null,
+          "region_key": "NLD",
+          "source_count": 0,
+          "summary": "네덜란드은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "인도네시아",
+          "newest_source_published_at": null,
+          "region_key": "IDN",
+          "source_count": 0,
+          "summary": "인도네시아은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "스페인",
+          "newest_source_published_at": null,
+          "region_key": "ESP",
+          "source_count": 0,
+          "summary": "스페인은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "폴란드",
+          "newest_source_published_at": null,
+          "region_key": "POL",
+          "source_count": 0,
+          "summary": "폴란드은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "싱가포르",
+          "newest_source_published_at": null,
+          "region_key": "SGP",
+          "source_count": 0,
+          "summary": "싱가포르은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "남아프리카공화국",
+          "newest_source_published_at": null,
+          "region_key": "ZAF",
+          "source_count": 0,
+          "summary": "남아프리카공화국은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "노르웨이",
+          "newest_source_published_at": null,
+          "region_key": "NOR",
+          "source_count": 0,
+          "summary": "노르웨이은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "벨기에",
+          "newest_source_published_at": null,
+          "region_key": "BEL",
+          "source_count": 0,
+          "summary": "벨기에은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "아르헨티나",
+          "newest_source_published_at": null,
+          "region_key": "ARG",
+          "source_count": 0,
+          "summary": "아르헨티나은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "아일랜드",
+          "newest_source_published_at": null,
+          "region_key": "IRL",
+          "source_count": 0,
+          "summary": "아일랜드은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "스웨덴",
+          "newest_source_published_at": null,
+          "region_key": "SWE",
+          "source_count": 0,
+          "summary": "스웨덴은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "오스트리아",
+          "newest_source_published_at": null,
+          "region_key": "AUT",
+          "source_count": 0,
+          "summary": "오스트리아은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "태국",
+          "newest_source_published_at": null,
+          "region_key": "THA",
+          "source_count": 0,
+          "summary": "태국은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        }
+      ],
+      "registry_version": 1,
+      "scoring_version": "geo-priority-v1",
+      "shown_count": 0,
+      "thinning_version": "freshness-area-cap-v1",
+      "total_count": 0,
+      "watched_regions": [
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 5,
+          "gather_news": true,
+          "gdp_rank": 1,
+          "groups": [
+            "top30_gdp",
+            "top10_gdp",
+            "americas",
+            "priority"
+          ],
+          "iso3": "USA",
+          "key": "USA",
+          "label": "미국",
+          "map_point_count": 5,
+          "natural_earth_names": [
+            "United States of America",
+            "United States"
+          ],
+          "nav_visible": true,
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "priority": 100,
+          "quiet_reason": null,
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 3,
+          "gather_news": true,
+          "gdp_rank": 11,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "energy",
+            "strategic"
+          ],
+          "iso3": "RUS",
+          "key": "RUS",
+          "label": "러시아",
+          "map_point_count": 3,
+          "natural_earth_names": [
+            "Russia",
+            "Russian Federation"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "priority": 92,
+          "quiet_reason": null,
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "gather_news": true,
+          "gdp_rank": 3,
+          "groups": [
+            "top30_gdp",
+            "top10_gdp",
+            "europe",
+            "eurozone"
+          ],
+          "iso3": "DEU",
+          "key": "DEU",
+          "label": "독일",
+          "map_point_count": 1,
+          "natural_earth_names": [
+            "Germany"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "priority": 90,
+          "quiet_reason": null,
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "gather_news": true,
+          "gdp_rank": 5,
+          "groups": [
+            "top30_gdp",
+            "top10_gdp",
+            "asia",
+            "priority"
+          ],
+          "iso3": "IND",
+          "key": "IND",
+          "label": "인도",
+          "map_point_count": 1,
+          "natural_earth_names": [
+            "India"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "priority": 90,
+          "quiet_reason": null,
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "gather_news": true,
+          "gdp_rank": 12,
+          "groups": [
+            "top30_gdp",
+            "asia",
+            "priority",
+            "semiconductors"
+          ],
+          "iso3": "KOR",
+          "key": "KOR",
+          "label": "대한민국",
+          "map_point_count": 1,
+          "natural_earth_names": [
+            "South Korea",
+            "Korea"
+          ],
+          "nav_visible": true,
+          "newest_source_published_at": "2026-07-01T11:35:00Z",
+          "priority": 90,
+          "quiet_reason": null,
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "gather_news": true,
+          "gdp_rank": 28,
+          "groups": [
+            "top30_gdp",
+            "middle_east",
+            "strategic",
+            "semiconductors"
+          ],
+          "iso3": "ISR",
+          "key": "ISR",
+          "label": "이스라엘",
+          "map_point_count": 1,
+          "natural_earth_names": [
+            "Israel"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": "2026-07-01T09:55:00Z",
+          "priority": 90,
+          "quiet_reason": null,
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "gather_news": true,
+          "gdp_rank": 6,
+          "groups": [
+            "top30_gdp",
+            "top10_gdp",
+            "europe",
+            "priority"
+          ],
+          "iso3": "GBR",
+          "key": "GBR",
+          "label": "영국",
+          "map_point_count": 1,
+          "natural_earth_names": [
+            "United Kingdom"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "priority": 88,
+          "quiet_reason": null,
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "gather_news": true,
+          "gdp_rank": null,
+          "groups": [
+            "europe",
+            "macro",
+            "region"
+          ],
+          "iso3": null,
+          "key": "EUROZONE",
+          "label": "유로존",
+          "map_point_count": 1,
+          "natural_earth_names": [],
+          "nav_visible": true,
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "priority": 80,
+          "quiet_reason": null,
+          "render_on_map": false,
+          "type": "region"
+        },
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "gather_news": true,
+          "gdp_rank": 20,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "finance"
+          ],
+          "iso3": "CHE",
+          "key": "CHE",
+          "label": "스위스",
+          "map_point_count": 1,
+          "natural_earth_names": [
+            "Switzerland"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "priority": 66,
+          "quiet_reason": null,
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 2,
+          "groups": [
+            "top30_gdp",
+            "top10_gdp",
+            "asia",
+            "priority",
+            "semiconductors"
+          ],
+          "iso3": "CHN",
+          "key": "CHN",
+          "label": "중국",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "China"
+          ],
+          "nav_visible": true,
+          "newest_source_published_at": null,
+          "priority": 98,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": null,
+          "groups": [
+            "asia",
+            "priority",
+            "semiconductors",
+            "strategic"
+          ],
+          "iso3": "TWN",
+          "key": "TWN",
+          "label": "대만",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Taiwan"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 96,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": null,
+          "groups": [
+            "middle_east",
+            "energy",
+            "strategic",
+            "region"
+          ],
+          "iso3": null,
+          "key": "MIDDLE_EAST_OPEC_GCC",
+          "label": "중동 / OPEC+ / GCC",
+          "map_point_count": 0,
+          "natural_earth_names": [],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 94,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": false,
+          "type": "region"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 4,
+          "groups": [
+            "top30_gdp",
+            "top10_gdp",
+            "asia",
+            "priority",
+            "semiconductors"
+          ],
+          "iso3": "JPN",
+          "key": "JPN",
+          "label": "일본",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Japan"
+          ],
+          "nav_visible": true,
+          "newest_source_published_at": null,
+          "priority": 92,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 18,
+          "groups": [
+            "top30_gdp",
+            "middle_east",
+            "middle_east_opec_gcc",
+            "energy",
+            "strategic"
+          ],
+          "iso3": "SAU",
+          "key": "SAU",
+          "label": "사우디아라비아",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Saudi Arabia"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 88,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 7,
+          "groups": [
+            "top30_gdp",
+            "top10_gdp",
+            "europe",
+            "eurozone"
+          ],
+          "iso3": "FRA",
+          "key": "FRA",
+          "label": "프랑스",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "France"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 86,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 26,
+          "groups": [
+            "top30_gdp",
+            "middle_east",
+            "middle_east_opec_gcc",
+            "energy",
+            "strategic"
+          ],
+          "iso3": "ARE",
+          "key": "ARE",
+          "label": "아랍에미리트",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "United Arab Emirates"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 82,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 8,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "eurozone"
+          ],
+          "iso3": "ITA",
+          "key": "ITA",
+          "label": "이탈리아",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Italy"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 78,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 9,
+          "groups": [
+            "top30_gdp",
+            "americas",
+            "energy"
+          ],
+          "iso3": "CAN",
+          "key": "CAN",
+          "label": "캐나다",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Canada"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 78,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": null,
+          "groups": [
+            "europe",
+            "macro",
+            "region"
+          ],
+          "iso3": null,
+          "key": "EU",
+          "label": "유럽연합",
+          "map_point_count": 0,
+          "natural_earth_names": [],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 78,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": false,
+          "type": "region"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 10,
+          "groups": [
+            "top30_gdp",
+            "americas",
+            "commodities"
+          ],
+          "iso3": "BRA",
+          "key": "BRA",
+          "label": "브라질",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Brazil"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 76,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 17,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "strategic"
+          ],
+          "iso3": "TUR",
+          "key": "TUR",
+          "label": "튀르키예",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Turkey",
+            "Turkiye"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 74,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 13,
+          "groups": [
+            "top30_gdp",
+            "americas",
+            "supply_chain"
+          ],
+          "iso3": "MEX",
+          "key": "MEX",
+          "label": "멕시코",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Mexico"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 72,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 14,
+          "groups": [
+            "top30_gdp",
+            "asia_pacific",
+            "commodities"
+          ],
+          "iso3": "AUS",
+          "key": "AUS",
+          "label": "호주",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Australia"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 72,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 19,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "eurozone",
+            "semiconductors"
+          ],
+          "iso3": "NLD",
+          "key": "NLD",
+          "label": "네덜란드",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Netherlands"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 72,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 16,
+          "groups": [
+            "top30_gdp",
+            "asia",
+            "commodities"
+          ],
+          "iso3": "IDN",
+          "key": "IDN",
+          "label": "인도네시아",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Indonesia"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 68,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 15,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "eurozone"
+          ],
+          "iso3": "ESP",
+          "key": "ESP",
+          "label": "스페인",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Spain"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 66,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 21,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "strategic"
+          ],
+          "iso3": "POL",
+          "key": "POL",
+          "label": "폴란드",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Poland"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 66,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 27,
+          "groups": [
+            "top30_gdp",
+            "asia",
+            "finance",
+            "supply_chain"
+          ],
+          "iso3": "SGP",
+          "key": "SGP",
+          "label": "싱가포르",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Singapore"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 66,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": null,
+          "groups": [
+            "africa",
+            "commodities",
+            "requested"
+          ],
+          "iso3": "ZAF",
+          "key": "ZAF",
+          "label": "남아프리카공화국",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "South Africa"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 62,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": null,
+          "groups": [
+            "energy",
+            "europe",
+            "requested"
+          ],
+          "iso3": "NOR",
+          "key": "NOR",
+          "label": "노르웨이",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Norway"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 62,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 22,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "eurozone"
+          ],
+          "iso3": "BEL",
+          "key": "BEL",
+          "label": "벨기에",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Belgium"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 60,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 23,
+          "groups": [
+            "top30_gdp",
+            "americas",
+            "commodities"
+          ],
+          "iso3": "ARG",
+          "key": "ARG",
+          "label": "아르헨티나",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Argentina"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 58,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 24,
+          "groups": [
+            "top30_gdp",
+            "europe"
+          ],
+          "iso3": "IRL",
+          "key": "IRL",
+          "label": "아일랜드",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Ireland"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 58,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 25,
+          "groups": [
+            "top30_gdp",
+            "europe"
+          ],
+          "iso3": "SWE",
+          "key": "SWE",
+          "label": "스웨덴",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Sweden"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 58,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 29,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "eurozone"
+          ],
+          "iso3": "AUT",
+          "key": "AUT",
+          "label": "오스트리아",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Austria"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 54,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 30,
+          "groups": [
+            "top30_gdp",
+            "asia",
+            "supply_chain"
+          ],
+          "iso3": "THA",
+          "key": "THA",
+          "label": "태국",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Thailand"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 54,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        }
+      ]
+    },
+    "calendar_preview": [
+      {
+        "actual_value": null,
+        "country_region_key": "KOR",
+        "expectation_type": "manual_watch",
+        "expectation_value": "제공사 날짜 미확인; 다음 SK Hynix 실적일은 SK Hynix IR에서 확인하세요.",
+        "freshness": "watch",
+        "id": "cal_earnings_000660_KS",
+        "previous_value": null,
+        "release_type": "earnings_watch",
+        "scheduled_at": null,
+        "scheduled_local_date": "2026-07-01",
+        "source": "SK Hynix IR",
+        "source_url": "https://www.skhynix.com/ir/UI-FR-IR04",
+        "status": "monitoring",
+        "surprise": null,
+        "time_precision": "date_only",
+        "timezone": "UTC",
+        "title": "SK Hynix 실적 캘린더"
+      },
+      {
+        "actual_value": null,
+        "country_region_key": "KOR",
+        "expectation_type": "manual_watch",
+        "expectation_value": "제공사 날짜 미확인; 다음 Samsung Electronics 실적일은 Samsung IR에서 확인하세요.",
+        "freshness": "watch",
+        "id": "cal_earnings_005930_KS",
+        "previous_value": null,
+        "release_type": "earnings_watch",
+        "scheduled_at": null,
+        "scheduled_local_date": "2026-07-01",
+        "source": "Samsung IR",
+        "source_url": "https://www.samsung.com/global/ir/financial-information/earnings-release/",
+        "status": "monitoring",
+        "surprise": null,
+        "time_precision": "date_only",
+        "timezone": "UTC",
+        "title": "Samsung Electronics 실적 캘린더"
+      },
+      {
+        "actual_value": null,
+        "country_region_key": "USA",
+        "expectation_type": "manual_watch",
+        "expectation_value": "제공사 날짜 미확인; 다음 Apple 실적일은 Apple IR에서 확인하세요.",
+        "freshness": "watch",
+        "id": "cal_earnings_AAPL",
+        "previous_value": null,
+        "release_type": "earnings_watch",
+        "scheduled_at": null,
+        "scheduled_local_date": "2026-07-01",
+        "source": "Apple IR",
+        "source_url": "https://investor.apple.com/investor-relations/default.aspx",
+        "status": "monitoring",
+        "surprise": null,
+        "time_precision": "date_only",
+        "timezone": "UTC",
+        "title": "Apple 실적 캘린더"
+      },
+      {
+        "actual_value": null,
+        "country_region_key": "USA",
+        "expectation_type": "manual_watch",
+        "expectation_value": "제공사 날짜 미확인; 다음 Advanced Micro Devices 실적일은 AMD IR에서 확인하세요.",
+        "freshness": "watch",
+        "id": "cal_earnings_AMD",
+        "previous_value": null,
+        "release_type": "earnings_watch",
+        "scheduled_at": null,
+        "scheduled_local_date": "2026-07-01",
+        "source": "AMD IR",
+        "source_url": "https://ir.amd.com/news-events/ir-calendar",
+        "status": "monitoring",
+        "surprise": null,
+        "time_precision": "date_only",
+        "timezone": "UTC",
+        "title": "Advanced Micro Devices 실적 캘린더"
+      },
+      {
+        "actual_value": null,
+        "country_region_key": "EU",
+        "expectation_type": "manual_watch",
+        "expectation_value": "제공사 날짜 미확인; 다음 ASML 실적일은 ASML IR에서 확인하세요.",
+        "freshness": "watch",
+        "id": "cal_earnings_ASML",
+        "previous_value": null,
+        "release_type": "earnings_watch",
+        "scheduled_at": null,
+        "scheduled_local_date": "2026-07-01",
+        "source": "ASML IR",
+        "source_url": "https://www.asml.com/en/investors/financial-calendar",
+        "status": "monitoring",
+        "surprise": null,
+        "time_precision": "date_only",
+        "timezone": "UTC",
+        "title": "ASML 실적 캘린더"
+      },
+      {
+        "actual_value": null,
+        "country_region_key": "USA",
+        "expectation_type": "manual_watch",
+        "expectation_value": "제공사 날짜 미확인; 다음 AST SpaceMobile 실적일은 AST SpaceMobile IR에서 확인하세요.",
+        "freshness": "watch",
+        "id": "cal_earnings_ASTS",
+        "previous_value": null,
+        "release_type": "earnings_watch",
+        "scheduled_at": null,
+        "scheduled_local_date": "2026-07-01",
+        "source": "AST SpaceMobile IR",
+        "source_url": "https://investors.ast-science.com/news-events/events-presentations",
+        "status": "monitoring",
+        "surprise": null,
+        "time_precision": "date_only",
+        "timezone": "UTC",
+        "title": "AST SpaceMobile 실적 캘린더"
+      }
+    ],
+    "generated_label": "2026-07-03T16:29:14.926431Z",
+    "headline": "글로벌 시장 인텔리전스 대시보드",
+    "macro_tiles": [
+      {
+        "coverage_status": "active",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-30T21:15:59Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "freshness": "watch",
+        "key": "nasdaq_composite",
+        "label": "나스닥 종합",
+        "points": [
+          {
+            "date": "2026-06-30T15:06:00Z",
+            "value": 26040.205078125
+          },
+          {
+            "date": "2026-06-30T15:54:00Z",
+            "value": 26131.88671875
+          },
+          {
+            "date": "2026-06-30T16:42:00Z",
+            "value": 26163.07421875
+          },
+          {
+            "date": "2026-06-30T17:30:00Z",
+            "value": 26155.73046875
+          },
+          {
+            "date": "2026-06-30T18:18:00Z",
+            "value": 26182.064453125
+          },
+          {
+            "date": "2026-06-30T19:06:00Z",
+            "value": 26186.85546875
+          },
+          {
+            "date": "2026-06-30T19:54:00Z",
+            "value": 26211.55859375
+          },
+          {
+            "date": "2026-06-30T20:00:00Z",
+            "value": 26213.71875
+          }
+        ],
+        "refresh_delta": 393.5740000000005,
+        "refresh_delta_percent": 1.5242904329158513,
+        "refresh_seconds": 43200,
+        "source": "Yahoo Finance delayed quote",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EIXIC?range=1d&interval=1m",
+        "updated_at": "2026-06-30T21:15:59Z",
+        "value": "26,213.72"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-06-30T21:15:59Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "freshness": "watch",
+        "key": "nasdaq_100",
+        "label": "나스닥 100",
+        "points": [
+          {
+            "date": "2026-06-30T15:06:00Z",
+            "value": 30102.4296875
+          },
+          {
+            "date": "2026-06-30T15:54:00Z",
+            "value": 30193.69921875
+          },
+          {
+            "date": "2026-06-30T16:42:00Z",
+            "value": 30227.8046875
+          },
+          {
+            "date": "2026-06-30T17:30:00Z",
+            "value": 30250.76171875
+          },
+          {
+            "date": "2026-06-30T18:18:00Z",
+            "value": 30260.05078125
+          },
+          {
+            "date": "2026-06-30T19:06:00Z",
+            "value": 30285.728515625
+          },
+          {
+            "date": "2026-06-30T19:54:00Z",
+            "value": 30302.51953125
+          },
+          {
+            "date": "2026-06-30T20:00:00Z",
+            "value": 30276.34765625
+          }
+        ],
+        "refresh_delta": 501.59600000000137,
+        "refresh_delta_percent": 1.6846353581719216,
+        "refresh_seconds": 43200,
+        "source": "Yahoo Finance delayed quote",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?range=1d&interval=1m",
+        "updated_at": "2026-06-30T21:15:59Z",
+        "value": "30,276.35"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-07-01T09:05:40Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "freshness": "watch",
+        "key": "kospi",
+        "label": "코스피",
+        "points": [
+          {
+            "date": "2026-07-01T00:45:00Z",
+            "value": 8443.490234375
+          },
+          {
+            "date": "2026-07-01T01:30:00Z",
+            "value": 8355.150390625
+          },
+          {
+            "date": "2026-07-01T02:15:00Z",
+            "value": 8187.47998046875
+          },
+          {
+            "date": "2026-07-01T03:00:00Z",
+            "value": 8310.9296875
+          },
+          {
+            "date": "2026-07-01T03:45:00Z",
+            "value": 8373.0498046875
+          },
+          {
+            "date": "2026-07-01T04:30:00Z",
+            "value": 8379.7197265625
+          },
+          {
+            "date": "2026-07-01T05:15:00Z",
+            "value": 8380.25
+          },
+          {
+            "date": "2026-07-01T06:00:00Z",
+            "value": 8303.41015625
+          }
+        ],
+        "refresh_delta": -173.0699999999997,
+        "refresh_delta_percent": -2.0417673373853265,
+        "refresh_seconds": 43200,
+        "source": "Yahoo Finance delayed quote",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EKS11?range=1d&interval=1m",
+        "updated_at": "2026-07-01T09:05:40Z",
+        "value": "8,303.41"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "사용 가능한 최신 Yahoo Finance delayed quote 관측 2026-07-01T06:30:01Z; 시장이 닫혔거나 공개 피드가 지연될 수 있습니다. 실시간 거래소 시세를 보장하지 않습니다.",
+        "freshness": "watch",
+        "key": "kodex_200",
+        "label": "KODEX 200 ETF",
+        "points": [
+          {
+            "date": "2026-07-01T00:45:00Z",
+            "value": 136990.0
+          },
+          {
+            "date": "2026-07-01T01:30:00Z",
+            "value": 135065.0
+          },
+          {
+            "date": "2026-07-01T02:15:00Z",
+            "value": 132440.0
+          },
+          {
+            "date": "2026-07-01T03:00:00Z",
+            "value": 134625.0
+          },
+          {
+            "date": "2026-07-01T03:45:00Z",
+            "value": 135670.0
+          },
+          {
+            "date": "2026-07-01T04:30:00Z",
+            "value": 135760.0
+          },
+          {
+            "date": "2026-07-01T05:15:00Z",
+            "value": 135560.0
+          },
+          {
+            "date": "2026-07-01T06:00:00Z",
+            "value": 134525.0
+          }
+        ],
+        "refresh_delta": -4055.0,
+        "refresh_delta_percent": -2.9261076634434984,
+        "refresh_seconds": 43200,
+        "source": "Yahoo Finance delayed quote",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/069500.KS?range=1d&interval=1m",
+        "unit": "KRW",
+        "updated_at": "2026-07-01T06:30:01Z",
+        "value": "134,525"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-07-01T11:59:19Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "freshness": "fresh",
+        "key": "wti_crude",
+        "label": "WTI 원유 선물",
+        "points": [
+          {
+            "date": "2026-07-01T06:01:00Z",
+            "value": 69.6500015258789
+          },
+          {
+            "date": "2026-07-01T07:00:00Z",
+            "value": 69.52999877929688
+          },
+          {
+            "date": "2026-07-01T07:59:00Z",
+            "value": 69.36000061035156
+          },
+          {
+            "date": "2026-07-01T08:58:00Z",
+            "value": 68.38999938964844
+          },
+          {
+            "date": "2026-07-01T09:57:00Z",
+            "value": 68.75
+          },
+          {
+            "date": "2026-07-01T10:56:00Z",
+            "value": 68.75
+          },
+          {
+            "date": "2026-07-01T11:55:00Z",
+            "value": 69.13999938964844
+          },
+          {
+            "date": "2026-07-01T11:59:19Z",
+            "value": 69.1500015258789
+          }
+        ],
+        "refresh_delta": -0.3499999999999943,
+        "refresh_delta_percent": -0.50359712230215,
+        "refresh_seconds": 900,
+        "source": "Yahoo Finance delayed quote",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/CL%3DF?range=1d&interval=1m",
+        "unit": "$",
+        "updated_at": "2026-07-01T11:59:19Z",
+        "value": "69.15"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-07-01T11:59:22Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "freshness": "fresh",
+        "key": "gold_futures",
+        "label": "금 선물",
+        "points": [
+          {
+            "date": "2026-07-01T05:00:00Z",
+            "value": 3989.0
+          },
+          {
+            "date": "2026-07-01T06:00:00Z",
+            "value": 3988.5
+          },
+          {
+            "date": "2026-07-01T07:00:00Z",
+            "value": 3983.60009765625
+          },
+          {
+            "date": "2026-07-01T08:00:00Z",
+            "value": 3986.0
+          },
+          {
+            "date": "2026-07-01T09:00:00Z",
+            "value": 3987.0
+          },
+          {
+            "date": "2026-07-01T10:00:00Z",
+            "value": 3997.699951171875
+          },
+          {
+            "date": "2026-07-01T11:00:00Z",
+            "value": 4015.10009765625
+          },
+          {
+            "date": "2026-07-01T11:59:22Z",
+            "value": 4044.5
+          }
+        ],
+        "refresh_delta": 6.0,
+        "refresh_delta_percent": 0.14857001361891792,
+        "refresh_seconds": 900,
+        "source": "Yahoo Finance delayed quote",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?range=1d&interval=1m",
+        "unit": "$",
+        "updated_at": "2026-07-01T11:59:22Z",
+        "value": "4,044.5"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-07-01T11:59:20Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "freshness": "fresh",
+        "key": "silver_futures",
+        "label": "은 선물",
+        "points": [
+          {
+            "date": "2026-07-01T06:04:00Z",
+            "value": 58.0099983215332
+          },
+          {
+            "date": "2026-07-01T07:02:00Z",
+            "value": 57.76499938964844
+          },
+          {
+            "date": "2026-07-01T08:00:00Z",
+            "value": 58.0099983215332
+          },
+          {
+            "date": "2026-07-01T08:58:00Z",
+            "value": 58.084999084472656
+          },
+          {
+            "date": "2026-07-01T09:57:00Z",
+            "value": 58.494998931884766
+          },
+          {
+            "date": "2026-07-01T10:59:00Z",
+            "value": 58.709999084472656
+          },
+          {
+            "date": "2026-07-01T11:57:00Z",
+            "value": 59.42499923706055
+          },
+          {
+            "date": "2026-07-01T11:59:20Z",
+            "value": 59.400001525878906
+          }
+        ],
+        "refresh_delta": -0.5219999999999985,
+        "refresh_delta_percent": -0.8711324722138755,
+        "refresh_seconds": 900,
+        "source": "Yahoo Finance delayed quote",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/SI%3DF?range=1d&interval=1m",
+        "unit": "$",
+        "updated_at": "2026-07-01T11:59:20Z",
+        "value": "59.4"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-07-01T11:59:15Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "freshness": "fresh",
+        "key": "copper_futures",
+        "label": "구리 선물",
+        "points": [
+          {
+            "date": "2026-07-01T05:05:00Z",
+            "value": 6.137499809265137
+          },
+          {
+            "date": "2026-07-01T06:07:00Z",
+            "value": 6.131999969482422
+          },
+          {
+            "date": "2026-07-01T07:06:00Z",
+            "value": 6.142499923706055
+          },
+          {
+            "date": "2026-07-01T08:05:00Z",
+            "value": 6.125500202178955
+          },
+          {
+            "date": "2026-07-01T09:04:00Z",
+            "value": 6.116499900817871
+          },
+          {
+            "date": "2026-07-01T10:03:00Z",
+            "value": 6.121500015258789
+          },
+          {
+            "date": "2026-07-01T11:02:00Z",
+            "value": 6.128499984741211
+          },
+          {
+            "date": "2026-07-01T11:59:15Z",
+            "value": 6.1539998054504395
+          }
+        ],
+        "refresh_delta": -0.09999999999999964,
+        "refresh_delta_percent": -1.5989766549408324,
+        "refresh_seconds": 900,
+        "source": "Yahoo Finance delayed quote",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/HG%3DF?range=1d&interval=1m",
+        "unit": "$",
+        "updated_at": "2026-07-01T11:59:15Z",
+        "value": "6.154"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-07-01T11:54:16Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "freshness": "fresh",
+        "key": "vix",
+        "label": "VIX",
+        "points": [
+          {
+            "date": "2026-07-01T07:50:00Z",
+            "value": 17.100000381469727
+          },
+          {
+            "date": "2026-07-01T08:25:00Z",
+            "value": 16.959999084472656
+          },
+          {
+            "date": "2026-07-01T09:00:00Z",
+            "value": 16.920000076293945
+          },
+          {
+            "date": "2026-07-01T09:35:00Z",
+            "value": 16.90999984741211
+          },
+          {
+            "date": "2026-07-01T10:10:00Z",
+            "value": 16.899999618530273
+          },
+          {
+            "date": "2026-07-01T10:45:00Z",
+            "value": 16.739999771118164
+          },
+          {
+            "date": "2026-07-01T11:20:00Z",
+            "value": 16.670000076293945
+          },
+          {
+            "date": "2026-07-01T11:54:16Z",
+            "value": 16.729999542236328
+          }
+        ],
+        "refresh_delta": 0.28000000000000114,
+        "refresh_delta_percent": 1.702127659574475,
+        "refresh_seconds": 900,
+        "source": "Yahoo Finance delayed quote",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1d&interval=1m",
+        "updated_at": "2026-07-01T11:54:16Z",
+        "value": "16.73"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-07-01T12:09:26Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "freshness": "fresh",
+        "key": "usd_krw",
+        "label": "달러/원",
+        "points": [
+          {
+            "date": "2026-07-01T03:02:00Z",
+            "value": 1557.0799560546875
+          },
+          {
+            "date": "2026-07-01T04:33:00Z",
+            "value": 1554.5799560546875
+          },
+          {
+            "date": "2026-07-01T06:04:00Z",
+            "value": 1551.8800048828125
+          },
+          {
+            "date": "2026-07-01T07:35:00Z",
+            "value": 1555.489990234375
+          },
+          {
+            "date": "2026-07-01T09:06:00Z",
+            "value": 1554.7900390625
+          },
+          {
+            "date": "2026-07-01T10:37:00Z",
+            "value": 1557.760009765625
+          },
+          {
+            "date": "2026-07-01T12:08:00Z",
+            "value": 1557.8399658203125
+          },
+          {
+            "date": "2026-07-01T12:09:26Z",
+            "value": 1557.9200439453125
+          }
+        ],
+        "refresh_delta": 11.13000000000011,
+        "refresh_delta_percent": 0.7195546906820001,
+        "refresh_seconds": 900,
+        "source": "Yahoo Finance delayed quote",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/KRW%3DX?range=1d&interval=1m",
+        "unit": "KRW",
+        "updated_at": "2026-07-01T12:09:26Z",
+        "value": "1,557.92"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "Yahoo Finance delayed quote 관측 2026-07-01T12:09:26Z; 실시간 거래소 시세를 보장하지 않습니다.",
+        "freshness": "fresh",
+        "key": "usd_jpy",
+        "label": "달러/엔",
+        "points": [
+          {
+            "date": "2026-07-01T02:16:00Z",
+            "value": 162.66600036621094
+          },
+          {
+            "date": "2026-07-01T03:54:00Z",
+            "value": 162.80099487304688
+          },
+          {
+            "date": "2026-07-01T05:32:00Z",
+            "value": 162.72999572753906
+          },
+          {
+            "date": "2026-07-01T07:10:00Z",
+            "value": 162.63299560546875
+          },
+          {
+            "date": "2026-07-01T08:48:00Z",
+            "value": 162.6439971923828
+          },
+          {
+            "date": "2026-07-01T10:26:00Z",
+            "value": 162.68699645996094
+          },
+          {
+            "date": "2026-07-01T12:04:00Z",
+            "value": 162.69400024414062
+          },
+          {
+            "date": "2026-07-01T12:09:26Z",
+            "value": 162.7030029296875
+          }
+        ],
+        "refresh_delta": 0.15500000000000114,
+        "refresh_delta_percent": 0.09535644855673471,
+        "refresh_seconds": 900,
+        "source": "Yahoo Finance delayed quote",
+        "source_url": "https://query1.finance.yahoo.com/v8/finance/chart/JPY%3DX?range=1d&interval=1m",
+        "unit": "JPY",
+        "updated_at": "2026-07-01T12:09:26Z",
+        "value": "162.7"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "official daily data, monthly sampled through 2026-07-02",
+        "freshness": "fresh",
+        "key": "us_2y",
+        "label": "미국 국채 2년",
+        "next_event": {
+          "date": "2026-07-29",
+          "source": "Federal Reserve",
+          "timezone": "America/New_York",
+          "title": "FOMC 정책 결정"
+        },
+        "points": [
+          {
+            "date": "2024-08-30",
+            "value": 3.91
+          },
+          {
+            "date": "2024-09-30",
+            "value": 3.66
+          },
+          {
+            "date": "2024-10-31",
+            "value": 4.16
+          },
+          {
+            "date": "2024-11-29",
+            "value": 4.13
+          },
+          {
+            "date": "2024-12-31",
+            "value": 4.25
+          },
+          {
+            "date": "2025-01-31",
+            "value": 4.22
+          },
+          {
+            "date": "2025-02-28",
+            "value": 3.99
+          },
+          {
+            "date": "2025-03-31",
+            "value": 3.89
+          },
+          {
+            "date": "2025-04-30",
+            "value": 3.6
+          },
+          {
+            "date": "2025-05-30",
+            "value": 3.89
+          },
+          {
+            "date": "2025-06-30",
+            "value": 3.72
+          },
+          {
+            "date": "2025-07-31",
+            "value": 3.94
+          },
+          {
+            "date": "2025-08-29",
+            "value": 3.59
+          },
+          {
+            "date": "2025-09-30",
+            "value": 3.6
+          },
+          {
+            "date": "2025-10-31",
+            "value": 3.6
+          },
+          {
+            "date": "2025-11-28",
+            "value": 3.47
+          },
+          {
+            "date": "2025-12-31",
+            "value": 3.47
+          },
+          {
+            "date": "2026-01-30",
+            "value": 3.52
+          },
+          {
+            "date": "2026-02-27",
+            "value": 3.38
+          },
+          {
+            "date": "2026-03-31",
+            "value": 3.79
+          },
+          {
+            "date": "2026-04-30",
+            "value": 3.88
+          },
+          {
+            "date": "2026-05-29",
+            "value": 3.98
+          },
+          {
+            "date": "2026-06-30",
+            "value": 4.14
+          },
+          {
+            "date": "2026-07-02",
+            "value": 4.14
+          }
+        ],
+        "refresh_delta": 0.0,
+        "refresh_seconds": 86400,
+        "source": "U.S. Treasury XML feed",
+        "source_url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates",
+        "unit": "%",
+        "updated_at": "2026-07-02T21:00:00Z",
+        "value": "4.14"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "official daily data, monthly sampled through 2026-07-02",
+        "freshness": "fresh",
+        "key": "us_3y",
+        "label": "미국 국채 3년",
+        "next_event": {
+          "date": "2026-07-29",
+          "source": "Federal Reserve",
+          "timezone": "America/New_York",
+          "title": "FOMC 정책 결정"
+        },
+        "points": [
+          {
+            "date": "2024-08-30",
+            "value": 3.79
+          },
+          {
+            "date": "2024-09-30",
+            "value": 3.58
+          },
+          {
+            "date": "2024-10-31",
+            "value": 4.12
+          },
+          {
+            "date": "2024-11-29",
+            "value": 4.1
+          },
+          {
+            "date": "2024-12-31",
+            "value": 4.27
+          },
+          {
+            "date": "2025-01-31",
+            "value": 4.27
+          },
+          {
+            "date": "2025-02-28",
+            "value": 3.99
+          },
+          {
+            "date": "2025-03-31",
+            "value": 3.89
+          },
+          {
+            "date": "2025-04-30",
+            "value": 3.58
+          },
+          {
+            "date": "2025-05-30",
+            "value": 3.87
+          },
+          {
+            "date": "2025-06-30",
+            "value": 3.68
+          },
+          {
+            "date": "2025-07-31",
+            "value": 3.89
+          },
+          {
+            "date": "2025-08-29",
+            "value": 3.58
+          },
+          {
+            "date": "2025-09-30",
+            "value": 3.61
+          },
+          {
+            "date": "2025-10-31",
+            "value": 3.6
+          },
+          {
+            "date": "2025-11-28",
+            "value": 3.49
+          },
+          {
+            "date": "2025-12-31",
+            "value": 3.55
+          },
+          {
+            "date": "2026-01-30",
+            "value": 3.6
+          },
+          {
+            "date": "2026-02-27",
+            "value": 3.39
+          },
+          {
+            "date": "2026-03-31",
+            "value": 3.81
+          },
+          {
+            "date": "2026-04-30",
+            "value": 3.91
+          },
+          {
+            "date": "2026-05-29",
+            "value": 4.06
+          },
+          {
+            "date": "2026-06-30",
+            "value": 4.15
+          },
+          {
+            "date": "2026-07-02",
+            "value": 4.16
+          }
+        ],
+        "refresh_delta": 0.01,
+        "refresh_seconds": 86400,
+        "source": "U.S. Treasury XML feed",
+        "source_url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates",
+        "unit": "%",
+        "updated_at": "2026-07-02T21:00:00Z",
+        "value": "4.16"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "official daily data, monthly sampled through 2026-07-02",
+        "freshness": "fresh",
+        "key": "us_5y",
+        "label": "미국 국채 5년",
+        "next_event": {
+          "date": "2026-07-29",
+          "source": "Federal Reserve",
+          "timezone": "America/New_York",
+          "title": "FOMC 정책 결정"
+        },
+        "points": [
+          {
+            "date": "2024-08-30",
+            "value": 3.71
+          },
+          {
+            "date": "2024-09-30",
+            "value": 3.58
+          },
+          {
+            "date": "2024-10-31",
+            "value": 4.15
+          },
+          {
+            "date": "2024-11-29",
+            "value": 4.05
+          },
+          {
+            "date": "2024-12-31",
+            "value": 4.38
+          },
+          {
+            "date": "2025-01-31",
+            "value": 4.36
+          },
+          {
+            "date": "2025-02-28",
+            "value": 4.03
+          },
+          {
+            "date": "2025-03-31",
+            "value": 3.96
+          },
+          {
+            "date": "2025-04-30",
+            "value": 3.72
+          },
+          {
+            "date": "2025-05-30",
+            "value": 3.96
+          },
+          {
+            "date": "2025-06-30",
+            "value": 3.79
+          },
+          {
+            "date": "2025-07-31",
+            "value": 3.96
+          },
+          {
+            "date": "2025-08-29",
+            "value": 3.68
+          },
+          {
+            "date": "2025-09-30",
+            "value": 3.74
+          },
+          {
+            "date": "2025-10-31",
+            "value": 3.71
+          },
+          {
+            "date": "2025-11-28",
+            "value": 3.59
+          },
+          {
+            "date": "2025-12-31",
+            "value": 3.73
+          },
+          {
+            "date": "2026-01-30",
+            "value": 3.79
+          },
+          {
+            "date": "2026-02-27",
+            "value": 3.51
+          },
+          {
+            "date": "2026-03-31",
+            "value": 3.92
+          },
+          {
+            "date": "2026-04-30",
+            "value": 4.02
+          },
+          {
+            "date": "2026-05-29",
+            "value": 4.13
+          },
+          {
+            "date": "2026-06-30",
+            "value": 4.19
+          },
+          {
+            "date": "2026-07-02",
+            "value": 4.23
+          }
+        ],
+        "refresh_delta": 0.04,
+        "refresh_seconds": 86400,
+        "source": "U.S. Treasury XML feed",
+        "source_url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates",
+        "unit": "%",
+        "updated_at": "2026-07-02T21:00:00Z",
+        "value": "4.23"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "official daily data, monthly sampled through 2026-07-02",
+        "freshness": "fresh",
+        "key": "us_10y",
+        "label": "미국 국채 10년",
+        "next_event": {
+          "date": "2026-07-29",
+          "source": "Federal Reserve",
+          "timezone": "America/New_York",
+          "title": "FOMC 정책 결정"
+        },
+        "points": [
+          {
+            "date": "2024-08-30",
+            "value": 3.91
+          },
+          {
+            "date": "2024-09-30",
+            "value": 3.81
+          },
+          {
+            "date": "2024-10-31",
+            "value": 4.28
+          },
+          {
+            "date": "2024-11-29",
+            "value": 4.18
+          },
+          {
+            "date": "2024-12-31",
+            "value": 4.58
+          },
+          {
+            "date": "2025-01-31",
+            "value": 4.58
+          },
+          {
+            "date": "2025-02-28",
+            "value": 4.24
+          },
+          {
+            "date": "2025-03-31",
+            "value": 4.23
+          },
+          {
+            "date": "2025-04-30",
+            "value": 4.17
+          },
+          {
+            "date": "2025-05-30",
+            "value": 4.41
+          },
+          {
+            "date": "2025-06-30",
+            "value": 4.24
+          },
+          {
+            "date": "2025-07-31",
+            "value": 4.37
+          },
+          {
+            "date": "2025-08-29",
+            "value": 4.23
+          },
+          {
+            "date": "2025-09-30",
+            "value": 4.16
+          },
+          {
+            "date": "2025-10-31",
+            "value": 4.11
+          },
+          {
+            "date": "2025-11-28",
+            "value": 4.02
+          },
+          {
+            "date": "2025-12-31",
+            "value": 4.18
+          },
+          {
+            "date": "2026-01-30",
+            "value": 4.26
+          },
+          {
+            "date": "2026-02-27",
+            "value": 3.97
+          },
+          {
+            "date": "2026-03-31",
+            "value": 4.3
+          },
+          {
+            "date": "2026-04-30",
+            "value": 4.4
+          },
+          {
+            "date": "2026-05-29",
+            "value": 4.45
+          },
+          {
+            "date": "2026-06-30",
+            "value": 4.44
+          },
+          {
+            "date": "2026-07-02",
+            "value": 4.49
+          }
+        ],
+        "refresh_delta": 0.05,
+        "refresh_seconds": 86400,
+        "source": "U.S. Treasury XML feed",
+        "source_url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates",
+        "unit": "%",
+        "updated_at": "2026-07-02T21:00:00Z",
+        "value": "4.49"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "일본은행 FM01/STRDCLUCON 일일 평균 실제값, 2026-06-29까지; API 최종 갱신 2026-07-01.",
+        "freshness": "fresh",
+        "key": "japan_policy_rate",
+        "label": "일본은행 무담보 익일물 콜금리",
+        "next_event": {
+          "date": "2026-07-31",
+          "source": "BoJ",
+          "timezone": "Asia/Tokyo",
+          "title": "일본은행 통화정책회의"
+        },
+        "points": [
+          {
+            "date": "2026-06-18",
+            "value": 0.977
+          },
+          {
+            "date": "2026-06-19",
+            "value": 0.977
+          },
+          {
+            "date": "2026-06-22",
+            "value": 0.977
+          },
+          {
+            "date": "2026-06-23",
+            "value": 0.976
+          },
+          {
+            "date": "2026-06-24",
+            "value": 0.977
+          },
+          {
+            "date": "2026-06-25",
+            "value": 0.978
+          },
+          {
+            "date": "2026-06-26",
+            "value": 0.977
+          },
+          {
+            "date": "2026-06-29",
+            "value": 0.978
+          }
+        ],
+        "refresh_seconds": 43200,
+        "source": "BoJ Time-Series Data Search",
+        "source_url": "https://www.stat-search.boj.or.jp/api/v1/getDataCode?format=csv&lang=en&db=FM01&code=STRDCLUCON&startDate=202606&endDate=202606",
+        "unit": "%",
+        "updated_at": "2026-07-01T21:00:00Z",
+        "value": "0.978"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "official daily data, monthly sampled through 2026-06-30",
+        "freshness": "fresh",
+        "key": "japan_2y",
+        "label": "일본 국채 2년",
+        "next_event": {
+          "date": "2026-07-31",
+          "source": "BoJ",
+          "timezone": "Asia/Tokyo",
+          "title": "일본은행 통화정책회의"
+        },
+        "points": [
+          {
+            "date": "2024-07-31",
+            "value": 0.45
+          },
+          {
+            "date": "2024-08-30",
+            "value": 0.363
+          },
+          {
+            "date": "2024-09-30",
+            "value": 0.394
+          },
+          {
+            "date": "2024-10-31",
+            "value": 0.434
+          },
+          {
+            "date": "2024-11-29",
+            "value": 0.599
+          },
+          {
+            "date": "2024-12-30",
+            "value": 0.599
+          },
+          {
+            "date": "2025-01-31",
+            "value": 0.729
+          },
+          {
+            "date": "2025-02-28",
+            "value": 0.806
+          },
+          {
+            "date": "2025-03-31",
+            "value": 0.854
+          },
+          {
+            "date": "2025-04-30",
+            "value": 0.676
+          },
+          {
+            "date": "2025-05-30",
+            "value": 0.75
+          },
+          {
+            "date": "2025-06-30",
+            "value": 0.746
+          },
+          {
+            "date": "2025-07-31",
+            "value": 0.826
+          },
+          {
+            "date": "2025-08-29",
+            "value": 0.871
+          },
+          {
+            "date": "2025-09-30",
+            "value": 0.958
+          },
+          {
+            "date": "2025-10-31",
+            "value": 0.928
+          },
+          {
+            "date": "2025-11-28",
+            "value": 0.992
+          },
+          {
+            "date": "2025-12-30",
+            "value": 1.167
+          },
+          {
+            "date": "2026-01-30",
+            "value": 1.251
+          },
+          {
+            "date": "2026-02-27",
+            "value": 1.25
+          },
+          {
+            "date": "2026-03-31",
+            "value": 1.375
+          },
+          {
+            "date": "2026-04-30",
+            "value": 1.402
+          },
+          {
+            "date": "2026-05-29",
+            "value": 1.393
+          },
+          {
+            "date": "2026-06-30",
+            "value": 1.382
+          }
+        ],
+        "refresh_delta": -0.011,
+        "refresh_seconds": 86400,
+        "source": "Japan MOF JGB historical CSV",
+        "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
+        "unit": "%",
+        "updated_at": "2026-06-30T21:00:00Z",
+        "value": "1.382"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "official daily data, monthly sampled through 2026-06-30",
+        "freshness": "fresh",
+        "key": "japan_5y",
+        "label": "일본 국채 5년",
+        "next_event": {
+          "date": "2026-07-31",
+          "source": "BoJ",
+          "timezone": "Asia/Tokyo",
+          "title": "일본은행 통화정책회의"
+        },
+        "points": [
+          {
+            "date": "2024-07-31",
+            "value": 0.671
+          },
+          {
+            "date": "2024-08-30",
+            "value": 0.502
+          },
+          {
+            "date": "2024-09-30",
+            "value": 0.508
+          },
+          {
+            "date": "2024-10-31",
+            "value": 0.571
+          },
+          {
+            "date": "2024-11-29",
+            "value": 0.728
+          },
+          {
+            "date": "2024-12-30",
+            "value": 0.743
+          },
+          {
+            "date": "2025-01-31",
+            "value": 0.909
+          },
+          {
+            "date": "2025-02-28",
+            "value": 1.007
+          },
+          {
+            "date": "2025-03-31",
+            "value": 1.113
+          },
+          {
+            "date": "2025-04-30",
+            "value": 0.888
+          },
+          {
+            "date": "2025-05-30",
+            "value": 1.029
+          },
+          {
+            "date": "2025-06-30",
+            "value": 0.999
+          },
+          {
+            "date": "2025-07-31",
+            "value": 1.097
+          },
+          {
+            "date": "2025-08-29",
+            "value": 1.162
+          },
+          {
+            "date": "2025-09-30",
+            "value": 1.244
+          },
+          {
+            "date": "2025-10-31",
+            "value": 1.235
+          },
+          {
+            "date": "2025-11-28",
+            "value": 1.326
+          },
+          {
+            "date": "2025-12-30",
+            "value": 1.567
+          },
+          {
+            "date": "2026-01-30",
+            "value": 1.666
+          },
+          {
+            "date": "2026-02-27",
+            "value": 1.594
+          },
+          {
+            "date": "2026-03-31",
+            "value": 1.804
+          },
+          {
+            "date": "2026-04-30",
+            "value": 1.903
+          },
+          {
+            "date": "2026-05-29",
+            "value": 1.919
+          },
+          {
+            "date": "2026-06-30",
+            "value": 1.937
+          }
+        ],
+        "refresh_delta": 0.018,
+        "refresh_seconds": 86400,
+        "source": "Japan MOF JGB historical CSV",
+        "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
+        "unit": "%",
+        "updated_at": "2026-06-30T21:00:00Z",
+        "value": "1.937"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "official daily data, monthly sampled through 2026-06-30",
+        "freshness": "fresh",
+        "key": "japan_10y",
+        "label": "일본 국채 10년",
+        "next_event": {
+          "date": "2026-07-31",
+          "source": "BoJ",
+          "timezone": "Asia/Tokyo",
+          "title": "일본은행 통화정책회의"
+        },
+        "points": [
+          {
+            "date": "2024-07-31",
+            "value": 1.07
+          },
+          {
+            "date": "2024-08-30",
+            "value": 0.922
+          },
+          {
+            "date": "2024-09-30",
+            "value": 0.894
+          },
+          {
+            "date": "2024-10-31",
+            "value": 0.947
+          },
+          {
+            "date": "2024-11-29",
+            "value": 1.064
+          },
+          {
+            "date": "2024-12-30",
+            "value": 1.111
+          },
+          {
+            "date": "2025-01-31",
+            "value": 1.25
+          },
+          {
+            "date": "2025-02-28",
+            "value": 1.378
+          },
+          {
+            "date": "2025-03-31",
+            "value": 1.497
+          },
+          {
+            "date": "2025-04-30",
+            "value": 1.33
+          },
+          {
+            "date": "2025-05-30",
+            "value": 1.518
+          },
+          {
+            "date": "2025-06-30",
+            "value": 1.462
+          },
+          {
+            "date": "2025-07-31",
+            "value": 1.559
+          },
+          {
+            "date": "2025-08-29",
+            "value": 1.613
+          },
+          {
+            "date": "2025-09-30",
+            "value": 1.662
+          },
+          {
+            "date": "2025-10-31",
+            "value": 1.67
+          },
+          {
+            "date": "2025-11-28",
+            "value": 1.812
+          },
+          {
+            "date": "2025-12-30",
+            "value": 2.066
+          },
+          {
+            "date": "2026-01-30",
+            "value": 2.247
+          },
+          {
+            "date": "2026-02-27",
+            "value": 2.132
+          },
+          {
+            "date": "2026-03-31",
+            "value": 2.366
+          },
+          {
+            "date": "2026-04-30",
+            "value": 2.52
+          },
+          {
+            "date": "2026-05-29",
+            "value": 2.657
+          },
+          {
+            "date": "2026-06-30",
+            "value": 2.69
+          }
+        ],
+        "refresh_delta": 0.033,
+        "refresh_seconds": 86400,
+        "source": "Japan MOF JGB historical CSV",
+        "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
+        "unit": "%",
+        "updated_at": "2026-06-30T21:00:00Z",
+        "value": "2.69"
+      },
+      {
+        "coverage_status": "active",
+        "delay_label": "Pentagon.Pizza 모니터링 지점 18곳 평균 혼잡도; 이상치 3건, 2026-07-01까지",
+        "freshness": "fresh",
+        "key": "pentagon_pizza_index",
+        "label": "펜타곤 피자 지수",
+        "points": [
+          {
+            "date": "2026-07-01T11:23:56Z",
+            "value": 3.0
+          },
+          {
+            "date": "2026-07-01T11:38:56Z",
+            "value": 16.0
+          },
+          {
+            "date": "2026-07-01T11:53:56Z",
+            "value": 20.0
+          },
+          {
+            "date": "2026-07-01T12:08:56Z",
+            "value": 30.0
+          }
+        ],
+        "refresh_seconds": 300,
+        "source": "Pentagon.Pizza",
+        "source_url": "https://pentagon.pizza/",
+        "unit": "/100",
+        "updated_at": "2026-07-01T12:09:12.866Z",
+        "value": "16.3"
+      }
+    ],
+    "scenario_baskets": [
+      {
+        "coverage_status": "active",
+        "evidence_count": 2,
+        "external_tracker_url": "https://www.nextgig.rocks/dash/ai-tracker/",
+        "freshness": "fresh",
+        "key": "ai-infra-capex",
+        "last_observed_at": "2026-07-01T12:08:56Z",
+        "name": "AI 인프라 투자",
+        "primary_source_url": "https://www.bis.gov/",
+        "risk_summary": "출처 데이터가 지연되거나 전력 제약이 커지거나 하이퍼스케일러 투자 가이던스가 약화되면 AI 투자 시나리오가 반전될 수 있습니다.",
+        "thesis": "출처 연결 공개 사실을 기반으로 데이터센터, 가속기, 메모리, 전력, 클라우드 투자 경로를 추적합니다."
+      },
+      {
+        "coverage_status": "partial",
+        "evidence_count": 2,
+        "freshness": "fresh",
+        "key": "energy-supply-shock",
+        "last_observed_at": "2026-07-01T12:08:56Z",
+        "name": "에너지 공급 충격 워치리스트",
+        "primary_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/CL%3DF?range=1d&interval=1m",
+        "risk_summary": "재고가 재축적되고 해상 요충지가 열려 있으며 수요가 공급보다 빠르게 약해지면 에너지 공급 리스크는 완화될 수 있습니다.",
+        "thesis": "재고, OPEC+ 회의, 제재, 해상 요충지, 통합 에너지 기업을 모니터링합니다."
+      },
+      {
+        "coverage_status": "active",
+        "evidence_count": 3,
+        "freshness": "watch",
+        "key": "asia-semiconductor-risk",
+        "last_observed_at": "2026-07-01T12:08:56Z",
+        "name": "아시아 반도체 리스크",
+        "primary_source_url": "https://www.bis.gov/",
+        "risk_summary": "수출 규정, 대만/한국/일본 헤드라인, 기업 가이던스가 엇갈리면 아시아 반도체 리스크는 빠르게 바뀔 수 있습니다.",
+        "thesis": "대만, 한국, 일본, 수출통제, 메모리, 파운드리 리스크 경로를 매핑합니다."
+      }
+    ],
+    "sector_tiles": [
+      {
+        "event_count": 0,
+        "freshness": "fresh",
+        "key": "space",
+        "monitored_count": 4,
+        "name": "우주",
+        "source_strength": "tracked_entity_registry",
+        "summary": "레지스트리 기반 엔티티 4개를 출처 연결 섹터 이벤트와 함께 모니터링합니다."
+      },
+      {
+        "event_count": 0,
+        "freshness": "fresh",
+        "key": "drones",
+        "monitored_count": 4,
+        "name": "드론",
+        "source_strength": "tracked_entity_registry",
+        "summary": "레지스트리 기반 엔티티 4개를 출처 연결 섹터 이벤트와 함께 모니터링합니다."
+      },
+      {
+        "event_count": 0,
+        "freshness": "fresh",
+        "key": "quantum",
+        "monitored_count": 4,
+        "name": "양자",
+        "source_strength": "tracked_entity_registry",
+        "summary": "레지스트리 기반 엔티티 4개를 출처 연결 섹터 이벤트와 함께 모니터링합니다."
+      },
+      {
+        "event_count": 2,
+        "freshness": "fresh",
+        "key": "semiconductors",
+        "monitored_count": 3,
+        "name": "반도체",
+        "source_strength": "tracked_entity_registry",
+        "summary": "레지스트리 기반 엔티티 3개를 출처 연결 섹터 이벤트와 함께 모니터링합니다."
+      },
+      {
+        "event_count": 2,
+        "freshness": "fresh",
+        "key": "oil-energy",
+        "monitored_count": 0,
+        "name": "석유/에너지",
+        "source_strength": "tracked_entity_registry",
+        "summary": "레지스트리 기반 엔티티 0개를 출처 연결 섹터 이벤트와 함께 모니터링합니다."
+      },
+      {
+        "event_count": 2,
+        "freshness": "fresh",
+        "key": "big-tech",
+        "monitored_count": 6,
+        "name": "빅테크",
+        "source_strength": "tracked_entity_registry",
+        "summary": "레지스트리 기반 엔티티 6개를 출처 연결 섹터 이벤트와 함께 모니터링합니다."
+      }
+    ],
+    "snapshot_health": {
+      "age_minutes": 0,
+      "backend_dependency": "none_for_public_pages",
+      "stale_after": "2026-07-04T04:29:14.926431Z",
+      "status": "fresh"
+    },
+    "summary": "공개 출처 정책을 통과한 정보를 스냅샷 우선 방식으로 보여주는 리서치 대시보드입니다. 개인화 조언 없이 섹터, 출처 연결 일정, 시나리오 근거, 시장 속보 맥락을 표시합니다.",
+    "top_events": [
+      {
+        "affected_objects": [
+          "NVIDIA",
+          "TSMC",
+          "Samsung Electronics",
+          "SK Hynix",
+          "ASML"
+        ],
+        "confidence": 0.74,
+        "correction_status": "none",
+        "country_region_keys": [
+          "USA",
+          "TWN",
+          "KOR",
+          "CHN",
+          "JPN"
+        ],
+        "event_type": "policy_risk",
+        "evidence_count": 2,
+        "freshness": "stale",
+        "id": "event_semis_export_controls_seed",
+        "latitude": 23.7,
+        "longitude": 121.0,
+        "occurred_at": "2026-05-25T00:00:00Z",
+        "published_at": "2026-05-25T00:00:00Z",
+        "sector_keys": [
+          "semiconductors",
+          "big-tech"
+        ],
+        "severity": "medium",
+        "source_links": [
+          {
+            "label": "Source policy",
+            "policy_version": 1,
+            "source_key": "sec_edgar",
+            "url": "/en/source-policy"
+          }
+        ],
+        "source_strength": "reviewed_structured",
+        "summary": "출처 연결 이벤트 맥락이 첨단 칩, 파운드리 노출, 아시아 공급망을 수출통제 리스크와 연결합니다.",
+        "title": "반도체 수출통제 모니터링 강도 유지",
+        "why_it_matters": "AI 가속기 가용성, 투자 시점, 국가 노출을 통해 영향이 전파될 수 있습니다."
+      },
+      {
+        "affected_objects": [
+          "WTI reference",
+          "Brent reference",
+          "Chevron",
+          "ExxonMobil"
+        ],
+        "confidence": 0.82,
+        "correction_status": "none",
+        "country_region_keys": [
+          "USA",
+          "MIDDLE_EAST_OPEC_GCC"
+        ],
+        "event_type": "official_calendar",
+        "evidence_count": 1,
+        "freshness": "stale",
+        "id": "event_energy_inventory_seed",
+        "latitude": 38.9,
+        "longitude": -77.0,
+        "occurred_at": "2026-05-25T00:00:00Z",
+        "published_at": "2026-05-25T00:00:00Z",
+        "sector_keys": [
+          "oil-energy"
+        ],
+        "severity": "low",
+        "source_links": [
+          {
+            "label": "EIA",
+            "policy_version": 1,
+            "source_key": "eia",
+            "url": "https://www.eia.gov"
+          }
+        ],
+        "source_strength": "official_structured",
+        "summary": "EIA 연계 재고 발표는 공개 전 공식 구조화 데이터로 추적됩니다.",
+        "title": "석유 공급 모니터링을 위한 에너지 재고 일정 활성",
+        "why_it_matters": "재고 서프라이즈는 에너지 주식, 인플레이션 입력값, 지정학 리스크 해석에 영향을 줄 수 있습니다."
+      },
+      {
+        "affected_objects": [
+          "FOMC",
+          "ECB",
+          "BoE",
+          "BoJ",
+          "BoK",
+          "COPOM"
+        ],
+        "confidence": 0.78,
+        "correction_status": "none",
+        "country_region_keys": [
+          "USA",
+          "EUROZONE",
+          "GBR",
+          "JPN",
+          "KOR",
+          "BRA"
+        ],
+        "event_type": "central_bank_calendar",
+        "evidence_count": 6,
+        "freshness": "stale",
+        "id": "event_central_bank_seed",
+        "latitude": 51.5,
+        "longitude": 0.0,
+        "occurred_at": "2026-05-25T00:00:00Z",
+        "published_at": "2026-05-25T00:00:00Z",
+        "sector_keys": [
+          "big-tech",
+          "semiconductors",
+          "oil-energy"
+        ],
+        "severity": "low",
+        "source_links": [
+          {
+            "label": "Federal Reserve",
+            "policy_version": 1,
+            "source_key": "federal_reserve",
+            "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
+          },
+          {
+            "label": "ECB",
+            "policy_version": 1,
+            "source_key": "ecb",
+            "url": "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html"
+          },
+          {
+            "label": "Bank of England",
+            "policy_version": 1,
+            "source_key": "bank_of_england",
+            "url": "https://www.bankofengland.co.uk/news/2025/september/monetary-policy-committee-dates-for-2026"
+          },
+          {
+            "label": "Bank of Japan",
+            "policy_version": 1,
+            "source_key": "bank_of_japan",
+            "url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm"
+          },
+          {
+            "label": "Bank of Korea",
+            "policy_version": 1,
+            "source_key": "bank_of_korea",
+            "url": "https://www.bok.or.kr/eng/main/contents.do?menuNo=400020"
+          },
+          {
+            "label": "Banco Central do Brasil",
+            "policy_version": 1,
+            "source_key": "bcb",
+            "url": "https://www.bcb.gov.br/detalhenoticia/20739/nota"
+          }
+        ],
+        "source_strength": "official_calendar",
+        "summary": "FOMC, ECB, BoE, BoJ, BoK, 브라질 COPOM이 명시적 예상치 라벨과 함께 표시됩니다.",
+        "title": "6개 중앙은행 정책회의 일정 시드 적용",
+        "why_it_matters": "캘린더 가시성은 커버리지 공백을 숨기지 않고 오래된 정책 데이터를 드러냅니다."
+      }
+    ]
+  },
+  "generated_at": "2026-07-03T16:29:14.926431Z",
+  "hard_expires_at": "2026-07-10T16:29:14.926431Z",
+  "locale": "ko",
+  "object_key": "home",
+  "object_type": "home",
+  "schema_version": "1.0",
+  "snapshot_version": 6,
+  "source_policy_versions": [
+    {
+      "policy_version": 1,
+      "source_key": "federal_reserve"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "sec_edgar"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "eia"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "world_bank"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "gdelt"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "google_news_rss"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "yahoo_finance_rss"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "yahoo_finance_delayed_quote"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "stooq_delayed_quote"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "treasury_xml_feed"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "krx_open_api"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "data_go_kr"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "japan_mof_jgb_csv"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bis"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "who"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "cdc"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "company_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "ecb"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bank_of_korea"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bank_of_japan"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bcb"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "rocket_lab_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "ionq_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "iea"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "source_policy"
+    }
+  ],
+  "stale_after": "2026-07-04T04:29:14.926431Z",
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "시장 지표는 라이선스가 없는 한 지연/참조 데이터입니다.",
+      "severity": "info"
+    }
+  ]
+}

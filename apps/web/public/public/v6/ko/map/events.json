@@ -1,0 +1,1808 @@
+{
+  "content_hash": "sha256:654ed0e7d5dbe43ef99461cdbd4bd704ee3e510c9ab33ea01b26ee7b9cde71c2",
+  "corrections": [],
+  "data": {
+    "breaking_market_events": [],
+    "breaking_market_map": {
+      "coverage_gaps": [
+        {
+          "coverage_window_days": 7,
+          "label": "중국",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "CHN"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "대만",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "TWN"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "중동 / OPEC+ / GCC",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "MIDDLE_EAST_OPEC_GCC"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "일본",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "JPN"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "사우디아라비아",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "SAU"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "프랑스",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "FRA"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "아랍에미리트",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "ARE"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "이탈리아",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "ITA"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "캐나다",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "CAN"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "유럽연합",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "EU"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "브라질",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "BRA"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "튀르키예",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "TUR"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "멕시코",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "MEX"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "호주",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "AUS"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "네덜란드",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "NLD"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "인도네시아",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "IDN"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "스페인",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "ESP"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "폴란드",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "POL"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "싱가포르",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "SGP"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "남아프리카공화국",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "ZAF"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "노르웨이",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "NOR"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "벨기에",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "BEL"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "아르헨티나",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "ARG"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "아일랜드",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "IRL"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "스웨덴",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "SWE"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "오스트리아",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "AUT"
+        },
+        {
+          "coverage_window_days": 7,
+          "label": "태국",
+          "newest_source_published_at": null,
+          "reason": "no_recent_evidence",
+          "region_key": "THA"
+        }
+      ],
+      "events": [],
+      "generated_at": "2026-07-01T12:08:56Z",
+      "map_points": [],
+      "ranking_cutoff": null,
+      "regional_briefs": [
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 5,
+          "evidence": [
+            {
+              "event_id": "seed_4f5d1821967f03",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.techtimes.com/articles/319429/20260701/war-force-pentagon-recruits-ai-engineers-after-shedding-5700-tech-workers.htm",
+              "title": "War Force Pentagon Recruits AI Engineers After Shedding 5700 Tech Workers"
+            },
+            {
+              "event_id": "seed_21c563df35df9f",
+              "severity": "high",
+              "source_published_at": "2026-07-01T08:34:42Z",
+              "source_url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE84NFprZ2x2NVJUeWFTSWhwME5lZWF0TlVLZGRlcHhZRXVLcmJFXzQxM0t1QXRSTmRLOFBzVmxTTkZ3bExIbGtpYi12R1NCWTMtNUpocEg4WHp4NlJXeWp5bWF5UG5LZ1A0OVJ4d0Q4Q3hCNnJUSlRwbmpoYVpOWFXSAYQBQVVfeXFMUE41elFEWXRjNmxCaXdJamtTVWxoYkZwQnJsQXl1bEgxX0RFS3RRTlEtR2dhemtZOGxiV0R3ZzNSbnp6aTViQ0xtR2llUDN5anZscTlnemQ5cGJKUm1JdVA5alE2UzYyOW9SWGhZSHl1TEFQYnVkcGllSnBkTHlseEVabG16",
+              "title": "Oil prices wobble as uncertainty persists over U.S.-Iran talks in Qatar - CNBC"
+            },
+            {
+              "event_id": "seed_8b4096903dffde",
+              "severity": "high",
+              "source_published_at": "2026-07-01T05:25:03Z",
+              "source_url": "https://news.google.com/rss/articles/CBMiogFBVV95cUxOZ1NVSUdldGtJbzRleXBNU2JlNVBCOUlmNXNlcVBVWmFvY1BlQl9TM2RROTJrZDRhbGVIYXpKQXdRLUwxVUpoWmJtWTJ1Q1RHdlFGUndibXN5TGpKbEJEZGJKSkRZNFZPdWo3R1ladmZnUFZMRUhfdFNUc2FidjV3Y1RUVWJONFFyUHh1MWFjMzdNZjdaS0h0T1JHYWJvSkhiVFE",
+              "title": "Iran’s leverage over Strait of Hormuz snarls Trump’s push for a deal - The Washington Post"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "미국",
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "region_key": "USA",
+          "source_count": 5,
+          "summary": "미국에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 5건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 3,
+          "evidence": [
+            {
+              "event_id": "seed_f72a99e0ace4b8",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.swissinfo.ch/eng/foreign-affairs/swiss-high-court-upholds-asset-freezes-for-russian-metals-oligarch/91681170",
+              "title": "Swiss High Court Upholds Asset Freezes For Russian Metals Oligarch"
+            },
+            {
+              "event_id": "seed_77e1aea3700330",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.politico.eu/article/russia-suspends-railway-border-crossings-finland-baltic-neighbors/",
+              "title": "Russia Suspends Railway Border Crossings Finland Baltic Neighbors"
+            },
+            {
+              "event_id": "seed_8b89b7f17afc2e",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.theweek.in/news/defence/2026/07/01/russia-ready-to-immediately-deliver-36-to-60-su-57e-stealth-jets-to-india-report.html",
+              "title": "Russia ready to immediately deliver 36 to 60 Su-57E stealth jets to India: Report"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "러시아",
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "region_key": "RUS",
+          "source_count": 3,
+          "summary": "러시아에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 3건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "evidence": [
+            {
+              "event_id": "seed_8d4b6aa455ff27",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.arabnews.com/node/2649248/world",
+              "title": "Arab News source report: Berlin / Ukraine"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "독일",
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "region_key": "DEU",
+          "source_count": 1,
+          "summary": "독일에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 1건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "evidence": [
+            {
+              "event_id": "seed_8b89b7f17afc2e",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.theweek.in/news/defence/2026/07/01/russia-ready-to-immediately-deliver-36-to-60-su-57e-stealth-jets-to-india-report.html",
+              "title": "Russia ready to immediately deliver 36 to 60 Su-57E stealth jets to India: Report"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "인도",
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "region_key": "IND",
+          "source_count": 1,
+          "summary": "인도에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 1건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "evidence": [
+            {
+              "event_id": "seed_42d17588441829",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T11:35:00Z",
+              "source_url": "https://finance.yahoo.com/technology/articles/south-korea-rescue-worlds-biggest-113500553.html",
+              "title": "South Korea to the rescue: The world's biggest chipmakers will drop $590 billion to end RAMageddon, but there's a catch"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "대한민국",
+          "newest_source_published_at": "2026-07-01T11:35:00Z",
+          "region_key": "KOR",
+          "source_count": 1,
+          "summary": "대한민국에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 1건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "evidence": [
+            {
+              "event_id": "seed_be1a67729f09c7",
+              "severity": "high",
+              "source_published_at": "2026-07-01T09:55:00Z",
+              "source_url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxOcnhsbGZjTzZHNko0c1hjaURUSHBlSnE2b3hOaHRURld3c1dpWTA4UHFwcDRXNlA0SDZTQUpwT2g5bVZMWjVudUxPa2dSbmpLbUlBNHExVldXbHpaMElOWmtyY2x2RlZkbWdfUzkwWktsZkYxMFpXVjZhWXVDeGhEU2VUcXB2LXhMSEdNR2lubw",
+              "title": "Iran sold 50 million barrels of oil since the lifting of the American blockade - The Jerusalem Post"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "이스라엘",
+          "newest_source_published_at": "2026-07-01T09:55:00Z",
+          "region_key": "ISR",
+          "source_count": 1,
+          "summary": "이스라엘에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 1건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "evidence": [
+            {
+              "event_id": "seed_482b89b9a6f2d8",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.ipswichstar.co.uk/news/26239358.ipswich-cornhill-protest-palantir-nhs-contract/",
+              "title": "26239358.ipswich Cornhill Protest Palantir Nhs Contract"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "영국",
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "region_key": "GBR",
+          "source_count": 1,
+          "summary": "영국에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 1건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "evidence": [
+            {
+              "event_id": "seed_8d4b6aa455ff27",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.arabnews.com/node/2649248/world",
+              "title": "Arab News source report: Berlin / Ukraine"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "유로존",
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "region_key": "EUROZONE",
+          "source_count": 1,
+          "summary": "유로존에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 1건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "evidence": [
+            {
+              "event_id": "seed_f72a99e0ace4b8",
+              "severity": "medium",
+              "source_published_at": "2026-07-01T12:08:56Z",
+              "source_url": "https://www.swissinfo.ch/eng/foreign-affairs/swiss-high-court-upholds-asset-freezes-for-russian-metals-oligarch/91681170",
+              "title": "Swiss High Court Upholds Asset Freezes For Russian Metals Oligarch"
+            }
+          ],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "스위스",
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "region_key": "CHE",
+          "source_count": 1,
+          "summary": "스위스에는 현재 메타데이터 기간에 출처 연결 속보/전개 항목 1건이 있습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "중국",
+          "newest_source_published_at": null,
+          "region_key": "CHN",
+          "source_count": 0,
+          "summary": "중국은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "대만",
+          "newest_source_published_at": null,
+          "region_key": "TWN",
+          "source_count": 0,
+          "summary": "대만은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "중동 / OPEC+ / GCC",
+          "newest_source_published_at": null,
+          "region_key": "MIDDLE_EAST_OPEC_GCC",
+          "source_count": 0,
+          "summary": "중동 / OPEC+ / GCC은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "일본",
+          "newest_source_published_at": null,
+          "region_key": "JPN",
+          "source_count": 0,
+          "summary": "일본은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "사우디아라비아",
+          "newest_source_published_at": null,
+          "region_key": "SAU",
+          "source_count": 0,
+          "summary": "사우디아라비아은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "프랑스",
+          "newest_source_published_at": null,
+          "region_key": "FRA",
+          "source_count": 0,
+          "summary": "프랑스은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "아랍에미리트",
+          "newest_source_published_at": null,
+          "region_key": "ARE",
+          "source_count": 0,
+          "summary": "아랍에미리트은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "이탈리아",
+          "newest_source_published_at": null,
+          "region_key": "ITA",
+          "source_count": 0,
+          "summary": "이탈리아은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "캐나다",
+          "newest_source_published_at": null,
+          "region_key": "CAN",
+          "source_count": 0,
+          "summary": "캐나다은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "유럽연합",
+          "newest_source_published_at": null,
+          "region_key": "EU",
+          "source_count": 0,
+          "summary": "유럽연합은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "브라질",
+          "newest_source_published_at": null,
+          "region_key": "BRA",
+          "source_count": 0,
+          "summary": "브라질은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "튀르키예",
+          "newest_source_published_at": null,
+          "region_key": "TUR",
+          "source_count": 0,
+          "summary": "튀르키예은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "멕시코",
+          "newest_source_published_at": null,
+          "region_key": "MEX",
+          "source_count": 0,
+          "summary": "멕시코은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "호주",
+          "newest_source_published_at": null,
+          "region_key": "AUS",
+          "source_count": 0,
+          "summary": "호주은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "네덜란드",
+          "newest_source_published_at": null,
+          "region_key": "NLD",
+          "source_count": 0,
+          "summary": "네덜란드은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "인도네시아",
+          "newest_source_published_at": null,
+          "region_key": "IDN",
+          "source_count": 0,
+          "summary": "인도네시아은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "스페인",
+          "newest_source_published_at": null,
+          "region_key": "ESP",
+          "source_count": 0,
+          "summary": "스페인은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "폴란드",
+          "newest_source_published_at": null,
+          "region_key": "POL",
+          "source_count": 0,
+          "summary": "폴란드은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "싱가포르",
+          "newest_source_published_at": null,
+          "region_key": "SGP",
+          "source_count": 0,
+          "summary": "싱가포르은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "남아프리카공화국",
+          "newest_source_published_at": null,
+          "region_key": "ZAF",
+          "source_count": 0,
+          "summary": "남아프리카공화국은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "노르웨이",
+          "newest_source_published_at": null,
+          "region_key": "NOR",
+          "source_count": 0,
+          "summary": "노르웨이은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "벨기에",
+          "newest_source_published_at": null,
+          "region_key": "BEL",
+          "source_count": 0,
+          "summary": "벨기에은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "아르헨티나",
+          "newest_source_published_at": null,
+          "region_key": "ARG",
+          "source_count": 0,
+          "summary": "아르헨티나은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "아일랜드",
+          "newest_source_published_at": null,
+          "region_key": "IRL",
+          "source_count": 0,
+          "summary": "아일랜드은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "스웨덴",
+          "newest_source_published_at": null,
+          "region_key": "SWE",
+          "source_count": 0,
+          "summary": "스웨덴은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "오스트리아",
+          "newest_source_published_at": null,
+          "region_key": "AUT",
+          "source_count": 0,
+          "summary": "오스트리아은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        },
+        {
+          "confidence": "metadata_only",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "evidence": [],
+          "generated_at": "2026-07-01T12:08:56Z",
+          "label": "태국",
+          "newest_source_published_at": null,
+          "region_key": "THA",
+          "source_count": 0,
+          "summary": "태국은(는) 감시 대상이지만 현재 메타데이터 기간에 매핑된 출처 연결 속보 항목은 없습니다."
+        }
+      ],
+      "registry_version": 1,
+      "scoring_version": "geo-priority-v1",
+      "shown_count": 0,
+      "thinning_version": "freshness-area-cap-v1",
+      "total_count": 0,
+      "watched_regions": [
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 5,
+          "gather_news": true,
+          "gdp_rank": 1,
+          "groups": [
+            "top30_gdp",
+            "top10_gdp",
+            "americas",
+            "priority"
+          ],
+          "iso3": "USA",
+          "key": "USA",
+          "label": "미국",
+          "map_point_count": 5,
+          "natural_earth_names": [
+            "United States of America",
+            "United States"
+          ],
+          "nav_visible": true,
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "priority": 100,
+          "quiet_reason": null,
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 3,
+          "gather_news": true,
+          "gdp_rank": 11,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "energy",
+            "strategic"
+          ],
+          "iso3": "RUS",
+          "key": "RUS",
+          "label": "러시아",
+          "map_point_count": 3,
+          "natural_earth_names": [
+            "Russia",
+            "Russian Federation"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "priority": 92,
+          "quiet_reason": null,
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "gather_news": true,
+          "gdp_rank": 3,
+          "groups": [
+            "top30_gdp",
+            "top10_gdp",
+            "europe",
+            "eurozone"
+          ],
+          "iso3": "DEU",
+          "key": "DEU",
+          "label": "독일",
+          "map_point_count": 1,
+          "natural_earth_names": [
+            "Germany"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "priority": 90,
+          "quiet_reason": null,
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "gather_news": true,
+          "gdp_rank": 5,
+          "groups": [
+            "top30_gdp",
+            "top10_gdp",
+            "asia",
+            "priority"
+          ],
+          "iso3": "IND",
+          "key": "IND",
+          "label": "인도",
+          "map_point_count": 1,
+          "natural_earth_names": [
+            "India"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "priority": 90,
+          "quiet_reason": null,
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "gather_news": true,
+          "gdp_rank": 12,
+          "groups": [
+            "top30_gdp",
+            "asia",
+            "priority",
+            "semiconductors"
+          ],
+          "iso3": "KOR",
+          "key": "KOR",
+          "label": "대한민국",
+          "map_point_count": 1,
+          "natural_earth_names": [
+            "South Korea",
+            "Korea"
+          ],
+          "nav_visible": true,
+          "newest_source_published_at": "2026-07-01T11:35:00Z",
+          "priority": 90,
+          "quiet_reason": null,
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "gather_news": true,
+          "gdp_rank": 28,
+          "groups": [
+            "top30_gdp",
+            "middle_east",
+            "strategic",
+            "semiconductors"
+          ],
+          "iso3": "ISR",
+          "key": "ISR",
+          "label": "이스라엘",
+          "map_point_count": 1,
+          "natural_earth_names": [
+            "Israel"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": "2026-07-01T09:55:00Z",
+          "priority": 90,
+          "quiet_reason": null,
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "gather_news": true,
+          "gdp_rank": 6,
+          "groups": [
+            "top30_gdp",
+            "top10_gdp",
+            "europe",
+            "priority"
+          ],
+          "iso3": "GBR",
+          "key": "GBR",
+          "label": "영국",
+          "map_point_count": 1,
+          "natural_earth_names": [
+            "United Kingdom"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "priority": 88,
+          "quiet_reason": null,
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "gather_news": true,
+          "gdp_rank": null,
+          "groups": [
+            "europe",
+            "macro",
+            "region"
+          ],
+          "iso3": null,
+          "key": "EUROZONE",
+          "label": "유로존",
+          "map_point_count": 1,
+          "natural_earth_names": [],
+          "nav_visible": true,
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "priority": 80,
+          "quiet_reason": null,
+          "render_on_map": false,
+          "type": "region"
+        },
+        {
+          "coverage_status": "active",
+          "coverage_window_days": 7,
+          "event_count": 1,
+          "gather_news": true,
+          "gdp_rank": 20,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "finance"
+          ],
+          "iso3": "CHE",
+          "key": "CHE",
+          "label": "스위스",
+          "map_point_count": 1,
+          "natural_earth_names": [
+            "Switzerland"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": "2026-07-01T12:08:56Z",
+          "priority": 66,
+          "quiet_reason": null,
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 2,
+          "groups": [
+            "top30_gdp",
+            "top10_gdp",
+            "asia",
+            "priority",
+            "semiconductors"
+          ],
+          "iso3": "CHN",
+          "key": "CHN",
+          "label": "중국",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "China"
+          ],
+          "nav_visible": true,
+          "newest_source_published_at": null,
+          "priority": 98,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": null,
+          "groups": [
+            "asia",
+            "priority",
+            "semiconductors",
+            "strategic"
+          ],
+          "iso3": "TWN",
+          "key": "TWN",
+          "label": "대만",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Taiwan"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 96,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": null,
+          "groups": [
+            "middle_east",
+            "energy",
+            "strategic",
+            "region"
+          ],
+          "iso3": null,
+          "key": "MIDDLE_EAST_OPEC_GCC",
+          "label": "중동 / OPEC+ / GCC",
+          "map_point_count": 0,
+          "natural_earth_names": [],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 94,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": false,
+          "type": "region"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 4,
+          "groups": [
+            "top30_gdp",
+            "top10_gdp",
+            "asia",
+            "priority",
+            "semiconductors"
+          ],
+          "iso3": "JPN",
+          "key": "JPN",
+          "label": "일본",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Japan"
+          ],
+          "nav_visible": true,
+          "newest_source_published_at": null,
+          "priority": 92,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 18,
+          "groups": [
+            "top30_gdp",
+            "middle_east",
+            "middle_east_opec_gcc",
+            "energy",
+            "strategic"
+          ],
+          "iso3": "SAU",
+          "key": "SAU",
+          "label": "사우디아라비아",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Saudi Arabia"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 88,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 7,
+          "groups": [
+            "top30_gdp",
+            "top10_gdp",
+            "europe",
+            "eurozone"
+          ],
+          "iso3": "FRA",
+          "key": "FRA",
+          "label": "프랑스",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "France"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 86,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 26,
+          "groups": [
+            "top30_gdp",
+            "middle_east",
+            "middle_east_opec_gcc",
+            "energy",
+            "strategic"
+          ],
+          "iso3": "ARE",
+          "key": "ARE",
+          "label": "아랍에미리트",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "United Arab Emirates"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 82,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 8,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "eurozone"
+          ],
+          "iso3": "ITA",
+          "key": "ITA",
+          "label": "이탈리아",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Italy"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 78,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 9,
+          "groups": [
+            "top30_gdp",
+            "americas",
+            "energy"
+          ],
+          "iso3": "CAN",
+          "key": "CAN",
+          "label": "캐나다",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Canada"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 78,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": null,
+          "groups": [
+            "europe",
+            "macro",
+            "region"
+          ],
+          "iso3": null,
+          "key": "EU",
+          "label": "유럽연합",
+          "map_point_count": 0,
+          "natural_earth_names": [],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 78,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": false,
+          "type": "region"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 10,
+          "groups": [
+            "top30_gdp",
+            "americas",
+            "commodities"
+          ],
+          "iso3": "BRA",
+          "key": "BRA",
+          "label": "브라질",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Brazil"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 76,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 17,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "strategic"
+          ],
+          "iso3": "TUR",
+          "key": "TUR",
+          "label": "튀르키예",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Turkey",
+            "Turkiye"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 74,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 13,
+          "groups": [
+            "top30_gdp",
+            "americas",
+            "supply_chain"
+          ],
+          "iso3": "MEX",
+          "key": "MEX",
+          "label": "멕시코",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Mexico"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 72,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 14,
+          "groups": [
+            "top30_gdp",
+            "asia_pacific",
+            "commodities"
+          ],
+          "iso3": "AUS",
+          "key": "AUS",
+          "label": "호주",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Australia"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 72,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 19,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "eurozone",
+            "semiconductors"
+          ],
+          "iso3": "NLD",
+          "key": "NLD",
+          "label": "네덜란드",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Netherlands"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 72,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 16,
+          "groups": [
+            "top30_gdp",
+            "asia",
+            "commodities"
+          ],
+          "iso3": "IDN",
+          "key": "IDN",
+          "label": "인도네시아",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Indonesia"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 68,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 15,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "eurozone"
+          ],
+          "iso3": "ESP",
+          "key": "ESP",
+          "label": "스페인",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Spain"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 66,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 21,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "strategic"
+          ],
+          "iso3": "POL",
+          "key": "POL",
+          "label": "폴란드",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Poland"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 66,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 27,
+          "groups": [
+            "top30_gdp",
+            "asia",
+            "finance",
+            "supply_chain"
+          ],
+          "iso3": "SGP",
+          "key": "SGP",
+          "label": "싱가포르",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Singapore"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 66,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": null,
+          "groups": [
+            "africa",
+            "commodities",
+            "requested"
+          ],
+          "iso3": "ZAF",
+          "key": "ZAF",
+          "label": "남아프리카공화국",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "South Africa"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 62,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": null,
+          "groups": [
+            "energy",
+            "europe",
+            "requested"
+          ],
+          "iso3": "NOR",
+          "key": "NOR",
+          "label": "노르웨이",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Norway"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 62,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 22,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "eurozone"
+          ],
+          "iso3": "BEL",
+          "key": "BEL",
+          "label": "벨기에",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Belgium"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 60,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 23,
+          "groups": [
+            "top30_gdp",
+            "americas",
+            "commodities"
+          ],
+          "iso3": "ARG",
+          "key": "ARG",
+          "label": "아르헨티나",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Argentina"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 58,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 24,
+          "groups": [
+            "top30_gdp",
+            "europe"
+          ],
+          "iso3": "IRL",
+          "key": "IRL",
+          "label": "아일랜드",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Ireland"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 58,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 25,
+          "groups": [
+            "top30_gdp",
+            "europe"
+          ],
+          "iso3": "SWE",
+          "key": "SWE",
+          "label": "스웨덴",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Sweden"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 58,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 29,
+          "groups": [
+            "top30_gdp",
+            "europe",
+            "eurozone"
+          ],
+          "iso3": "AUT",
+          "key": "AUT",
+          "label": "오스트리아",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Austria"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 54,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        },
+        {
+          "coverage_status": "quiet",
+          "coverage_window_days": 7,
+          "event_count": 0,
+          "gather_news": true,
+          "gdp_rank": 30,
+          "groups": [
+            "top30_gdp",
+            "asia",
+            "supply_chain"
+          ],
+          "iso3": "THA",
+          "key": "THA",
+          "label": "태국",
+          "map_point_count": 0,
+          "natural_earth_names": [
+            "Thailand"
+          ],
+          "nav_visible": false,
+          "newest_source_published_at": null,
+          "priority": 54,
+          "quiet_reason": "no_recent_evidence",
+          "render_on_map": true,
+          "type": "country"
+        }
+      ]
+    },
+    "events": [],
+    "filters": {
+      "countries_regions": [
+        "BRA",
+        "CHN",
+        "EUROZONE",
+        "GBR",
+        "JPN",
+        "KOR",
+        "MIDDLE_EAST_OPEC_GCC",
+        "TWN",
+        "USA"
+      ],
+      "event_types": [
+        "central_bank_calendar",
+        "official_calendar",
+        "policy_risk"
+      ],
+      "sectors": [
+        "big-tech",
+        "oil-energy",
+        "semiconductors"
+      ],
+      "severities": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    }
+  },
+  "generated_at": "2026-07-03T16:29:14.926431Z",
+  "hard_expires_at": "2026-07-10T16:29:14.926431Z",
+  "locale": "ko",
+  "object_key": "events",
+  "object_type": "map_events",
+  "schema_version": "1.0",
+  "snapshot_version": 6,
+  "source_policy_versions": [
+    {
+      "policy_version": 1,
+      "source_key": "federal_reserve"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "sec_edgar"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "eia"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "world_bank"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "gdelt"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "google_news_rss"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "yahoo_finance_rss"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "yahoo_finance_delayed_quote"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "stooq_delayed_quote"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "treasury_xml_feed"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "krx_open_api"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "data_go_kr"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "japan_mof_jgb_csv"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bis"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "who"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "cdc"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "company_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "ecb"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bank_of_korea"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bank_of_japan"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bcb"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "rocket_lab_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "ionq_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "iea"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "source_policy"
+    }
+  ],
+  "stale_after": "2026-07-04T04:29:14.926431Z",
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "시장 지표는 라이선스가 없는 한 지연/참조 데이터입니다.",
+      "severity": "info"
+    }
+  ]
+}

@@ -60,7 +60,7 @@ function Corrections() {
         </p>
       </section>
       <div className="panel p-5 text-sm text-muted">
-        {isKo ? "현재 공개 정정 또는 철회 항목이 없습니다." : "There are no public corrections or retractions in the current seed snapshot."}
+        {isKo ? "현재 공개 정정 또는 철회 항목이 없습니다." : "There are no public corrections or retractions in the current public snapshot."}
       </div>
     </article>
   );

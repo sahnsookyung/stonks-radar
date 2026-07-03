@@ -1,0 +1,129 @@
+{
+  "content_hash": "sha256:449a4f0c381579c0bccd8592151861388554260a73bb64e2862dd5e4a597289b",
+  "corrections": [],
+  "data": {
+    "coverage_window": "7d",
+    "events": [],
+    "generated_label": "2026-07-01T12:08:56Z",
+    "name": "인튜이티브 머신스",
+    "summary": "LUNR에 연결된 승인 뉴스 이벤트가 아직 없습니다.",
+    "symbol": "LUNR"
+  },
+  "generated_at": "2026-07-03T16:29:14.926431Z",
+  "hard_expires_at": "2026-07-10T16:29:14.926431Z",
+  "locale": "ko",
+  "object_key": "news_ticker_LUNR",
+  "object_type": "news_ticker",
+  "schema_version": "1.0",
+  "snapshot_version": 6,
+  "source_policy_versions": [
+    {
+      "policy_version": 1,
+      "source_key": "federal_reserve"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "sec_edgar"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "eia"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "world_bank"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "gdelt"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "google_news_rss"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "yahoo_finance_rss"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "yahoo_finance_delayed_quote"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "stooq_delayed_quote"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "treasury_xml_feed"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "krx_open_api"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "data_go_kr"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "japan_mof_jgb_csv"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bis"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "who"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "cdc"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "company_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "ecb"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bank_of_korea"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bank_of_japan"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bcb"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "rocket_lab_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "ionq_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "iea"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "source_policy"
+    }
+  ],
+  "stale_after": "2026-07-04T04:29:14.926431Z",
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "시장 지표는 라이선스가 없는 한 지연/참조 데이터입니다.",
+      "severity": "info"
+    }
+  ]
+}

@@ -1323,7 +1323,7 @@ function PortfolioCoverageBanner({
             <StatusPill label="Covered" value={`${marketHistoryCoverage.coveredSymbols.length}/${marketHistoryCoverage.requestedSymbols.length}`} />
             <StatusPill label="Queued" value={String(marketHistoryCoverage.queuedSymbols.length)} />
             <StatusPill label="Provider" value={marketHistoryCoverage.provider ?? "stored only"} />
-            <StatusPill label="Complete through" value={marketHistoryCoverage.completeThrough ?? "pending"} />
+            <StatusPill label="Complete through" value={marketHistoryCoverage.completeThrough ?? "unavailable"} />
             <StatusPill label="Eligible" value={marketHistoryCoverage.calculationEligible ? "yes" : "no"} />
           </div>
         </div>
@@ -1610,7 +1610,7 @@ function PortfoliosSection({ portfolio, analysis }: Readonly<{ portfolio: Portfo
       <div className="panel p-5">
         <SectionTitle icon={<Lock />} title="Persistence stance" termKey="data_quality" />
         <p className="safe-text mt-3 text-sm leading-6 text-muted">
-          This MVP keeps the demo workspace in browser state and is API-ready for persisted users. It avoids broker sync and
+          This planning workspace is kept in browser state and is API-ready for persisted users. It avoids broker sync and
           execution. Future server persistence should use the spec entities: Portfolio, Holding, Transaction, TaxLot,
           Instrument, Job, UsageQuota, and AuditEvent.
         </p>
@@ -2392,11 +2392,11 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
               </div>
             </div>
           )}
-          {canAddManual && (
-            <div className="mt-2 rounded-md border border-dashed border-line bg-panel p-3">
-              <p id={manualHelpId} className="safe-text text-xs text-muted">
-                No sample match. Add a manual holding only when you know the listing, currency, quantity, and either price or market value.
-              </p>
+              {canAddManual && (
+                <div className="mt-2 rounded-md border border-dashed border-line bg-panel p-3">
+                  <p id={manualHelpId} className="safe-text text-xs text-muted">
+                No indexed match. Add a manual holding only when you know the listing, currency, quantity, and either price or market value.
+                  </p>
               {hasManualDraft && (
                 <div className="mt-3 grid gap-2" aria-describedby={manualHelpId}>
                   <div className="grid gap-2 sm:grid-cols-2">
@@ -2493,12 +2493,12 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
           </button>
           <button type="button" className="secondary-action justify-center" onClick={resetPortfolio}>
             <RefreshCcw className="h-4 w-4" />
-            Reset sample
+            Reset workspace
           </button>
         </div>
       </div>
       <div className="signal-warning mt-4 p-3 text-xs leading-5">
-        Holding edits are planning inputs for this browser session. Source-linked demo tax lots and transactions are cleared
+        Holding edits are planning inputs for this browser session. Source-linked planning tax lots and transactions are cleared
         after holding changes so tax/backtest views do not reuse stale records.
       </div>
     </aside>
@@ -3388,7 +3388,7 @@ function createPortfolioForWorkspace(portfolioId: string): Portfolio {
     ...demo,
     portfolioId,
     name: `${portfolioId} workspace`,
-    description: "User-local planning workspace based on the demo template.",
+    description: "User-local planning workspace based on the planning template.",
     isDemo: false,
     holdings: demo.holdings.map((holding) => ({ ...holding, portfolioId })),
     transactions: [],

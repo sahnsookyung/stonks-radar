@@ -149,7 +149,7 @@ export function TrumpFilingsPage() { // NOSONAR - disclosure page coordinates fi
         <section className="panel p-5">
           <div className="flex items-center gap-2 text-sm font-semibold text-warning">
             <AlertTriangle className="h-4 w-4" />
-            {locale === "ko" ? "공개 공시 API 대기 중" : "Disclosure API pending"}
+            {locale === "ko" ? "공개 공시 API 사용 불가" : "Disclosure API unavailable"}
           </div>
           <p className="safe-text mt-2 text-sm leading-6 text-muted">
             {locale === "ko"
@@ -547,7 +547,7 @@ function FilingRow({ filing, locale }: Readonly<{ filing: DisclosureFiling; loca
             {filing.issuer_name || filing.filer_name || filing.accession_number || "Public filing"}
           </h3>
           <p className="mt-1 text-xs leading-5 text-muted">
-            {filing.doc_date || filing.filed_at || (locale === "ko" ? "날짜 대기" : "date pending")}
+            {filing.doc_date || filing.filed_at || (locale === "ko" ? "날짜 없음" : "date unavailable")}
           </p>
         </div>
         <div className="shrink-0 text-right">
@@ -624,7 +624,7 @@ function EmptyState({ text }: Readonly<{ text: string }>) {
 }
 
 function formatOgeAmount(transaction: DisclosureTransaction) {
-  if (transaction.amount_min == null && transaction.amount_max == null) return "range pending";
+    if (transaction.amount_min == null && transaction.amount_max == null) return "range unavailable";
   if (transaction.amount_max == null) return `>${formatMoney(transaction.amount_min ?? 0)}`;
   return `${formatMoney(transaction.amount_min ?? 0)}-${formatMoney(transaction.amount_max)}`;
 }
@@ -706,7 +706,7 @@ function formatDisclosureDate(transaction: DisclosureTransaction, locale: "en" |
   if (transaction.transaction_date) return transaction.transaction_date;
   if (transaction.doc_date) return transaction.doc_date;
   if (transaction.filed_at) return formatDateTime(transaction.filed_at);
-  return locale === "ko" ? "날짜 대기" : "date pending";
+  return locale === "ko" ? "날짜 없음" : "date unavailable";
 }
 
 function formatDateTime(value: string) {
@@ -746,7 +746,7 @@ function latestDisclosedHoldings(transactions: DisclosureTransaction[]) {
       issuer,
       ticker,
       shares: transaction.post_transaction_shares,
-      date: date || "date pending",
+      date: date || "date unavailable",
       source_url: transaction.source_url,
       sort_key: sortKey
     });

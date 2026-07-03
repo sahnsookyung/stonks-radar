@@ -1,0 +1,762 @@
+{
+  "content_hash": "sha256:11debff0d8d6c7357c741f6b2b3485eae6fe39779313e937a15697c3f28fd786",
+  "corrections": [],
+  "data": {
+    "coverage_window": "7d",
+    "events": [
+      {
+        "breaking_score": 82,
+        "claim_level": "source_only",
+        "confidence": 0.72,
+        "event_type": "geopolitical_supply_risk",
+        "evidence_match_status": "unverified",
+        "first_seen_at": "2026-06-29T12:08:56Z",
+        "freshness": "fresh",
+        "id": "energy_geopolitical_supply_risk_seed",
+        "item_kind": "official_update",
+        "last_seen_at": "2026-07-01T12:08:56Z",
+        "market_direction": "mixed",
+        "published_at": "2026-07-01T12:08:56Z",
+        "regions": [
+          {
+            "confidence": 0.76,
+            "key": "USA",
+            "name": "United States",
+            "relation": "affected_region"
+          },
+          {
+            "confidence": 0.74,
+            "key": "EU",
+            "name": "European Union",
+            "relation": "affected_region"
+          },
+          {
+            "confidence": 0.72,
+            "key": "CHN",
+            "name": "China",
+            "relation": "affected_region"
+          },
+          {
+            "confidence": 0.7,
+            "key": "KOR",
+            "name": "South Korea",
+            "relation": "affected_region"
+          },
+          {
+            "confidence": 0.7,
+            "key": "JPN",
+            "name": "Japan",
+            "relation": "affected_region"
+          },
+          {
+            "confidence": 0.54,
+            "key": "BRA",
+            "name": "Brazil",
+            "relation": "affected_region"
+          }
+        ],
+        "severity": "high",
+        "source_count": 3,
+        "source_links": [
+          {
+            "is_primary": true,
+            "label": "EIA",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "eia",
+            "title": "Weekly petroleum status report",
+            "trust_tier": "T0_OFFICIAL",
+            "url": "https://www.eia.gov/petroleum/supply/weekly/"
+          },
+          {
+            "is_primary": false,
+            "label": "IEA",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "iea",
+            "title": "Oil market report",
+            "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
+            "url": "https://www.iea.org/reports/oil-market-report"
+          },
+          {
+            "is_primary": false,
+            "label": "Source policy",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "source_policy",
+            "title": "Official energy-data context",
+            "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
+            "url": "https://www.eia.gov/"
+          }
+        ],
+        "summary": "Official energy data and reviewed geopolitical context are grouped as a supply-risk event affecting the US, Europe, China, Korea, Japan, and Brazil.",
+        "tickers": [],
+        "title": "Energy supply-risk watch links shipping chokepoints, inventories, and inflation-sensitive markets",
+        "topics": [
+          {
+            "confidence": 0.96,
+            "key": "energy",
+            "label": "Energy"
+          },
+          {
+            "confidence": 0.86,
+            "key": "geopolitics",
+            "label": "Geopolitics"
+          },
+          {
+            "confidence": 0.72,
+            "key": "supply_chain",
+            "label": "Supply chain"
+          }
+        ],
+        "trust_score": 84
+      },
+      {
+        "breaking_score": 76,
+        "claim_level": "clustered_candidate",
+        "confidence": 0.78,
+        "event_type": "trade_policy",
+        "evidence_match_status": "matched",
+        "first_seen_at": "2026-06-29T12:08:56Z",
+        "freshness": "fresh",
+        "id": "semiconductor_export_controls_seed",
+        "item_kind": "official_update",
+        "last_seen_at": "2026-07-01T12:08:56Z",
+        "market_direction": "mixed",
+        "published_at": "2026-07-01T12:08:56Z",
+        "regions": [
+          {
+            "confidence": 0.92,
+            "key": "CHN",
+            "name": "China",
+            "relation": "event_region"
+          },
+          {
+            "confidence": 0.86,
+            "key": "USA",
+            "name": "United States",
+            "relation": "affected_region"
+          },
+          {
+            "confidence": 0.84,
+            "key": "KOR",
+            "name": "South Korea",
+            "relation": "affected_region"
+          },
+          {
+            "confidence": 0.78,
+            "key": "JPN",
+            "name": "Japan",
+            "relation": "affected_region"
+          },
+          {
+            "confidence": 0.72,
+            "key": "EU",
+            "name": "European Union",
+            "relation": "affected_region"
+          },
+          {
+            "confidence": 0.76,
+            "key": "USA",
+            "name": "United States",
+            "relation": "market_region"
+          },
+          {
+            "confidence": 0.74,
+            "key": "KOR",
+            "name": "South Korea",
+            "relation": "market_region"
+          }
+        ],
+        "severity": "high",
+        "source_count": 3,
+        "source_links": [
+          {
+            "is_primary": true,
+            "label": "BIS",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "bis",
+            "title": "Bureau of Industry and Security export controls",
+            "trust_tier": "T0_OFFICIAL",
+            "url": "https://www.bis.gov/"
+          },
+          {
+            "is_primary": false,
+            "label": "SEC EDGAR",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "sec_edgar",
+            "title": "Issuer filings for affected companies",
+            "trust_tier": "T1_REGULATED_FILING",
+            "url": "https://www.sec.gov/edgar/search/"
+          },
+          {
+            "is_primary": false,
+            "label": "Source policy",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "source_policy",
+            "title": "Export Administration Regulations reference",
+            "trust_tier": "T3_REVIEWED_PUBLIC_SOURCE",
+            "url": "https://www.bis.gov/regulations/ear/table-of-contents"
+          }
+        ],
+        "summary": "Official-policy monitoring links export controls to NVIDIA, Samsung Electronics, Japan equipment suppliers, and EU tooling exposure.",
+        "tickers": [
+          {
+            "confidence": 0.88,
+            "exchange": "NASDAQ",
+            "name": "NVIDIA Corporation",
+            "relationship": "affected_company",
+            "symbol": "NVDA"
+          },
+          {
+            "confidence": 0.84,
+            "exchange": "KRX",
+            "name": "Samsung Electronics Co., Ltd.",
+            "relationship": "affected_company",
+            "symbol": "005930.KS"
+          }
+        ],
+        "title": "China-origin export-control risk remains elevated for AI-chip supply chains",
+        "topics": [
+          {
+            "confidence": 0.94,
+            "key": "semiconductors",
+            "label": "Semiconductors"
+          },
+          {
+            "confidence": 0.79,
+            "key": "geopolitics",
+            "label": "Geopolitics"
+          },
+          {
+            "confidence": 0.86,
+            "key": "trade_policy",
+            "label": "Trade policy"
+          },
+          {
+            "confidence": 0.77,
+            "key": "supply_chain",
+            "label": "Supply chain"
+          }
+        ],
+        "trust_score": 88
+      },
+      {
+        "breaking_score": 68,
+        "claim_level": "source_only",
+        "confidence": 0.8,
+        "event_type": "company_update",
+        "evidence_match_status": "weak_match",
+        "first_seen_at": "2026-06-30T18:08:56Z",
+        "freshness": "fresh",
+        "id": "rklb_launch_window_seed",
+        "item_kind": "source_discovery",
+        "last_seen_at": "2026-07-01T12:08:56Z",
+        "market_direction": "mixed",
+        "published_at": "2026-07-01T12:08:56Z",
+        "regions": [
+          {
+            "confidence": 0.84,
+            "key": "USA",
+            "name": "United States",
+            "relation": "company_region"
+          },
+          {
+            "confidence": 0.84,
+            "key": "USA",
+            "name": "United States",
+            "relation": "market_region"
+          },
+          {
+            "confidence": 0.48,
+            "key": "JPN",
+            "name": "Japan",
+            "relation": "affected_region"
+          }
+        ],
+        "severity": "medium",
+        "source_count": 2,
+        "source_links": [
+          {
+            "is_primary": true,
+            "label": "Rocket Lab",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "rocket_lab_ir",
+            "title": "Rocket Lab updates",
+            "trust_tier": "T0_OFFICIAL",
+            "url": "https://www.rocketlabusa.com/updates/"
+          },
+          {
+            "is_primary": false,
+            "label": "SEC EDGAR",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "sec_edgar",
+            "title": "Rocket Lab SEC filings",
+            "trust_tier": "T1_REGULATED_FILING",
+            "url": "https://www.sec.gov/edgar/browse/?CIK=1819994"
+          }
+        ],
+        "summary": "This is a source-linked watch item built from Rocket Lab IR and SEC links; it is not a verified launch-window event.",
+        "tickers": [
+          {
+            "confidence": 0.92,
+            "exchange": "NASDAQ",
+            "name": "Rocket Lab USA, Inc.",
+            "relationship": "direct_subject",
+            "symbol": "RKLB"
+          }
+        ],
+        "title": "Rocket Lab source links for RKLB filings and company updates",
+        "topics": [
+          {
+            "confidence": 0.94,
+            "key": "space",
+            "label": "Space"
+          },
+          {
+            "confidence": 0.44,
+            "key": "supply_chain",
+            "label": "Supply chain"
+          }
+        ],
+        "trust_score": 90
+      },
+      {
+        "breaking_score": 63,
+        "claim_level": "clustered_candidate",
+        "confidence": 0.74,
+        "event_type": "public_health_alert",
+        "evidence_match_status": "unverified",
+        "first_seen_at": "2026-06-29T12:08:56Z",
+        "freshness": "watch",
+        "id": "public_health_alert_seed",
+        "item_kind": "official_update",
+        "last_seen_at": "2026-07-01T08:08:56Z",
+        "market_direction": "unclear",
+        "published_at": "2026-07-01T08:08:56Z",
+        "regions": [
+          {
+            "confidence": 0.72,
+            "key": "BRA",
+            "name": "Brazil",
+            "relation": "event_region"
+          },
+          {
+            "confidence": 0.58,
+            "key": "USA",
+            "name": "United States",
+            "relation": "affected_region"
+          },
+          {
+            "confidence": 0.56,
+            "key": "EU",
+            "name": "European Union",
+            "relation": "affected_region"
+          },
+          {
+            "confidence": 0.54,
+            "key": "JPN",
+            "name": "Japan",
+            "relation": "affected_region"
+          },
+          {
+            "confidence": 0.54,
+            "key": "KOR",
+            "name": "South Korea",
+            "relation": "affected_region"
+          }
+        ],
+        "severity": "medium",
+        "source_count": 2,
+        "source_links": [
+          {
+            "is_primary": true,
+            "label": "WHO",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "who",
+            "title": "Disease Outbreak News",
+            "trust_tier": "T0_OFFICIAL",
+            "url": "https://www.who.int/emergencies/disease-outbreak-news"
+          },
+          {
+            "is_primary": false,
+            "label": "CDC",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "cdc",
+            "title": "Travel health notices",
+            "trust_tier": "T0_OFFICIAL",
+            "url": "https://www.cdc.gov/travel/notices"
+          }
+        ],
+        "summary": "Official public-health feeds are classified separately from financial news and surfaced only as market-context risk.",
+        "tickers": [],
+        "title": "Public-health alert monitoring covers Brazil, US, Europe, and Asia travel-sensitive markets",
+        "topics": [
+          {
+            "confidence": 0.96,
+            "key": "public_health",
+            "label": "Public health"
+          },
+          {
+            "confidence": 0.52,
+            "key": "macro",
+            "label": "Macro"
+          }
+        ],
+        "trust_score": 92
+      },
+      {
+        "breaking_score": 61,
+        "claim_level": "clustered_candidate",
+        "confidence": 0.76,
+        "event_type": "company_update",
+        "evidence_match_status": "matched",
+        "first_seen_at": "2026-06-30T18:08:56Z",
+        "freshness": "watch",
+        "id": "ionq_contract_watch_seed",
+        "item_kind": "official_update",
+        "last_seen_at": "2026-07-01T08:08:56Z",
+        "market_direction": "mixed",
+        "published_at": "2026-07-01T08:08:56Z",
+        "regions": [
+          {
+            "confidence": 0.88,
+            "key": "USA",
+            "name": "United States",
+            "relation": "company_region"
+          },
+          {
+            "confidence": 0.88,
+            "key": "USA",
+            "name": "United States",
+            "relation": "market_region"
+          },
+          {
+            "confidence": 0.42,
+            "key": "EU",
+            "name": "European Union",
+            "relation": "affected_region"
+          },
+          {
+            "confidence": 0.3,
+            "key": "KOR",
+            "name": "South Korea",
+            "relation": "mentioned_region"
+          }
+        ],
+        "severity": "medium",
+        "source_count": 2,
+        "source_links": [
+          {
+            "is_primary": true,
+            "label": "IonQ",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "ionq_ir",
+            "title": "IonQ news",
+            "trust_tier": "T0_OFFICIAL",
+            "url": "https://ionq.com/news"
+          },
+          {
+            "is_primary": false,
+            "label": "SEC EDGAR",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "sec_edgar",
+            "title": "IonQ SEC filings",
+            "trust_tier": "T1_REGULATED_FILING",
+            "url": "https://www.sec.gov/edgar/browse/?CIK=1824920"
+          }
+        ],
+        "summary": "IONQ appears in the ticker news layer only when company, filing, or sector-context evidence is present.",
+        "tickers": [
+          {
+            "confidence": 0.9,
+            "exchange": "NYSE",
+            "name": "IonQ, Inc.",
+            "relationship": "direct_subject",
+            "symbol": "IONQ"
+          }
+        ],
+        "title": "IonQ contract and funding news is classified as quantum-sector ticker context",
+        "topics": [
+          {
+            "confidence": 0.96,
+            "key": "quantum",
+            "label": "Quantum"
+          },
+          {
+            "confidence": 0.38,
+            "key": "macro",
+            "label": "Macro"
+          }
+        ],
+        "trust_score": 88
+      },
+      {
+        "breaking_score": 58,
+        "claim_level": "clustered_candidate",
+        "confidence": 0.86,
+        "event_type": "central_bank_calendar",
+        "evidence_match_status": "weak_match",
+        "first_seen_at": "2026-06-29T12:08:56Z",
+        "freshness": "fresh",
+        "id": "central_bank_policy_watch_seed",
+        "item_kind": "official_update",
+        "last_seen_at": "2026-07-01T12:08:56Z",
+        "market_direction": "unclear",
+        "published_at": "2026-07-01T12:08:56Z",
+        "regions": [
+          {
+            "confidence": 0.88,
+            "key": "USA",
+            "name": "United States",
+            "relation": "event_region"
+          },
+          {
+            "confidence": 0.88,
+            "key": "JPN",
+            "name": "Japan",
+            "relation": "event_region"
+          },
+          {
+            "confidence": 0.88,
+            "key": "KOR",
+            "name": "South Korea",
+            "relation": "event_region"
+          },
+          {
+            "confidence": 0.85,
+            "key": "EU",
+            "name": "European Union",
+            "relation": "event_region"
+          },
+          {
+            "confidence": 0.84,
+            "key": "BRA",
+            "name": "Brazil",
+            "relation": "event_region"
+          },
+          {
+            "confidence": 0.72,
+            "key": "USA",
+            "name": "United States",
+            "relation": "market_region"
+          },
+          {
+            "confidence": 0.68,
+            "key": "KOR",
+            "name": "South Korea",
+            "relation": "market_region"
+          }
+        ],
+        "severity": "medium",
+        "source_count": 5,
+        "source_links": [
+          {
+            "is_primary": true,
+            "label": "Federal Reserve",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "federal_reserve",
+            "title": "FOMC calendars",
+            "trust_tier": "T0_OFFICIAL",
+            "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
+          },
+          {
+            "is_primary": true,
+            "label": "Bank of Korea",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "bank_of_korea",
+            "title": "Monetary policy schedule",
+            "trust_tier": "T0_OFFICIAL",
+            "url": "https://www.bok.or.kr/eng/main/contents.do?menuNo=400020"
+          },
+          {
+            "is_primary": true,
+            "label": "Bank of Japan",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "bank_of_japan",
+            "title": "Monetary policy meetings",
+            "trust_tier": "T0_OFFICIAL",
+            "url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm"
+          },
+          {
+            "is_primary": true,
+            "label": "ECB",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "ecb",
+            "title": "Governing Council calendars",
+            "trust_tier": "T0_OFFICIAL",
+            "url": "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html"
+          },
+          {
+            "is_primary": true,
+            "label": "BCB",
+            "policy_version": 1,
+            "published_at": "2026-06-30T18:08:56Z",
+            "source_key": "bcb",
+            "title": "COPOM calendar",
+            "trust_tier": "T0_OFFICIAL",
+            "url": "https://www.bcb.gov.br/detalhenoticia/20739/nota"
+          }
+        ],
+        "summary": "Official calendars are grouped into one policy-event watch so users can scan rate dates without leaving the app.",
+        "tickers": [
+          {
+            "confidence": 0.58,
+            "exchange": "KRX",
+            "name": "Samsung Electronics Co., Ltd.",
+            "relationship": "affected_company",
+            "symbol": "005930.KS"
+          }
+        ],
+        "title": "Central-bank decision calendar clusters FOMC, BoJ, BoK, ECB, and Brazil COPOM risk",
+        "topics": [
+          {
+            "confidence": 0.96,
+            "key": "central_banks",
+            "label": "Central banks"
+          },
+          {
+            "confidence": 0.82,
+            "key": "macro",
+            "label": "Macro"
+          }
+        ],
+        "trust_score": 96
+      }
+    ],
+    "generated_label": "2026-07-01T12:08:56Z",
+    "key": "USA",
+    "name": "United States",
+    "regional_brief": "United States has 6 source-linked news event(s), with relation labels separating event location, affected region, and market region."
+  },
+  "generated_at": "2026-07-03T16:29:14.926431Z",
+  "hard_expires_at": "2026-07-10T16:29:14.926431Z",
+  "locale": "en",
+  "object_key": "news_region_USA",
+  "object_type": "news_region",
+  "schema_version": "1.0",
+  "snapshot_version": 6,
+  "source_policy_versions": [
+    {
+      "policy_version": 1,
+      "source_key": "federal_reserve"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "sec_edgar"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "eia"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "world_bank"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "gdelt"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "google_news_rss"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "yahoo_finance_rss"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "yahoo_finance_delayed_quote"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "stooq_delayed_quote"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "treasury_xml_feed"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "krx_open_api"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "data_go_kr"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "japan_mof_jgb_csv"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bis"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "who"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "cdc"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "company_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "ecb"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bank_of_korea"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bank_of_japan"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "bcb"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "rocket_lab_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "ionq_ir"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "iea"
+    },
+    {
+      "policy_version": 1,
+      "source_key": "source_policy"
+    }
+  ],
+  "stale_after": "2026-07-04T04:29:14.926431Z",
+  "warnings": [
+    {
+      "code": "reference_delayed_market_data",
+      "message": "Market indicators are delayed/reference unless licensed.",
+      "severity": "info"
+    }
+  ]
+}

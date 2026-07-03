@@ -151,7 +151,7 @@ function calendarExpectationLabel(expectationType: string, locale: "en" | "ko") 
   if (expectationType === "official_calendar") return locale === "ko" ? "공식 일정" : "official calendar";
   if (expectationType === "manual_estimate") return locale === "ko" ? "수동 추정" : "manual estimate";
   if (expectationType === "provider_calendar") return locale === "ko" ? "제공사 일정" : "provider calendar";
-  if (expectationType === "manual_watch") return locale === "ko" ? "수동 감시" : "manual watch";
+  if (expectationType === "manual_watch") return locale === "ko" ? "확인 필요" : "watchlist check";
   return locale === "ko" ? "감시" : "watch";
 }
 

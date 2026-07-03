@@ -216,7 +216,7 @@ function shortFactLabel(factType: string, locale: "en" | "ko") {
 }
 
 function formatShares(value: number | null) {
-  if (value === null || !Number.isFinite(value)) return "pending";
+  if (value === null || !Number.isFinite(value)) return "unavailable";
   if (value >= 1_000_000) return `${trimFixedZeros((value / 1_000_000).toFixed(2))}M`;
   if (value >= 1_000) return `${trimFixedZeros((value / 1_000).toFixed(1))}K`;
   return value.toLocaleString();

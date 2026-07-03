@@ -38,7 +38,7 @@ export function MapPage() {
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm font-semibold text-accent">
             <MapPinned className="h-4 w-4" />
-            MapLibre static event layer
+            MapLibre event layer
           </div>
           <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Global Intelligence Map</h1>
         </div>

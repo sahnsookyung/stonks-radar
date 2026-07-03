@@ -203,8 +203,8 @@ function buildHistoryWarnings(error: unknown, warnings: string[] | undefined, lo
     return [
       localeText(
         locale,
-        "Market-data API is unavailable, so price, technical indicators, and app-computed chart snapshots are shown as pending.",
-        "시장 데이터 API를 읽지 못해 가격, 기술 지표, 차트 스냅샷을 대기 상태로 표시합니다."
+        "Market-data API is unavailable, so price, technical indicators, and app-computed chart snapshots are shown as unavailable.",
+        "시장 데이터 API를 읽지 못해 가격, 기술 지표, 차트 스냅샷을 사용할 수 없음으로 표시합니다."
       )
     ];
   }
@@ -323,7 +323,7 @@ export function TickerDetailPage() { // NOSONAR - ticker detail owns tab/query o
                 <div className="mt-2 flex flex-wrap gap-2">
                   <FreshnessPill freshness={freshness} locale={locale} />
                   <span className="badge hidden border-line bg-panelAlt text-muted sm:inline-flex">{freshness.providerLabel}</span>
-                  <span className="badge hidden border-line bg-panelAlt text-muted sm:inline-flex">{indicators.latestPoint?.date ?? "date pending"}</span>
+                  <span className="badge hidden border-line bg-panelAlt text-muted sm:inline-flex">{indicators.latestPoint?.date ?? "date unavailable"}</span>
                 </div>
               </div>
 
@@ -402,7 +402,7 @@ export function TickerDetailPage() { // NOSONAR - ticker detail owns tab/query o
               <MiniStat label={isKo ? "상태" : "Data"} value={dataStatValue} />
               <MiniStat label={isKo ? "기술" : "Score"} value={scoreStatValue} />
               <MiniStat label="RSI" value={rsiStatValue} />
-              <MiniStat label={isKo ? "생성" : "Generated"} value={snapshot?.generated_at ? formatDateTime(snapshot.generated_at) : "pending"} className="hidden sm:block" />
+              <MiniStat label={isKo ? "생성" : "Generated"} value={snapshot?.generated_at ? formatDateTime(snapshot.generated_at) : "unavailable"} className="hidden sm:block" />
             </div>
           </div>
         </section>
@@ -1153,7 +1153,7 @@ function FilingsPanel({
       <div key={owner.owner_name} className="rounded-md border border-line bg-panelAlt p-3">
         <div className="text-sm font-semibold">{owner.owner_name}</div>
         <div className="mt-1 text-xs leading-5 text-muted">
-          {owner.transactions} {isKo ? "거래 행" : "rows"} / {owner.latest_transaction_date ?? "date pending"}
+          {owner.transactions} {isKo ? "거래 행" : "rows"} / {owner.latest_transaction_date ?? "date unavailable"}
         </div>
       </div>
     ));
@@ -1257,7 +1257,7 @@ function FundamentalsPanel({ ticker, locale }: Readonly<{ ticker: TrackedTicker;
             <MetricCard
               key={field}
               label={isKo ? translateFundamental(field) : field}
-              value={isKo ? "대기" : "Pending"}
+              value={isKo ? "없음" : "Unavailable"}
               detail={isKo ? "공개 표시 허가/공식 filings 필요" : "Requires official filings or display permission"}
             />
           ))}
@@ -1401,7 +1401,7 @@ function ResearchSidebar({ // NOSONAR - sidebar groups watchlist, quick read, an
           <div>MACD: {canDisplayMarketData ? macdSignal(indicators, locale) : "withheld"}</div>
           <div>200D: {canDisplayMarketData ? distanceHint(indicators.latestClose, indicators.sma200, locale) : "withheld"}</div>
           <div>
-            {isKo ? "스냅샷 생성" : "Snapshot generated"}: {snapshot?.generated_at ? formatDateTime(snapshot.generated_at) : "pending"}
+            {isKo ? "스냅샷 생성" : "Snapshot generated"}: {snapshot?.generated_at ? formatDateTime(snapshot.generated_at) : "unavailable"}
           </div>
           <div>
             {isKo ? "거래/공시 행" : "Transaction rows"}: {transactions.length}
@@ -1520,7 +1520,7 @@ function HeaderAction({ icon, label, disabled = false }: Readonly<{ icon: ReactN
       type="button"
       disabled={disabled}
       className="secondary-action h-11 min-h-11 shrink-0 px-2.5 py-2 disabled:cursor-not-allowed disabled:opacity-55 sm:px-3"
-      title={disabled ? "Persistence pending" : label}
+      title={disabled ? "Persistence unavailable" : label}
       aria-label={label}
     >
       {icon}
@@ -1582,7 +1582,7 @@ function IndicatorMetricCard({
 }>) {
   const previousLabel = locale === "ko" ? "이전" : "Previous";
   const signalLabel = locale === "ko" ? "신호" : "Signal";
-  const timestamp = freshness.providerTimestamp ?? (locale === "ko" ? "시각 대기" : "timestamp pending");
+  const timestamp = freshness.providerTimestamp ?? (locale === "ko" ? "시각 없음" : "timestamp unavailable");
   return (
     <article
       className={`rounded-md border border-line bg-panelAlt p-4 ${disabled ? "opacity-75" : ""}`}
@@ -1627,7 +1627,7 @@ function NewsSignalCard({ signal, ticker, locale }: Readonly<{ signal: TickerSig
       <h3 className="mt-3 text-sm font-semibold leading-5">{item.label}</h3>
       <p className="mt-2 text-sm leading-6 text-muted">{item.detail}</p>
       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs leading-5 text-muted">
-        <span>{item.updated_at || "time pending"}</span>
+        <span>{item.updated_at || "time unavailable"}</span>
         <span>{locale === "ko" ? "감성" : "Sentiment"}: {sentimentFromSeverity(item.severity, locale)}</span>
         <span>{locale === "ko" ? "중요도" : "Importance"}: {importanceScore(item.severity)}/100</span>
       </div>
@@ -1682,7 +1682,7 @@ function FilingRow({ filing, locale }: Readonly<{ filing: DisclosureFiling; loca
             <span className="badge border-line bg-panel">{filing.form_type}</span>
           </div>
           <h3 className="mt-3 truncate text-sm font-semibold">{filing.issuer_name || filing.filer_name || filing.accession_number || "Public filing"}</h3>
-          <p className="mt-1 text-xs leading-5 text-muted">{filing.doc_date || filing.filed_at || (locale === "ko" ? "날짜 대기" : "date pending")}</p>
+          <p className="mt-1 text-xs leading-5 text-muted">{filing.doc_date || filing.filed_at || (locale === "ko" ? "날짜 없음" : "date unavailable")}</p>
         </div>
         <div className="shrink-0 text-right text-xs leading-5 text-muted">
           <div>{filing.parse_status}</div>
@@ -1726,13 +1726,13 @@ function TransactionRow({ transaction, locale }: Readonly<{ transaction: Disclos
         <div className="text-xs font-semibold uppercase leading-5 text-muted">{locale === "ko" ? "거래" : "Transaction"}</div>
         <div className="mt-1 text-sm font-bold">{label}</div>
         <div className="mt-1 inline-flex rounded border border-line bg-panel px-2 py-1 text-[11px] font-semibold uppercase leading-4 text-muted">{bucket}</div>
-        <div className="mt-1 text-xs leading-5 text-muted">{transaction.transaction_date || "date pending"}</div>
+        <div className="mt-1 text-xs leading-5 text-muted">{transaction.transaction_date || "date unavailable"}</div>
         {caveat ? <div className="mt-1 text-xs leading-5 text-warning">{caveat}</div> : null}
       </div>
       <div>
         <div className="text-xs font-semibold uppercase leading-5 text-muted">{locale === "ko" ? "규모" : "Size"}</div>
         <div className="mt-1 text-sm font-bold">{formatTransactionSize(transaction)}</div>
-        <div className="mt-1 text-xs leading-5 text-muted">{transaction.owner_name || transaction.person_name || "owner pending"}</div>
+        <div className="mt-1 text-xs leading-5 text-muted">{transaction.owner_name || transaction.person_name || "owner unavailable"}</div>
       </div>
     </>
   );
@@ -1823,7 +1823,7 @@ function buildFreshnessMeta(payload: MarketHistoryResponse | undefined, updatedA
     const staleness = payload.data_freshness.staleness_state;
     return {
       providerLabel: `provider: ${payload.data_freshness.provider}`,
-      delayLabel: staleness === "stale_fallback" ? "stale fallback" : payload.data_freshness.delay_label,
+      delayLabel: staleness === "stale_fallback" ? "stale reference" : payload.data_freshness.delay_label,
       stalenessReason: payload.data_freshness.staleness_reason,
       ageLabel: relativeAge(new Date(sourceTime).getTime()),
       sameDayValid: payload.data_freshness.is_same_day_valid,
@@ -1833,15 +1833,15 @@ function buildFreshnessMeta(payload: MarketHistoryResponse | undefined, updatedA
       fetchedAt: payload.data_freshness.fetched_at
     };
   }
-  const provider = payload?.provider ?? "provider pending";
-  const latestDate = latestPoint?.date ?? "date pending";
+  const provider = payload?.provider ?? "provider unavailable";
+  const latestDate = latestPoint?.date ?? "date unavailable";
   const today = isoDate(new Date());
   const sameDayValid = latestDate === today;
   return {
     providerLabel: `provider: ${provider}`,
     delayLabel: sameDayValid ? "current-day daily snapshot, not realtime" : "daily / previous-session snapshot",
     stalenessReason: payload?.source_note || `latest candle ${latestDate}; no intraday redistribution claimed`,
-    ageLabel: updatedAt ? relativeAge(updatedAt) : "pending",
+    ageLabel: updatedAt ? relativeAge(updatedAt) : "unavailable",
     sameDayValid,
     isPublicDisplayAllowed: true,
     licenseMode: "legacy",
@@ -2132,7 +2132,7 @@ function relativeAge(timestampMs: number) {
 }
 
 function formatCurrency(value: number, currency: string) {
-  if (!Number.isFinite(value)) return "pending";
+  if (!Number.isFinite(value)) return "unavailable";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
@@ -2141,28 +2141,28 @@ function formatCurrency(value: number, currency: string) {
 }
 
 function formatSigned(value: number, currency: string) {
-  if (!Number.isFinite(value)) return "pending";
+  if (!Number.isFinite(value)) return "unavailable";
   const prefix = value > 0 ? "+" : "";
   return `${prefix}${formatCurrency(value, currency)}`;
 }
 
 function formatPercent(value: number) {
-  if (!Number.isFinite(value)) return "pending";
+  if (!Number.isFinite(value)) return "unavailable";
   return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
 function formatFixed(value: number, digits: number) {
-  return Number.isFinite(value) ? value.toFixed(digits) : "pending";
+  return Number.isFinite(value) ? value.toFixed(digits) : "unavailable";
 }
 
 function formatNumber(value: number) {
-  if (!Number.isFinite(value)) return "pending";
+  if (!Number.isFinite(value)) return "unavailable";
   return new Intl.NumberFormat("en-US", { notation: value >= 1_000_000 ? "compact" : "standard", maximumFractionDigits: 2 }).format(value);
 }
 
 function formatTransactionSize(transaction: DisclosureTransaction) {
   if (transaction.source === "OGE") {
-    if (transaction.amount_min == null && transaction.amount_max == null) return "range pending";
+    if (transaction.amount_min == null && transaction.amount_max == null) return "range unavailable";
     if (transaction.amount_max == null) return `>${formatCurrency(transaction.amount_min ?? 0, "USD")}`;
     return `${formatCurrency(transaction.amount_min ?? 0, "USD")}-${formatCurrency(transaction.amount_max, "USD")}`;
   }
@@ -2185,7 +2185,7 @@ function technicalBiasLabel(score: number, locale: "en" | "ko") {
 }
 
 function dailyChangeSignal(changePct: number, locale: "en" | "ko") {
-  if (!Number.isFinite(changePct)) return localeText(locale, "Change pending", "변동률 대기");
+  if (!Number.isFinite(changePct)) return localeText(locale, "Change unavailable", "변동률 없음");
   const signal = [
     { test: changePct >= 5, en: "Strong up day", ko: "강한 상승일" },
     { test: changePct >= 1.5, en: "Positive session", ko: "상승 우위" },
@@ -2198,7 +2198,7 @@ function dailyChangeSignal(changePct: number, locale: "en" | "ko") {
 function macdSignal(indicators: IndicatorSet, locale: "en" | "ko") {
   const current = indicators.macd.histogram;
   const previous = indicators.previousMacdHistogram;
-  if (!Number.isFinite(current)) return localeText(locale, "MACD pending", "MACD 계산 대기");
+  if (!Number.isFinite(current)) return localeText(locale, "MACD unavailable", "MACD 없음");
   const direction = macdDirectionLabel(current, previous, locale);
   if (current > 0) return localeText(locale, `Positive histogram, ${direction}`, `양의 히스토그램, ${direction}`);
   if (current < 0) return localeText(locale, `Negative histogram, ${direction}`, `음의 히스토그램, ${direction}`);
@@ -2212,7 +2212,7 @@ function macdDirectionLabel(current: number, previous: number, locale: "en" | "k
   return localeText(locale, "flat", "횡보");
 }
 
-function optionsSummaryFields(locale: "en" | "ko") { // NOSONAR - static bilingual option placeholders are kept auditable together.
+function optionsSummaryFields(locale: "en" | "ko") { // NOSONAR - static bilingual option empty-states are kept auditable together.
   const isKo = locale === "ko";
   return [
     {
@@ -2222,52 +2222,52 @@ function optionsSummaryFields(locale: "en" | "ko") { // NOSONAR - static bilingu
     },
     {
       label: isKo ? "만기" : "Expiration",
-      value: isKo ? "대기" : "Pending",
+      value: isKo ? "없음" : "Unavailable",
       detail: isKo ? "체인 연결 후 선택 가능" : "Selectable after chain data is connected"
     },
     {
       label: isKo ? "만기까지" : "Days to expiry",
-      value: isKo ? "대기" : "Pending",
+      value: isKo ? "없음" : "Unavailable",
       detail: isKo ? "선택 만기 기준" : "Based on selected expiration"
     },
     {
       label: "ATM IV",
-      value: isKo ? "대기" : "Pending",
+      value: isKo ? "없음" : "Unavailable",
       detail: isKo ? "24시간 지연이면 명시" : "Labeled if 24h delayed"
     },
     {
       label: isKo ? "ATM 스트래들" : "ATM straddle",
-      value: isKo ? "대기" : "Pending",
+      value: isKo ? "없음" : "Unavailable",
       detail: isKo ? "실제 bid/ask 연결 필요" : "Requires real bid/ask source"
     },
     {
       label: isKo ? "예상 변동" : "Expected move",
-      value: isKo ? "대기" : "Pending",
+      value: isKo ? "없음" : "Unavailable",
       detail: isKo ? "스트래들 기반 계산" : "Computed from straddle when available"
     },
     {
       label: isKo ? "콜 거래량 / OI" : "Call volume / OI",
-      value: isKo ? "대기" : "Pending",
+      value: isKo ? "없음" : "Unavailable",
       detail: isKo ? "체인 연결 후 집계" : "Aggregated after chain data is connected"
     },
     {
       label: isKo ? "풋 거래량 / OI" : "Put volume / OI",
-      value: isKo ? "대기" : "Pending",
+      value: isKo ? "없음" : "Unavailable",
       detail: isKo ? "체인 연결 후 집계" : "Aggregated after chain data is connected"
     },
     {
       label: isKo ? "P/C 비율" : "Put/call ratios",
-      value: isKo ? "대기" : "Pending",
+      value: isKo ? "없음" : "Unavailable",
       detail: isKo ? "거래량과 OI를 분리 표시" : "Volume and OI ratios stay separate"
     },
     {
       label: isKo ? "최대 거래량 행사가" : "Highest-volume strikes",
-      value: isKo ? "대기" : "Pending",
+      value: isKo ? "없음" : "Unavailable",
       detail: isKo ? "콜/풋 각각 표시" : "Shown separately for calls and puts"
     },
     {
       label: isKo ? "최대 OI 행사가" : "Highest-OI strikes",
-      value: isKo ? "대기" : "Pending",
+      value: isKo ? "없음" : "Unavailable",
       detail: isKo ? "콜/풋 각각 표시" : "Shown separately for calls and puts"
     },
     {
@@ -2352,21 +2352,21 @@ function volumeHint(indicators: IndicatorSet, locale: "en" | "ko") {
 }
 
 function distanceHint(value: number, reference: number, locale: "en" | "ko") {
-  if (!Number.isFinite(value) || !Number.isFinite(reference)) return locale === "ko" ? "계산 대기" : "Calculation pending";
+  if (!Number.isFinite(value) || !Number.isFinite(reference)) return locale === "ko" ? "계산 없음" : "Calculation unavailable";
   const distance = ((value - reference) / reference) * 100;
   return locale === "ko" ? `기준 대비 ${formatPercent(distance)}` : `${formatPercent(distance)} versus reference`;
 }
 
 function bollingerHint(indicators: IndicatorSet, locale: "en" | "ko") {
   const position = indicators.bollinger.position;
-  if (!Number.isFinite(position)) return locale === "ko" ? "계산 대기" : "Calculation pending";
+  if (!Number.isFinite(position)) return locale === "ko" ? "계산 없음" : "Calculation unavailable";
   if (position > 1) return locale === "ko" ? "상단 밴드 위" : "Above upper band";
   if (position < 0) return locale === "ko" ? "하단 밴드 아래" : "Below lower band";
   return locale === "ko" ? "밴드 내부" : "Inside bands";
 }
 
 function rangeHint(indicators: IndicatorSet, locale: "en" | "ko") {
-  if (!Number.isFinite(indicators.rangePosition)) return locale === "ko" ? "계산 대기" : "Calculation pending";
+  if (!Number.isFinite(indicators.rangePosition)) return locale === "ko" ? "계산 없음" : "Calculation unavailable";
   return locale === "ko"
     ? `52주 범위: ${formatFixed(indicators.rangeLow, 2)} - ${formatFixed(indicators.rangeHigh, 2)}`
     : `52W range: ${formatFixed(indicators.rangeLow, 2)} - ${formatFixed(indicators.rangeHigh, 2)}`;

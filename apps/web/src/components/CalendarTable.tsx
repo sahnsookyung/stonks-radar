@@ -25,7 +25,7 @@ export function CalendarTable({ items }: Readonly<{ items: CalendarItem[] }>) {
               </div>
               <div className="grid grid-cols-[112px_minmax(0,1fr)] gap-2">
                 <dt className="font-semibold uppercase text-muted">Actual</dt>
-                <dd className="safe-text">{item.actual_value ?? "pending"}</dd>
+                <dd className="safe-text">{item.actual_value ?? "not reported"}</dd>
               </div>
               <div className="grid grid-cols-[112px_minmax(0,1fr)] gap-2">
                 <dt className="font-semibold uppercase text-muted">Previous</dt>
@@ -74,7 +74,7 @@ export function CalendarTable({ items }: Readonly<{ items: CalendarItem[] }>) {
                   <div className="font-medium">{item.expectation_type}</div>
                   <div className="text-muted">{item.expectation_value ?? "n/a"}</div>
                 </td>
-                <td className="px-3 py-3">{item.actual_value ?? "pending"}</td>
+                <td className="px-3 py-3">{item.actual_value ?? "not reported"}</td>
                 <td className="px-3 py-3">{item.previous_value ?? "n/a"}</td>
                 <td className="px-3 py-3">{item.surprise ?? "not computed"}</td>
                 <td className="px-3 py-3">

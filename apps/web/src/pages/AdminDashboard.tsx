@@ -230,7 +230,7 @@ export function AdminDashboard() {
     try {
       const result = await apiPost<{ job_id: string; refresh?: { instrument_count?: number; listing_count?: number } }>(
         "/api/admin/instruments/refresh",
-        { source: "LOCAL_STATIC_INDEX", mode: "INCREMENTAL", priority: "HIGH" },
+        { source: "CONFIGURED_INDEX", mode: "INCREMENTAL", priority: "HIGH" },
         csrf
       );
       setMessage(`Instrument index cache refreshed (${result.refresh?.instrument_count ?? "?"} instruments); worker sync queued: ${result.job_id}`);

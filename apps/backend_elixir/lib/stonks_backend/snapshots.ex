@@ -20,6 +20,24 @@ defmodule StonksBackend.Snapshots do
     "restricted_source_text",
     "secret"
   ]
+  @public_placeholder_guard_keys [
+    "catalyst_type",
+    "description",
+    "detail",
+    "label",
+    "methodology",
+    "one_sentence_summary",
+    "overview",
+    "reasoning",
+    "risk_summary",
+    "source",
+    "source_note",
+    "source_strength",
+    "summary",
+    "thesis",
+    "title",
+    "value"
+  ]
   @prohibited_public_object_types ["source_status"]
   @prohibited_public_object_keys ["source_status"]
   @schema_by_object_type %{
@@ -191,7 +209,8 @@ defmodule StonksBackend.Snapshots do
        |> Map.put("hard_expires_at", iso8601(context.hard_expires_at))
        |> Map.put("corrections", context.corrections)
        |> Map.put_new("warnings", [])
-       |> Map.put_new("source_policy_versions", [])}
+       |> Map.put_new("source_policy_versions", [])
+       |> scrub_public_placeholder_metadata()}
     end
   end
 
@@ -980,6 +999,7 @@ defmodule StonksBackend.Snapshots do
            :ok <- validate_snapshot_envelope(snapshot, path),
            :ok <- assert_not_prohibited_public_snapshot(snapshot, path),
            :ok <- assert_no_public_raw_private(snapshot, path),
+           :ok <- assert_no_public_placeholder_display_terms(snapshot, path),
            :ok <- validate_snapshot_schema(snapshot, path) do
         :ok
       end
@@ -1593,6 +1613,105 @@ defmodule StonksBackend.Snapshots do
   end
 
   defp assert_no_public_raw_private(_value, _path), do: :ok
+
+  defp scrub_public_placeholder_metadata(value), do: scrub_public_placeholder_metadata(value, nil)
+
+  defp scrub_public_placeholder_metadata(value, _key) when is_map(value) do
+    Map.new(value, fn {key, nested} -> {key, scrub_public_placeholder_metadata(nested, key)} end)
+  end
+
+  defp scrub_public_placeholder_metadata(value, _key) when is_list(value) do
+    Enum.map(value, &scrub_public_placeholder_metadata(&1, nil))
+  end
+
+  defp scrub_public_placeholder_metadata(value, key) when is_binary(value) do
+    cond do
+      id_like_key?(key) or url_like_key?(key) ->
+        value
+
+      source_policy_key?(key) and value == "seed" ->
+        "snapshot"
+
+      key_string(key) == "source_strength" ->
+        value
+        |> String.replace("_seed", "")
+        |> scrub_public_placeholder_text()
+
+      true ->
+        scrub_public_placeholder_text(value)
+    end
+  end
+
+  defp scrub_public_placeholder_metadata(value, _key), do: value
+
+  defp scrub_public_placeholder_text(value) do
+    value
+    |> replace_public_text(~r/\bcurrent seed snapshot\b/i, "current public snapshot")
+    |> replace_public_text(~r/\bseed snapshot\b/i, "public snapshot")
+    |> replace_public_text(~r/\bThe seed event demonstrates\b/i, "This source-linked item shows")
+    |> replace_public_text(~r/\bseed event\b/i, "source-linked item")
+    |> replace_public_text(~r/\bSource policy seed\b/i, "Source policy")
+    |> String.replace("reviewed_structured_seed", "reviewed_structured")
+    |> String.replace("official_calendar_seed", "official_calendar")
+    |> String.replace("unrelated fallback events", "unrelated substitute items")
+  end
+
+  defp replace_public_text(value, pattern, replacement),
+    do: Regex.replace(pattern, value, replacement)
+
+  defp assert_no_public_placeholder_display_terms(value, path),
+    do: assert_no_public_placeholder_display_terms(value, path, nil)
+
+  defp assert_no_public_placeholder_display_terms(value, path, _key) when is_map(value) do
+    Enum.reduce_while(value, :ok, fn {key, nested}, :ok ->
+      case assert_no_public_placeholder_display_terms(nested, path, key) do
+        :ok -> {:cont, :ok}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+  end
+
+  defp assert_no_public_placeholder_display_terms(value, path, _key) when is_list(value) do
+    Enum.reduce_while(value, :ok, fn nested, :ok ->
+      case assert_no_public_placeholder_display_terms(nested, path, nil) do
+        :ok -> {:cont, :ok}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+  end
+
+  defp assert_no_public_placeholder_display_terms(value, path, key) when is_binary(value) do
+    if placeholder_guard_key?(key) and placeholder_display_text?(value) do
+      {:error, "#{path} contains prohibited placeholder display text in #{key}"}
+    else
+      :ok
+    end
+  end
+
+  defp assert_no_public_placeholder_display_terms(_value, _path, _key), do: :ok
+
+  defp placeholder_display_text?(value) do
+    Regex.match?(
+      ~r/\b(seed snapshot|current seed snapshot|seed event|Source policy seed)\b|reviewed_structured_seed|official_calendar_seed/i,
+      value
+    )
+  end
+
+  defp placeholder_guard_key?(key), do: key_string(key) in @public_placeholder_guard_keys
+
+  defp id_like_key?(key),
+    do: key_string(key) in ["id", "object_key", "event_id", "dedupe_key", "job_id"]
+
+  defp source_policy_key?(key), do: key_string(key) in ["source_key", "source_policy_key"]
+
+  defp url_like_key?(key) do
+    key = key_string(key)
+    String.ends_with?(key, "_url") or String.ends_with?(key, "_path")
+  end
+
+  defp key_string(key) when is_binary(key), do: key
+  defp key_string(key) when is_atom(key), do: Atom.to_string(key)
+  defp key_string(key), do: to_string(key)
 
   defp parse_positive_int(value) when is_integer(value) and value > 0, do: {:ok, value}
 

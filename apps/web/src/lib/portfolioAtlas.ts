@@ -1210,7 +1210,7 @@ export function createDemoPortfolio(): Portfolio {
     userId: "demo-user",
     name: "Growth + shock absorber portfolio",
     baseCurrency: "USD",
-    description: "A daily-resolution sample portfolio for planning, not trading.",
+    description: "A daily-resolution planning portfolio for modeling, not trading.",
     isDemo: true,
     cashBalance: 6_500,
     holdings: [
@@ -1937,7 +1937,7 @@ export function runBacktest(params: {
         metricKey: "backtest",
         severity: "warning",
         qualityLevel: "PROXY",
-        reason: "Prototype backtest uses a synthetic monthly planning proxy where exact historical price series are unavailable."
+        reason: "Planning backtest uses a synthetic monthly proxy where exact historical price series are unavailable."
       }
     ]
   };

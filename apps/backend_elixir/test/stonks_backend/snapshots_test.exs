@@ -129,6 +129,34 @@ defmodule StonksBackend.SnapshotsTest do
     assert message =~ "item_kind"
   end
 
+  test "snapshot validation rejects placeholder wording in public display fields", %{
+    published_root: root
+  } do
+    write_manifest!(root, %{
+      "news_index" => %{"en" => "public/v1/en/news/index.json"}
+    })
+
+    write_snapshot!(root, "v1/en/news/index.json", %{
+      "object_type" => "news_index",
+      "object_key" => "news_index",
+      "data" => %{
+        "generated_label" => "2026-07-01T12:00:00Z",
+        "filters" => empty_news_filters(),
+        "events" => [
+          news_event("source_watch", DateTime.utc_now(), %{
+            "title" => "The seed event demonstrates ticker-level grouping",
+            "item_kind" => "source_discovery",
+            "claim_level" => "source_only",
+            "evidence_match_status" => "weak_match"
+          })
+        ]
+      }
+    })
+
+    assert {:error, message} = Snapshots.validate_snapshot_tree(root)
+    assert message =~ "contains prohibited placeholder display text"
+  end
+
   test "candidate build enriches news claims, windows, and configured ticker facets", %{
     published_root: root,
     artifact_root: artifact_root
@@ -186,7 +214,14 @@ defmodule StonksBackend.SnapshotsTest do
       |> Jason.decode!()
 
     assert index["data"]["coverage_window"] == "30d"
+
+    assert index["source_policy_versions"] == [
+             %{"source_key" => "snapshot", "policy_version" => 1}
+           ]
+
     refute Enum.any?(index["data"]["events"], &(&1["id"] == "stale_source_discovery"))
+    refute Jason.encode!(index["data"]) =~ "seed event"
+    refute Jason.encode!(index["data"]) =~ "Source policy seed"
 
     assert %{
              "title" => "Rocket Lab source links for RKLB filings and company updates",
