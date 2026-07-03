@@ -59,6 +59,7 @@ jobs:
               return;
             }
 
+            let ciRun = null;
             for (const check of required) {
               const { data } = await github.rest.actions.listWorkflowRuns({
                 owner,
@@ -85,6 +86,26 @@ jobs:
               }
 
               core.info(`${check.label} is green for ${headSha}: ${latest.html_url}`);
+              if (check.workflow_id === "ci.yml") {
+                ciRun = latest;
+              }
+            }
+
+            let apiImageRef = headSha;
+            if (ciRun) {
+              const jobs = await github.rest.actions.listJobsForWorkflowRun({
+                owner,
+                repo,
+                run_id: ciRun.id,
+                per_page: 100,
+              });
+              const apiImageJob = jobs.data.jobs.find((job) => job.name === "build-api-elixir-linux-arm64");
+              if (apiImageJob?.conclusion === "skipped") {
+                apiImageRef = "main";
+              } else if (!apiImageJob) {
+                core.warning("Could not find the API image job in the CI run; defaulting to the SHA image.");
+              }
+              core.info(`API image job conclusion: ${apiImageJob?.conclusion || "missing"}; deploying image tag ${apiImageRef}.`);
             }
 
             const deployRuns = await github.rest.actions.listWorkflowRuns({
@@ -110,6 +131,7 @@ jobs:
                 runner: "github-hosted",
                 mode: "fast",
                 verify: "false",
+                api_image_ref: apiImageRef,
               },
             });
 
@@ -133,4 +155,6 @@ jobs:
             await core.summary
               .addHeading("Production deploy dispatched")
               .addRaw(`Dispatched ${deployWorkflow} for main at ${headSha}.`)
+              .addBreak()
+              .addRaw(`API image ref: ${apiImageRef}.`)
               .write();

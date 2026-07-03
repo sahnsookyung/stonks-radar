@@ -48,7 +48,7 @@ Default deployment mode: `fast`.
 
 The default GitHub-hosted path connects to OCI over SSH. It checks out the
 repository, builds the web assets, syncs the checked-out release into
-`/opt/stonks-radar`, writes the production env file, pulls the prebuilt Elixir
+`/opt/stonks-radar`, writes the production env file, pulls the selected Elixir
 API image for fast deploys, runs Docker Compose, refreshes the published
 snapshot volume, and verifies local origin health.
 
@@ -61,26 +61,32 @@ Deployment modes:
 
 - `fast`: normal production path. Requires green CI and SonarQube for the target
   SHA, skips redundant Playwright/full test verification inside the deploy job,
-  pulls `ghcr.io/<owner>/stonks-radar-api-elixir:<sha>`, preserves Docker
-  builder cache and Elixir build cache, and runs production smoke checks after
-  start.
+  pulls the selected `ghcr.io/<owner>/stonks-radar-api-elixir:<tag>`, preserves
+  Docker builder cache and Elixir build cache, and runs production smoke checks
+  after start.
 - `clean`: recovery path for disk pressure, suspected stale build state, or
   dependency weirdness. It reruns the full deploy verification gate and performs
   aggressive cache/image cleanup before rebuilding the API image on the OCI
   host.
 
-The `ci.yml` ARM64 API-image job publishes these tags on pushes to `main`:
+The `ci.yml` ARM64 API-image job runs only when files that can affect the Elixir
+API image change. When it runs on pushes to `main`, it publishes these tags:
 
 - `ghcr.io/sahnsookyung/stonks-radar-api-elixir:<commit-sha>`
 - `ghcr.io/sahnsookyung/stonks-radar-api-elixir:main`
 
-Fast deploys should use the immutable commit-SHA tag. The deploy workflow passes
-that tag automatically through `STONKS_API_IMAGE`; manual host deploys can do the
-same explicitly:
+Automatic production deploys use the immutable commit-SHA tag when the API image
+changed. For web-only, content-only, or docs-only commits, autodeploy reuses the
+existing `main` API image tag and avoids waiting for an unnecessary ARM64 image
+build. Manual workflow dispatches can override this behavior with
+`api_image_ref`; leave it blank for the current SHA or set it to `main` for a
+known frontend/content-only redeploy.
+
+Manual host deploys can pass the selected image explicitly:
 
 ```bash
 STONKS_DEPLOY_MODE=fast \
-  STONKS_API_IMAGE=ghcr.io/sahnsookyung/stonks-radar-api-elixir:<commit-sha> \
+  STONKS_API_IMAGE=ghcr.io/sahnsookyung/stonks-radar-api-elixir:<tag> \
   scripts/deploy.sh
 ```
 

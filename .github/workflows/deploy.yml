@@ -24,6 +24,11 @@ on:
         required: true
         default: false
         type: boolean
+      api_image_ref:
+        description: "API image tag to deploy in fast mode; defaults to current SHA"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   actions: read
@@ -134,7 +139,7 @@ jobs:
         env:
           STONKS_DEPLOY_DIR: /opt/stonks-radar
           STONKS_DEPLOY_MODE: ${{ inputs.mode }}
-          STONKS_API_IMAGE: ghcr.io/${{ github.repository_owner }}/stonks-radar-api-elixir:${{ github.sha }}
+          STONKS_API_IMAGE: ghcr.io/${{ github.repository_owner }}/stonks-radar-api-elixir:${{ inputs.api_image_ref != '' && inputs.api_image_ref || github.sha }}
           STONKS_GHCR_ACTOR: ${{ github.actor }}
           STONKS_GHCR_TOKEN: ${{ github.token }}
         run: scripts/deploy_self_hosted_runner.sh /tmp/stonks-production.env
@@ -150,8 +155,12 @@ jobs:
           persist-credentials: false
 
       - name: Initialize deploy timing summary
+        env:
+          API_IMAGE_REF: ${{ inputs.api_image_ref != '' && inputs.api_image_ref || github.sha }}
         run: |
           {
+            echo "- API image ref: \`$API_IMAGE_REF\`"
+            echo
             echo "### Deploy phase timings"
             echo
             echo "| Phase | Duration |"
@@ -347,7 +356,7 @@ jobs:
           STONKS_HOST: ${{ secrets.STONKS_HOST }}
           STONKS_USER: ${{ secrets.STONKS_USER }}
           STONKS_DEPLOY_MODE: ${{ inputs.mode }}
-          STONKS_API_IMAGE: ghcr.io/${{ github.repository_owner }}/stonks-radar-api-elixir:${{ github.sha }}
+          STONKS_API_IMAGE: ghcr.io/${{ github.repository_owner }}/stonks-radar-api-elixir:${{ inputs.api_image_ref != '' && inputs.api_image_ref || github.sha }}
           STONKS_GHCR_ACTOR: ${{ github.actor }}
           STONKS_GHCR_TOKEN: ${{ github.token }}
         run: |
@@ -371,7 +380,7 @@ jobs:
           STONKS_HOST: ${{ secrets.STONKS_HOST }}
           STONKS_USER: ${{ secrets.STONKS_USER }}
           STONKS_DEPLOY_MODE: ${{ inputs.mode }}
-          STONKS_API_IMAGE: ghcr.io/${{ github.repository_owner }}/stonks-radar-api-elixir:${{ github.sha }}
+          STONKS_API_IMAGE: ghcr.io/${{ github.repository_owner }}/stonks-radar-api-elixir:${{ inputs.api_image_ref != '' && inputs.api_image_ref || github.sha }}
         run: |
           set -euo pipefail
           start="$(date +%s)"
@@ -395,7 +404,7 @@ jobs:
           STONKS_HOST: ${{ secrets.STONKS_HOST }}
           STONKS_USER: ${{ secrets.STONKS_USER }}
           STONKS_DEPLOY_MODE: ${{ inputs.mode }}
-          STONKS_API_IMAGE: ghcr.io/${{ github.repository_owner }}/stonks-radar-api-elixir:${{ github.sha }}
+          STONKS_API_IMAGE: ghcr.io/${{ github.repository_owner }}/stonks-radar-api-elixir:${{ inputs.api_image_ref != '' && inputs.api_image_ref || github.sha }}
         run: |
           set -euo pipefail
           start="$(date +%s)"

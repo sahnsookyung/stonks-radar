@@ -8,6 +8,65 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      api_image_changed: ${{ steps.filter.outputs.api_image_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect API image changes
+        id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before || '' }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+        run: |
+          set -euo pipefail
+
+          base_sha="$PUSH_BEFORE_SHA"
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            base_sha="$PR_BASE_SHA"
+          fi
+
+          if [ -z "$base_sha" ] || [[ "$base_sha" =~ ^0+$ ]]; then
+            echo "api_image_changed=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "### API image change detection"
+              echo
+              echo "No usable base SHA was available, so the API image build is enabled."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          git fetch --no-tags --depth=2 origin "$base_sha" "$HEAD_SHA" || true
+          changed_files="$(git diff --name-only "$base_sha" "$HEAD_SHA" || git diff-tree --no-commit-id --name-only -r "$HEAD_SHA")"
+          image_path_regex='^(apps/backend_elixir/|config/|compose\.yaml$|infra/docker-compose\.prod\.yml$|scripts/deploy.*\.sh$|\.dockerignore$|package(-lock)?\.json$|\.github/workflows/(ci|deploy|production-autodeploy)\.yml$)'
+
+          if printf '%s\n' "$changed_files" | grep -Eq "$image_path_regex"; then
+            api_image_changed=true
+          else
+            api_image_changed=false
+          fi
+
+          echo "api_image_changed=$api_image_changed" >> "$GITHUB_OUTPUT"
+          {
+            echo "### API image change detection"
+            echo
+            echo "- Base SHA: \`$base_sha\`"
+            echo "- Head SHA: \`$HEAD_SHA\`"
+            echo "- API image changed: \`$api_image_changed\`"
+            echo
+            echo "<details><summary>Changed files</summary>"
+            echo
+            printf '%s\n' "$changed_files" | sed 's/^/- /'
+            echo
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   web-and-schemas:
     runs-on: ubuntu-latest
     steps:
@@ -29,6 +88,8 @@ jobs:
       - run: npm run web:e2e
 
   build-api-elixir-linux-arm64:
+    needs: changes
+    if: ${{ needs.changes.outputs.api_image_changed == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
