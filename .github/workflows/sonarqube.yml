@@ -105,8 +105,35 @@ jobs:
           const fs = require("fs");
           const reportPath = "apps/web/coverage/lcov.info";
           const report = fs.readFileSync(reportPath, "utf8");
-          const normalized = report.replace(/^SF:(?!\/|apps\/web\/)(.+)$/gm, "SF:apps/web/$1");
-          fs.writeFileSync(reportPath, normalized);
+          const sourceExclusions = [
+            /^apps\/web\/src\/generated\//,
+            /^apps\/web\/src\/pages\//,
+            /^apps\/web\/src\/.*\.test\.tsx?$/,
+          ];
+          const normalizePath = (sourcePath) => {
+            if (sourcePath.startsWith("/") || sourcePath.startsWith("apps/web/")) return sourcePath;
+            return `apps/web/${sourcePath}`;
+          };
+          const records = report
+            .split("end_of_record")
+            .map((record) => record.trim())
+            .filter(Boolean);
+          let filteredCount = 0;
+          const normalizedRecords = records.flatMap((record) => {
+            const sourceLine = record.split("\n").find((line) => line.startsWith("SF:"));
+            if (!sourceLine) return [];
+            const normalizedPath = normalizePath(sourceLine.slice(3));
+            if (sourceExclusions.some((pattern) => pattern.test(normalizedPath))) {
+              filteredCount += 1;
+              return [];
+            }
+            return [`${record.replace(sourceLine, `SF:${normalizedPath}`)}\nend_of_record`];
+          });
+          if (normalizedRecords.length === 0) {
+            throw new Error("No frontend coverage records remain after Sonar LCOV normalization.");
+          }
+          fs.writeFileSync(reportPath, `${normalizedRecords.join("\n")}\n`);
+          console.log(`Normalized ${normalizedRecords.length} LCOV records; filtered ${filteredCount} Sonar-excluded records.`);
           JS
 
       - name: Verify coverage reports exist
