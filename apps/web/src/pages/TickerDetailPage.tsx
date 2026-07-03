@@ -529,7 +529,7 @@ function TickerStrip({ activeSymbol, locale }: Readonly<{ activeSymbol: string; 
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            className="min-h-10 min-w-0 bg-transparent text-sm font-semibold text-ink outline-none"
+            className="min-h-11 min-w-0 bg-transparent text-sm font-semibold text-ink outline-none"
             placeholder={isKo ? "심볼, 회사, 테마" : "symbol, company, theme"}
           />
           <span className="badge border-line bg-panelAlt text-muted">{visibleTickers.length}</span>
@@ -1358,7 +1358,7 @@ function ResearchSidebar({ // NOSONAR - sidebar groups watchlist, quick read, an
               <input
                 value={tickerQuery}
                 onChange={(event) => setTickerQuery(event.target.value)}
-                className="min-h-10 min-w-0 bg-transparent text-sm font-semibold text-ink outline-none"
+                className="min-h-11 min-w-0 bg-transparent text-sm font-semibold text-ink outline-none"
                 placeholder={isKo ? "심볼, 회사, 테마" : "symbol, company, theme"}
               />
             </span>
