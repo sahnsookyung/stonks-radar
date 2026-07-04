@@ -315,12 +315,12 @@ defmodule StonksBackend.Snapshots do
          %{"object_type" => "news_event"} = snapshot,
          _object_key,
          _locale,
-         _context
+         context
        ) do
     update_in(snapshot, ["data"], fn data ->
       data
       |> ensure_map()
-      |> enrich_news_detail_data()
+      |> enrich_news_detail_data(context.generated_at)
     end)
   end
 
@@ -514,6 +514,7 @@ defmodule StonksBackend.Snapshots do
       |> List.wrap()
       |> Enum.filter(&is_map/1)
       |> Enum.map(&enrich_news_item/1)
+      |> Enum.map(&put_news_freshness(&1, generated_at))
       |> filter_news_items(window_kind, generated_at)
 
     data
@@ -532,10 +533,11 @@ defmodule StonksBackend.Snapshots do
 
   defp maybe_enrich_news_filters(data, _object_type, _events), do: data
 
-  defp enrich_news_detail_data(data) do
+  defp enrich_news_detail_data(data, generated_at) do
     data
     |> enrich_news_item()
-    |> enrich_news_collection("related_events")
+    |> put_news_freshness(generated_at)
+    |> enrich_news_collection("related_events", generated_at)
   end
 
   defp enrich_scenario_news_items(data) do
@@ -554,12 +556,13 @@ defmodule StonksBackend.Snapshots do
     end)
   end
 
-  defp enrich_news_collection(data, key) do
+  defp enrich_news_collection(data, key, generated_at \\ nil) do
     update_in(data, [key], fn events ->
       events
       |> List.wrap()
       |> Enum.filter(&is_map/1)
       |> Enum.map(&enrich_news_item/1)
+      |> maybe_put_news_freshness(generated_at)
     end)
   end
 
@@ -617,6 +620,38 @@ defmodule StonksBackend.Snapshots do
       nil -> true
       observed_at -> DateTime.compare(observed_at, cutoff) != :lt
     end
+  end
+
+  defp maybe_put_news_freshness(items, nil), do: items
+
+  defp maybe_put_news_freshness(items, generated_at),
+    do: Enum.map(items, &put_news_freshness(&1, generated_at))
+
+  defp put_news_freshness(%{"freshness" => "unsupported"} = item, _generated_at), do: item
+
+  defp put_news_freshness(item, generated_at) when is_map(item) do
+    case news_item_datetime(item) do
+      nil ->
+        item
+
+      %DateTime{} = observed_at ->
+        Map.put(item, "freshness", news_freshness_label(observed_at, generated_at))
+    end
+  end
+
+  defp put_news_freshness(item, _generated_at), do: item
+
+  defp news_freshness_label(observed_at, generated_at) do
+    cond do
+      within_news_window?(observed_at, generated_at, "breaking_latest") -> "fresh"
+      within_news_window?(observed_at, generated_at, "analysis") -> "watch"
+      true -> "stale"
+    end
+  end
+
+  defp within_news_window?(observed_at, generated_at, window_kind) do
+    cutoff = DateTime.add(generated_at, -news_window_hours(window_kind), :hour)
+    DateTime.compare(observed_at, cutoff) != :lt
   end
 
   defp news_item_allowed_on_surface?(item, "breaking_latest") do

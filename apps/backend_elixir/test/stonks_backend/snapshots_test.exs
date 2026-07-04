@@ -213,6 +213,7 @@ defmodule StonksBackend.SnapshotsTest do
   } do
     now = DateTime.utc_now()
     recent = DateTime.add(now, -2, :hour)
+    two_days_old = DateTime.add(now, -2, :day)
     eight_days_old = DateTime.add(now, -8, :day)
     thirty_one_days_old = DateTime.add(now, -31, :day)
 
@@ -233,6 +234,10 @@ defmodule StonksBackend.SnapshotsTest do
               "Rocket Lab launch-window monitoring is linked to source evidence for RKLB",
             "summary" =>
               "Company and filing sources are grouped into a ticker-specific event for Rocket Lab launch-cadence monitoring."
+          }),
+          news_event("analysis_window_source", two_days_old, %{
+            "title" => "Rocket Lab source-linked filing context",
+            "freshness" => "fresh"
           }),
           news_event("stale_source_discovery", thirty_one_days_old, %{})
         ]
@@ -274,8 +279,12 @@ defmodule StonksBackend.SnapshotsTest do
     refute Jason.encode!(index["data"]) =~ "Source policy seed"
     refute Jason.encode!(index["data"]) =~ "source-linked news event"
 
+    assert %{"freshness" => "watch"} =
+             Enum.find(index["data"]["events"], &(&1["id"] == "analysis_window_source"))
+
     assert %{
              "title" => "Rocket Lab source links for RKLB filings and company updates",
+             "freshness" => "fresh",
              "summary" => summary,
              "item_kind" => "source_discovery",
              "claim_level" => "source_only",
