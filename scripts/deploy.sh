@@ -46,7 +46,17 @@ else
 fi
 
 compose stop api-elixir || true
+migration_complete=0
+restore_api_on_migration_failure() {
+  if [[ "$migration_complete" != "1" ]]; then
+    COMPOSE_PARALLEL_LIMIT=1 compose up -d api-elixir caddy || true
+  fi
+}
+trap restore_api_on_migration_failure EXIT
+
 COMPOSE_PARALLEL_LIMIT=1 compose up -d postgres valkey
 compose run --rm --no-deps api-elixir \
   /app/bin/stonks_backend eval 'StonksBackend.Release.migrate()'
+migration_complete=1
+trap - EXIT
 COMPOSE_PARALLEL_LIMIT=1 compose up -d api-elixir caddy

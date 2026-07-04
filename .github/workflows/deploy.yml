@@ -472,10 +472,19 @@ jobs:
           if [[ "${STONKS_DEPLOY_MODE:-fast}" == "fast" ]]; then
             export API_ELIXIR_IMAGE="$STONKS_API_IMAGE"
           fi
+          migration_complete=0
+          restore_api_on_migration_failure() {
+            if [[ "$migration_complete" != "1" ]]; then
+              COMPOSE_PARALLEL_LIMIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d api-elixir caddy || true
+            fi
+          }
+          trap restore_api_on_migration_failure EXIT
           docker compose -f compose.yaml -f infra/docker-compose.prod.yml stop api-elixir || true
           COMPOSE_PARALLEL_LIMIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d postgres valkey
           docker compose -f compose.yaml -f infra/docker-compose.prod.yml run --rm --no-deps api-elixir \
             /app/bin/stonks_backend eval "StonksBackend.Release.migrate()"
+          migration_complete=1
+          trap - EXIT
           REMOTE
           duration="$(( $(date +%s) - start ))"
           echo "| migrate | ${duration}s |" >> "$GITHUB_STEP_SUMMARY"
