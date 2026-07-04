@@ -1,7 +1,7 @@
 defmodule StonksBackend.SnapshotsTest do
   use ExUnit.Case, async: false
 
-  alias StonksBackend.Snapshots
+  alias StonksBackend.{Repo, Snapshots, Sql}
 
   setup do
     root = Path.join(System.tmp_dir!(), "stonks-snapshots-#{System.unique_integer([:positive])}")
@@ -85,6 +85,55 @@ defmodule StonksBackend.SnapshotsTest do
     assert snapshot["content_hash"] =~ "sha256:"
     assert snapshot["stale_after"] != snapshot["generated_at"]
     assert :ok = Snapshots.validate_snapshot_tree(result.destination)
+  end
+
+  @tag :db
+  test "candidate DB recording treats system requested_by labels as anonymous", %{
+    published_root: root
+  } do
+    {:ok, _repo_pid} = start_repo()
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
+
+    Application.put_env(
+      :stonks_backend,
+      :settings,
+      Keyword.put(
+        Application.get_env(:stonks_backend, :settings, []),
+        :snapshot_db_recording_enabled,
+        true
+      )
+    )
+
+    write_manifest!(root, %{
+      "corrections" => %{"en" => "public/v1/en/corrections.json"}
+    })
+
+    write_snapshot!(root, "v1/en/corrections.json", %{
+      "object_type" => "correction_log",
+      "object_key" => "corrections",
+      "data" => %{"entries" => []}
+    })
+
+    on_exit(fn -> checkin_repo() end)
+
+    assert {:ok, %{snapshot_version: snapshot_version}} =
+             Snapshots.build_candidate(%{"requested_by" => "deploy"})
+
+    assert %{"generated_by" => nil} =
+             Sql.one(
+               "select generated_by from publication_manifest where snapshot_version = $1",
+               [snapshot_version]
+             )
+
+    assert %{"generated_by" => nil} =
+             Sql.one(
+               """
+               select generated_by
+               from publication_snapshot
+               where snapshot_version = $1 and object_key = 'corrections'
+               """,
+               [snapshot_version]
+             )
   end
 
   test "snapshot tree validation accepts envelope files and rejects private fields", %{
@@ -726,6 +775,21 @@ defmodule StonksBackend.SnapshotsTest do
     path = Path.join(root, relative_path)
     File.mkdir_p!(Path.dirname(path))
     File.write!(path, Jason.encode!(payload))
+  end
+
+  defp start_repo do
+    case Process.whereis(Repo) do
+      nil -> {:ok, start_supervised!(Repo)}
+      pid -> {:ok, pid}
+    end
+  end
+
+  defp checkin_repo do
+    if Process.whereis(Repo) do
+      Ecto.Adapters.SQL.Sandbox.checkin(Repo)
+    end
+  rescue
+    _ -> :ok
   end
 
   defp empty_news_filters do

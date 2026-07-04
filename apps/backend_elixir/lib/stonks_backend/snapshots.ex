@@ -1079,6 +1079,7 @@ defmodule StonksBackend.Snapshots do
   end
 
   defp record_manifest(candidate_root, version, status, generated_by) do
+    generated_by = generated_by_uuid(generated_by)
     manifest_path = Path.join(candidate_root, @latest_manifest_path)
     content = if File.exists?(manifest_path), do: File.read!(manifest_path), else: "{}"
     manifest = decode_json(content, %{})
@@ -1115,6 +1116,8 @@ defmodule StonksBackend.Snapshots do
   end
 
   defp record_publication_rows(candidate_root, version, status, generated_by) do
+    generated_by = generated_by_uuid(generated_by)
+
     candidate_root
     |> json_files()
     |> Enum.reject(&(Path.basename(&1) == @manifest_filename))
@@ -1158,6 +1161,17 @@ defmodule StonksBackend.Snapshots do
       end
     end)
   end
+
+  defp generated_by_uuid(nil), do: nil
+
+  defp generated_by_uuid(generated_by) when is_binary(generated_by) do
+    case Ecto.UUID.cast(String.trim(generated_by)) do
+      {:ok, uuid} -> uuid
+      :error -> nil
+    end
+  end
+
+  defp generated_by_uuid(_generated_by), do: nil
 
   defp mark_published(version) do
     if snapshot_db_recording_enabled?() do
