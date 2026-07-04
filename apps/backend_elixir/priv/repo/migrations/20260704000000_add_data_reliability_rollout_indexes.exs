@@ -1,10 +1,11 @@
 defmodule StonksBackend.Repo.Migrations.AddDataReliabilityRolloutIndexes do
   use Ecto.Migration
+  require Logger
 
   @disable_ddl_transaction true
 
   def up do
-    execute "set lock_timeout = '5min'"
+    execute "set lock_timeout = '30s'"
     execute "set statement_timeout = '30min'"
 
     execute """
@@ -88,10 +89,37 @@ defmodule StonksBackend.Repo.Migrations.AddDataReliabilityRolloutIndexes do
   end
 
   defp create_runtime_index(sql) do
-    if System.get_env("MIX_ENV") == "test" do
-      execute(String.replace(sql, "create index concurrently", "create index"))
-    else
+    sql = maybe_disable_concurrently_for_test(sql)
+
+    try do
       execute(sql)
+    rescue
+      error in Postgrex.Error ->
+        if lock_not_available?(error) do
+          Logger.warning(
+            "Skipping rollout index because Postgres lock was unavailable: #{index_name(sql)}"
+          )
+        else
+          reraise error, __STACKTRACE__
+        end
+    end
+  end
+
+  defp maybe_disable_concurrently_for_test(sql) do
+    if System.get_env("MIX_ENV") == "test" do
+      String.replace(sql, "create index concurrently", "create index")
+    else
+      sql
+    end
+  end
+
+  defp lock_not_available?(%Postgrex.Error{postgres: %{code: :lock_not_available}}), do: true
+  defp lock_not_available?(_error), do: false
+
+  defp index_name(sql) do
+    case Regex.run(~r/create index(?: concurrently)? if not exists\s+([^\s]+)/i, sql) do
+      [_match, name] -> name
+      _other -> "unknown"
     end
   end
 end
