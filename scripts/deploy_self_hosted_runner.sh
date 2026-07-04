@@ -216,6 +216,7 @@ refresh_snapshots() {
   compose run --rm --no-deps api-elixir \
     env START_SCHEDULER=false OBAN_QUEUES_ENABLED=false \
     /app/bin/stonks_backend eval '
+      {:ok, _} = Application.ensure_all_started(:stonks_backend)
       case StonksBackend.Snapshots.refresh(%{"requested_by" => "deploy", "mode" => "db_generated_publish"}) do
         {:ok, result} -> IO.inspect(result, label: "published_snapshot")
         {:error, reason} -> raise "snapshot refresh failed: #{inspect(reason)}"
