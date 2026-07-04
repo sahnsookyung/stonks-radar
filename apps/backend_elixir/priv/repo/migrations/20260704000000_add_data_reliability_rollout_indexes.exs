@@ -4,8 +4,8 @@ defmodule StonksBackend.Repo.Migrations.AddDataReliabilityRolloutIndexes do
   @disable_ddl_transaction true
 
   def up do
-    execute "set lock_timeout = '5s'"
-    execute "set statement_timeout = '5min'"
+    execute "set lock_timeout = '60s'"
+    execute "set statement_timeout = '10min'"
 
     execute """
     insert into fact_type_registry(
