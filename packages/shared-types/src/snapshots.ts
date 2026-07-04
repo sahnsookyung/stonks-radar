@@ -5,6 +5,7 @@ export type Severity = "low" | "medium" | "high" | "critical";
 
 export interface SnapshotEnvelope<T> {
   schema_version: string;
+  min_reader_version?: string;
   snapshot_version: number;
   locale: Locale;
   generated_at: string;
@@ -73,6 +74,7 @@ export interface PublicEvent {
 
 export interface SourceLink {
   label: string;
+  evidence_id?: string;
   url: string;
   source_key: string;
   policy_version: number;

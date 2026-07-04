@@ -4,8 +4,8 @@ defmodule StonksBackend.Sql do
   alias StonksBackend.Repo
 
   def all(sql, params \\ %{}) do
-    sql
-    |> Ecto.Adapters.SQL.query!(Repo, named_params(params))
+    Repo
+    |> Ecto.Adapters.SQL.query!(sql, named_params(params))
     |> rows_to_maps()
   rescue
     _ -> []
@@ -36,13 +36,16 @@ defmodule StonksBackend.Sql do
     Enum.map(rows, fn row ->
       columns
       |> Enum.zip(row)
-      |> Map.new()
-      |> stringify_values()
+      |> Map.new(fn {key, value} -> {key, normalize(value)} end)
     end)
   end
 
-  defp stringify_values(map) do
-    Map.new(map, fn {key, value} -> {key, normalize(value)} end)
+  defp rows_to_maps(%{columns: columns, rows: rows}) do
+    Enum.map(rows, fn row ->
+      columns
+      |> Enum.zip(row)
+      |> Map.new(fn {key, value} -> {key, normalize(value)} end)
+    end)
   end
 
   defp normalize(%Decimal{} = decimal), do: Decimal.to_string(decimal)

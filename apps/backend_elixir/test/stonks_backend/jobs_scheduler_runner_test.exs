@@ -14,6 +14,7 @@ defmodule StonksBackend.JobsSchedulerRunnerTest do
         news_source_refresh_seconds: 0,
         news_publication_interval_seconds: 0,
         shorts_ingestion_enabled: false,
+        yield_curve_history_enabled: false,
         market_data_scheduled_refresh_enabled: false,
         market_data_refresh_symbol_list: [],
         instrument_universe_refresh_seconds: 0

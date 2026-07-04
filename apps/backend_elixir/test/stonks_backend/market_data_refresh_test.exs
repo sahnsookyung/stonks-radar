@@ -35,6 +35,22 @@ defmodule StonksBackend.MarketDataRefreshTest do
     assert Enum.map(result.attempts, & &1.status) == ["missing_api_key", "missing_api_key"]
   end
 
+  test "refresh_history honors the runtime kill switch before provider work" do
+    Application.put_env(:stonks_backend, :settings,
+      market_data_scheduled_refresh_enabled: "false",
+      market_data_api_key: "would-not-be-used"
+    )
+
+    assert {:ok, result} =
+             MarketData.refresh_history(%{
+               "symbol" => "NVDA",
+               "market_session_date" => "2026-06-30"
+             })
+
+    assert result.status == "disabled"
+    assert result.reason == "market_data_scheduled_refresh_enabled_false"
+  end
+
   test "refresh_history validates symbols before provider work" do
     assert {:error, :invalid_symbol} =
              MarketData.refresh_history(%{

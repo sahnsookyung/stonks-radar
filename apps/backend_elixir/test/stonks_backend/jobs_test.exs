@@ -62,6 +62,7 @@ defmodule StonksBackend.JobsTest do
       )
 
     assert args["job_type"] == "market_data.refresh_history"
+    assert args["payload_version"] == 1
     assert args["job_group"] == "market_data"
     assert args["priority"] == 2
     assert args["idempotency_key"] == "NVDA:daily"

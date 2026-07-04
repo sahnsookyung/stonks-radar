@@ -26,7 +26,7 @@ export function NewsEventCard({
       <div className="flex flex-wrap items-center gap-2">
         <NewsScoreBadge
           label={scoreLabel}
-          value={event.breaking_score}
+          value={isSourceOnly ? undefined : event.breaking_score}
         />
         <NewsScoreBadge label={locale === "ko" ? "신뢰" : "Trust"} value={event.trust_score} />
         <span className="badge border-line bg-panelAlt text-muted">{claimLevelLabel(claimLevel, locale)}</span>
@@ -75,9 +75,9 @@ export function NewsEventCard({
   );
 }
 
-export function NewsScoreBadge({ label, value }: Readonly<{ label: string; value: number }>) {
-  const tone = newsScoreTone(value);
-  return <span className={`badge ${tone}`}>{label} {value}</span>;
+export function NewsScoreBadge({ label, value }: Readonly<{ label: string; value?: number }>) {
+  const tone = typeof value === "number" ? newsScoreTone(value) : "border-line bg-panelAlt text-muted";
+  return <span className={`badge ${tone}`}>{label}{typeof value === "number" ? ` ${value}` : ""}</span>;
 }
 
 function newsScoreTone(value: number) {

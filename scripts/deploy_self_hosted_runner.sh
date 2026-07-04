@@ -186,11 +186,29 @@ start_services() {
 }
 
 refresh_snapshots() {
-  docker run --rm \
-    -v stonks-radar_published-snapshots:/dest \
-    -v "$deploy_dir/apps/web/public/public:/src:ro" \
+  if ! docker run --rm \
+    -v stonks-radar_published-snapshots:/dest:ro \
     alpine:3.24 \
-    sh -lc 'set -e; rm -rf /dest/* /dest/.[!.]* /dest/..?* 2>/dev/null || true; cp -a /src/. /dest/; test -s /dest/latest/manifest.json'
+    test -s /dest/latest/manifest.json; then
+    echo "Snapshot volume is empty; seeding static public snapshots before Elixir refresh"
+    docker run --rm \
+      -v stonks-radar_published-snapshots:/dest \
+      -v "$deploy_dir/apps/web/public/public:/src:ro" \
+      alpine:3.24 \
+      sh -lc 'set -e; rm -rf /dest/* /dest/.[!.]* /dest/..?* 2>/dev/null || true; cp -a /src/. /dest/; chmod -R a+rwX /dest; test -s /dest/latest/manifest.json'
+  fi
+
+  docker run --rm -v stonks-radar_published-snapshots:/dest alpine:3.24 chmod -R a+rwX /dest
+
+  cd "$deploy_dir"
+  compose run --rm --no-deps api-elixir \
+    env START_SCHEDULER=false OBAN_QUEUES_ENABLED=false \
+    /app/bin/stonks_backend eval '
+      case StonksBackend.Snapshots.refresh(%{"requested_by" => "deploy", "mode" => "db_generated_publish"}) do
+        {:ok, result} -> IO.inspect(result, label: "published_snapshot")
+        {:error, reason} -> raise "snapshot refresh failed: #{inspect(reason)}"
+      end
+    '
 }
 
 smoke() {

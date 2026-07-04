@@ -1,7 +1,19 @@
 defmodule StonksBackend.JobsWorkerTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias StonksBackend.Jobs.Workers.GenericWorker
+
+  setup do
+    original = Application.get_env(:stonks_backend, :settings)
+
+    on_exit(fn ->
+      if is_nil(original) do
+        Application.delete_env(:stonks_backend, :settings)
+      else
+        Application.put_env(:stonks_backend, :settings, original)
+      end
+    end)
+  end
 
   test "GDELT fetch-source jobs dispatch to the Elixir news component" do
     job = %Oban.Job{
@@ -36,6 +48,93 @@ defmodule StonksBackend.JobsWorkerTest do
     assert result.documents_seen == 0
     assert result.clusters_upserted == 0
     assert result.links_upserted == 0
+  end
+
+  test "news pipeline runtime kill switch disables replayed pipeline jobs" do
+    Application.put_env(:stonks_backend, :settings, news_pipeline_runtime_enabled: "false")
+
+    job = %Oban.Job{
+      id: 134,
+      args: %{
+        "job_type" => "news.cluster_events",
+        "payload" => %{"batch_id" => "batch-1"}
+      }
+    }
+
+    assert {:ok, result} = GenericWorker.perform(job)
+    assert result.status == "disabled"
+    assert result.reason == "news_pipeline_runtime_enabled_false"
+  end
+
+  test "GDELT backfill jobs expose a bounded 7-day dry-run plan" do
+    job = %Oban.Job{
+      id: 131,
+      args: %{
+        "job_type" => "news.backfill_source",
+        "payload" => %{
+          "source_key" => "gdelt",
+          "dry_run" => true,
+          "max_documents" => 25,
+          "cycle_index" => 0
+        }
+      }
+    }
+
+    assert {:ok, result} = GenericWorker.perform(job)
+    assert result.status == "dry_run"
+    assert result.source_key == "gdelt"
+    assert result.backfill == true
+    assert result.mode == "manual_backfill"
+    assert result.would_fetch == false
+    assert result.timespan == "7d"
+    assert result.provider_call_count == result.query_count
+    assert result.estimated_candidate_records >= result.capped_documents
+    assert result.resume_cursor == "start"
+    assert result.next_resume_cursor == "cycle:#{result.query_count}"
+    assert result.resumable == true
+    assert result.release_id in ["local", System.get_env("GITHUB_SHA")]
+    assert result.source_policy_version == 1
+    assert String.starts_with?(result.idempotency_key, "news:backfill:gdelt:7d:")
+  end
+
+  test "GDELT real backfill path is resumable even during runtime dark launch" do
+    job = %Oban.Job{
+      id: 133,
+      args: %{
+        "job_type" => "news.backfill_source",
+        "payload" => %{
+          "source_key" => "gdelt",
+          "cursor" => "cycle:10",
+          "max_documents" => 25,
+          "cycle_index" => 10
+        }
+      }
+    }
+
+    assert {:ok, result} = GenericWorker.perform(job)
+    assert result.backfill == true
+    assert result.mode == "manual_backfill"
+    assert result.resume_cursor == "cycle:10"
+    assert result.next_resume_cursor == "cycle:#{10 + result.query_count}"
+    assert result.resumable == true
+    assert result.provider_call_count == result.query_count
+    assert result.coverage_window == "7d"
+    assert result.release_id in ["local", System.get_env("GITHUB_SHA")]
+    assert result.source_policy_version == 1
+    assert result.idempotency_key =~ "news:backfill:gdelt:7d:cycle:10:max:25"
+  end
+
+  test "jobs with unfinished Oban dependencies snooze instead of running out of order" do
+    job = %Oban.Job{
+      id: 130,
+      args: %{
+        "job_type" => "news.cluster_events",
+        "depends_on_job_id" => "oban:999999999",
+        "payload" => %{"batch_id" => "batch-1"}
+      }
+    }
+
+    assert {:snooze, 30} = GenericWorker.perform(job)
   end
 
   test "LLM news stages drain as explicit policy-gated skips" do
@@ -87,6 +186,20 @@ defmodule StonksBackend.JobsWorkerTest do
     assert result.source_key == "short_research_metadata"
     assert result.metadata_only == true
     assert length(result.sources) >= 3
+  end
+
+  test "yield curve history jobs dispatch to the collector" do
+    job = %Oban.Job{
+      id: 132,
+      args: %{
+        "job_type" => "yield_curves.refresh_history",
+        "payload" => %{"dry_run" => true, "today" => "2026-07-02"}
+      }
+    }
+
+    assert {:ok, result} = GenericWorker.perform(job)
+    assert result.status in ["dry_run", "disabled"]
+    assert Map.has_key?(result, :observations)
   end
 
   test "unsupported jobs discard explicitly instead of reporting success" do

@@ -1,8 +1,12 @@
 import { performance } from "node:perf_hooks";
+import { createHash } from "node:crypto";
 
 const target = new URL(process.env.STONKS_AUDIT_BASE_URL ?? "https://stonks.sookyungahn.com");
+const originTarget = optionalUrl(process.env.STONKS_AUDIT_ORIGIN_BASE_URL);
+const cdnTarget = optionalUrl(process.env.STONKS_AUDIT_CDN_BASE_URL);
 const skipApi = process.env.STONKS_AUDIT_SKIP_API === "true";
 let latestManifest = null;
+let latestManifestHash = null;
 const checks = [
   {
     name: "html",
@@ -38,7 +42,9 @@ const checks = [
         (response.headers.get("cache-control") ?? "").includes("no-cache"),
         "Latest manifest must be no-cache"
       );
-      latestManifest = await response.json();
+      const manifestText = await response.text();
+      latestManifestHash = sha256(manifestText);
+      latestManifest = JSON.parse(manifestText);
       assert(latestManifest?.objects?.home?.en, "Latest manifest must expose current home snapshot path");
     }
   },
@@ -92,13 +98,84 @@ for (const check of checks) {
   }
 }
 
-console.log(JSON.stringify({ target: target.origin, results, failures }, null, 2));
+const edgeComparison = await compareOriginAndCdnManifests();
+
+console.log(
+  JSON.stringify(
+    { target: target.origin, manifestHash: latestManifestHash, results, edgeComparison, failures },
+    null,
+    2
+  )
+);
 if (failures.length > 0) {
   process.exitCode = 1;
 }
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function optionalUrl(value) {
+  if (!value || !value.trim()) return null;
+  return new URL(value);
+}
+
+function sha256(text) {
+  return `sha256:${createHash("sha256").update(text).digest("hex")}`;
+}
+
+async function compareOriginAndCdnManifests() {
+  const origin = originTarget;
+  const cdn = cdnTarget ?? (originTarget ? target : null);
+  if (!origin || !cdn) {
+    return {
+      status: "skipped",
+      reason: "set STONKS_AUDIT_ORIGIN_BASE_URL and optionally STONKS_AUDIT_CDN_BASE_URL to compare edge manifests"
+    };
+  }
+
+  let originManifest;
+  let cdnManifest;
+
+  try {
+    [originManifest, cdnManifest] = await Promise.all([
+      fetchManifestSummary(origin),
+      fetchManifestSummary(cdn)
+    ]);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    failures.push(`edge manifest comparison failed: ${message}`);
+    return { status: "fail", error: message };
+  }
+
+  const status =
+    originManifest.currentVersion === cdnManifest.currentVersion &&
+    originManifest.manifestHash === cdnManifest.manifestHash
+      ? "pass"
+      : "fail";
+
+  if (status === "fail") {
+    failures.push(
+      `edge manifest mismatch: origin v${originManifest.currentVersion} ${originManifest.manifestHash} vs cdn v${cdnManifest.currentVersion} ${cdnManifest.manifestHash}`
+    );
+  }
+
+  return { status, origin: originManifest, cdn: cdnManifest };
+}
+
+async function fetchManifestSummary(baseUrl) {
+  const url = new URL("/public/latest/manifest.json", baseUrl);
+  const response = await fetch(url, { redirect: "manual" });
+  assert(response.status === 200, `${url.origin} latest manifest must return 200`);
+  const manifestText = await response.text();
+  const manifest = JSON.parse(manifestText);
+
+  return {
+    target: url.origin,
+    currentVersion: manifest.current_version,
+    generatedAt: manifest.generated_at,
+    manifestHash: sha256(manifestText)
+  };
 }
 
 function assertNoBlockedMarketPulseSources(snapshot) {

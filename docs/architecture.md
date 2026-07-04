@@ -442,7 +442,9 @@ The production flow is:
 6. start Postgres and Valkey;
 7. run `StonksBackend.Release.migrate()`;
 8. start `api-elixir` and Caddy;
-9. refresh the `published-snapshots` volume from built public assets;
+9. refresh the `published-snapshots` volume through the Elixir DB-generated
+   snapshot publisher, seeding built public assets only when the volume is
+   empty;
 10. smoke `/api/public/health` and `/public/latest/manifest.json` through the
     production hostname.
 

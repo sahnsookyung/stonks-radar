@@ -97,6 +97,22 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.app_checks_changed == 'true' }}
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: frw_test
+          POSTGRES_USER: frw
+          POSTGRES_PASSWORD: frw
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U frw -d frw_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgres://frw:frw@localhost:5432/frw_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -112,6 +128,8 @@ jobs:
       - run: npm run web:test
       - run: npm run web:build
       - run: npm run backend:check
+      - run: npm run backend:test:db
+      - run: npm run backend:snapshots:validate-static
       - run: npx playwright install --with-deps chromium
       - run: npm run web:e2e
       - name: Prepare web deploy artifact

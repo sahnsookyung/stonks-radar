@@ -24,6 +24,19 @@ defmodule StonksBackend.MarketData do
   end
 
   def refresh_history(payload) do
+    if market_data_refresh_enabled?() do
+      do_refresh_history(payload)
+    else
+      {:ok,
+       %{
+         status: "disabled",
+         reason: "market_data_scheduled_refresh_enabled_false",
+         elixir_component: "market_history_refresh"
+       }}
+    end
+  end
+
+  defp do_refresh_history(payload) do
     with {:ok, symbol} <- refresh_symbol(payload),
          {:ok, {start_date, end_date}} <- refresh_window(payload) do
       provider_order = market_provider_order()
@@ -74,6 +87,10 @@ defmodule StonksBackend.MarketData do
            }}
       end
     end
+  end
+
+  defp market_data_refresh_enabled? do
+    Settings.truthy?(Settings.get(:market_data_scheduled_refresh_enabled, "true"))
   end
 
   def configured_provider_api_key(provider_key), do: provider_api_key(to_string(provider_key))
@@ -342,7 +359,8 @@ defmodule StonksBackend.MarketData do
   end
 
   defp store_refreshed_points(provider_key, symbol, start_date, end_date, points) do
-    policy = source_policy(provider_key)
+    ingestion_run_id = ingestion_run_id(provider_key, symbol)
+    policy = source_policy(provider_key, ingestion_run_id)
     policy_json = Jason.encode!(policy)
 
     stored =
@@ -376,10 +394,10 @@ defmodule StonksBackend.MarketData do
         is_suspect, quality_state, quality_json, source_policy_json, updated_at
       )
       values (
-        $1, '1day', cast($2 as date), $3, $4, $5, $6, $7,
+        $1, '1day', $2::text::date, $3, $4, $5, $6, $7,
         $8, $9, 'USD', null, $10,
-        cast($11 as timestamptz), $12, $13, $14,
-        false, 'valid', $15::jsonb, $16::jsonb, now()
+        $11::text::timestamptz, $12, $13, $14,
+        false, 'valid', $15::text::jsonb, $16::text::jsonb, now()
       )
       on conflict (symbol, interval, price_date, provider_key) do update set
         open = excluded.open,
@@ -414,7 +432,11 @@ defmodule StonksBackend.MarketData do
         source_hash,
         String.slice(source_hash, 7, 16),
         not is_nil(point.adjusted_close),
-        Jason.encode!(%{elixir_component: "market_history_refresh"}),
+        Jason.encode!(%{
+          elixir_component: "market_history_refresh",
+          adjustment_state: if(is_nil(point.adjusted_close), do: "unadjusted", else: "adjusted"),
+          source_policy_version: 1
+        }),
         policy_json
       ]
     )
@@ -424,7 +446,7 @@ defmodule StonksBackend.MarketData do
     _ -> false
   end
 
-  defp source_policy(provider_key) do
+  defp source_policy(provider_key, ingestion_run_id) do
     public_allowed =
       Settings.get(:market_data_public_display_allowlist, "")
       |> to_string()
@@ -439,8 +461,26 @@ defmodule StonksBackend.MarketData do
       "raw_public_allowed" => public_allowed,
       "raw_retention_days" => 0,
       "copyright_mode" => "provider_structured_daily_bars",
-      "elixir_component" => "market_history_refresh"
+      "elixir_component" => "market_history_refresh",
+      "ingestion_run_id" => ingestion_run_id,
+      "release_id" => release_id(),
+      "source_policy_version" => 1,
+      "corporate_action_policy" =>
+        "close and adjusted_close are stored separately; public calculations must not mix adjusted and unadjusted series"
     }
+  end
+
+  defp ingestion_run_id(provider_key, symbol) do
+    timestamp = DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.to_iso8601()
+
+    "ingestion:market_data:#{provider_key}:#{symbol}:#{timestamp}:#{System.unique_integer([:positive])}"
+  end
+
+  defp release_id do
+    Settings.get(:release_id) ||
+      System.get_env("STONKS_RELEASE_ID") ||
+      System.get_env("GITHUB_SHA") ||
+      "local"
   end
 
   defp first_decimal(row, fields) do

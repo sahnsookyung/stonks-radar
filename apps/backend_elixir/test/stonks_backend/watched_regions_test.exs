@@ -39,4 +39,21 @@ defmodule StonksBackend.WatchedRegionsTest do
     assert "Norway" in terms
     assert ~s("South Africa") in terms
   end
+
+  test "region keyword entries expose normalized searchable aliases" do
+    entries = WatchedRegions.region_keyword_entries()
+    usa = Enum.find(entries, &(&1.key == "USA"))
+
+    assert usa
+    assert "united states" in usa.keywords
+    assert "usa" in usa.keywords
+    assert "federal reserve" in usa.keywords
+    refute Enum.any?(usa.keywords, &String.contains?(&1, "\""))
+
+    japan = Enum.find(entries, &(&1.key == "JPN"))
+    assert "bank of japan" in japan.keywords
+
+    norway = Enum.find(entries, &(&1.key == "NOR"))
+    assert "norges bank" in norway.keywords
+  end
 end

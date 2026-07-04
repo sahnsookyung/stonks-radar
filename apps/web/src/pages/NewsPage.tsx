@@ -84,7 +84,7 @@ export function NewsPage() { // NOSONAR - filter state, URL sync, and snapshot r
           matchesTopic(event, topic) &&
           matchesTrust(event, trustTier) &&
           matchesTime(event, timeRange) &&
-          (!breakingOnly || event.breaking_score >= 70) &&
+          (!breakingOnly || matchesBreaking(event)) &&
           (!officialOnly ||
             event.source_links.some((source) =>
               ["T0_OFFICIAL", "T1_REGULATED_FILING"].includes(
@@ -388,6 +388,13 @@ function matchesTime(event: NewsEventListItem, value: TimeRange) {
   if (!Number.isFinite(timestamp)) return true;
   const hours = hoursForTimeRange(value);
   return Date.now() - timestamp <= hours * 60 * 60 * 1000;
+}
+
+function matchesBreaking(event: NewsEventListItem) {
+  const claimLevel = event.claim_level ?? "source_only";
+  const itemKind = event.item_kind ?? "source_discovery";
+
+  return event.breaking_score >= 70 && claimLevel !== "source_only" && itemKind !== "source_discovery";
 }
 
 function hoursForTimeRange(value: Exclude<TimeRange, "all">) {

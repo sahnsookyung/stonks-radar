@@ -1,7 +1,17 @@
 defmodule StonksBackendWeb.AdminController do
   use StonksBackendWeb, :controller
 
-  alias StonksBackend.{Accounts, Audit, Instruments, Jobs, Providers, Snapshots, Sources, Sql}
+  alias StonksBackend.{
+    Accounts,
+    Audit,
+    Instruments,
+    Jobs,
+    Providers,
+    ReleaseControls,
+    Snapshots,
+    Sources,
+    Sql
+  }
 
   @viewer_roles ["owner", "admin", "editor", "viewer"]
   @editor_roles ["owner", "admin", "editor"]
@@ -45,10 +55,12 @@ defmodule StonksBackendWeb.AdminController do
         },
         provider_budgets: Providers.budgets(),
         dead_letter_jobs: Jobs.admin_status(),
+        news_v2: news_v2_summary(),
         source_health:
           Sql.all(
             "select source_key, status, status_code, response_ms, last_checked_at, last_error from source_health_status order by source_key"
           ),
+        release_controls: ReleaseControls.admin_summary(),
         candidate_facts:
           Sql.all(
             "select id, fact_type, predicate, confidence, extraction_source, created_at from source_fact where review_status = 'candidate' order by created_at desc limit 20"
@@ -306,6 +318,27 @@ defmodule StonksBackendWeb.AdminController do
     end)
   end
 
+  def quarantine_release(conn, %{"release_id" => release_id}) do
+    with_csrf(conn, @admin_roles, fn user ->
+      case ReleaseControls.quarantine_by_provenance(release_id) do
+        {:ok, result} ->
+          Audit.write("release_controls.quarantine",
+            user: user,
+            target_table: "release_provenance",
+            target_pk: release_id,
+            after: result
+          )
+
+          json(conn, result)
+
+        {:error, :release_id_required} ->
+          conn
+          |> put_status(400)
+          |> json(%{detail: "release_id must be a non-local release identifier"})
+      end
+    end)
+  end
+
   def replay_job(conn, %{"job_id" => id}) do
     with_csrf(conn, @admin_roles, fn _ ->
       case Jobs.replay(id) do
@@ -350,6 +383,84 @@ defmodule StonksBackendWeb.AdminController do
 
       json(conn, %{items: rows})
     end)
+  end
+
+  defp news_v2_summary do
+    %{
+      totals: %{
+        clusters: Sql.scalar("select count(*) from news_event_cluster", [], 0),
+        source_documents:
+          Sql.scalar(
+            """
+            select count(*)
+            from source_document d
+            left join data_source ds on ds.id = d.source_id
+            where d.acquisition_mode = 'news_metadata'
+               or coalesce(ds.source_key, d.metadata->>'source_key') in
+                  ('gdelt','google_news_rss','yahoo_finance_rss','federal_reserve','who')
+               or d.metadata ? 'news_classified_at'
+            """,
+            [],
+            0
+          ),
+        source_facts: Sql.scalar("select count(*) from source_fact", [], 0),
+        quarantined_documents:
+          Sql.scalar("select count(*) from source_document where status = 'quarantined'", [], 0),
+        quarantined_facts:
+          Sql.scalar(
+            "select count(*) from source_fact where review_status = 'quarantined'",
+            [],
+            0
+          )
+      },
+      clusters:
+        Sql.all("""
+        select id, canonical_title, review_state, status, source_count,
+               trust_score, breaking_score, last_seen_at
+        from news_event_cluster
+        order by last_seen_at desc nulls last, updated_at desc
+        limit 10
+        """),
+      source_documents:
+        Sql.all("""
+        select d.id, d.title, coalesce(ds.source_key, d.metadata->>'source_key') as source_key,
+               d.publisher, d.status, d.public_allowed,
+               coalesce(d.source_published_at, d.fetched_at, d.created_at) as observed_at
+        from source_document d
+        left join data_source ds on ds.id = d.source_id
+        where d.acquisition_mode = 'news_metadata'
+           or coalesce(ds.source_key, d.metadata->>'source_key') in
+              ('gdelt','google_news_rss','yahoo_finance_rss','federal_reserve','who')
+           or d.metadata ? 'news_classified_at'
+        order by observed_at desc nulls last
+        limit 10
+        """),
+      source_fact_counts:
+        Sql.all("""
+        select fact_type, review_status, public_allowed, count(*) as row_count
+        from source_fact
+        group by fact_type, review_status, public_allowed
+        order by row_count desc, fact_type
+        limit 20
+        """),
+      ingestion_runs:
+        Sql.all("""
+        select ingestion_run_id, count(*) as row_count, max(observed_at) as newest_at
+        from (
+          select coalesce(metadata->>'ingestion_run_id', metadata->'metadata'->>'ingestion_run_id') as ingestion_run_id,
+                 created_at as observed_at
+          from source_document
+          union all
+          select object_json->>'ingestion_run_id' as ingestion_run_id,
+                 created_at as observed_at
+          from source_fact
+        ) runs
+        where ingestion_run_id is not null and ingestion_run_id <> ''
+        group by ingestion_run_id
+        order by newest_at desc nulls last
+        limit 10
+        """)
+    }
   end
 
   def snapshots_build_now_local(conn, params),

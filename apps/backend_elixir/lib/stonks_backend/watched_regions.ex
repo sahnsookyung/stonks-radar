@@ -33,6 +33,27 @@ defmodule StonksBackend.WatchedRegions do
     |> Enum.uniq()
   end
 
+  def region_keyword_entries do
+    gather_news()
+    |> Enum.map(fn region ->
+      %{
+        key: region["key"],
+        keywords:
+          [
+            region["iso3"],
+            get_in(region, ["display_names", "en"]),
+            get_in(region, ["display_names", "ko"])
+          ]
+          |> Kernel.++(region["natural_earth_names"] || [])
+          |> Kernel.++(region["gdelt_terms"] || [])
+          |> Enum.map(&normalize_term/1)
+          |> Enum.reject(&(&1 == ""))
+          |> Enum.uniq()
+      }
+    end)
+    |> Enum.reject(&(is_nil(&1.key) or &1.key == "" or &1.keywords == []))
+  end
+
   def top30_keys do
     all()
     |> Enum.filter(fn region ->
@@ -47,6 +68,14 @@ defmodule StonksBackend.WatchedRegions do
     path
     |> File.read!()
     |> Jason.decode!()
+  end
+
+  defp normalize_term(value) do
+    value
+    |> to_string()
+    |> String.replace(~r/^"+|"+$/, "")
+    |> String.trim()
+    |> String.downcase()
   end
 
   defp truthy?(value), do: value in [true, "true", "1", 1]

@@ -23,6 +23,8 @@ defmodule StonksBackend.JobsSchedulerTest do
         news_gdelt_enabled: false,
         news_public_health_enabled: true,
         gdelt_bulk_runtime_enabled: false,
+        yield_curve_history_enabled: true,
+        yield_curve_history_months: 24,
         shorts_ingestion_enabled: true,
         market_data_scheduled_refresh_enabled: true,
         market_data_refresh_symbol_list: [],
@@ -184,6 +186,7 @@ defmodule StonksBackend.JobsSchedulerTest do
             news_source_refresh_seconds: 0,
             news_pipeline_runtime_enabled: true,
             shorts_ingestion_enabled: false,
+            yield_curve_history_enabled: false,
             trump_disclosure_sec_poll_seconds: 0,
             trump_disclosure_oge_poll_seconds: 0,
             instrument_universe_refresh_seconds: 0
@@ -284,6 +287,25 @@ defmodule StonksBackend.JobsSchedulerTest do
     assert spec.payload["market_session_date"] == "2026-11-27"
     assert spec.run_after >= ~U[2026-11-27 18:45:00Z]
     assert spec.run_after < ~U[2026-11-27 19:00:00Z]
+  end
+
+  test "yield curve history specs schedule cached-observation refreshes once per day" do
+    [spec] =
+      Scheduler.yield_curve_history_job_specs(
+        now: ~U[2026-07-02 12:00:00Z],
+        settings: settings(yield_curve_history_enabled: true, yield_curve_history_months: 24)
+      )
+
+    assert spec.job_type == "yield_curves.refresh_history"
+    assert spec.idempotency_key == "yield-curves:history:20636"
+    assert spec.payload == %{"history_months" => 24}
+    assert spec.job_group == "market_data"
+    assert spec.provider_key == "yield_curves"
+
+    assert Scheduler.yield_curve_history_job_specs(
+             now: ~U[2026-07-02 12:00:00Z],
+             settings: settings(yield_curve_history_enabled: false)
+           ) == []
   end
 
   test "instrument search index specs use the configured Elixir Oban queue" do

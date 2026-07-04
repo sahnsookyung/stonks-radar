@@ -87,16 +87,34 @@ defmodule StonksBackend.Sources do
 
   def persist_metadata_documents(source_key, documents) when is_list(documents) do
     source_id = ensure_metadata_source(source_key)
+    ingestion_run_id = ingestion_run_id(source_key)
 
     persisted =
       documents
-      |> Enum.map(&persist_metadata_document(source_id, source_key, &1))
+      |> Enum.map(&persist_metadata_document(source_id, source_key, &1, ingestion_run_id))
       |> Enum.count(& &1)
 
     %{documents: persisted}
   end
 
-  defp persist_metadata_document(source_id, source_key, document) do
+  def metadata_dedupe_key(document) when is_map(document) do
+    case canonical_metadata_url(document) do
+      "" -> document["dedupe_key"] || "news:metadata:" <> hash_document(document)
+      url -> "news:url:" <> sha256(url)
+    end
+  end
+
+  defp persist_metadata_document(source_id, source_key, document, ingestion_run_id) do
+    document =
+      document
+      |> ensure_metadata_map()
+      |> put_in(["metadata", "ingestion_run_id"], ingestion_run_id)
+      |> put_in(["metadata", "release_id"], release_id())
+      |> put_in(["metadata", "source_policy_version"], source_policy_version(source_key))
+      |> Map.put("ingestion_run_id", ingestion_run_id)
+      |> Map.put("release_id", release_id())
+      |> Map.put("source_policy_version", source_policy_version(source_key))
+
     document_id =
       Sql.scalar(
         """
@@ -109,8 +127,8 @@ defmodule StonksBackend.Sources do
         values (
           $1, $2, $3, $4, $5, 'news_metadata',
           'adapter_metadata', 'metadata_only', now(), $6,
-          cast($7 as timestamptz), $8, $9, 'medium', true,
-          'extract_only', false, 'discovered', $10::jsonb
+          $7::text::timestamptz, $8, $9, 'medium', true,
+          'extract_only', false, 'discovered', $10::text::jsonb
         )
         on conflict (dedupe_key) where dedupe_key is not null do update
         set title = excluded.title,
@@ -132,12 +150,93 @@ defmodule StonksBackend.Sources do
           document["content_hash"] || hash_document(document),
           document["published_at"],
           document["language"] || "en",
-          document["dedupe_key"],
+          metadata_dedupe_key(document),
           Jason.encode!(document)
         ]
       )
 
     not is_nil(document_id)
+  end
+
+  defp ensure_metadata_map(document) do
+    metadata =
+      case document["metadata"] do
+        %{} = metadata -> metadata
+        _ -> %{}
+      end
+
+    Map.put(document, "metadata", metadata)
+  end
+
+  defp ingestion_run_id(source_key) do
+    timestamp = DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.to_iso8601()
+    "ingestion:#{source_key}:#{timestamp}:#{System.unique_integer([:positive])}"
+  end
+
+  defp release_id do
+    System.get_env("STONKS_RELEASE_ID") ||
+      System.get_env("GITHUB_SHA") ||
+      "local"
+  end
+
+  defp source_policy_version(_source_key), do: 1
+
+  defp canonical_metadata_url(document) do
+    (document["canonical_url"] || document["url"] || "")
+    |> to_string()
+    |> normalize_canonical_url()
+  end
+
+  defp normalize_canonical_url(url) do
+    uri = URI.parse(String.trim(url))
+
+    if uri.scheme in ["http", "https"] and is_binary(uri.host) do
+      query = normalize_query(uri.query)
+
+      %URI{
+        uri
+        | scheme: String.downcase(uri.scheme),
+          host: String.downcase(uri.host),
+          path: normalize_path(uri.path),
+          query: query,
+          fragment: nil
+      }
+      |> URI.to_string()
+    else
+      ""
+    end
+  rescue
+    _ -> ""
+  end
+
+  defp normalize_path(nil), do: "/"
+
+  defp normalize_path(path) do
+    path =
+      path
+      |> String.replace(~r{/+}, "/")
+      |> String.replace(~r{/(amp|mobile)/?$}i, "")
+
+    if path == "", do: "/", else: path
+  end
+
+  defp normalize_query(nil), do: nil
+  defp normalize_query(""), do: nil
+
+  defp normalize_query(query) do
+    query
+    |> URI.decode_query()
+    |> Enum.reject(fn {key, _value} ->
+      key = String.downcase(to_string(key))
+      String.starts_with?(key, "utm_") or key in ["fbclid", "gclid", "cmpid"]
+    end)
+    |> Enum.sort_by(fn {key, value} -> {to_string(key), to_string(value)} end)
+    |> case do
+      [] -> nil
+      params -> URI.encode_query(params)
+    end
+  rescue
+    _ -> nil
   end
 
   defp ensure_metadata_source(source_key) do
@@ -349,7 +448,7 @@ defmodule StonksBackend.Sources do
       Sql.execute(
         """
         insert into source_health_status(source_key, status, last_checked_at, details)
-        values ('oge_disclosures', 'degraded', now(), $1::jsonb)
+        values ('oge_disclosures', 'degraded', now(), $1::text::jsonb)
         on conflict (source_key) do update
         set status = excluded.status,
             last_checked_at = excluded.last_checked_at,
@@ -448,7 +547,7 @@ defmodule StonksBackend.Sources do
           $1, $2, $3, $4, $5, $6,
           'elixir_safe_fetch', $7, now(), $8, $9,
           $10, $11, $12, true,
-          'extract_only', false, 'fetched', $13::jsonb
+          'extract_only', false, 'fetched', $13::text::jsonb
         )
         on conflict (dedupe_key) where dedupe_key is not null do update
         set title = excluded.title,

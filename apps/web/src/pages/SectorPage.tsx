@@ -65,10 +65,10 @@ export function SectorPage() {
       </section>
       <section>
         <h2 className="mb-3 text-2xl font-bold">
-          {locale === "ko" ? "최근 출처 연결 이벤트" : "Recent source-linked events"}
+          {locale === "ko" ? "최근 출처 연결 항목" : "Recent source-linked items"}
         </h2>
         {data.recent_events.length > 0 && <EventList events={data.recent_events} />}
-        {data.recent_events.length === 0 && <EmptyState text={locale === "ko" ? "현재 이 섹터 전용 출처 연결 이벤트가 없습니다." : "No sector-specific source-linked events are available in this snapshot."} />}
+        {data.recent_events.length === 0 && <EmptyState text={locale === "ko" ? "현재 이 섹터 전용 출처 연결 항목이 없습니다." : "No sector-specific source-linked items are available in this snapshot."} />}
       </section>
       <section className="grid gap-4 lg:grid-cols-[0.42fr_0.58fr]">
         <div className="panel min-w-0 p-4">

@@ -8,6 +8,85 @@ import { featureGates, usageQuotas } from "../lib/portfolioAtlas";
 interface AdminDashboardPayload {
   user: { email: string; role: string };
   metrics: Record<string, string | number | boolean | null>;
+  release_controls?: {
+    release_id: string;
+    payload_version: number;
+    runtime_switches: {
+      key: string;
+      enabled: boolean;
+      rollback_value: string;
+    }[];
+    canary: {
+      status: string;
+      checks: {
+        key: string;
+        status: string;
+        value: string | number | boolean | null;
+        threshold: string | number | boolean | null;
+        summary: string;
+      }[];
+    };
+    source_funnel: {
+      totals: Record<string, number>;
+      sources: {
+        source_key: string;
+        status: string;
+        counters: Record<string, number>;
+      }[];
+    };
+    provenance: {
+      release_id: string;
+      source_documents: number;
+      source_facts: number;
+      market_bars: number;
+      quarantine_available: boolean;
+    };
+    rollback_controls: {
+      scheduler_pause_keys: string[];
+      unsafe_job_states: string[];
+      rollback_actions: string[];
+      payload_versions: { current: number; accepted: number[] };
+    };
+  };
+  news_v2?: {
+    totals: {
+      clusters: number;
+      source_documents: number;
+      source_facts: number;
+      quarantined_documents: number;
+      quarantined_facts: number;
+    };
+    clusters: {
+      id: string;
+      canonical_title: string;
+      review_state: string;
+      status: string;
+      source_count: number;
+      trust_score: number;
+      breaking_score: number;
+      last_seen_at: string | null;
+    }[];
+    source_documents: {
+      id: string;
+      title: string;
+      source_key: string | null;
+      publisher: string | null;
+      status: string;
+      public_allowed: boolean;
+      observed_at: string | null;
+    }[];
+    source_fact_counts: {
+      fact_type: string;
+      review_status: string;
+      public_allowed: boolean;
+      row_count: number;
+    }[];
+    ingestion_runs: {
+      ingestion_run_id: string;
+      row_count: number;
+      newest_at: string | null;
+    }[];
+  };
   provider_budgets: {
     id: string;
     provider_key: string;
@@ -240,6 +319,23 @@ export function AdminDashboard() {
     }
   }
 
+  async function quarantineRelease(releaseId: string) {
+    setMessage(null);
+    try {
+      const result = await apiPost<{ source_documents: number; source_facts: number; market_bars: number }>(
+        "/api/admin/release-controls/quarantine",
+        { release_id: releaseId },
+        csrf
+      );
+      setMessage(
+        `Quarantined release rows: ${result.source_documents} documents, ${result.source_facts} facts, ${result.market_bars} market bars.`
+      );
+      await query.refetch();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to quarantine release rows");
+    }
+  }
+
   return (
     <main className="min-h-screen bg-paper px-4 py-6 text-ink lg:px-6">
       <div className="mx-auto grid max-w-7xl gap-6">
@@ -289,6 +385,9 @@ export function AdminDashboard() {
             ))}
           </section>
         )}
+        {(section === "overview" || section === "system-config") && query.data.release_controls ? (
+          <ReleaseControlsPanel releaseControls={query.data.release_controls} quarantineRelease={quarantineRelease} />
+        ) : null}
         {section === "feature-gates" ? <FeatureGateAdminPanel /> : null}
         {section === "instruments" && (
           <InstrumentAdminPanel
@@ -372,6 +471,9 @@ export function AdminDashboard() {
           </div>
           </section>
         )}
+        {(section === "data-sources" || section === "overview") && query.data.news_v2 ? (
+          <NewsV2Panel news={query.data.news_v2} />
+        ) : null}
         {section === "overview" && (
           <section className="grid gap-4 lg:grid-cols-2">
           <div className="panel p-4">
@@ -495,6 +597,206 @@ function approvalDecisionForSeverity(severity: string) {
 function responseTimeLabel(responseMs: number | null) {
   if (responseMs == null) return "n/a";
   return `${responseMs} ms`;
+}
+
+function NewsV2Panel({ news }: Readonly<{ news: NonNullable<AdminDashboardPayload["news_v2"]> }>) {
+  const totals = news.totals;
+
+  return (
+    <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="panel p-4">
+        <div className="mb-3 flex items-center gap-2 font-semibold">
+          <Database className="h-4 w-4" />
+          News V2 pipeline
+        </div>
+        <div className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-5">
+          <MetricChip label="Clusters" value={totals.clusters} />
+          <MetricChip label="Documents" value={totals.source_documents} />
+          <MetricChip label="Facts" value={totals.source_facts} />
+          <MetricChip label="Quarantined docs" value={totals.quarantined_documents} />
+          <MetricChip label="Quarantined facts" value={totals.quarantined_facts} />
+        </div>
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="text-xs uppercase text-muted">
+              <tr>
+                <th className="py-2 pr-4">Cluster</th>
+                <th className="py-2 pr-4">State</th>
+                <th className="py-2 pr-4">Sources</th>
+                <th className="py-2">Last seen</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {news.clusters.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-3 text-muted">
+                    No News V2 clusters yet.
+                  </td>
+                </tr>
+              ) : (
+                news.clusters.map((cluster) => (
+                  <tr key={cluster.id}>
+                    <td className="safe-text py-3 pr-4 font-semibold">{cluster.canonical_title}</td>
+                    <td className="py-3 pr-4">
+                      {cluster.review_state} · {cluster.status}
+                    </td>
+                    <td className="py-3 pr-4">{cluster.source_count}</td>
+                    <td className="py-3 text-muted">{formatOptionalDate(cluster.last_seen_at)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div className="grid gap-4">
+        <div className="panel p-4">
+          <div className="mb-3 font-semibold">Recent source documents</div>
+          <div className="grid gap-2 text-sm">
+            {news.source_documents.length === 0 ? (
+              <div className="text-muted">No source documents yet.</div>
+            ) : (
+              news.source_documents.map((document) => (
+                <div key={document.id} className="rounded-md border border-line bg-panelAlt p-3">
+                  <div className="safe-text font-semibold">{document.title || "Untitled source document"}</div>
+                  <div className="safe-text text-xs text-muted">
+                    {document.source_key ?? "unknown source"} · {document.publisher ?? "unknown publisher"} · {document.status} ·{" "}
+                    {document.public_allowed ? "public allowed" : "private/admin only"}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+        <div className="panel p-4">
+          <div className="mb-3 font-semibold">Ingestion runs</div>
+          <div className="grid gap-2 text-sm">
+            {news.ingestion_runs.length === 0 ? (
+              <div className="text-muted">No ingestion run provenance recorded.</div>
+            ) : (
+              news.ingestion_runs.map((run) => (
+                <div key={run.ingestion_run_id} className="grid grid-cols-[1fr_auto] gap-3 rounded-md border border-line bg-panelAlt p-3">
+                  <span className="safe-text font-semibold">{run.ingestion_run_id}</span>
+                  <span>{run.row_count}</span>
+                  <span className="text-muted">Newest row</span>
+                  <span className="text-muted">{formatOptionalDate(run.newest_at)}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function MetricChip({ label, value }: Readonly<{ label: string; value: number }>) {
+  return (
+    <div className="rounded-md border border-line bg-panelAlt p-3">
+      <div className="text-xs uppercase text-muted">{label}</div>
+      <div className="text-lg font-bold">{value}</div>
+    </div>
+  );
+}
+
+function formatOptionalDate(value: string | null) {
+  if (!value) return "n/a";
+  return new Date(value).toLocaleString();
+}
+
+function ReleaseControlsPanel({
+  releaseControls,
+  quarantineRelease
+}: Readonly<{
+  releaseControls: NonNullable<AdminDashboardPayload["release_controls"]>;
+  quarantineRelease: (releaseId: string) => void;
+}>) {
+  const funnelTotals = releaseControls.source_funnel.totals;
+
+  return (
+    <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+      <div className="panel p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="font-semibold">Release readiness</div>
+            <p className="mt-1 text-sm text-muted">
+              Release {releaseControls.release_id} · payload v{releaseControls.payload_version} · canary {releaseControls.canary.status}
+            </p>
+          </div>
+          <span className={`rounded-md border px-3 py-1 text-sm font-semibold ${statusClass(releaseControls.canary.status)}`}>
+            {releaseControls.canary.status}
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <tbody className="divide-y divide-line">
+              {releaseControls.canary.checks.map((check) => (
+                <tr key={check.key}>
+                  <td className="py-3 font-semibold">{check.key.replaceAll("_", " ")}</td>
+                  <td className="py-3">{String(check.value ?? "n/a")}</td>
+                  <td className="py-3 text-muted">{String(check.threshold ?? "n/a")}</td>
+                  <td className={`py-3 font-semibold ${statusTextClass(check.status)}`}>{check.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div className="grid gap-4">
+        <div className="panel p-4">
+          <div className="mb-3 font-semibold">Runtime rollback switches</div>
+          <div className="flex flex-wrap gap-2">
+            {releaseControls.runtime_switches.map((item) => (
+              <span key={item.key} className="rounded-md border border-line bg-panelSoft px-2 py-1 text-xs">
+                {item.key}: {item.enabled ? "on" : "off"}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="panel p-4">
+          <div className="mb-3 font-semibold">Source funnel totals</div>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            {Object.entries(funnelTotals).map(([key, value]) => (
+              <div key={key} className="rounded-md border border-line p-2">
+                <div className="text-xs uppercase text-muted">{key.replaceAll("_", " ")}</div>
+                <div className="font-bold">{value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="panel p-4">
+          <div className="mb-3 font-semibold">Provenance cleanup estimate</div>
+          <p className="text-sm text-muted">
+            Documents {releaseControls.provenance.source_documents} · facts {releaseControls.provenance.source_facts} · market bars{" "}
+            {releaseControls.provenance.market_bars}
+          </p>
+          <p className="mt-2 text-xs text-muted">
+            Rollback cleanup is {releaseControls.provenance.quarantine_available ? "available" : "disabled for local/unknown releases"}.
+          </p>
+          <button
+            type="button"
+            className="secondary-action mt-3 h-10 px-3 py-0"
+            disabled={!releaseControls.provenance.quarantine_available}
+            onClick={() => quarantineRelease(releaseControls.provenance.release_id)}
+          >
+            Quarantine release rows
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function statusClass(status: string) {
+  if (status === "ready" || status === "pass") return "border-success text-success";
+  if (status === "blocked") return "border-danger text-danger";
+  return "border-warning text-warning";
+}
+
+function statusTextClass(status: string) {
+  if (status === "pass") return "text-success";
+  if (status === "blocked") return "text-danger";
+  return "text-warning";
 }
 
 function SourceHealthRows({ sources }: Readonly<{ sources: AdminDashboardPayload["source_health"] }>) {

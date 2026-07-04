@@ -53,6 +53,44 @@ defmodule StonksBackend.SafeFetchTest do
     assert payload["resolved_ips"] == ["93.184.216.34"]
   end
 
+  test "fetch_metadata returns only title-safe metadata fields" do
+    request_fun = fn url, opts ->
+      assert_bound_request(url, opts, "https://93.184.216.34/story", "example.com")
+
+      {:ok,
+       %{
+         status: 200,
+         headers: %{"content-type" => ["text/html"]},
+         body: """
+         <html>
+           <head>
+             <meta property="og:title" content="Metadata Only Headline">
+             <meta property="article:published_time" content="2026-07-01T10:00:00Z">
+             <link rel="canonical" href="https://example.com/canonical-story">
+           </head>
+           <body><p>This paragraph must never be returned to title enrichment.</p></body>
+         </html>
+         """
+       }}
+    end
+
+    resolver = fn "example.com", 443 -> {:ok, [{93, 184, 216, 34}]} end
+
+    assert {:ok, payload} =
+             SafeFetch.fetch_metadata("https://example.com/story",
+               request_fun: request_fun,
+               resolver: resolver,
+               max_bytes: 10_000
+             )
+
+    assert payload["title"] == "Metadata Only Headline"
+    assert payload["canonical_url"] == "https://example.com/canonical-story"
+    assert payload["published_at"] == "2026-07-01T10:00:00Z"
+    refute Map.has_key?(payload, "text")
+    refute Map.has_key?(payload, "content_hash")
+    refute Map.has_key?(payload, "resolved_ips")
+  end
+
   test "fetch_url blocks private resolved IPs before request" do
     parent = self()
     request_fun = fn _, _ -> send(parent, :request_called) end

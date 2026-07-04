@@ -50,8 +50,8 @@ The default GitHub-hosted path connects to OCI over SSH. It checks out the
 repository, builds the web assets, syncs the checked-out release into
 `/opt/stonks-radar`, writes the production env file, downloads the CI-built web
 artifact for fast deploys when available, pulls the selected Elixir API image,
-runs Docker Compose, refreshes the published snapshot volume, and verifies local
-origin health.
+runs Docker Compose, refreshes the published snapshot volume through the Elixir
+DB-generated publisher, and verifies local origin health.
 
 The optional self-hosted path runs the same deployment script on the OCI
 instance with runner labels `self-hosted`, `linux`, and

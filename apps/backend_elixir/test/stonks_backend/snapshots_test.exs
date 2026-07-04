@@ -81,6 +81,7 @@ defmodule StonksBackend.SnapshotsTest do
       |> Jason.decode!()
 
     assert snapshot["snapshot_version"] == 2
+    assert snapshot["min_reader_version"] == "1.0"
     assert snapshot["content_hash"] =~ "sha256:"
     assert snapshot["stale_after"] != snapshot["generated_at"]
     assert :ok = Snapshots.validate_snapshot_tree(result.destination)
@@ -222,16 +223,19 @@ defmodule StonksBackend.SnapshotsTest do
     refute Enum.any?(index["data"]["events"], &(&1["id"] == "stale_source_discovery"))
     refute Jason.encode!(index["data"]) =~ "seed event"
     refute Jason.encode!(index["data"]) =~ "Source policy seed"
+    refute Jason.encode!(index["data"]) =~ "source-linked news event"
 
     assert %{
              "title" => "Rocket Lab source links for RKLB filings and company updates",
              "summary" => summary,
              "item_kind" => "source_discovery",
              "claim_level" => "source_only",
-             "evidence_match_status" => "weak_match"
+             "evidence_match_status" => "weak_match",
+             "source_links" => [%{"evidence_id" => "doc_" <> evidence_hash}]
            } = Enum.find(index["data"]["events"], &(&1["id"] == "rklb_launch_window_seed"))
 
     assert summary =~ "not a verified launch-window event"
+    assert String.length(evidence_hash) == 24
 
     assert %{"count" => 0} =
              Enum.find(index["data"]["filters"]["tickers"], &(&1["key"] == "AMD"))
@@ -244,6 +248,179 @@ defmodule StonksBackend.SnapshotsTest do
 
     assert ticker["data"]["coverage_window"] == "7d"
     assert Enum.map(ticker["data"]["events"], & &1["id"]) == ["rklb_launch_window_seed"]
+    refute ticker["data"]["summary"] =~ "source-linked news event"
+    assert :ok = Snapshots.validate_snapshot_tree(result.destination)
+  end
+
+  test "candidate build keeps source-only discovery out of breaking map surfaces", %{
+    published_root: root,
+    artifact_root: artifact_root
+  } do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    write_manifest!(root, %{
+      "home" => %{"en" => "public/v1/en/home.json"}
+    })
+
+    write_snapshot!(root, "v1/en/home.json", %{
+      "object_type" => "home",
+      "object_key" => "home",
+      "data" => %{
+        "headline" => "Market radar",
+        "summary" => "Source-backed market context.",
+        "generated_label" => DateTime.to_iso8601(now),
+        "snapshot_health" => %{},
+        "top_events" => [],
+        "breaking_market_events" => [
+          breaking_event("source_only", now, %{
+            "title" => "Weak source discovery",
+            "discovery_only" => true,
+            "trust_tier" => "T4_WEAK_SIGNAL"
+          }),
+          breaking_event("reviewed_event", now, %{
+            "title" => "Reviewed official update",
+            "discovery_only" => false,
+            "trust_tier" => "T1_REGULATED_FILING"
+          })
+        ],
+        "breaking_market_map" => %{
+          "events" => [
+            breaking_event("source_only", now, %{
+              "title" => "Weak source discovery",
+              "discovery_only" => true,
+              "trust_tier" => "T4_WEAK_SIGNAL"
+            }),
+            breaking_event("reviewed_event", now, %{
+              "title" => "Reviewed official update",
+              "discovery_only" => false,
+              "trust_tier" => "T1_REGULATED_FILING"
+            })
+          ],
+          "map_points" => [
+            map_point("source_only", now),
+            map_point("reviewed_event", now)
+          ],
+          "watched_regions" => [],
+          "coverage_gaps" => [],
+          "regional_briefs" => [
+            %{
+              "region_key" => "USA",
+              "label" => "United States",
+              "coverage_window_days" => 7,
+              "generated_at" => DateTime.to_iso8601(now),
+              "summary" =>
+                "United States has 99 source-linked breaking/developing event(s) in the current metadata window.",
+              "event_count" => 99,
+              "source_count" => 99,
+              "newest_source_published_at" => DateTime.to_iso8601(now),
+              "confidence" => "metadata_only",
+              "evidence" => [
+                %{
+                  "event_id" => "reviewed_event",
+                  "title" => "Reviewed official update",
+                  "source_url" => "https://example.com/reviewed_event",
+                  "source_published_at" => DateTime.to_iso8601(now),
+                  "severity" => "high"
+                },
+                %{
+                  "event_id" => "source_only",
+                  "title" => "Weak source discovery",
+                  "source_url" => "https://example.com/source_only",
+                  "source_published_at" => DateTime.to_iso8601(DateTime.add(now, -60, :second)),
+                  "severity" => "medium"
+                }
+              ]
+            }
+          ],
+          "shown_count" => 2,
+          "total_count" => 2,
+          "ranking_cutoff" => nil,
+          "registry_version" => 1,
+          "scoring_version" => "test",
+          "thinning_version" => "test",
+          "generated_at" => DateTime.to_iso8601(now)
+        },
+        "macro_tiles" => [],
+        "alternative_signals" => [
+          %{
+            "key" => "breaking_market_news",
+            "title" => "Breaking market news",
+            "summary" => "Fresh source-linked items only.",
+            "value" => "2 items",
+            "cadence" => "24h",
+            "source" => "source-linked news",
+            "source_url" => "https://example.com/news",
+            "freshness" => "fresh",
+            "severity" => "medium",
+            "refresh_seconds" => 3600,
+            "items" => [
+              %{
+                "key" => "fresh",
+                "label" => "Fresh reviewed update",
+                "value" => "fresh",
+                "detail" => "Within the breaking news window.",
+                "source" => "source-linked news",
+                "freshness" => "fresh",
+                "severity" => "medium",
+                "updated_at" => DateTime.to_iso8601(now)
+              },
+              %{
+                "key" => "stale",
+                "label" => "Stale reviewed update",
+                "value" => "stale",
+                "detail" => "Outside the breaking news window.",
+                "source" => "source-linked news",
+                "freshness" => "stale",
+                "severity" => "medium",
+                "updated_at" => now |> DateTime.add(-49, :hour) |> DateTime.to_iso8601()
+              }
+            ]
+          }
+        ],
+        "sector_tiles" => [],
+        "calendar_preview" => [],
+        "scenario_baskets" => []
+      }
+    })
+
+    assert {:ok, result} = Snapshots.build_candidate()
+    assert result.destination == Path.join([artifact_root, "candidates", "v2", "public"])
+
+    home =
+      result.destination
+      |> Path.join("v2/en/home.json")
+      |> File.read!()
+      |> Jason.decode!()
+
+    assert Enum.map(home["data"]["breaking_market_events"], & &1["event_id"]) == [
+             "reviewed_event"
+           ]
+
+    assert Enum.map(home["data"]["breaking_market_map"]["events"], & &1["event_id"]) == [
+             "reviewed_event"
+           ]
+
+    assert Enum.map(home["data"]["breaking_market_map"]["map_points"], & &1["event_id"]) == [
+             "reviewed_event"
+           ]
+
+    assert home["data"]["breaking_market_map"]["shown_count"] == 1
+    assert home["data"]["breaking_market_map"]["total_count"] == 1
+
+    assert [
+             %{
+               "summary" =>
+                 "United States has 2 source-linked item(s) in the 7-day metadata window.",
+               "event_count" => 2,
+               "source_count" => 2,
+               "evidence" => [%{"event_id" => "reviewed_event"}, %{"event_id" => "source_only"}]
+             }
+           ] = home["data"]["breaking_market_map"]["regional_briefs"]
+
+    refute Jason.encode!(home["data"]["breaking_market_map"]["regional_briefs"]) =~
+             "breaking/developing event"
+
+    assert Enum.map(hd(home["data"]["alternative_signals"])["items"], & &1["key"]) == ["fresh"]
     assert :ok = Snapshots.validate_snapshot_tree(result.destination)
   end
 
@@ -269,6 +446,24 @@ defmodule StonksBackend.SnapshotsTest do
 
     assert {:error, message} = Snapshots.validate_snapshot_tree(root)
     assert message =~ "contains prohibited public operational snapshot"
+  end
+
+  test "snapshot tree validation rejects public internal source identifiers", %{
+    published_root: root
+  } do
+    write_manifest!(root)
+
+    write_snapshot!(root, "v1/en/home.json", %{
+      "data" => %{
+        "source_document_id" => "2aa2e34a-4b6d-4b6e-b224-268dcdd50810",
+        "fact_id" => "raw-internal-fact",
+        "article_body" => "full article body must not publish",
+        "provider_status" => %{"quota_state" => "private"}
+      }
+    })
+
+    assert {:error, message} = Snapshots.validate_snapshot_tree(root)
+    assert message =~ "contains prohibited public field"
   end
 
   test "snapshot tree validation requires manifest references to resolve inside the tree", %{
@@ -319,6 +514,30 @@ defmodule StonksBackend.SnapshotsTest do
                Path.join(source, "latest/manifest.json"),
                Path.join(source, "v1/en/home.json")
              ]
+    after
+      File.rm_rf!(source)
+    end
+  end
+
+  test "published-volume refresh removes stale files from previous versions", %{
+    published_root: destination
+  } do
+    source = Path.join(System.tmp_dir!(), "stonks-source-#{System.unique_integer([:positive])}")
+
+    try do
+      write_manifest!(source, %{"home" => %{"en" => "public/v2/en/home.json"}})
+      write_snapshot!(source, "v2/en/home.json", %{"data" => %{"entries" => []}})
+
+      write_manifest!(destination, %{"home" => %{"en" => "public/v1/en/home.json"}})
+      write_snapshot!(destination, "v1/en/home.json", %{"data" => %{"entries" => []}})
+      write_snapshot!(destination, "v1/en/news/index.json", %{"data" => %{"entries" => []}})
+
+      assert {:ok, _result} = Snapshots.refresh_published_volume(source, destination)
+
+      assert Path.join(destination, "latest/manifest.json") |> File.exists?()
+      assert Path.join(destination, "v2/en/home.json") |> File.exists?()
+      refute Path.join(destination, "v1/en/home.json") |> File.exists?()
+      refute Path.join(destination, "v1/en/news/index.json") |> File.exists?()
     after
       File.rm_rf!(source)
     end
@@ -567,6 +786,69 @@ defmodule StonksBackend.SnapshotsTest do
       ]
     }
     |> deep_merge(overrides)
+  end
+
+  defp breaking_event(event_id, timestamp, overrides) do
+    timestamp = timestamp |> DateTime.truncate(:second) |> DateTime.to_iso8601()
+
+    %{
+      "event_id" => event_id,
+      "title" => "Reviewed market update",
+      "summary" => "Reviewed market source context.",
+      "source_url" => "https://example.com/#{event_id}",
+      "source_published_at" => timestamp,
+      "observed_at" => timestamp,
+      "verified_at" => timestamp,
+      "freshness_confidence" => 0.9,
+      "urgency_score" => 75,
+      "severity" => "high",
+      "trust_tier" => "T2_REPUTABLE_MEDIA",
+      "discovery_only" => false,
+      "review_state" => "approved",
+      "citation_ids" => ["doc_test"],
+      "retention_class" => "metadata_only",
+      "geo_points" => [map_point(event_id, timestamp)],
+      "geo_confidence" => 0.9,
+      "score_reason_codes" => ["fixture"],
+      "dedupe_key" => "fixture:#{event_id}",
+      "label" => "breaking",
+      "tickers" => [],
+      "regions" => [],
+      "topics" => [],
+      "source_count" => 1
+    }
+    |> deep_merge(overrides)
+  end
+
+  defp map_point(event_id, timestamp) do
+    timestamp =
+      case timestamp do
+        %DateTime{} = datetime -> DateTime.to_iso8601(DateTime.truncate(datetime, :second))
+        value -> to_string(value)
+      end
+
+    %{
+      "point_id" => "point_#{event_id}",
+      "event_id" => event_id,
+      "event_ids" => [event_id],
+      "title" => "Map point #{event_id}",
+      "summary" => "Mapped source context.",
+      "area_id" => "USA",
+      "area_key" => "USA",
+      "area_label" => "United States",
+      "relation" => "event_location",
+      "latitude" => 38.0,
+      "longitude" => -97.0,
+      "severity" => "high",
+      "urgency_score" => 75,
+      "source_published_at" => timestamp,
+      "observed_at" => timestamp,
+      "source_url" => "https://example.com/#{event_id}",
+      "source_count" => 1,
+      "geo_confidence" => 0.9,
+      "area_priority" => 80,
+      "score_reason_codes" => ["fixture"]
+    }
   end
 
   defp deep_merge(left, right) do

@@ -55,6 +55,7 @@ defmodule StonksBackendWeb.Router do
       get "/snapshots/candidates", AdminController, :snapshots_candidates
       post "/snapshots/publish", AdminController, :snapshots_publish
       post "/snapshots/rollback", AdminController, :snapshots_rollback
+      post "/release-controls/quarantine", AdminController, :quarantine_release
       post "/jobs/:job_id/replay", AdminController, :replay_job
       post "/corrections", AdminController, :create_correction
       get "/audit-log", AdminController, :audit_log

@@ -170,8 +170,46 @@ defmodule StonksBackend.News do
   def generate_summary(payload), do: Pipeline.generate_summary(payload)
   def translate_summary(payload), do: Pipeline.translate_summary(payload)
   def rebuild_search_index(payload), do: Pipeline.rebuild_search_index(payload)
-  def backfill_source(payload), do: Pipeline.backfill_source(payload)
   def prune_metadata(payload), do: Pipeline.prune_metadata(payload)
+
+  def backfill_source(payload) do
+    payload =
+      payload
+      |> Map.put_new("source_key", "gdelt")
+      |> Map.put("mode", "manual_backfill")
+      |> Map.put("backfill", true)
+
+    if Settings.truthy?(payload["dry_run"] || payload["estimate_only"]) do
+      estimate = backfill_estimate(payload)
+      record_backfill_health(payload, "ready", estimate)
+      {:ok, estimate}
+    else
+      case fetch_source(payload) do
+        {:ok, result} ->
+          backfill_result = %{
+            backfill: true,
+            mode: "manual_backfill",
+            idempotency_key: backfill_idempotency_key(payload),
+            provider_call_count: result[:query_count] || 0,
+            resume_cursor: backfill_cursor(payload),
+            next_resume_cursor: next_backfill_cursor(payload, result),
+            resumable: true,
+            coverage_window: gdelt_doc_timespan(payload),
+            release_id: release_id(),
+            source_policy_version: 1
+          }
+
+          record_backfill_health(payload, "ready", Map.merge(result, backfill_result))
+
+          {:ok,
+           result
+           |> Map.merge(backfill_result)}
+
+        other ->
+          other
+      end
+    end
+  end
 
   defp record_source_health(source_key, status, details) do
     status = normalize_health_status(status)
@@ -179,7 +217,7 @@ defmodule StonksBackend.News do
     Sql.execute(
       """
       insert into source_health_status(source_key, status, last_checked_at, details)
-      values ($1, $2, now(), $3::jsonb)
+      values ($1, $2, now(), $3::text::jsonb)
       on conflict (source_key) do update
       set status = excluded.status,
           last_checked_at = excluded.last_checked_at,
@@ -235,9 +273,114 @@ defmodule StonksBackend.News do
       candidate_records_per_query: summary.candidate_records_per_query,
       timespan: Map.get(summary, :timespan),
       query_buckets: Map.get(summary, :query_buckets, []),
-      coverage_window: "36h",
+      coverage_window: Map.get(summary, :timespan) || "36h",
       elixir_component: "gdelt_query_pack"
     }
+  end
+
+  defp backfill_estimate(%{"source_key" => "gdelt"} = payload) do
+    max_documents = payload |> Map.get("max_documents") |> normalize_int(default_max_documents())
+    cycle_index = payload |> Map.get("cycle_index") |> normalize_int(current_cycle_index())
+    cursor = backfill_cursor(payload)
+
+    summary =
+      Gdelt.query_pack_summary(
+        pack_name: Settings.get(:gdelt_doc_query_pack, "market_watch"),
+        max_documents: max_documents,
+        cycle_budget: Settings.get(:gdelt_doc_cycle_budget, 10),
+        provider_cap: Settings.get(:gdelt_doc_max_records, 250),
+        cycle_index: cycle_index,
+        timespan: gdelt_doc_timespan(payload)
+      )
+
+    %{
+      status: "dry_run",
+      source_key: "gdelt",
+      backfill: true,
+      mode: "manual_backfill",
+      would_fetch: false,
+      gdelt_enabled: gdelt_enabled?(),
+      runtime_fetch_enabled: gdelt_runtime_fetch_enabled?(),
+      trust_tier: "T4_WEAK_SIGNAL",
+      copyright_mode: "metadata_only",
+      discovery_only: true,
+      idempotency_key: backfill_idempotency_key(payload),
+      resume_cursor: cursor,
+      next_resume_cursor: next_backfill_cursor(payload, %{query_count: summary.query_count}),
+      resumable: true,
+      release_id: release_id(),
+      source_policy_version: 1,
+      query_pack: summary.query_pack,
+      query_count: summary.query_count,
+      provider_call_count: summary.query_count,
+      timespan: summary.timespan,
+      coverage_window: summary.timespan,
+      max_documents: max_documents,
+      estimated_candidate_records: summary.query_count * summary.candidate_records_per_query,
+      capped_documents: max_documents,
+      query_buckets: summary.query_buckets,
+      requests: summary.requests
+    }
+  end
+
+  defp backfill_estimate(payload) do
+    source_key = payload |> Map.get("source_key", "unknown") |> to_string()
+
+    %{
+      status: "dry_run",
+      source_key: source_key,
+      backfill: true,
+      mode: "manual_backfill",
+      would_fetch: false,
+      idempotency_key: backfill_idempotency_key(payload),
+      resume_cursor: backfill_cursor(payload),
+      next_resume_cursor: next_backfill_cursor(payload, %{query_count: 1}),
+      resumable: true,
+      release_id: release_id(),
+      source_policy_version: 1,
+      provider_call_count: 1,
+      max_documents:
+        payload |> Map.get("max_documents") |> normalize_int(default_max_documents()),
+      note: "bounded single-source metadata fetch estimate"
+    }
+  end
+
+  defp record_backfill_health(payload, status, details) do
+    source_key = payload |> Map.get("source_key", "gdelt") |> to_string()
+
+    record_source_health("#{source_key}:backfill", status, %{
+      elixir_component: "metadata_backfill",
+      source_key: source_key,
+      backfill: true,
+      mode: "manual_backfill",
+      idempotency_key: backfill_idempotency_key(payload),
+      resume_cursor: backfill_cursor(payload),
+      next_resume_cursor:
+        Map.get(details, :next_resume_cursor) || Map.get(details, "next_resume_cursor"),
+      coverage_window: gdelt_doc_timespan(payload),
+      release_id: release_id(),
+      source_policy_version: 1,
+      details: details
+    })
+  end
+
+  defp backfill_idempotency_key(payload) do
+    source_key = payload |> Map.get("source_key", "gdelt") |> to_string()
+    timespan = gdelt_doc_timespan(payload)
+    cursor = backfill_cursor(payload)
+    max_documents = payload |> Map.get("max_documents") |> normalize_int(default_max_documents())
+
+    "news:backfill:#{source_key}:#{timespan}:#{cursor}:max:#{max_documents}"
+  end
+
+  defp backfill_cursor(payload) do
+    payload["cursor"] || payload["resume_cursor"] || "start"
+  end
+
+  defp next_backfill_cursor(payload, result) do
+    query_count = result[:query_count] || result["query_count"] || 0
+    cycle_index = payload |> Map.get("cycle_index") |> normalize_int(current_cycle_index())
+    "cycle:#{cycle_index + max(1, normalize_int(query_count, 0))}"
   end
 
   defp gdelt_runtime_fetch_enabled? do
@@ -246,6 +389,12 @@ defmodule StonksBackend.News do
 
   defp gdelt_enabled? do
     Settings.truthy?(Settings.get(:news_gdelt_enabled, "false"))
+  end
+
+  defp release_id do
+    System.get_env("STONKS_RELEASE_ID") ||
+      System.get_env("GITHUB_SHA") ||
+      "local"
   end
 
   defp gdelt_doc_timespan(payload) do

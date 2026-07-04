@@ -81,6 +81,7 @@
             "required": ["label", "url", "source_key", "policy_version"],
             "properties": {
               "label": { "type": "string" },
+              "evidence_id": { "type": "string", "pattern": "^(evd|doc|fact)_[A-Za-z0-9_-]{8,80}$" },
               "url": { "type": "string" },
               "source_key": { "type": "string" },
               "policy_version": { "type": "integer" }
@@ -495,6 +496,7 @@
   ],
   "properties": {
     "schema_version": { "const": "1.0" },
+    "min_reader_version": { "type": "string" },
     "snapshot_version": { "type": "integer", "minimum": 1 },
     "locale": { "enum": ["en", "ko"] },
     "generated_at": { "type": "string" },

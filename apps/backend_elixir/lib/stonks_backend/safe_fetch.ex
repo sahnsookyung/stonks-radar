@@ -49,6 +49,23 @@ defmodule StonksBackend.SafeFetch do
     )
   end
 
+  def fetch_metadata(url, opts \\ []) do
+    with {:ok, payload} <- fetch_url(url, opts) do
+      {:ok,
+       Map.take(payload, [
+         "url",
+         "final_url",
+         "canonical_url",
+         "source_domain",
+         "published_at",
+         "status_code",
+         "content_type",
+         "title",
+         "raw_html_returned"
+       ])}
+    end
+  end
+
   defp fetch_loop(
          "",
          _original_url,

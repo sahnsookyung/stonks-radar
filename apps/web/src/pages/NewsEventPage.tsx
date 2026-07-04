@@ -43,7 +43,10 @@ export function NewsEventPage() { // NOSONAR - event detail page coordinates sna
         <h1 className="safe-text mt-3 text-3xl font-bold leading-tight sm:text-4xl">{event.title}</h1>
         <p className="safe-text mt-3 max-w-4xl text-base leading-7 text-muted">{event.one_sentence_summary}</p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <NewsScoreBadge label={isSourceOnly ? (isKo ? "발견" : "Discovery") : (isKo ? "속보" : "Breaking")} value={event.breaking_score} />
+          <NewsScoreBadge
+            label={isSourceOnly ? (isKo ? "발견" : "Discovery") : (isKo ? "속보" : "Breaking")}
+            value={isSourceOnly ? undefined : event.breaking_score}
+          />
           <NewsScoreBadge label={isKo ? "신뢰" : "Trust"} value={event.trust_score} />
           <span className="badge border-line bg-panelAlt text-muted">{claimLevelLabel(claimLevel, locale)}</span>
           <span className="badge border-line bg-panelAlt text-muted">{evidenceMatchLabel(evidenceMatchStatus, locale)}</span>

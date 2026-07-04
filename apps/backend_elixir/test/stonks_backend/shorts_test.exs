@@ -88,6 +88,26 @@ defmodule StonksBackend.ShortsTest do
              "daily_short_volume_is_transaction_flow_not_open_short_interest"
   end
 
+  test "ingestion entrypoints honor the runtime kill switch" do
+    fetch_fun = fn _url -> flunk("disabled shorts ingestion must not fetch FINRA files") end
+
+    assert {:ok, daily} =
+             Shorts.fetch_daily_short_volume(
+               %{"date" => "2026-07-02"},
+               enabled: false,
+               fetch_fun: fetch_fun
+             )
+
+    assert daily.status == "disabled"
+    assert daily.reason == "shorts_ingestion_enabled_false"
+
+    assert {:ok, release} = Shorts.fetch_short_interest_release(%{}, enabled: false)
+    assert release.status == "disabled"
+
+    assert {:ok, metadata} = Shorts.refresh_short_research_metadata(%{}, enabled: false)
+    assert metadata.status == "disabled"
+  end
+
   test "snapshot enrichment replaces placeholder shorts lanes with honest coverage gaps" do
     data = %{
       "generated_label" => "2026-07-02T23:00:00Z",

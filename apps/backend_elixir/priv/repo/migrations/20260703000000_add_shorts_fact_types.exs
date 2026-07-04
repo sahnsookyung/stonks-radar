@@ -12,7 +12,7 @@ defmodule StonksBackend.Repo.Migrations.AddShortsFactTypes do
         'short_volume',
         'Daily short sale volume',
         '일별 공매도 거래량',
-        '{"type":"object","required":["symbol","as_of_date","settlement_date","short_volume","short_exempt_volume","total_volume","source_url","dataset","provider_observation_key"],"properties":{"symbol":{"type":"string"},"as_of_date":{"type":"string"},"settlement_date":{"type":"string"},"short_volume":{"type":"integer","minimum":0},"short_exempt_volume":{"type":"integer","minimum":0},"total_volume":{"type":"integer","minimum":0},"short_volume_ratio":{"type":["number","null"]},"source":{"type":"string"},"source_url":{"type":"string"},"dataset":{"type":"string"},"provider_observation_key":{"type":"string"},"retrieved_at":{"type":"string"},"market":{"type":["string","null"]}},"additionalProperties":false}'::jsonb,
+        '{"type":"object","required":["symbol","as_of_date","settlement_date","short_volume","short_exempt_volume","total_volume","source_url","dataset","provider_observation_key"],"properties":{"symbol":{"type":"string"},"as_of_date":{"type":"string"},"settlement_date":{"type":"string"},"short_volume":{"type":"integer","minimum":0},"short_exempt_volume":{"type":"integer","minimum":0},"total_volume":{"type":"integer","minimum":0},"short_volume_ratio":{"type":["number","null"]},"source":{"type":"string"},"source_url":{"type":"string"},"dataset":{"type":"string"},"provider_observation_key":{"type":"string"},"retrieved_at":{"type":"string"},"market":{"type":["string","null"]},"ingestion_run_id":{"type":"string"},"release_id":{"type":"string"},"source_policy_version":{"type":"integer"}},"additionalProperties":false}'::jsonb,
         array['reports'],
         true,
         false

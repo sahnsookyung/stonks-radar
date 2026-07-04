@@ -1,7 +1,7 @@
 defmodule StonksBackend.Shorts do
   @moduledoc "Official short-pressure ingestion and snapshot projection helpers."
 
-  alias StonksBackend.{SafeFetch, Sql, TrackedTickers}
+  alias StonksBackend.{SafeFetch, Settings, Sql, TrackedTickers}
 
   @daily_short_volume_source "https://www.finra.org/finra-data/browse-catalog/short-sale-volume-data/daily-short-sale-volume-files"
   @short_interest_source "https://www.finra.org/filing-reporting/regulatory-filing-systems/short-interest"
@@ -18,6 +18,14 @@ defmodule StonksBackend.Shorts do
   ]
 
   def fetch_daily_short_volume(payload \\ %{}, opts \\ []) do
+    if shorts_ingestion_enabled?(opts) do
+      do_fetch_daily_short_volume(payload, opts)
+    else
+      {:ok, disabled_result("finra_daily_short_volume")}
+    end
+  end
+
+  defp do_fetch_daily_short_volume(payload, opts) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
     date = payload_date(payload) || default_trade_date(now)
     url = Map.get(payload, "url") || daily_short_volume_url(date)
@@ -35,7 +43,8 @@ defmodule StonksBackend.Shorts do
             fallback_date: date
           )
 
-        persisted = persist_short_volume_rows(parsed.rows)
+        rows = add_rollout_metadata(parsed.rows, date)
+        persisted = persist_short_volume_rows(rows)
 
         record_source_health("finra_daily_short_volume", health_status(parsed.rows), %{
           as_of_date: Date.to_iso8601(date),
@@ -54,7 +63,7 @@ defmodule StonksBackend.Shorts do
            source_url: url,
            as_of_date: Date.to_iso8601(date),
            rows_seen: parsed.total_rows,
-           rows_parsed: length(parsed.rows),
+           rows_parsed: length(rows),
            malformed_count: parsed.malformed_count,
            unknown_symbol_count: parsed.unknown_symbol_count,
            persisted_count: persisted.persisted,
@@ -73,7 +82,15 @@ defmodule StonksBackend.Shorts do
     end
   end
 
-  def fetch_short_interest_release(payload \\ %{}) do
+  def fetch_short_interest_release(payload \\ %{}, opts \\ []) do
+    if shorts_ingestion_enabled?(opts) do
+      do_fetch_short_interest_release(payload)
+    else
+      {:ok, disabled_result("finra_short_interest")}
+    end
+  end
+
+  defp do_fetch_short_interest_release(payload) do
     record_source_health("finra_short_interest", "degraded", %{
       requested_settlement_date: payload["settlement_date"],
       reason: "official_short_interest_is_delayed_twice_monthly",
@@ -90,7 +107,15 @@ defmodule StonksBackend.Shorts do
      }}
   end
 
-  def refresh_short_research_metadata(_payload \\ %{}) do
+  def refresh_short_research_metadata(payload \\ %{}, opts \\ []) do
+    if shorts_ingestion_enabled?(opts) do
+      do_refresh_short_research_metadata(payload)
+    else
+      {:ok, disabled_result("short_research_metadata")}
+    end
+  end
+
+  defp do_refresh_short_research_metadata(_payload) do
     {:ok,
      %{
        status: "ready",
@@ -98,6 +123,14 @@ defmodule StonksBackend.Shorts do
        metadata_only: true,
        sources: Enum.map(@short_research_sources, fn {name, url} -> %{name: name, url: url} end)
      }}
+  end
+
+  defp disabled_result(source_key) do
+    %{
+      status: "disabled",
+      source_key: source_key,
+      reason: "shorts_ingestion_enabled_false"
+    }
   end
 
   def parse_daily_short_volume(text, opts \\ []) do
@@ -200,12 +233,42 @@ defmodule StonksBackend.Shorts do
     |> Enum.uniq()
   end
 
+  defp shorts_ingestion_enabled?(opts) do
+    Keyword.get_lazy(opts, :enabled, fn ->
+      Settings.truthy?(Settings.get(:shorts_ingestion_enabled, "true"))
+    end)
+  end
+
   defp safe_fetch_daily_file(url) do
     SafeFetch.fetch_url(url,
       max_bytes: 3_000_000,
       text_max_chars: 3_000_000,
       timeout_seconds: 20
     )
+  end
+
+  defp add_rollout_metadata(rows, date) do
+    ingestion_run_id = ingestion_run_id(date)
+    release_id = release_id()
+
+    Enum.map(rows, fn row ->
+      row
+      |> Map.put(:ingestion_run_id, ingestion_run_id)
+      |> Map.put(:release_id, release_id)
+      |> Map.put(:source_policy_version, 1)
+    end)
+  end
+
+  defp ingestion_run_id(date) do
+    timestamp = DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.to_iso8601()
+
+    "ingestion:shorts:finra_daily_short_volume:#{Date.to_iso8601(date)}:#{timestamp}:#{System.unique_integer([:positive])}"
+  end
+
+  defp release_id do
+    System.get_env("STONKS_RELEASE_ID") ||
+      System.get_env("GITHUB_SHA") ||
+      "local"
   end
 
   defp payload_date(payload) do
@@ -406,10 +469,10 @@ defmodule StonksBackend.Shorts do
         extraction_source, review_status, public_allowed, dedupe_key
       )
       values (
-        'short_volume', 'reports', cast($1 as jsonb), cast($2 as jsonb), 0.95,
+        'short_volume', 'reports', $1::text::jsonb, $2::text::jsonb, 0.95,
         'rule', 'approved', true, $3
       )
-      on conflict (dedupe_key) do update set
+      on conflict (dedupe_key) where dedupe_key is not null do update set
         object_json = excluded.object_json,
         time_reference = excluded.time_reference,
         confidence = excluded.confidence,
@@ -428,7 +491,7 @@ defmodule StonksBackend.Shorts do
     Sql.execute(
       """
       insert into source_health_status(source_key, status, last_checked_at, last_success_at, details)
-      values ($1, $2, now(), case when $2 = 'ready' then now() else null end, cast($3 as jsonb))
+      values ($1, $2, now(), case when $2 = 'ready' then now() else null end, $3::text::jsonb)
       on conflict (source_key) do update set
         status = excluded.status,
         last_checked_at = excluded.last_checked_at,

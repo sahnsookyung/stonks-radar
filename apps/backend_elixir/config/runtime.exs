@@ -19,7 +19,21 @@ runtime_env = fn name, dev_default ->
   end
 end
 
-database_url = System.get_env("DATABASE_URL", "postgres://frw:frw@localhost:5432/frw")
+truthy_env = fn name, default ->
+  value = System.get_env(name, default)
+  String.downcase(String.trim(to_string(value))) in ["1", "true", "yes", "on"]
+end
+
+database_url =
+  if config_env() == :test do
+    System.get_env(
+      "TEST_DATABASE_URL",
+      System.get_env("DATABASE_URL", "postgres://frw:frw@localhost:5432/frw_test")
+    )
+  else
+    System.get_env("DATABASE_URL", "postgres://frw:frw@localhost:5432/frw")
+  end
+
 database_url = String.replace(database_url, "postgresql+psycopg://", "postgres://")
 port = String.to_integer(System.get_env("PORT", "8000"))
 pool_size = String.to_integer(System.get_env("POOL_SIZE", "10"))
@@ -150,6 +164,7 @@ config :stonks_backend, :settings,
   market_data_snapshot_window_days: System.get_env("MARKET_DATA_SNAPSHOT_WINDOW_DAYS", "1095"),
   market_data_refresh_after_close_minutes:
     System.get_env("MARKET_DATA_REFRESH_AFTER_CLOSE_MINUTES", "45"),
+  shorts_ingestion_enabled: System.get_env("SHORTS_INGESTION_ENABLED", "true"),
   yield_curve_history_enabled: System.get_env("YIELD_CURVE_HISTORY_ENABLED", "true"),
   yield_curve_history_months: System.get_env("YIELD_CURVE_HISTORY_MONTHS", "24"),
   yield_curve_fetch_timeout_seconds: System.get_env("YIELD_CURVE_FETCH_TIMEOUT_SECONDS", "15"),
@@ -167,6 +182,15 @@ config :stonks_backend, StonksBackendWeb.Endpoint,
   http: [ip: {0, 0, 0, 0}, port: port],
   secret_key_base: secret_key_base,
   check_origin: false
+
+default_start_scheduler = if config_env() == :test, do: "false", else: "true"
+config :stonks_backend, :start_scheduler, truthy_env.("START_SCHEDULER", default_start_scheduler)
+
+unless truthy_env.("OBAN_QUEUES_ENABLED", "true") do
+  config :stonks_backend, Oban,
+    queues: false,
+    plugins: false
+end
 
 if app_env in ["production", "prod"] do
   config :logger, level: :info

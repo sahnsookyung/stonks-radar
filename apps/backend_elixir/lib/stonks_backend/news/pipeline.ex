@@ -1,43 +1,7 @@
 defmodule StonksBackend.News.Pipeline do
   @moduledoc "Metadata-only news normalization, classification, clustering, and scoring."
 
-  alias StonksBackend.{News.SourceFetcher, Settings, Sql, TrackedTickers}
-
-  @region_keywords %{
-    "USA" => ["united states", "u.s.", "us ", "federal reserve", "washington", "sec"],
-    "CAN" => ["canada", "canadian", "ottawa", "bank of canada", "alberta oil sands", "tsx"],
-    "KOR" => ["south korea", "korea", "seoul", "bank of korea", "samsung", "sk hynix"],
-    "JPN" => ["japan", "tokyo", "boj", "bank of japan"],
-    "BRA" => ["brazil", "brasil", "banco central do brasil", "copom"],
-    "ZAF" => ["south africa", "south african", "pretoria", "johannesburg", "eskom", "rand"],
-    "EU" => ["europe", "european union", "eurozone", "ecb"],
-    "GBR" => ["united kingdom", "uk ", "britain", "london", "bank of england"],
-    "DEU" => ["germany", "german", "berlin", "bundesbank", "ifo"],
-    "FRA" => ["france", "french", "paris", "bank of france", "edf"],
-    "ITA" => ["italy", "italian", "rome", "bank of italy"],
-    "MEX" => ["mexico", "mexican", "mexico city", "banxico"],
-    "NOR" => ["norway", "norwegian", "oslo", "norges bank", "equinor"],
-    "IND" => ["india", "indian", "new delhi", "mumbai", "reserve bank of india", "rbi"],
-    "CHN" => ["china", "beijing", "shanghai", "chinese"],
-    "RUS" => ["russia", "russian", "moscow", "kremlin", "putin"],
-    "AUS" => ["australia", "australian", "canberra", "sydney", "reserve bank of australia", "rba"],
-    "ESP" => ["spain", "spanish", "madrid", "bank of spain"],
-    "IDN" => ["indonesia", "indonesian", "jakarta", "bank indonesia"],
-    "TUR" => ["turkiye", "turkey", "turkish", "ankara", "central bank of turkey"],
-    "SAU" => ["saudi arabia", "saudi", "riyadh", "aramco", "opec"],
-    "NLD" => ["netherlands", "dutch", "amsterdam", "rotterdam"],
-    "CHE" => ["switzerland", "swiss", "zurich", "snb", "swiss national bank"],
-    "POL" => ["poland", "polish", "warsaw", "nbp", "national bank of poland"],
-    "BEL" => ["belgium", "belgian", "brussels"],
-    "ARG" => ["argentina", "argentine", "buenos aires", "milei"],
-    "IRL" => ["ireland", "irish", "dublin"],
-    "SWE" => ["sweden", "swedish", "stockholm", "riksbank"],
-    "ARE" => ["united arab emirates", "uae", "abu dhabi", "dubai"],
-    "SGP" => ["singapore", "mas", "monetary authority of singapore"],
-    "ISR" => ["israel", "israeli", "jerusalem", "tel aviv"],
-    "AUT" => ["austria", "austrian", "vienna"],
-    "THA" => ["thailand", "thai", "bangkok", "bank of thailand"]
-  }
+  alias StonksBackend.{News.SourceFetcher, Settings, Sql, TrackedTickers, WatchedRegions}
 
   @topic_keywords %{
     "semiconductors" => [
@@ -157,6 +121,8 @@ defmodule StonksBackend.News.Pipeline do
       end)
       |> Enum.count(&(&1 == :ok))
 
+    record_pipeline_health("normalized", %{parsed: length(rows)})
+
     {:ok, %{status: "ready", documents_seen: length(rows), documents_normalized: touched}}
   end
 
@@ -185,6 +151,8 @@ defmodule StonksBackend.News.Pipeline do
       end)
       |> Enum.count(&(&1 == :ok))
 
+    record_pipeline_health("classified", %{classified: classified, parsed: length(rows)})
+
     {:ok, %{status: "ready", documents_seen: length(rows), documents_classified: classified}}
   end
 
@@ -192,6 +160,8 @@ defmodule StonksBackend.News.Pipeline do
     rows = classified_news_documents(limit(payload))
 
     if rows == [] do
+      record_pipeline_health("clustered", %{clustered: 0, parsed: 0})
+
       {:ok, %{status: "ready", documents_seen: 0, clusters_upserted: 0, links_upserted: 0}}
     else
       documents =
@@ -219,6 +189,12 @@ defmodule StonksBackend.News.Pipeline do
           end
         end)
 
+      record_pipeline_health("clustered", %{
+        clustered: clusters_upserted,
+        parsed: length(rows),
+        published_or_projected: clusters_upserted
+      })
+
       {:ok,
        %{
          status: "ready",
@@ -234,7 +210,15 @@ defmodule StonksBackend.News.Pipeline do
       Sql.all("""
       select c.id,
              array_remove(array_agg(distinct d.metadata->>'trust_tier'), null) as trust_tiers,
-             count(distinct ed.document_id) as source_count,
+             count(
+               distinct coalesce(
+                 nullif(lower(d.publisher), ''),
+                 nullif(lower(d.metadata->>'gdelt_domain'), ''),
+                 nullif(lower(regexp_replace(coalesce(d.canonical_url, d.original_url, ''), '^https?://([^/]+).*$', '\\1')), ''),
+                 nullif(lower(d.metadata->>'source_key'), ''),
+                 ed.document_id::text
+               )
+             ) as source_count,
              count(distinct ee.entity_key) as entity_count,
              count(distinct er.region_key) as region_count,
              count(distinct et.topic_key) as topic_count
@@ -249,6 +233,8 @@ defmodule StonksBackend.News.Pipeline do
       """)
 
     scored = Enum.count(rows, &score_event_row/1)
+
+    record_pipeline_health("scored", %{published_or_projected: scored})
 
     {:ok, %{status: "ready", events_scored: scored}}
   end
@@ -430,6 +416,15 @@ defmodule StonksBackend.News.Pipeline do
     )
   end
 
+  def independent_source_count(rows) do
+    rows
+    |> List.wrap()
+    |> Enum.map(&source_identity/1)
+    |> Enum.reject(&(&1 == ""))
+    |> MapSet.new()
+    |> MapSet.size()
+  end
+
   defp ok_stage(job_type, payload) do
     {:ok,
      %{
@@ -500,7 +495,7 @@ defmodule StonksBackend.News.Pipeline do
     Sql.execute(
       """
       update source_document
-      set metadata = coalesce(metadata, '{}'::jsonb) || $1::jsonb,
+      set metadata = coalesce(metadata, '{}'::jsonb) || $1::text::jsonb,
           status = $2,
           updated_at = now()
       where id = $3
@@ -511,6 +506,46 @@ defmodule StonksBackend.News.Pipeline do
     :ok
   rescue
     _ -> :error
+  end
+
+  defp record_pipeline_health(stage, counters) do
+    details =
+      %{
+        elixir_component: "news_pipeline",
+        stage: stage,
+        discovery:
+          Map.merge(
+            %{
+              fetched: 0,
+              parsed: 0,
+              deduped: 0,
+              classified: 0,
+              clustered: 0,
+              published: 0,
+              published_or_projected: 0,
+              blocked_or_denied: 0
+            },
+            stringify_counter_keys(counters)
+          )
+      }
+
+    Sql.execute(
+      """
+      insert into source_health_status(source_key, status, last_checked_at, details)
+      values ($1, 'ready', now(), $2::text::jsonb)
+      on conflict (source_key) do update
+      set status = excluded.status,
+          last_checked_at = excluded.last_checked_at,
+          details = excluded.details
+      """,
+      ["news_pipeline:#{stage}", Jason.encode!(details)]
+    )
+  rescue
+    _ -> :ok
+  end
+
+  defp stringify_counter_keys(counters) do
+    Map.new(counters, fn {key, value} -> {to_string(key), to_int(value)} end)
   end
 
   defp prune_source_documents(retention_days, condition_sql) do
@@ -634,6 +669,7 @@ defmodule StonksBackend.News.Pipeline do
     trust_tiers = Enum.map(metadata_rows, &(&1["trust_tier"] || "T3_REVIEWED_PUBLIC_SOURCE"))
     score = trust_score(trust_tiers)
     confidence = min(0.9, max(0.35, score / 100))
+    independent_sources = independent_source_count(cluster_rows)
 
     %{
       id: cluster.id,
@@ -650,7 +686,7 @@ defmodule StonksBackend.News.Pipeline do
         breaking_score(%{
           recency_score: 75,
           source_trust_score: score,
-          source_velocity_score: min(100, length(cluster_rows) * 20),
+          source_velocity_score: min(100, independent_sources * 20),
           novelty_score: 55,
           affected_entity_importance_score: if(entities == [], do: 35, else: 70),
           topic_severity_score: if(topics == [], do: 35, else: 70),
@@ -659,7 +695,7 @@ defmodule StonksBackend.News.Pipeline do
         }),
       trust_score: score,
       novelty_score: 55,
-      source_count: length(cluster_rows),
+      source_count: independent_sources,
       entities: entities,
       regions: regions,
       topics: topics
@@ -675,7 +711,7 @@ defmodule StonksBackend.News.Pipeline do
         source_count, review_state, status
       )
       values (
-        $1, $2, $3, cast($4 as timestamptz), cast($5 as timestamptz), cast($6 as timestamptz),
+        $1, $2, $3, $4::text::timestamptz, $5::text::timestamptz, $6::text::timestamptz,
         $7, $8, $9, $10, $11, $12,
         $13, 'candidate', 'active'
       )
@@ -793,7 +829,7 @@ defmodule StonksBackend.News.Pipeline do
   end
 
   defp keyword_regions(text) do
-    Enum.flat_map(@region_keywords, fn {key, keywords} ->
+    Enum.flat_map(region_keyword_entries(), fn {key, keywords} ->
       if Enum.any?(keywords, &keyword_matches?(text, &1)) do
         relation =
           if Enum.any?(
@@ -813,6 +849,15 @@ defmodule StonksBackend.News.Pipeline do
         []
       end
     end)
+  end
+
+  defp region_keyword_entries do
+    WatchedRegions.region_keyword_entries()
+    |> Enum.map(fn %{key: key, keywords: keywords} ->
+      {key, keywords}
+    end)
+  rescue
+    _ -> []
   end
 
   defp maybe_add_region(regions, value, relation, confidence) do
@@ -1071,6 +1116,30 @@ defmodule StonksBackend.News.Pipeline do
   defp primary_source?(metadata) do
     tier = to_string(metadata["trust_tier"] || metadata[:trust_tier])
     String.starts_with?(tier, "T0_") or String.starts_with?(tier, "T1_")
+  end
+
+  defp source_identity(row) do
+    metadata = metadata(row)
+
+    [
+      row["publisher"] || row[:publisher],
+      metadata["gdelt_domain"] || metadata[:gdelt_domain],
+      host(
+        row["canonical_url"] || row[:canonical_url] || row["original_url"] || row[:original_url]
+      ),
+      metadata["source_key"] || metadata[:source_key] || row["source_key"] || row[:source_key],
+      row["id"] || row[:id]
+    ]
+    |> Enum.find_value("", fn value ->
+      value
+      |> to_string()
+      |> String.downcase()
+      |> String.trim()
+      |> case do
+        "" -> nil
+        text -> text
+      end
+    end)
   end
 
   defp official_host?("", _profile), do: false

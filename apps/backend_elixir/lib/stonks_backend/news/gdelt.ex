@@ -281,7 +281,7 @@ defmodule StonksBackend.News.Gdelt do
     per_host_interval =
       opts |> Keyword.get(:title_per_host_interval_seconds, 0) |> normalize_int(0) |> max(0)
 
-    fetch_fun = Keyword.get(opts, :title_fetch_fun, &SafeFetch.fetch_url/2)
+    fetch_fun = Keyword.get(opts, :title_fetch_fun, &SafeFetch.fetch_metadata/2)
 
     {documents, stats, _seen_hosts, _remaining} =
       Enum.reduce(

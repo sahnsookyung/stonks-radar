@@ -13,12 +13,32 @@ defmodule StonksBackend.Snapshots do
   @default_publish_max_bytes 2_000_000_000
   @prohibited_public_fields [
     "api_key",
+    "api_key_name",
+    "article_body",
+    "body_text",
+    "credential_status",
+    "db_id",
+    "document_id",
+    "environment_variable",
+    "full_text",
+    "fact_id",
     "full_article_text",
+    "html",
+    "internal_id",
+    "llm_prompt",
     "private_note",
+    "prompt",
     "prompt_text",
+    "provider_budget",
+    "provider_internal",
+    "provider_status",
+    "quota_state",
     "raw_html",
+    "raw_payload",
+    "raw_response",
     "restricted_source_text",
-    "secret"
+    "secret",
+    "source_document_id"
   ]
   @public_placeholder_guard_keys [
     "catalyst_type",
@@ -204,6 +224,7 @@ defmodule StonksBackend.Snapshots do
       {:ok,
        snapshot
        |> Map.put("snapshot_version", context.version)
+       |> Map.put_new("min_reader_version", "1.0")
        |> Map.put("generated_at", iso8601(context.generated_at))
        |> Map.put("stale_after", iso8601(context.stale_after))
        |> Map.put("hard_expires_at", iso8601(context.hard_expires_at))
@@ -354,11 +375,13 @@ defmodule StonksBackend.Snapshots do
   defp enrich_home_news_data(data, generated_at) do
     data
     |> update_event_collection("breaking_market_events", "breaking_latest", generated_at, false)
+    |> update_alternative_signal_window("breaking_market_news", "breaking_latest", generated_at)
     |> update_in(["breaking_market_map"], fn map ->
       map
       |> ensure_map()
       |> update_event_collection("events", "breaking_latest", generated_at, false)
-      |> update_event_collection("map_points", "breaking_latest", generated_at, false)
+      |> filter_map_points_for_allowed_events(generated_at)
+      |> sanitize_regional_briefs(generated_at)
       |> refresh_breaking_market_map_counts()
     end)
   end
@@ -371,7 +394,8 @@ defmodule StonksBackend.Snapshots do
       map
       |> ensure_map()
       |> update_event_collection("events", "breaking_latest", generated_at, false)
-      |> update_event_collection("map_points", "breaking_latest", generated_at, false)
+      |> filter_map_points_for_allowed_events(generated_at)
+      |> sanitize_regional_briefs(generated_at)
       |> refresh_breaking_market_map_counts()
     end)
   end
@@ -390,6 +414,23 @@ defmodule StonksBackend.Snapshots do
     end
   end
 
+  defp update_alternative_signal_window(data, signal_key, window_kind, generated_at) do
+    update_in(data, ["alternative_signals"], fn signals ->
+      signals
+      |> List.wrap()
+      |> Enum.filter(&is_map/1)
+      |> Enum.map(fn
+        %{"key" => ^signal_key} = signal ->
+          update_in(signal, ["items"], fn items ->
+            filter_news_items_by_window(items, window_kind, generated_at)
+          end)
+
+        signal ->
+          signal
+      end)
+    end)
+  end
+
   defp refresh_breaking_market_map_counts(map) do
     mapped_count =
       map
@@ -400,6 +441,65 @@ defmodule StonksBackend.Snapshots do
     map
     |> maybe_put_existing("shown_count", mapped_count)
     |> maybe_put_existing("total_count", mapped_count)
+  end
+
+  defp sanitize_regional_briefs(map, generated_at) do
+    update_in(map, ["regional_briefs"], fn briefs ->
+      briefs
+      |> List.wrap()
+      |> Enum.filter(&is_map/1)
+      |> Enum.map(&sanitize_regional_brief(&1, generated_at))
+    end)
+  end
+
+  defp sanitize_regional_brief(brief, generated_at) do
+    evidence =
+      brief
+      |> Map.get("evidence", [])
+      |> List.wrap()
+      |> Enum.filter(&is_map/1)
+      |> Enum.sort_by(&regional_brief_evidence_sort_key/1)
+
+    event_count = length(evidence)
+    label = brief["label"] || brief["region_key"] || "Region"
+
+    coverage_days =
+      to_int(brief["coverage_window_days"], Settings.get(:news_analysis_window_days, 7))
+
+    brief
+    |> Map.put("event_count", event_count)
+    |> Map.put("source_count", event_count)
+    |> Map.put("coverage_window_days", max(1, coverage_days))
+    |> Map.put("generated_at", iso8601(generated_at))
+    |> Map.put("evidence", evidence)
+    |> Map.put("summary", regional_brief_summary(label, event_count, coverage_days))
+  end
+
+  defp regional_brief_evidence_sort_key(item) do
+    observed_at =
+      [
+        item["source_published_at"],
+        item["published_at"],
+        item["observed_at"],
+        item["updated_at"]
+      ]
+      |> Enum.find_value(&parse_iso8601_datetime/1)
+
+    timestamp =
+      case observed_at do
+        %DateTime{} = datetime -> -DateTime.to_unix(datetime)
+        _ -> 0
+      end
+
+    {timestamp, to_string(item["title"] || ""), to_string(item["event_id"] || item["id"] || "")}
+  end
+
+  defp regional_brief_summary(label, 0, coverage_days) do
+    "#{label} has no source-linked items in the #{coverage_days}-day metadata window."
+  end
+
+  defp regional_brief_summary(label, item_count, coverage_days) do
+    "#{label} has #{item_count} source-linked item(s) in the #{coverage_days}-day metadata window."
   end
 
   defp maybe_enrich_news_items(items, true), do: Enum.map(items, &enrich_news_item/1)
@@ -498,15 +598,89 @@ defmodule StonksBackend.Snapshots do
   defp news_window_label("search_archive"), do: "#{Settings.get(:news_search_window_days, 30)}d"
 
   defp filter_news_items(items, window_kind, generated_at) do
+    items
+    |> filter_news_items_by_window(window_kind, generated_at)
+    |> Enum.filter(&news_item_allowed_on_surface?(&1, window_kind))
+  end
+
+  defp filter_news_items_by_window(items, window_kind, generated_at) do
     hours = news_window_hours(window_kind)
     cutoff = DateTime.add(generated_at, -hours, :hour)
 
     Enum.filter(items, fn item ->
-      case news_item_datetime(item) do
-        nil -> true
-        observed_at -> DateTime.compare(observed_at, cutoff) != :lt
-      end
+      is_map(item) and news_item_within_window?(item, cutoff)
     end)
+  end
+
+  defp news_item_within_window?(item, cutoff) do
+    case news_item_datetime(item) do
+      nil -> true
+      observed_at -> DateTime.compare(observed_at, cutoff) != :lt
+    end
+  end
+
+  defp news_item_allowed_on_surface?(item, "breaking_latest") do
+    item_kind = item["item_kind"]
+    claim_level = item["claim_level"]
+
+    cond do
+      truthy?(item["discovery_only"]) ->
+        false
+
+      claim_level in ["source_only", "unverified"] ->
+        false
+
+      item_kind == "source_discovery" ->
+        false
+
+      claim_level in ["clustered_candidate", "reviewed", "published"] ->
+        true
+
+      item_kind in ["event_candidate", "reviewed_event", "official_update", "filing_update"] ->
+        true
+
+      item["review_state"] in ["approved", "reviewed", "published"] ->
+        true
+
+      is_nil(item_kind) and is_nil(claim_level) ->
+        false
+
+      true ->
+        false
+    end
+  end
+
+  defp news_item_allowed_on_surface?(_item, _window_kind), do: true
+
+  defp filter_map_points_for_allowed_events(map, generated_at) do
+    allowed_event_ids =
+      map
+      |> Map.get("events", [])
+      |> List.wrap()
+      |> Enum.flat_map(fn event -> [event["event_id"], event["id"]] end)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.map(&to_string/1)
+      |> MapSet.new()
+
+    cutoff = DateTime.add(generated_at, -news_window_hours("breaking_latest"), :hour)
+
+    update_in(map, ["map_points"], fn points ->
+      points
+      |> List.wrap()
+      |> Enum.filter(&is_map/1)
+      |> Enum.filter(fn point ->
+        map_point_allowed?(point, allowed_event_ids) and news_item_within_window?(point, cutoff)
+      end)
+    end)
+  end
+
+  defp map_point_allowed?(point, allowed_event_ids) do
+    event_ids =
+      [point["event_id"] | List.wrap(point["event_ids"])]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.map(&to_string/1)
+
+    event_ids != [] and Enum.any?(event_ids, &MapSet.member?(allowed_event_ids, &1))
   end
 
   defp news_window_hours("breaking_latest") do
@@ -535,6 +709,7 @@ defmodule StonksBackend.Snapshots do
       item["observed_at"],
       item["source_published_at"],
       item["published_at"],
+      item["updated_at"],
       item["first_seen_at"]
     ]
     |> Enum.find_value(&parse_iso8601_datetime/1)
@@ -560,11 +735,13 @@ defmodule StonksBackend.Snapshots do
       "summary",
       "This is a source-linked watch item built from Rocket Lab IR and SEC links; it is not a verified launch-window event."
     )
+    |> put_source_link_evidence_ids()
     |> put_news_claim_defaults("source_discovery", "source_only", "weak_match")
   end
 
   defp enrich_news_item(item) when is_map(item) do
     item
+    |> put_source_link_evidence_ids()
     |> put_news_claim_defaults(
       infer_news_item_kind(item),
       infer_news_claim_level(item),
@@ -573,6 +750,36 @@ defmodule StonksBackend.Snapshots do
   end
 
   defp enrich_news_item(other), do: other
+
+  defp put_source_link_evidence_ids(item) do
+    update_in(item, ["source_links"], fn
+      links when is_list(links) ->
+        Enum.map(links, &put_source_link_evidence_id/1)
+
+      other ->
+        other
+    end)
+  end
+
+  defp put_source_link_evidence_id(%{} = link) do
+    Map.put_new(link, "evidence_id", public_evidence_id(link))
+  end
+
+  defp put_source_link_evidence_id(link), do: link
+
+  defp public_evidence_id(link) do
+    seed =
+      [
+        link["source_key"],
+        link["url"],
+        link["title"],
+        link["published_at"]
+      ]
+      |> Enum.map(&to_string/1)
+      |> Enum.join("|")
+
+    "doc_" <> (sha256(seed) |> String.slice(0, 24))
+  end
 
   defp put_news_claim_defaults(item, item_kind, claim_level, evidence_match_status) do
     item
@@ -884,7 +1091,7 @@ defmodule StonksBackend.Snapshots do
         snapshot_version, manifest_json, storage_object_key, content_hash,
         byte_size, generated_at, publication_status, generated_by
       )
-      values ($1, cast($2 as jsonb), $3, $4, $5, cast($6 as timestamptz), $7, $8)
+      values ($1, $2::text::jsonb, $3, $4, $5, $6::text::timestamptz, $7, $8)
       on conflict (snapshot_version) do update
       set manifest_json = excluded.manifest_json,
           storage_object_key = excluded.storage_object_key,
@@ -922,8 +1129,8 @@ defmodule StonksBackend.Snapshots do
             hard_expires_at, source_policy_versions, publication_status, generated_by
           )
           values (
-            $1, $2, $3, $4, $5, $6, $7, $8, cast($9 as timestamptz),
-            cast($10 as timestamptz), cast($11 as timestamptz), cast($12 as jsonb), $13, $14
+            $1, $2, $3, $4, $5, $6, $7, $8, $9::text::timestamptz,
+            $10::text::timestamptz, $11::text::timestamptz, $12::text::jsonb, $13, $14
           )
           on conflict (snapshot_version, locale, object_type, object_key)
           do update set publication_status = excluded.publication_status,
@@ -1394,6 +1601,17 @@ defmodule StonksBackend.Snapshots do
         end
       end)
 
+    result =
+      with {:ok, state} <- result do
+        remove_obsolete_destination_files(
+          files,
+          source_root,
+          destination_root,
+          rollback_root,
+          state
+        )
+      end
+
     case result do
       {:ok, _state} ->
         File.rm_rf!(rollback_root)
@@ -1403,6 +1621,47 @@ defmodule StonksBackend.Snapshots do
         restore_published_files!(state, rollback_root, destination_root)
         File.rm_rf!(rollback_root)
         {:error, reason}
+    end
+  end
+
+  defp remove_obsolete_destination_files(
+         files,
+         source_root,
+         destination_root,
+         rollback_root,
+         state
+       ) do
+    source_relatives =
+      files
+      |> Enum.map(&Path.relative_to(&1, source_root))
+      |> MapSet.new()
+
+    with {:ok, destination_files} <- all_files(destination_root) do
+      Enum.reduce_while(destination_files, {:ok, state}, fn destination, {:ok, state} ->
+        relative = Path.relative_to(destination, destination_root)
+
+        if MapSet.member?(source_relatives, relative) do
+          {:cont, {:ok, state}}
+        else
+          case remove_obsolete_destination_file(destination, relative, rollback_root, state) do
+            {:ok, state} -> {:cont, {:ok, state}}
+            {:error, reason, state} -> {:halt, {:error, reason, state}}
+          end
+        end
+      end)
+    else
+      {:error, reason} -> {:error, reason, state}
+    end
+  end
+
+  defp remove_obsolete_destination_file(destination, relative, rollback_root, state) do
+    with {:ok, state} <- backup_destination(destination, relative, rollback_root, state),
+         :ok <- File.rm(destination) do
+      {:ok, state}
+    else
+      {:error, reason} ->
+        {:error, "Could not remove obsolete snapshot file #{destination}: #{inspect(reason)}",
+         state}
     end
   end
 
@@ -1584,6 +1843,11 @@ defmodule StonksBackend.Snapshots do
     |> Base.url_encode64(padding: false)
   end
 
+  defp sha256(value) do
+    :crypto.hash(:sha256, to_string(value))
+    |> Base.url_encode64(padding: false)
+  end
+
   defp snapshot_recordable?(snapshot) do
     Enum.all?(["locale", "object_type", "object_key", "schema_version", "generated_at"], fn key ->
       is_binary(snapshot[key]) and snapshot[key] != ""
@@ -1651,6 +1915,12 @@ defmodule StonksBackend.Snapshots do
     |> replace_public_text(~r/\bThe seed event demonstrates\b/i, "This source-linked item shows")
     |> replace_public_text(~r/\bseed event\b/i, "source-linked item")
     |> replace_public_text(~r/\bSource policy seed\b/i, "Source policy")
+    |> replace_public_text(
+      ~r/\bapproved,\s*source-linked news event\(s\)/i,
+      "source-linked item(s)"
+    )
+    |> replace_public_text(~r/\bsource-linked news event\(s\)/i, "source-linked item(s)")
+    |> replace_public_text(~r/\bsource-linked news events\b/i, "source-linked items")
     |> String.replace("reviewed_structured_seed", "reviewed_structured")
     |> String.replace("official_calendar_seed", "official_calendar")
     |> String.replace("unrelated fallback events", "unrelated substitute items")
@@ -1692,9 +1962,10 @@ defmodule StonksBackend.Snapshots do
 
   defp placeholder_display_text?(value) do
     Regex.match?(
-      ~r/\b(seed snapshot|current seed snapshot|seed event|Source policy seed)\b|reviewed_structured_seed|official_calendar_seed/i,
+      ~r/\b(seed snapshot|current seed snapshot|seed event|Source policy seed|GDELT event|GDELT GKG)\b|reviewed_structured_seed|official_calendar_seed/i,
       value
-    )
+    ) or
+      Regex.match?(~r/\bsource-linked news event(?:\(s\)|s)?\b/i, value)
   end
 
   defp placeholder_guard_key?(key), do: key_string(key) in @public_placeholder_guard_keys

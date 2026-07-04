@@ -35,6 +35,36 @@ defmodule StonksBackend.NewsPipelineTest do
            end)
   end
 
+  test "classify_document derives watched-region matches from the registry" do
+    result =
+      Pipeline.classify_document(%{
+        "source_key" => "gdelt",
+        "title" => "Germany and Canada energy ministers discuss LNG supply chain resilience",
+        "snippet" =>
+          "Berlin and Ottawa officials said the talks covered critical infrastructure.",
+        "url" => "https://example.com/germany-canada-energy",
+        "published_at" => "2026-07-01T12:00:00Z"
+      })
+
+    assert Enum.any?(result.regions, &(&1.key == "DEU"))
+    assert Enum.any?(result.regions, &(&1.key == "CAN"))
+    assert Enum.all?(result.regions, &(&1.key != ""))
+  end
+
+  test "classify_document uses registry supplement terms for region matching" do
+    result =
+      Pipeline.classify_document(%{
+        "source_key" => "gdelt",
+        "title" => "Bank of Japan and Norges Bank signal rate caution",
+        "snippet" => "Central bank updates affect duration-sensitive markets.",
+        "url" => "https://example.com/boj-norges-bank",
+        "published_at" => "2026-07-01T12:00:00Z"
+      })
+
+    assert Enum.any?(result.regions, &(&1.key == "JPN"))
+    assert Enum.any?(result.regions, &(&1.key == "NOR"))
+  end
+
   test "cluster_documents groups related event metadata by entity region topic and date" do
     documents = [
       %{
@@ -75,5 +105,30 @@ defmodule StonksBackend.NewsPipelineTest do
              topic_severity_score: 70,
              cross_region_impact_score: 30
            }) in 0..100
+  end
+
+  test "independent source counting does not inflate syndicated duplicates" do
+    rows = [
+      %{
+        "id" => "doc-a",
+        "publisher" => "example.com",
+        "canonical_url" => "https://example.com/markets/a",
+        "metadata" => %{"source_key" => "gdelt"}
+      },
+      %{
+        "id" => "doc-b",
+        "publisher" => "example.com",
+        "canonical_url" => "https://example.com/markets/b",
+        "metadata" => %{"source_key" => "google_news_RKLB"}
+      },
+      %{
+        "id" => "doc-c",
+        "publisher" => nil,
+        "canonical_url" => "https://official.rocketlabusa.com/news/acquisition",
+        "metadata" => %{"source_key" => "rocket_lab_ir"}
+      }
+    ]
+
+    assert Pipeline.independent_source_count(rows) == 2
   end
 end

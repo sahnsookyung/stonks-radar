@@ -11,6 +11,7 @@ defmodule StonksBackend.Jobs.Scheduler do
     leading_specs =
       snapshot_refresh_job_specs(opts) ++
         market_history_job_specs(opts) ++
+        yield_curve_history_job_specs(opts) ++
         instrument_search_index_job_specs(opts) ++
         shorts_job_specs(opts) ++
         news_fetch_job_specs(opts)
@@ -253,6 +254,32 @@ defmodule StonksBackend.Jobs.Scheduler do
           priority: 85,
           provider_key: "instrument_universe",
           run_after: DateTime.add(window_start, offset, :second)
+        }
+      ]
+    else
+      []
+    end
+  end
+
+  def yield_curve_history_job_specs(opts \\ []) do
+    settings = Keyword.get(opts, :settings)
+
+    if scheduler_enabled?(settings) and
+         truthy_setting?(settings, :yield_curve_history_enabled, true) do
+      timestamp = DateTime.to_unix(now(opts))
+      window = div(timestamp, 86_400)
+      window_start = DateTime.from_unix!(window * 86_400)
+      history_months = int_setting(settings, :yield_curve_history_months, 24)
+
+      [
+        %{
+          job_type: "yield_curves.refresh_history",
+          idempotency_key: "yield-curves:history:#{window}",
+          payload: %{"history_months" => history_months},
+          job_group: "market_data",
+          priority: 55,
+          provider_key: "yield_curves",
+          run_after: DateTime.add(window_start, stable_offset("yield-curves", 3_600), :second)
         }
       ]
     else

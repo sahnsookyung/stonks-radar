@@ -7,7 +7,7 @@ defmodule StonksBackend.YieldCurves do
 
   require Logger
 
-  alias StonksBackend.Settings
+  alias StonksBackend.{Settings, Sql}
 
   @default_history_months 24
   @default_timeout 15_000
@@ -69,8 +69,9 @@ defmodule StonksBackend.YieldCurves do
   ]
 
   @doc """
-  Replaces yield curve macro-tile points with monthly samples from official daily
-  feeds. Existing tiles are preserved when an upstream feed is unavailable.
+  Replaces yield curve macro-tile points with monthly samples from cached
+  official observations. Feed collection is explicit so snapshot publication does
+  not perform external network I/O.
   """
   def enrich_home_snapshot_data(data, opts \\ [])
 
@@ -79,10 +80,7 @@ defmodule StonksBackend.YieldCurves do
       today = Keyword.get(opts, :today, Date.utc_today())
       history_months = history_months(opts)
 
-      histories =
-        []
-        |> maybe_merge_histories(fetch_us_rows(today, opts), today, history_months)
-        |> maybe_merge_histories(fetch_japan_rows(opts), today, history_months)
+      histories = histories_for_snapshot(today, history_months, opts)
 
       {:ok, merge_macro_tiles(data, histories, today)}
     else
@@ -95,6 +93,42 @@ defmodule StonksBackend.YieldCurves do
   end
 
   def enrich_home_snapshot_data(data, _opts), do: {:ok, data}
+
+  def refresh_history(payload \\ %{}, opts \\ []) do
+    if enabled?(opts) do
+      today = payload |> Map.get("today") |> parse_date(Date.utc_today())
+
+      history_months =
+        payload |> Map.get("history_months") |> parse_positive_int(history_months(opts))
+
+      histories = fetch_official_histories(today, history_months, opts)
+      observations = history_observations(histories)
+
+      if truthy?(payload["dry_run"] || payload[:dry_run]) do
+        {:ok,
+         %{
+           status: "dry_run",
+           observations: length(observations),
+           countries: observations |> Enum.map(& &1.country) |> Enum.uniq() |> length(),
+           history_months: history_months,
+           would_persist: false
+         }}
+      else
+        persisted = persist_observations(observations)
+
+        {:ok,
+         %{
+           status: if(observations == [], do: "degraded", else: "ready"),
+           observations: length(observations),
+           persisted: persisted,
+           history_months: history_months,
+           source_policy_version: 1
+         }}
+      end
+    else
+      {:ok, %{status: "disabled", observations: 0, persisted: 0}}
+    end
+  end
 
   defp enabled?(opts) do
     Keyword.get_lazy(opts, :enabled, fn ->
@@ -111,6 +145,22 @@ defmodule StonksBackend.YieldCurves do
   end
 
   defp request_fun(opts), do: Keyword.get(opts, :request_fun, &Req.get/2)
+
+  defp fetch_during_enrichment?(opts), do: Keyword.get(opts, :fetch, false) == true
+
+  defp histories_for_snapshot(today, history_months, opts) do
+    if fetch_during_enrichment?(opts) do
+      fetch_official_histories(today, history_months, opts)
+    else
+      cached_histories(today, history_months)
+    end
+  end
+
+  defp fetch_official_histories(today, history_months, opts) do
+    []
+    |> maybe_merge_histories(fetch_us_rows(today, opts), today, history_months)
+    |> maybe_merge_histories(fetch_japan_rows(opts), today, history_months)
+  end
 
   defp timeout(opts) do
     opts
@@ -174,7 +224,7 @@ defmodule StonksBackend.YieldCurves do
   end
 
   defp maybe_merge_histories(histories, {:error, reason}, _today, _history_months) do
-    Logger.warning("Skipping yield curve feed during snapshot enrichment: #{reason}")
+    Logger.warning("Skipping yield curve feed during collection: #{reason}")
     histories
   end
 
@@ -282,6 +332,130 @@ defmodule StonksBackend.YieldCurves do
     Map.put(data, "macro_tiles", tiles)
   end
 
+  defp cached_histories(today, history_months) do
+    rows =
+      Sql.all(
+        """
+        select object_json
+        from source_fact
+        where fact_type = 'yield_curve_observation'
+          and public_allowed = true
+          and review_status in ('approved', 'owner_approved', 'editor_approved')
+        order by object_json->>'as_of_date' asc
+        """,
+        []
+      )
+      |> Enum.map(& &1["object_json"])
+      |> Enum.filter(&is_map/1)
+
+    cutoff = Date.add(today, -40 * (history_months + 2))
+
+    rows
+    |> Enum.group_by(& &1["series_key"])
+    |> Enum.flat_map(fn {series_key, values} ->
+      with term when is_map(term) <- Enum.find(@terms, &(&1.key == series_key)) do
+        points =
+          values
+          |> Enum.flat_map(&cached_point/1)
+          |> Enum.reject(fn point ->
+            case Date.from_iso8601(point["date"]) do
+              {:ok, date} -> Date.compare(date, cutoff) == :lt
+              _ -> true
+            end
+          end)
+          |> latest_cached_point_per_month()
+          |> Enum.take(-history_months)
+
+        if points == [], do: [], else: [{series_key, %{term: term, points: points}}]
+      else
+        _ -> []
+      end
+    end)
+  rescue
+    _ -> []
+  end
+
+  defp cached_point(%{"as_of_date" => date, "value" => value}) do
+    case parse_float(value) do
+      nil -> []
+      parsed -> [%{"date" => date, "value" => Float.round(parsed, 3)}]
+    end
+  end
+
+  defp cached_point(_), do: []
+
+  defp latest_cached_point_per_month(points) do
+    points
+    |> Enum.group_by(fn point ->
+      point["date"]
+      |> Date.from_iso8601()
+      |> case do
+        {:ok, date} -> month_key(date)
+        _ -> ""
+      end
+    end)
+    |> Enum.reject(fn {month, _points} -> month == "" end)
+    |> Enum.map(fn {_month, month_points} -> Enum.max_by(month_points, & &1["date"]) end)
+    |> Enum.sort_by(& &1["date"])
+  end
+
+  defp history_observations(histories) do
+    histories
+    |> Enum.flat_map(fn {_key, %{term: term, points: points}} ->
+      Enum.map(points, fn point ->
+        %{
+          country: country_for_term(term),
+          tenor: tenor_for_term(term),
+          series_key: term.key,
+          label: term.label,
+          value: point["value"],
+          unit: "%",
+          as_of_date: point["date"],
+          source: term.source,
+          source_url: term.source_url,
+          adjustment_policy: "official_unadjusted",
+          ingestion_run_id: ingestion_run_id(),
+          release_id: release_id(),
+          source_policy_version: 1
+        }
+      end)
+    end)
+  end
+
+  defp persist_observations(observations) do
+    Enum.count(observations, &persist_observation/1)
+  end
+
+  defp persist_observation(observation) do
+    Sql.execute(
+      """
+      insert into source_fact(
+        fact_type, predicate, object_json, time_reference, confidence,
+        extraction_source, review_status, public_allowed, dedupe_key
+      )
+      values (
+        'yield_curve_observation', 'reports', $1::text::jsonb, $2::text::jsonb, 0.95,
+        'rule', 'approved', true, $3
+      )
+      on conflict (dedupe_key) where dedupe_key is not null do update set
+        object_json = excluded.object_json,
+        time_reference = excluded.time_reference,
+        confidence = excluded.confidence,
+        review_status = excluded.review_status,
+        public_allowed = excluded.public_allowed
+      """,
+      [
+        Jason.encode!(observation),
+        Jason.encode!(%{"as_of_date" => observation.as_of_date}),
+        "yield_curve:#{observation.series_key}:#{observation.as_of_date}"
+      ]
+    )
+
+    true
+  rescue
+    _ -> false
+  end
+
   defp upsert_yield_tile(tile, %{term: term, points: points}, today) do
     latest = List.last(points)
     previous = Enum.at(points, -2)
@@ -379,6 +553,50 @@ defmodule StonksBackend.YieldCurves do
     |> Enum.reject(fn {_key, value} -> is_nil(value) end)
     |> Map.new()
   end
+
+  defp country_for_term(%{key: key}) do
+    case to_string(key) do
+      "us_" <> _ -> "USA"
+      "japan_" <> _ -> "JPN"
+      _ -> "GLOBAL"
+    end
+  end
+
+  defp tenor_for_term(%{key: key}) do
+    key
+    |> to_string()
+    |> String.split("_", trim: true)
+    |> List.last()
+    |> to_string()
+    |> String.upcase()
+  end
+
+  defp ingestion_run_id do
+    timestamp = DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.to_iso8601()
+    "ingestion:yield_curves:#{timestamp}:#{System.unique_integer([:positive])}"
+  end
+
+  defp release_id do
+    Settings.get(:release_id) ||
+      System.get_env("STONKS_RELEASE_ID") ||
+      System.get_env("GITHUB_SHA") ||
+      "local"
+  end
+
+  defp truthy?(value) when is_binary(value),
+    do: value |> String.downcase() |> String.trim() |> Kernel.in(["1", "true", "yes", "on"])
+
+  defp truthy?(value), do: value in [true, 1]
+
+  defp parse_date(value, default) when is_binary(value) do
+    case Date.from_iso8601(value) do
+      {:ok, date} -> date
+      _ -> default
+    end
+  end
+
+  defp parse_date(%Date{} = date, _default), do: date
+  defp parse_date(_value, default), do: default
 
   defp parse_positive_int(value, _default) when is_integer(value) and value > 0, do: value
 

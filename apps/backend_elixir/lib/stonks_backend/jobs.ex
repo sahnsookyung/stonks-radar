@@ -3,7 +3,7 @@ defmodule StonksBackend.Jobs do
 
   alias StonksBackend.Jobs.{LegacyQueue, RuntimeLock}
   alias StonksBackend.Jobs.Workers.GenericWorker
-  alias StonksBackend.Sql
+  alias StonksBackend.{ReleaseControls, Sql}
 
   @legacy_uuid_re ~r/\A[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i
   @allowed_queues ~w(snapshots market_data news instruments disclosures maintenance default)
@@ -139,6 +139,7 @@ defmodule StonksBackend.Jobs do
     %{
       "job_type" => job_type,
       "payload" => payload,
+      "payload_version" => ReleaseControls.payload_version(),
       "idempotency_key" => idempotency_key,
       "job_group" => queue,
       "priority" => priority

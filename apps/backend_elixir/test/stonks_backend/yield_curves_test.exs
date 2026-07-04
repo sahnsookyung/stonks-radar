@@ -30,6 +30,7 @@ defmodule StonksBackend.YieldCurvesTest do
     assert {:ok, enriched} =
              YieldCurves.enrich_home_snapshot_data(data,
                enabled: true,
+               fetch: true,
                history_months: 24,
                request_fun: request_fun,
                today: ~D[2026-07-02],
@@ -51,6 +52,48 @@ defmodule StonksBackend.YieldCurvesTest do
     assert is_number(us_10y["refresh_delta"])
   end
 
+  test "snapshot enrichment is cached-only by default and does not fetch official feeds" do
+    request_fun = fn _url, _opts -> flunk("snapshot enrichment must not fetch external feeds") end
+    data = %{"macro_tiles" => [base_tile("us_10y", "4.04")]}
+
+    assert {:ok, enriched} =
+             YieldCurves.enrich_home_snapshot_data(data,
+               enabled: true,
+               request_fun: request_fun,
+               today: ~D[2026-07-02],
+               timeout: 1
+             )
+
+    assert enriched == data
+  end
+
+  test "history refresh can dry-run the official observation collector" do
+    request_fun = fn
+      "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml",
+      opts ->
+        year = opts |> Keyword.fetch!(:params) |> Keyword.fetch!(:field_tdr_date_value)
+        {:ok, %{status: 200, body: us_xml_for_year(year)}}
+
+      "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/historical/jgbcme_all.csv",
+      _opts ->
+        {:ok, %{status: 200, body: japan_csv()}}
+    end
+
+    assert {:ok, result} =
+             YieldCurves.refresh_history(
+               %{"dry_run" => true, "today" => "2026-07-02", "history_months" => 24},
+               enabled: true,
+               request_fun: request_fun,
+               timeout: 1
+             )
+
+    assert result.status == "dry_run"
+    assert result.would_persist == false
+    assert result.history_months == 24
+    assert result.countries == 2
+    assert result.observations == 168
+  end
+
   test "keeps existing tiles when an official feed fails" do
     request_fun = fn _url, _opts -> {:ok, %{status: 503, body: ""}} end
     data = %{"macro_tiles" => [base_tile("us_10y", "4.04")]}
@@ -58,6 +101,7 @@ defmodule StonksBackend.YieldCurvesTest do
     assert {:ok, enriched} =
              YieldCurves.enrich_home_snapshot_data(data,
                enabled: true,
+               fetch: true,
                request_fun: request_fun,
                today: ~D[2026-07-02],
                timeout: 1

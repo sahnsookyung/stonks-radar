@@ -1,0 +1,117 @@
+defmodule StonksBackend.ReleaseControlsTest do
+  use ExUnit.Case, async: true
+
+  alias StonksBackend.ReleaseControls
+
+  test "runtime switches expose every rollback kill switch" do
+    switches =
+      ReleaseControls.runtime_switches(
+        settings: [
+          worker_scheduler_enabled: true,
+          news_gdelt_enabled: false,
+          gdelt_runtime_fetch_enabled: false,
+          news_pipeline_runtime_enabled: true,
+          market_data_scheduled_refresh_enabled: true,
+          yield_curve_history_enabled: true,
+          shorts_ingestion_enabled: false
+        ]
+      )
+
+    keys = MapSet.new(switches, & &1.key)
+
+    assert MapSet.subset?(
+             MapSet.new([
+               "worker_scheduler_enabled",
+               "news_gdelt_enabled",
+               "gdelt_runtime_fetch_enabled",
+               "news_pipeline_runtime_enabled",
+               "market_data_scheduled_refresh_enabled",
+               "yield_curve_history_enabled",
+               "shorts_ingestion_enabled"
+             ]),
+             keys
+           )
+
+    assert Enum.all?(switches, &(&1.rollback_value == "false"))
+  end
+
+  test "canary evaluation blocks unsafe dead jobs and warns on stale metrics" do
+    summary =
+      ReleaseControls.evaluate_canary(
+        %{
+          queue_depth: 12,
+          max_queue_age_seconds: 30,
+          unsafe_dead_jobs: 1,
+          provider_failure_rate_24h: 0.4,
+          failed_sources: 0,
+          snapshot_age_seconds: 10_000,
+          public_p95_ms: 900,
+          manifest_hash: "hash",
+          disk_watermark: "info"
+        },
+        %{
+          queue_depth: 100,
+          queue_age_seconds: 900,
+          unsafe_dead_jobs: 0,
+          provider_failure_rate: 0.25,
+          failed_sources: 0,
+          snapshot_age_seconds: 7_200,
+          public_p95_ms: 2_500
+        }
+      )
+
+    assert summary.status == "blocked"
+
+    by_key = Map.new(summary.checks, &{&1.key, &1})
+    assert by_key["unsafe_dead_jobs"].status == "blocked"
+    assert by_key["provider_failure_rate_24h"].status == "warning"
+    assert by_key["snapshot_age_seconds"].status == "warning"
+  end
+
+  test "source funnel totals reconcile direct and nested discovery counters" do
+    summary =
+      ReleaseControls.source_funnel_totals([
+        %{
+          "source_key" => "gdelt",
+          "status" => "ready",
+          "details" => %{"discovery" => %{"fetched" => 10, "deduped" => 7, "published" => 2}}
+        },
+        %{
+          "source_key" => "rss",
+          "status" => "ready",
+          "details" => Jason.encode!(%{"fetched" => 3, "parsed" => 2, "blocked_or_denied" => 1})
+        },
+        %{
+          "source_key" => "news_pipeline:classified",
+          "status" => "ready",
+          "details" => %{"discovery" => %{"classified" => 4, "clustered" => 2}}
+        }
+      ])
+
+    assert summary.totals["fetched"] == 13
+    assert summary.totals["deduped"] == 7
+    assert summary.totals["published"] == 2
+    assert summary.totals["classified"] == 4
+    assert summary.totals["clustered"] == 2
+    assert summary.totals["blocked_or_denied"] == 1
+  end
+
+  test "provenance summary uses the current release id and disables local quarantine" do
+    scalar_fun = fn sql, [release_id], default ->
+      cond do
+        sql =~ "source_document" and release_id == "local" -> 2
+        sql =~ "source_fact" and release_id == "local" -> 3
+        sql =~ "market_price_bar" and release_id == "local" -> 5
+        true -> default
+      end
+    end
+
+    summary = ReleaseControls.provenance_summary("local", scalar_fun: scalar_fun)
+
+    assert summary.source_documents == 2
+    assert summary.source_facts == 3
+    assert summary.market_bars == 5
+    refute summary.quarantine_available
+    assert ReleaseControls.quarantine_by_provenance("local") == {:error, :release_id_required}
+  end
+end
