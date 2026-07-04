@@ -3,6 +3,7 @@ defmodule StonksBackend.Repo.Migrations.AddDataReliabilityRolloutIndexes do
   require Logger
 
   @disable_ddl_transaction true
+  @runtime_index_timeout 45_000
 
   def up do
     execute """
@@ -89,11 +90,7 @@ defmodule StonksBackend.Repo.Migrations.AddDataReliabilityRolloutIndexes do
     sql = maybe_disable_concurrently_for_test(sql)
 
     try do
-      repo().checkout(fn ->
-        repo().query!("set lock_timeout = '30s'", [], timeout: :infinity)
-        repo().query!("set statement_timeout = '30min'", [], timeout: :infinity)
-        repo().query!(sql, [], timeout: :infinity)
-      end)
+      repo().query!(sql, [], timeout: @runtime_index_timeout)
     rescue
       error in Postgrex.Error ->
         if lock_not_available?(error) do
@@ -103,6 +100,11 @@ defmodule StonksBackend.Repo.Migrations.AddDataReliabilityRolloutIndexes do
         else
           reraise error, __STACKTRACE__
         end
+
+      error in DBConnection.ConnectionError ->
+        Logger.warning(
+          "Skipping rollout index because the DB connection timed out: #{index_name(sql)} (#{Exception.message(error)})"
+        )
     end
   end
 
