@@ -516,14 +516,19 @@ jobs:
         env:
           STONKS_HOST: ${{ secrets.STONKS_HOST }}
           STONKS_USER: ${{ secrets.STONKS_USER }}
+          STONKS_DEPLOY_MODE: ${{ inputs.mode }}
+          STONKS_API_IMAGE: ghcr.io/${{ github.repository_owner }}/stonks-radar-api-elixir:${{ inputs.api_image_ref != '' && inputs.api_image_ref || github.sha }}
         run: |
           set -euo pipefail
           start="$(date +%s)"
           SSH_OPTS=(-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes)
           ssh "${SSH_OPTS[@]}" -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" \
-            'bash -s' <<'REMOTE'
+            "STONKS_DEPLOY_MODE='$STONKS_DEPLOY_MODE' STONKS_API_IMAGE='$STONKS_API_IMAGE' bash -s" <<'REMOTE'
           set -euo pipefail
           cd /opt/stonks-radar
+          if [[ "${STONKS_DEPLOY_MODE:-fast}" == "fast" ]]; then
+            export API_ELIXIR_IMAGE="$STONKS_API_IMAGE"
+          fi
           if ! docker run --rm -v stonks-radar_published-snapshots:/dest:ro alpine:3.24 test -s /dest/latest/manifest.json; then
             echo "Snapshot volume is empty; seeding static public snapshots before Elixir refresh"
             docker run --rm \
