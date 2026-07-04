@@ -76,6 +76,11 @@ defmodule StonksBackendWeb.ContractOpsTest do
 
     assert deploy_workflow =~ "StonksBackend.Release.migrate()"
     assert deploy_workflow =~ "stonks-radar_published-snapshots"
+    assert deploy_workflow =~ "/tmp/stonks-origin-manifest.json"
+    assert deploy_workflow =~ "/tmp/stonks-public-manifest.json"
+    assert deploy_workflow =~ "origin_manifest_hash=$(sha256sum"
+    assert deploy_workflow =~ "public_manifest_hash=$(sha256sum"
+    assert deploy_workflow =~ "origin/public manifest hash matched"
 
     caddyfile = read_repo_file("infra/Caddyfile")
     assert caddyfile =~ "reverse_proxy {$API_UPSTREAM:api-elixir:8000}"

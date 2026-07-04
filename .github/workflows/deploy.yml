@@ -567,9 +567,23 @@ jobs:
              curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/api/public/health" | grep -q "\"status\":\"ok\""
              test "$(curl -sS -o /dev/null -w "%{http_code}" --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/api/public/status")" = "404"
              test "$(curl -sS -o /dev/null -w "%{http_code}" --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/api/public/provider-status")" = "404"
-             curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/public/latest/manifest.json" | tee /tmp/stonks-manifest.json >/dev/null
-             grep -q "\"current_version\"" /tmp/stonks-manifest.json
-             grep -q "\"objects\"" /tmp/stonks-manifest.json
+             curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/public/latest/manifest.json" | tee /tmp/stonks-origin-manifest.json >/dev/null
+             grep -q "\"current_version\"" /tmp/stonks-origin-manifest.json
+             grep -q "\"objects\"" /tmp/stonks-origin-manifest.json
+             origin_manifest_hash=$(sha256sum /tmp/stonks-origin-manifest.json | cut -d" " -f1)
+             for attempt in 1 2 3 4 5; do
+               curl -fsS "https://$PUBLIC_HOSTNAME/public/latest/manifest.json" | tee /tmp/stonks-public-manifest.json >/dev/null
+               public_manifest_hash=$(sha256sum /tmp/stonks-public-manifest.json | cut -d" " -f1)
+               if [ "$origin_manifest_hash" = "$public_manifest_hash" ]; then
+                 echo "origin/public manifest hash matched: sha256:$origin_manifest_hash"
+                 break
+               fi
+               if [ "$attempt" = "5" ]; then
+                 echo "public manifest hash $public_manifest_hash did not match origin manifest hash $origin_manifest_hash" >&2
+                 exit 1
+               fi
+               sleep 3
+             done
              curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/api/instruments/search?q=IBM&limit=1&context=BUILDER" | grep -q "IBM"
              curl -fsS --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" "https://$PUBLIC_HOSTNAME/en/curves" >/dev/null'
           duration="$(( $(date +%s) - start ))"
