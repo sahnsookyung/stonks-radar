@@ -145,6 +145,7 @@ sync_release() {
       --exclude 'apps/backend_elixir/_build' \
       --exclude 'apps/backend_elixir/.elixir_ls' \
       --exclude 'artifacts' \
+      --exclude 'web-deploy-artifact' \
       --exclude 'playwright-report' \
       --exclude 'test-results' \
       "$source_dir/" "$deploy_dir/"

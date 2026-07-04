@@ -92,6 +92,7 @@ jobs:
             }
 
             let apiImageRef = headSha;
+            let webArtifactRunId = "";
             if (ciRun) {
               const jobs = await github.rest.actions.listJobsForWorkflowRun({
                 owner,
@@ -100,12 +101,28 @@ jobs:
                 per_page: 100,
               });
               const apiImageJob = jobs.data.jobs.find((job) => job.name === "build-api-elixir-linux-arm64");
+              const appChecksJob = jobs.data.jobs.find((job) => job.name === "web-and-schemas");
+
+              if (appChecksJob?.conclusion === "success") {
+                webArtifactRunId = String(ciRun.id);
+              }
+
               if (apiImageJob?.conclusion === "skipped") {
                 apiImageRef = "main";
               } else if (!apiImageJob) {
                 core.warning("Could not find the API image job in the CI run; defaulting to the SHA image.");
               }
               core.info(`API image job conclusion: ${apiImageJob?.conclusion || "missing"}; deploying image tag ${apiImageRef}.`);
+              core.info(`App checks job conclusion: ${appChecksJob?.conclusion || "missing"}; web artifact run id: ${webArtifactRunId || "none"}.`);
+
+              if (apiImageJob?.conclusion === "skipped" && appChecksJob?.conclusion === "skipped") {
+                core.notice(`Skipping production deploy for ${headSha}: CI found no runtime web/API changes.`);
+                await core.summary
+                  .addHeading("Production deploy skipped")
+                  .addRaw(`No runtime web/API changes were detected for main at ${headSha}.`)
+                  .write();
+                return;
+              }
             }
 
             const deployRuns = await github.rest.actions.listWorkflowRuns({
@@ -132,6 +149,7 @@ jobs:
                 mode: "fast",
                 verify: "false",
                 api_image_ref: apiImageRef,
+                web_artifact_run_id: webArtifactRunId,
               },
             });
 
@@ -157,4 +175,6 @@ jobs:
               .addRaw(`Dispatched ${deployWorkflow} for main at ${headSha}.`)
               .addBreak()
               .addRaw(`API image ref: ${apiImageRef}.`)
+              .addBreak()
+              .addRaw(`Web artifact run id: ${webArtifactRunId || "local build fallback"}.`)
               .write();

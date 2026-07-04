@@ -29,6 +29,11 @@ on:
         required: false
         default: ""
         type: string
+      web_artifact_run_id:
+        description: "CI run id containing web-deploy-<sha>; builds locally when blank"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   actions: read
@@ -104,17 +109,52 @@ jobs:
             core.setFailed(`Timed out waiting for CI and SonarQube to pass for ${head_sha}.`);
 
       - uses: actions/setup-node@v4
+        if: ${{ inputs.mode == 'clean' || inputs.verify || inputs.web_artifact_run_id == '' }}
         with:
           node-version: 22
           cache: npm
 
       - uses: erlef/setup-beam@v1
+        if: ${{ inputs.mode == 'clean' || inputs.verify }}
         with:
           otp-version: "29.0"
           elixir-version: "1.20.2"
 
       - name: Install dependencies
+        if: ${{ inputs.mode == 'clean' || inputs.verify || inputs.web_artifact_run_id == '' }}
         run: npm install
+
+      - name: Download web deploy artifact
+        if: ${{ inputs.mode == 'fast' && !inputs.verify && inputs.web_artifact_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: web-deploy-${{ github.sha }}
+          path: web-deploy-artifact
+          run-id: ${{ inputs.web_artifact_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Materialize downloaded web artifact
+        if: ${{ inputs.mode == 'fast' && !inputs.verify && inputs.web_artifact_run_id != '' }}
+        run: |
+          set -euo pipefail
+          artifact_root=""
+          for candidate in web-deploy-artifact web-deploy-artifact/web-deploy web-deploy-artifact/artifacts/web-deploy; do
+            if [ -s "$candidate/apps/web/dist/index.html" ]; then
+              artifact_root="$candidate"
+              break
+            fi
+          done
+          if [ -z "$artifact_root" ]; then
+            find web-deploy-artifact -maxdepth 6 -type f | sort
+            echo "Downloaded web artifact did not contain apps/web/dist/index.html" >&2
+            exit 1
+          fi
+          rm -rf apps/web/dist apps/web/public/public
+          mkdir -p apps/web/public
+          cp -a "$artifact_root/apps/web/dist" apps/web/dist
+          cp -a "$artifact_root/apps/web/public/public" apps/web/public/public
+          test -s apps/web/dist/index.html
+          test -s apps/web/public/public/latest/manifest.json
 
       - name: Install Playwright browser
         if: ${{ inputs.mode == 'clean' || inputs.verify }}
@@ -125,6 +165,7 @@ jobs:
         run: npm run web:test && npm run backend:check
 
       - name: Build web assets
+        if: ${{ inputs.mode == 'clean' || inputs.verify || inputs.web_artifact_run_id == '' }}
         run: npm run build:map-assets && npm run web:build
 
       - name: Prepare production env
@@ -157,9 +198,11 @@ jobs:
       - name: Initialize deploy timing summary
         env:
           API_IMAGE_REF: ${{ inputs.api_image_ref != '' && inputs.api_image_ref || github.sha }}
+          WEB_ARTIFACT_RUN_ID: ${{ inputs.web_artifact_run_id }}
         run: |
           {
             echo "- API image ref: \`$API_IMAGE_REF\`"
+            echo "- Web artifact run id: \`${WEB_ARTIFACT_RUN_ID:-local-build}\`"
             echo
             echo "### Deploy phase timings"
             echo
@@ -221,17 +264,52 @@ jobs:
             core.setFailed(`Timed out waiting for CI and SonarQube to pass for ${head_sha}.`);
 
       - uses: actions/setup-node@v4
+        if: ${{ inputs.mode == 'clean' || inputs.verify || inputs.web_artifact_run_id == '' }}
         with:
           node-version: 22
           cache: npm
 
       - uses: erlef/setup-beam@v1
+        if: ${{ inputs.mode == 'clean' || inputs.verify }}
         with:
           otp-version: "29.0"
           elixir-version: "1.20.2"
 
       - name: Install dependencies
+        if: ${{ inputs.mode == 'clean' || inputs.verify || inputs.web_artifact_run_id == '' }}
         run: npm install
+
+      - name: Download web deploy artifact
+        if: ${{ inputs.mode == 'fast' && !inputs.verify && inputs.web_artifact_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: web-deploy-${{ github.sha }}
+          path: web-deploy-artifact
+          run-id: ${{ inputs.web_artifact_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Materialize downloaded web artifact
+        if: ${{ inputs.mode == 'fast' && !inputs.verify && inputs.web_artifact_run_id != '' }}
+        run: |
+          set -euo pipefail
+          artifact_root=""
+          for candidate in web-deploy-artifact web-deploy-artifact/web-deploy web-deploy-artifact/artifacts/web-deploy; do
+            if [ -s "$candidate/apps/web/dist/index.html" ]; then
+              artifact_root="$candidate"
+              break
+            fi
+          done
+          if [ -z "$artifact_root" ]; then
+            find web-deploy-artifact -maxdepth 6 -type f | sort
+            echo "Downloaded web artifact did not contain apps/web/dist/index.html" >&2
+            exit 1
+          fi
+          rm -rf apps/web/dist apps/web/public/public
+          mkdir -p apps/web/public
+          cp -a "$artifact_root/apps/web/dist" apps/web/dist
+          cp -a "$artifact_root/apps/web/public/public" apps/web/public/public
+          test -s apps/web/dist/index.html
+          test -s apps/web/public/public/latest/manifest.json
 
       - name: Install Playwright browser
         if: ${{ inputs.mode == 'clean' || inputs.verify }}
@@ -242,6 +320,7 @@ jobs:
         run: npm run web:test && npm run backend:check
 
       - name: Build web assets
+        if: ${{ inputs.mode == 'clean' || inputs.verify || inputs.web_artifact_run_id == '' }}
         run: npm run build:map-assets && npm run web:build
 
       - name: Prepare production env
@@ -333,6 +412,7 @@ jobs:
             --exclude 'apps/backend_elixir/_build' \
             --exclude 'apps/backend_elixir/.elixir_ls' \
             --exclude 'artifacts' \
+            --exclude 'web-deploy-artifact' \
             --exclude 'playwright-report' \
             --exclude 'test-results' \
             -e "$RSYNC_SSH" \

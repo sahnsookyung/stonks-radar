@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       api_image_changed: ${{ steps.filter.outputs.api_image_changed }}
+      app_checks_changed: ${{ steps.filter.outputs.app_checks_changed }}
+      terraform_changed: ${{ steps.filter.outputs.terraform_changed }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,18 +35,24 @@ jobs:
           fi
 
           if [ -z "$base_sha" ] || [[ "$base_sha" =~ ^0+$ ]]; then
-            echo "api_image_changed=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "api_image_changed=true"
+              echo "app_checks_changed=true"
+              echo "terraform_changed=true"
+            } >> "$GITHUB_OUTPUT"
             {
               echo "### API image change detection"
               echo
-              echo "No usable base SHA was available, so the API image build is enabled."
+              echo "No usable base SHA was available, so all change-gated jobs are enabled."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
           git fetch --no-tags --depth=2 origin "$base_sha" "$HEAD_SHA" || true
           changed_files="$(git diff --name-only "$base_sha" "$HEAD_SHA" || git diff-tree --no-commit-id --name-only -r "$HEAD_SHA")"
-          image_path_regex='^(apps/backend_elixir/|config/|compose\.yaml$|infra/docker-compose\.prod\.yml$|scripts/deploy.*\.sh$|\.dockerignore$|package(-lock)?\.json$|\.github/workflows/(ci|deploy|production-autodeploy)\.yml$)'
+          image_path_regex='^(apps/backend_elixir/|packages/(schemas|shared-config)/|config/|compose\.yaml$|infra/docker-compose\.prod\.yml$|apps/backend_elixir/Dockerfile$|\.dockerignore$)'
+          app_checks_regex='^(apps/(web|backend_elixir)/|packages/|scripts/build_map_assets\.mjs$|compose\.yaml$|infra/(Caddyfile|docker-compose\.prod\.yml)$|config/|package(-lock)?\.json$)'
+          terraform_path_regex='^infra/(cloudflare|oci)/terraform/'
 
           if printf '%s\n' "$changed_files" | grep -Eq "$image_path_regex"; then
             api_image_changed=true
@@ -52,13 +60,31 @@ jobs:
             api_image_changed=false
           fi
 
-          echo "api_image_changed=$api_image_changed" >> "$GITHUB_OUTPUT"
+          if printf '%s\n' "$changed_files" | grep -Eq "$app_checks_regex"; then
+            app_checks_changed=true
+          else
+            app_checks_changed=false
+          fi
+
+          if printf '%s\n' "$changed_files" | grep -Eq "$terraform_path_regex"; then
+            terraform_changed=true
+          else
+            terraform_changed=false
+          fi
+
+          {
+            echo "api_image_changed=$api_image_changed"
+            echo "app_checks_changed=$app_checks_changed"
+            echo "terraform_changed=$terraform_changed"
+          } >> "$GITHUB_OUTPUT"
           {
             echo "### API image change detection"
             echo
             echo "- Base SHA: \`$base_sha\`"
             echo "- Head SHA: \`$HEAD_SHA\`"
             echo "- API image changed: \`$api_image_changed\`"
+            echo "- App checks changed: \`$app_checks_changed\`"
+            echo "- Terraform changed: \`$terraform_changed\`"
             echo
             echo "<details><summary>Changed files</summary>"
             echo
@@ -68,6 +94,8 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   web-and-schemas:
+    needs: changes
+    if: ${{ needs.changes.outputs.app_checks_changed == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -86,6 +114,24 @@ jobs:
       - run: npm run backend:check
       - run: npx playwright install --with-deps chromium
       - run: npm run web:e2e
+      - name: Prepare web deploy artifact
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: |
+          set -euo pipefail
+          rm -rf artifacts/web-deploy
+          mkdir -p artifacts/web-deploy/apps/web/public
+          cp -a apps/web/dist artifacts/web-deploy/apps/web/dist
+          cp -a apps/web/public/public artifacts/web-deploy/apps/web/public/public
+          test -s artifacts/web-deploy/apps/web/dist/index.html
+          test -s artifacts/web-deploy/apps/web/public/public/latest/manifest.json
+      - name: Upload web deploy artifact
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-deploy-${{ github.sha }}
+          path: artifacts/web-deploy
+          if-no-files-found: error
+          retention-days: 7
 
   build-api-elixir-linux-arm64:
     needs: changes
@@ -120,6 +166,8 @@ jobs:
             ${{ env.API_IMAGE }}:main
 
   terraform-fmt:
+    needs: changes
+    if: ${{ needs.changes.outputs.terraform_changed == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
