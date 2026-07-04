@@ -1,13 +1,13 @@
 {
   "repoPath": "/Users/sookyungahn/repos/stonks-radar",
-  "lastCommit": "4e67a52c4226671b9eaff3120345d2a603cb3a65",
-  "indexedAt": "2026-07-04T15:11:16.177Z",
+  "lastCommit": "c22097ceb77417d4234f155f2b3956d03c4f2bc9",
+  "indexedAt": "2026-07-04T15:44:00.159Z",
   "stats": {
     "files": 238,
-    "nodes": 1221,
-    "edges": 2841,
-    "communities": 110,
-    "processes": 89,
+    "nodes": 1223,
+    "edges": 2844,
+    "communities": 111,
+    "processes": 90,
     "embeddings": 0
   }
 }
