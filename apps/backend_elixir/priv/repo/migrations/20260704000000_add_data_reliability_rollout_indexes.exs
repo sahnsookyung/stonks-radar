@@ -5,9 +5,6 @@ defmodule StonksBackend.Repo.Migrations.AddDataReliabilityRolloutIndexes do
   @disable_ddl_transaction true
 
   def up do
-    execute "set lock_timeout = '30s'"
-    execute "set statement_timeout = '30min'"
-
     execute """
     insert into fact_type_registry(
       fact_type, display_name_en, display_name_ko, json_schema,
@@ -92,7 +89,11 @@ defmodule StonksBackend.Repo.Migrations.AddDataReliabilityRolloutIndexes do
     sql = maybe_disable_concurrently_for_test(sql)
 
     try do
-      execute(sql)
+      repo().checkout(fn ->
+        repo().query!("set lock_timeout = '30s'", [], timeout: :infinity)
+        repo().query!("set statement_timeout = '30min'", [], timeout: :infinity)
+        repo().query!(sql, [], timeout: :infinity)
+      end)
     rescue
       error in Postgrex.Error ->
         if lock_not_available?(error) do
