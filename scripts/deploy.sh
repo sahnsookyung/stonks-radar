@@ -45,6 +45,7 @@ else
   COMPOSE_PARALLEL_LIMIT=1 DOCKER_BUILDKIT=1 compose build api-elixir
 fi
 
+compose stop api-elixir || true
 COMPOSE_PARALLEL_LIMIT=1 compose up -d postgres valkey
 compose run --rm --no-deps api-elixir \
   /app/bin/stonks_backend eval 'StonksBackend.Release.migrate()'

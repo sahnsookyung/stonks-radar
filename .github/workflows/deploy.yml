@@ -472,6 +472,7 @@ jobs:
           if [[ "${STONKS_DEPLOY_MODE:-fast}" == "fast" ]]; then
             export API_ELIXIR_IMAGE="$STONKS_API_IMAGE"
           fi
+          docker compose -f compose.yaml -f infra/docker-compose.prod.yml stop api-elixir || true
           COMPOSE_PARALLEL_LIMIT=1 docker compose -f compose.yaml -f infra/docker-compose.prod.yml up -d postgres valkey
           docker compose -f compose.yaml -f infra/docker-compose.prod.yml run --rm --no-deps api-elixir \
             /app/bin/stonks_backend eval "StonksBackend.Release.migrate()"

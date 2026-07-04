@@ -174,6 +174,7 @@ build_api() {
 
 migrate() {
   cd "$deploy_dir"
+  compose stop api-elixir || true
   COMPOSE_PARALLEL_LIMIT=1 compose up -d postgres valkey
   compose run --rm --no-deps api-elixir \
     /app/bin/stonks_backend eval 'StonksBackend.Release.migrate()'
