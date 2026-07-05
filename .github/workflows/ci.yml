@@ -7,9 +7,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.repository }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   changes:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       api_image_changed: ${{ steps.filter.outputs.api_image_changed }}
       app_checks_changed: ${{ steps.filter.outputs.app_checks_changed }}
@@ -97,6 +102,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.app_checks_changed == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:17
@@ -157,6 +163,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.api_image_changed == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     permissions:
       contents: read
       packages: write
@@ -189,6 +196,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.terraform_changed == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3

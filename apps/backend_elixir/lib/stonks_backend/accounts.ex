@@ -463,12 +463,21 @@ defmodule StonksBackend.Accounts do
         values ($1, $2, $3, $4, now() + interval '12 hours')
         returning id
         """,
-        [user_id, Crypto.hash_secret(token), Crypto.hash_secret(csrf_token), role]
+        [uuid_param(user_id), Crypto.hash_secret(token), Crypto.hash_secret(csrf_token), role]
       )
 
     if is_nil(session_id), do: {:error, :session_unavailable}, else: {:ok, session_id}
   rescue
     _ -> {:error, :session_unavailable}
+  end
+
+  defp uuid_param(value) when is_binary(value) and byte_size(value) == 16, do: value
+
+  defp uuid_param(value) do
+    case Ecto.UUID.cast(value) do
+      {:ok, uuid} -> Ecto.UUID.dump!(uuid)
+      :error -> value
+    end
   end
 
   defp valid_session_token?(token), do: valid_url_token?(token, @max_session_token_bytes)

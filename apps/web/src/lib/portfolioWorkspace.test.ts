@@ -4,7 +4,9 @@ import {
   cleanManualText,
   clearSourceLinkedRecords,
   loadPortfolioWorkspace,
+  loadServerPortfolioWorkspace,
   savePortfolioWorkspace,
+  saveServerPortfolioWorkspace,
   validateManualDraft,
   workspaceStorageKey
 } from "./portfolioWorkspace";
@@ -21,10 +23,12 @@ describe("portfolio workspace helpers", () => {
         clear: vi.fn(() => store.clear())
       }
     });
+    sessionStorage.clear();
   });
 
   afterEach(() => {
     globalThis.window.localStorage.clear();
+    sessionStorage.clear();
     vi.restoreAllMocks();
   });
 
@@ -57,6 +61,73 @@ describe("portfolio workspace helpers", () => {
     });
 
     expect(loadPortfolioWorkspace("private-plan")).toBeNull();
+  });
+
+  it("loads an authenticated server workspace response", async () => {
+    const portfolio = createDemoPortfolio();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            portfolio_id: "demo-growth-income",
+            workspace: {
+              version: 1,
+              portfolio,
+              manualInstruments: [],
+              reviewRequests: [],
+              assumptions: defaultAssumptions
+            }
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
+      )
+    );
+
+    await expect(loadServerPortfolioWorkspace("demo-growth-income")).resolves.toMatchObject({
+      portfolio: { portfolioId: "demo-growth-income" },
+      assumptions: { name: defaultAssumptions.name }
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/portfolio-workspaces/demo-growth-income",
+      expect.objectContaining({ credentials: "include" })
+    );
+  });
+
+  it("saves a server workspace only when a csrf token is available", async () => {
+    const portfolio = createDemoPortfolio();
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: "ok" }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      saveServerPortfolioWorkspace("demo-growth-income", {
+        portfolio,
+        manualInstruments: [],
+        reviewRequests: [],
+        assumptions: defaultAssumptions
+      })
+    ).resolves.toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    sessionStorage.setItem("frw_csrf", "csrf-token");
+    await expect(
+      saveServerPortfolioWorkspace("demo-growth-income", {
+        portfolio,
+        manualInstruments: [],
+        reviewRequests: [],
+        assumptions: defaultAssumptions
+      })
+    ).resolves.toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/portfolio-workspaces/demo-growth-income",
+      expect.objectContaining({
+        method: "PUT",
+        headers: expect.objectContaining({ "x-csrf-token": "csrf-token" })
+      })
+    );
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1].body))).toMatchObject({
+      workspace: { version: 1, portfolio: { portfolioId: "demo-growth-income" } }
+    });
   });
 
   it("cleans source-linked records before manual portfolio edits", () => {

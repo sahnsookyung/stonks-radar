@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   BreakingMarketEvent,
   MapEventsData,
@@ -18,22 +18,47 @@ vi.mock("../lib/locale", () => ({
 }));
 
 vi.mock("../components/EventMap", () => ({
-  EventMap: ({ events, mapPoints }: { events: PublicEvent[]; mapPoints: NewsMapPoint[] }) => (
+  EventMap: ({
+    events,
+    mapPoints,
+    selectedMapPointId,
+    onMapPointSelect
+  }: {
+    events: PublicEvent[];
+    mapPoints: NewsMapPoint[];
+    selectedMapPointId?: string | null;
+    onMapPointSelect?: (id: string) => void;
+  }) => (
     <div
       data-testid="event-map"
       data-events={events.length}
       data-map-points={mapPoints.length}
+      data-selected={selectedMapPointId ?? ""}
       data-first-trust={(mapPoints[0] as NewsMapPoint & { trust_tier?: string } | undefined)?.trust_tier ?? ""}
     >
       mapPoints:{mapPoints.length} events:{events.length}
+      {mapPoints[0] ? <button onClick={() => onMapPointSelect?.(mapPoints[0].event_id)}>select map point</button> : null}
     </div>
   )
 }));
 
 vi.mock("../components/EventList", () => ({
-  EventList: ({ events }: { events: PublicEvent[] }) => (
-    <div data-testid="event-list" data-events={events.length}>
+  EventList: ({
+    events,
+    selectedEventId,
+    onEventSelect
+  }: {
+    events: PublicEvent[];
+    selectedEventId?: string | null;
+    onEventSelect?: (id: string) => void;
+  }) => (
+    <div data-testid="event-list" data-events={events.length} data-selected={selectedEventId ?? ""}>
       events:{events.length}
+      {events.map((event) => (
+        <button key={event.id} onClick={() => onEventSelect?.(event.id)}>
+          focus {event.id}
+        </button>
+      ))}
     </div>
   )
 }));
@@ -53,18 +78,21 @@ const mapSnapshot: SnapshotEnvelope<MapEventsData> = {
   corrections: [],
   data: {
     events: [
-      publicEvent("public-recent", "Recent public event", "high", ["technology"], "2026-07-04T10:00:00Z"),
+      publicEvent("news-recent-verified", "Recent public event", "high", ["technology"], "2026-07-04T10:00:00Z"),
+      publicEvent("public-previous-window", "Previous public event", "high", ["technology"], "2026-07-03T10:00:00Z"),
       publicEvent("public-old", "Older public event", "medium", ["space"], "2026-07-01T10:00:00Z")
     ],
     breaking_market_events: [
       breakingEvent("news-recent-verified", "high", "2026-07-04T11:00:00Z", "T2_REPUTABLE_MEDIA"),
       breakingEvent("news-recent-single", "medium", "2026-07-04T09:00:00Z", "T4_WEAK_SIGNAL"),
+      breakingEvent("news-previous-window", "high", "2026-07-03T10:00:00Z", "T2_REPUTABLE_MEDIA"),
       breakingEvent("news-old-verified", "high", "2026-07-01T10:00:00Z", "T1_REGULATED_FILING")
     ],
     breaking_market_map: {
       events: [
         breakingEvent("news-recent-verified", "high", "2026-07-04T11:00:00Z", "T2_REPUTABLE_MEDIA"),
         breakingEvent("news-recent-single", "medium", "2026-07-04T09:00:00Z", "T4_WEAK_SIGNAL"),
+        breakingEvent("news-previous-window", "high", "2026-07-03T10:00:00Z", "T2_REPUTABLE_MEDIA"),
         breakingEvent("news-old-verified", "high", "2026-07-01T10:00:00Z", "T1_REGULATED_FILING")
       ],
       map_points: [
@@ -72,6 +100,7 @@ const mapSnapshot: SnapshotEnvelope<MapEventsData> = {
           "source_velocity"
         ]),
         mapPoint("point-recent-single", "news-recent-single", "medium", "usa", "2026-07-04T09:00:00Z", 1),
+        mapPoint("point-previous-window", "news-previous-window", "high", "usa", "2026-07-03T10:00:00Z", 2),
         mapPoint("point-old-verified", "news-old-verified", "high", "shipping", "2026-07-01T10:00:00Z", 3)
       ],
       watched_regions: [
@@ -88,8 +117,8 @@ const mapSnapshot: SnapshotEnvelope<MapEventsData> = {
         }
       ],
       regional_briefs: [],
-      shown_count: 3,
-      total_count: 3,
+      shown_count: 4,
+      total_count: 4,
       ranking_cutoff: null,
       registry_version: 1,
       scoring_version: "test",
@@ -113,9 +142,23 @@ vi.mock("../lib/snapshots", () => ({
 }));
 
 describe("MapPage", () => {
+  beforeEach(() => {
+    const store = new Map<string, string>();
+    Object.defineProperty(globalThis.window, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: vi.fn((key: string) => store.get(key) ?? null),
+        setItem: vi.fn((key: string, value: string) => store.set(key, value)),
+        clear: vi.fn(() => store.clear())
+      }
+    });
+  });
+
   afterEach(() => {
     cleanup();
+    globalThis.window.localStorage.clear();
     globalThis.window.history.replaceState(null, "", "/en/map");
+    vi.restoreAllMocks();
   });
 
   it("filters map news with UTC range, source count, watched-region controls, and reset", async () => {
@@ -123,26 +166,41 @@ describe("MapPage", () => {
     renderMapPage();
 
     expect(await screen.findByText("Global Intelligence Map")).toBeInTheDocument();
-    expect(screen.getByTestId("event-map")).toHaveAttribute("data-map-points", "3");
+    expect(screen.getByTestId("event-map")).toHaveAttribute("data-map-points", "4");
     expect(screen.getByTestId("event-map")).toHaveAttribute("data-events", "0");
     expect(screen.getByTestId("event-map")).toHaveAttribute("data-first-trust", "T2_REPUTABLE_MEDIA");
-    expect(screen.getByTestId("event-list")).toHaveAttribute("data-events", "2");
+    expect(screen.getByTestId("event-list")).toHaveAttribute("data-events", "3");
     expect(screen.getByText("1 coverage gaps")).toBeInTheDocument();
+    expect(screen.getByText("Source drilldown")).toBeInTheDocument();
+    expect(screen.getByText("Trust T2_REPUTABLE_MEDIA")).toBeInTheDocument();
+    expect(screen.getByText("source velocity")).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Time"), { target: { value: "24h" } });
     await waitFor(() => expect(screen.getByTestId("event-map")).toHaveAttribute("data-map-points", "2"));
     expect(screen.getByTestId("event-list")).toHaveAttribute("data-events", "1");
+    expect(screen.getByText("Current 2 pts / 1 events")).toBeInTheDocument();
+    expect(screen.getByText("Previous 1 pts / 1 events")).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Sources"), { target: { value: "2" } });
     await waitFor(() => expect(screen.getByTestId("event-map")).toHaveAttribute("data-map-points", "1"));
+    fireEvent.click(screen.getByRole("button", { name: "Save map view" }));
+    expect(screen.getByText(/Last 24h UTC \/ 2\+ sources/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText("Watched regions"));
     await waitFor(() => expect(screen.getByTestId("event-map")).toHaveAttribute("data-map-points", "1"));
 
+    fireEvent.click(screen.getByRole("button", { name: "select map point" }));
+    await waitFor(() => expect(screen.getByTestId("event-map")).toHaveAttribute("data-selected", "news-recent-verified"));
+    expect(screen.getByTestId("event-list")).toHaveAttribute("data-selected", "news-recent-verified");
+
     fireEvent.click(screen.getByRole("button", { name: "Reset" }));
-    await waitFor(() => expect(screen.getByTestId("event-map")).toHaveAttribute("data-map-points", "3"));
-    expect(screen.getByTestId("event-list")).toHaveAttribute("data-events", "2");
+    await waitFor(() => expect(screen.getByTestId("event-map")).toHaveAttribute("data-map-points", "4"));
+    expect(screen.getByTestId("event-list")).toHaveAttribute("data-events", "3");
     expect(globalThis.window.location.search).toBe("");
+    fireEvent.click(screen.getByText(/Last 24h UTC \/ 2\+ sources/));
+    await waitFor(() => expect(screen.getByTestId("event-map")).toHaveAttribute("data-map-points", "1"));
+    fireEvent.click(screen.getByRole("button", { name: /Remove Last 24h UTC \/ 2\+ sources/ }));
+    expect(screen.queryByText(/Last 24h UTC \/ 2\+ sources/)).not.toBeInTheDocument();
   });
 
   it("hydrates controls from shareable URL params and removes invalid values", async () => {
@@ -177,8 +235,8 @@ describe("MapPage", () => {
     renderMapPage();
 
     expect(await screen.findByText("Global Intelligence Map")).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByTestId("event-map")).toHaveAttribute("data-map-points", "3"));
-    expect(screen.getByTestId("event-list")).toHaveAttribute("data-events", "2");
+    await waitFor(() => expect(screen.getByTestId("event-map")).toHaveAttribute("data-map-points", "4"));
+    expect(screen.getByTestId("event-list")).toHaveAttribute("data-events", "3");
     await waitFor(() => expect(globalThis.window.location.search).toBe(""));
   });
 });

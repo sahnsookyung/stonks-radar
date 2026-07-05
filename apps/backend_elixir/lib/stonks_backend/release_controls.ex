@@ -45,6 +45,7 @@ defmodule StonksBackend.ReleaseControls do
     metrics = collect_metrics(opts)
     thresholds = thresholds(opts)
     release_id = release_id()
+    source_health = source_health_rows(opts)
 
     %{
       release_id: release_id,
@@ -53,7 +54,8 @@ defmodule StonksBackend.ReleaseControls do
       snapshot_publish_health: snapshot_publish_health(metrics, thresholds, opts),
       runtime_switches: runtime_switches(opts),
       canary: evaluate_canary(metrics, thresholds),
-      source_funnel: source_funnel_totals(source_health_rows(opts)),
+      source_funnel: source_funnel_totals(source_health),
+      pipeline_health: pipeline_health_summary(source_health),
       provenance: provenance_summary(release_id, opts),
       rollback_controls: rollback_controls()
     }
@@ -161,12 +163,35 @@ defmodule StonksBackend.ReleaseControls do
     %{totals: totals, sources: per_source}
   end
 
+  def pipeline_health_summary(rows) do
+    stages =
+      rows
+      |> Enum.filter(fn row ->
+        String.starts_with?(to_string(row["source_key"]), "news_pipeline:")
+      end)
+      |> Enum.map(&pipeline_stage_summary/1)
+
+    %{
+      status: aggregate_pipeline_status(stages),
+      stage_count: length(stages),
+      last_completed_at:
+        stages
+        |> Enum.map(& &1.stage_completed_at)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.sort()
+        |> List.last(),
+      total_duration_ms: Enum.reduce(stages, 0, &(&2 + normalize_int(&1.duration_ms))),
+      stages: stages
+    }
+  end
+
   def deployment_summary(release_id, opts \\ []) do
     github_sha = env_value(opts, "GITHUB_SHA")
 
     %{
       release_id: release_id,
-      expected_commit: first_present([env_value(opts, "STONKS_EXPECTED_COMMIT"), github_sha, release_id]),
+      expected_commit:
+        first_present([env_value(opts, "STONKS_EXPECTED_COMMIT"), github_sha, release_id]),
       api_image_ref:
         first_present([
           env_value(opts, "STONKS_API_IMAGE_REF"),
@@ -418,7 +443,9 @@ defmodule StonksBackend.ReleaseControls do
   defp snapshot_publish_status(_row, nil, _max_age_seconds), do: "unknown"
 
   defp snapshot_publish_status(_row, age_seconds, max_age_seconds) do
-    if normalize_float(age_seconds) <= normalize_float(max_age_seconds), do: "ready", else: "stale"
+    if normalize_float(age_seconds) <= normalize_float(max_age_seconds),
+      do: "ready",
+      else: "stale"
   end
 
   defp aggregate_status(checks) do
@@ -438,6 +465,39 @@ defmodule StonksBackend.ReleaseControls do
       end
 
     Map.new(@funnel_keys, fn key -> {key, normalize_int(counters[key])} end)
+  end
+
+  defp pipeline_stage_summary(row) do
+    details =
+      row
+      |> Map.get("details", %{})
+      |> decode_json()
+
+    %{
+      source_key: row["source_key"],
+      stage:
+        details["stage"] ||
+          String.replace_prefix(to_string(row["source_key"]), "news_pipeline:", ""),
+      status: details["status"] || row["status"],
+      health_status: row["status"],
+      release_id: details["release_id"],
+      runtime_enabled: details["runtime_enabled"],
+      stage_started_at: details["stage_started_at"],
+      stage_completed_at: details["stage_completed_at"],
+      duration_ms: normalize_int(details["duration_ms"]),
+      counters: funnel_counters(details)
+    }
+  end
+
+  defp aggregate_pipeline_status([]), do: "unknown"
+
+  defp aggregate_pipeline_status(stages) do
+    cond do
+      Enum.any?(stages, &(&1.health_status in ["failed", "denied", "quarantined"])) -> "failed"
+      Enum.any?(stages, &(&1.runtime_enabled == false)) -> "disabled"
+      Enum.all?(stages, &(&1.health_status == "ready")) -> "ready"
+      true -> "degraded"
+    end
   end
 
   defp empty_counters, do: Map.new(@funnel_keys, &{&1, 0})

@@ -51,8 +51,10 @@ import {
   cleanManualText,
   clearSourceLinkedRecords,
   loadPortfolioWorkspace,
+  loadServerPortfolioWorkspace,
   manualNumberInvalid,
   savePortfolioWorkspace,
+  saveServerPortfolioWorkspace,
   toSafeId,
   validateManualDraft
 } from "../lib/portfolioWorkspace";
@@ -346,17 +348,43 @@ export function PortfolioLabPage() { // NOSONAR - route-level state orchestratio
   );
 
   useEffect(() => {
+    const controller = new AbortController();
+    const applyWorkspace = (workspace: ReturnType<typeof loadPortfolioWorkspace>) => {
+      setPortfolio(workspace?.portfolio ?? createPortfolioForWorkspace(workspacePortfolioId));
+      setManualInstruments(workspace?.manualInstruments ?? []);
+      setReviewRequests(workspace?.reviewRequests ?? []);
+      setAssumptions(workspace?.assumptions ?? defaultAssumptions);
+      setLoadedWorkspaceId(workspacePortfolioId);
+    };
     const saved = loadPortfolioWorkspace(workspacePortfolioId);
-    setPortfolio(saved?.portfolio ?? createPortfolioForWorkspace(workspacePortfolioId));
-    setManualInstruments(saved?.manualInstruments ?? []);
-    setReviewRequests(saved?.reviewRequests ?? []);
-    setAssumptions(saved?.assumptions ?? defaultAssumptions);
-    setLoadedWorkspaceId(workspacePortfolioId);
+    applyWorkspace(saved);
+    void loadServerPortfolioWorkspace(workspacePortfolioId, controller.signal)
+      .then((serverWorkspace) => {
+        if (controller.signal.aborted || !serverWorkspace) return;
+        applyWorkspace(serverWorkspace);
+        savePortfolioWorkspace(workspacePortfolioId, {
+          portfolio: serverWorkspace.portfolio,
+          manualInstruments: serverWorkspace.manualInstruments,
+          reviewRequests: serverWorkspace.reviewRequests,
+          assumptions: serverWorkspace.assumptions
+        });
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
   }, [workspacePortfolioId]);
 
   useEffect(() => {
     if (loadedWorkspaceId !== workspacePortfolioId) return;
-    savePortfolioWorkspace(workspacePortfolioId, { portfolio, manualInstruments, reviewRequests, assumptions });
+    const workspace = { portfolio, manualInstruments, reviewRequests, assumptions };
+    savePortfolioWorkspace(workspacePortfolioId, workspace);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      void saveServerPortfolioWorkspace(workspacePortfolioId, workspace, controller.signal).catch(() => undefined);
+    }, 600);
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, [assumptions, loadedWorkspaceId, manualInstruments, portfolio, reviewRequests, workspacePortfolioId]);
 
   useEffect(() => {

@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
-import { Clock3, Filter, MapPinned, RotateCcw } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { BookmarkPlus, Clock3, ExternalLink, Filter, MapPinned, RotateCcw, Trash2 } from "lucide-react";
 import type { BreakingMarketEvent, NewsMapPoint, PublicEvent, Severity, WatchedRegionCoverage, WatchedRegionCoverageGap } from "@frw/shared-types";
 import { EventMap } from "../components/EventMap";
 import { EventList } from "../components/EventList";
 import { ErrorState, LoadingState } from "../components/LoadingState";
 import { SnapshotBanner } from "../components/SnapshotBanner";
 import { useLocale } from "../lib/locale";
+import { safeExternalUrl } from "../lib/safeExternalUrl";
 import { snapshotQueries } from "../lib/snapshots";
 
 type MapTimeRange = "all" | "6h" | "24h" | "7d" | "custom";
@@ -21,6 +22,19 @@ type MapControlState = Readonly<{
   watchedRegionsOnly: boolean;
 }>;
 type EnrichedNewsMapPoint = NewsMapPoint & { trust_tier?: string };
+type SavedMapView = MapControlState &
+  Readonly<{
+    id: string;
+    name: string;
+    savedAt: string;
+  }>;
+type MapComparison = Readonly<{
+  currentMapPoints: number;
+  previousMapPoints: number;
+  currentEvents: number;
+  previousEvents: number;
+  previousLabel: string;
+}>;
 
 const emptyEvents: PublicEvent[] = [];
 const emptyMapPoints: NewsMapPoint[] = [];
@@ -28,6 +42,8 @@ const emptyWatchedRegions: WatchedRegionCoverage[] = [];
 const emptyBreakingEvents: BreakingMarketEvent[] = [];
 const emptyCoverageGaps: WatchedRegionCoverageGap[] = [];
 const severityValues: Severity[] = ["low", "medium", "high", "critical"];
+const savedMapViewsStorageKey = "stonks-radar:map-views:v1";
+const maxSavedMapViews = 6;
 
 const mapTimeRangeOptions: Array<{ value: MapTimeRange; label: string }> = [
   { value: "all", label: "All UTC" },
@@ -52,6 +68,7 @@ export function MapPage() {
   const [minimumSourceCount, setMinimumSourceCount] = useState<MinimumSourceCount>(initialControls.minimumSourceCount);
   const [watchedRegionsOnly, setWatchedRegionsOnly] = useState(initialControls.watchedRegionsOnly);
   const [selectedMapPointId, setSelectedMapPointId] = useState<string | null>(null);
+  const [savedViews, setSavedViews] = useState(readSavedMapViews);
 
   const snapshot = query.data;
   const data = snapshot?.data;
@@ -66,6 +83,18 @@ export function MapPage() {
     () => resolveMapTimeBounds(timeRange, customStartUtc, customEndUtc, timeAnchor),
     [customEndUtc, customStartUtc, timeAnchor, timeRange]
   );
+  const currentControlState = useMemo<MapControlState>(
+    () => ({
+      severity,
+      sector,
+      timeRange,
+      customStartUtc,
+      customEndUtc,
+      minimumSourceCount,
+      watchedRegionsOnly
+    }),
+    [customEndUtc, customStartUtc, minimumSourceCount, sector, severity, timeRange, watchedRegionsOnly]
+  );
   const watchedRegionKeys = useMemo(() => watchedRegionKeySet(watchedRegions), [watchedRegions]);
   const eventDetailsById = useMemo(
     () => new Map(breakingMarketEvents.map((event) => [event.event_id, event])),
@@ -74,27 +103,44 @@ export function MapPage() {
   const events = useMemo(
     () =>
       allEvents.filter(
-        (event) =>
-          (severity === "all" || event.severity === severity) &&
-          (sector === "all" || event.sector_keys.includes(sector)) &&
-          withinUtcBounds(eventTimestampMs(event), timeBounds)
+        (event) => eventMatchesMapControls(event, severity, sector, timeBounds)
       ),
     [allEvents, sector, severity, timeBounds]
   );
   const mapPoints = useMemo(
     () =>
       allMapPoints.filter(
-        (point) =>
-          (severity === "all" || point.severity === severity) &&
-          withinUtcBounds(mapPointTimestampMs(point), timeBounds) &&
-          (minimumSourceCount === "all" || point.source_count >= Number(minimumSourceCount)) &&
-          (!watchedRegionsOnly || mapPointInWatchedRegion(point, watchedRegionKeys))
+        (point) => mapPointMatchesMapControls(point, severity, minimumSourceCount, watchedRegionsOnly, watchedRegionKeys, timeBounds)
       ),
     [allMapPoints, minimumSourceCount, severity, timeBounds, watchedRegionKeys, watchedRegionsOnly]
   );
   const mapPointsForMap = useMemo(
     () => enrichMapPoints(mapPoints, eventDetailsById),
     [eventDetailsById, mapPoints]
+  );
+  const activeMapPoint = useMemo(
+    () => selectActiveMapPoint(mapPointsForMap, selectedMapPointId),
+    [mapPointsForMap, selectedMapPointId]
+  );
+  const selectedEventId = useMemo(
+    () => resolveSelectedEventId(selectedMapPointId, mapPointsForMap, events),
+    [events, mapPointsForMap, selectedMapPointId]
+  );
+  const comparison = useMemo(
+    () =>
+      buildMapComparison(
+        allMapPoints,
+        allEvents,
+        mapPoints.length,
+        events.length,
+        severity,
+        sector,
+        minimumSourceCount,
+        watchedRegionsOnly,
+        watchedRegionKeys,
+        timeBounds
+      ),
+    [allEvents, allMapPoints, events.length, mapPoints.length, minimumSourceCount, sector, severity, timeBounds, watchedRegionKeys, watchedRegionsOnly]
   );
   const eventsForMap = allMapPoints.length > 0 ? [] : events;
   const activeFilterCount = [
@@ -111,9 +157,7 @@ export function MapPage() {
 
   useEffect(() => {
     if (!selectedMapPointId) return;
-    const selectedPointVisible = mapPoints.some(
-      (point) => point.event_id === selectedMapPointId || point.point_id === selectedMapPointId
-    );
+    const selectedPointVisible = mapPoints.some((point) => mapPointMatchesSelectedId(point, selectedMapPointId));
     if (!selectedPointVisible) setSelectedMapPointId(null);
   }, [mapPoints, selectedMapPointId]);
 
@@ -154,14 +198,43 @@ export function MapPage() {
     });
   }, [customEndUtc, customStartUtc, minimumSourceCount, sector, severity, timeRange, watchedRegionsOnly]);
 
-  const resetFilters = () => {
-    setSeverity("all");
-    setSector("all");
-    setTimeRange("all");
-    setCustomStartUtc("");
-    setCustomEndUtc("");
-    setMinimumSourceCount("all");
-    setWatchedRegionsOnly(false);
+  const applyControlState = useCallback((controls: MapControlState) => {
+    setSeverity(controls.severity);
+    setSector(controls.sector);
+    setTimeRange(controls.timeRange);
+    setCustomStartUtc(controls.customStartUtc);
+    setCustomEndUtc(controls.customEndUtc);
+    setMinimumSourceCount(controls.minimumSourceCount);
+    setWatchedRegionsOnly(controls.watchedRegionsOnly);
+  }, []);
+
+  const resetFilters = () => applyControlState(defaultMapControlState());
+
+  const saveCurrentView = () => {
+    const nextView: SavedMapView = {
+      ...currentControlState,
+      id: `${Date.now()}`,
+      name: savedMapViewName(currentControlState, timeBounds),
+      savedAt: new Date().toISOString()
+    };
+    setSavedViews((views) => {
+      const nextViews = [nextView, ...views.filter((view) => view.name !== nextView.name)].slice(0, maxSavedMapViews);
+      writeSavedMapViews(nextViews);
+      return nextViews;
+    });
+  };
+
+  const removeSavedView = (id: string) => {
+    setSavedViews((views) => {
+      const nextViews = views.filter((view) => view.id !== id);
+      writeSavedMapViews(nextViews);
+      return nextViews;
+    });
+  };
+
+  const selectEventFromList = (eventId: string) => {
+    const matchingPoint = mapPointsForMap.find((point) => mapPointMatchesSelectedId(point, eventId));
+    setSelectedMapPointId(matchingPoint?.event_id ?? eventId);
   };
 
   if (query.isLoading) return <LoadingState />;
@@ -292,6 +365,14 @@ export function MapPage() {
           </div>
         ) : null}
 
+        <MapSavedViews
+          savedViews={savedViews}
+          comparison={comparison}
+          onSave={saveCurrentView}
+          onApply={applyControlState}
+          onRemove={removeSavedView}
+        />
+
         <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs font-semibold text-muted">
           <Clock3 className="h-4 w-4 text-accent" />
           <span>{mapTimeRangeLabel(timeRange, timeBounds)}</span>
@@ -313,10 +394,11 @@ export function MapPage() {
         heightClass="h-[clamp(420px,60svh,640px)] md:h-[720px] xl:h-[calc(100vh-260px)]"
         loadStrategy="immediate"
       />
+      <MapSourceDrilldown point={activeMapPoint} coverageGaps={coverageGaps} />
       {hasFilteredEventMiss ? (
         <MapEmptyState title="No event list items match these controls" body="The map may still show source-linked news points whose event metadata is independent of the public event list." />
       ) : (
-        <EventList events={events} />
+        <EventList events={events} selectedEventId={selectedEventId} onEventSelect={selectEventFromList} />
       )}
     </div>
   );
@@ -333,6 +415,135 @@ function CoverageGapSummary({ coverageGaps }: Readonly<{ coverageGaps: WatchedRe
         </span>
       ))}
     </div>
+  );
+}
+
+function MapSavedViews({
+  savedViews,
+  comparison,
+  onSave,
+  onApply,
+  onRemove
+}: Readonly<{
+  savedViews: SavedMapView[];
+  comparison: MapComparison | null;
+  onSave: () => void;
+  onApply: (view: SavedMapView) => void;
+  onRemove: (id: string) => void;
+}>) {
+  return (
+    <div className="grid min-w-0 gap-3 border-t border-line pt-3">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <button type="button" className="secondary-action min-h-11 px-3 py-1.5 text-xs" aria-label="Save map view" onClick={onSave}>
+          <BookmarkPlus className="h-4 w-4" />
+          Save view
+        </button>
+        {comparison ? (
+          <>
+            <span className="badge border-line bg-panelAlt text-muted">
+              Current {comparison.currentMapPoints} pts / {comparison.currentEvents} events
+            </span>
+            <span className="badge border-line bg-panelAlt text-muted">
+              {comparison.previousLabel} {comparison.previousMapPoints} pts / {comparison.previousEvents} events
+            </span>
+          </>
+        ) : null}
+      </div>
+      {savedViews.length > 0 ? (
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold uppercase text-muted">Saved views</span>
+          {savedViews.map((view) => (
+            <span key={view.id} className="inline-flex min-h-11 max-w-full items-center gap-1 rounded-md border border-line bg-panelAlt p-1">
+              <button
+                type="button"
+                className="focus-ring min-h-9 max-w-[min(320px,70vw)] truncate rounded px-2 text-left text-xs font-semibold text-ink hover:text-accent"
+                title={view.name}
+                onClick={() => onApply(view)}
+              >
+                {view.name}
+              </button>
+              <button
+                type="button"
+                className="focus-ring grid h-9 w-9 shrink-0 place-items-center rounded text-muted hover:bg-panel hover:text-danger"
+                aria-label={`Remove ${view.name}`}
+                title={`Remove ${view.name}`}
+                onClick={() => onRemove(view.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function MapSourceDrilldown({
+  point,
+  coverageGaps
+}: Readonly<{
+  point: EnrichedNewsMapPoint | null;
+  coverageGaps: WatchedRegionCoverageGap[];
+}>) {
+  if (!point) return null;
+  const sourceHref = safeExternalUrl(point.source_url);
+  const pointGap = coverageGaps.find((gap) => gap.region_key === point.area_key || gap.region_key === point.area_id);
+  return (
+    <section className="panel grid min-w-0 gap-4 p-4">
+      <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-sm font-semibold text-accent">
+            <MapPinned className="h-4 w-4" />
+            Source drilldown
+          </div>
+          <h2 className="mt-2 text-xl font-semibold text-ink">{point.title}</h2>
+          <p className="mt-2 text-sm leading-6 text-muted">{point.summary}</p>
+        </div>
+        {sourceHref ? (
+          <a
+            className="secondary-action min-h-11 px-3 py-1.5 text-xs"
+            href={sourceHref}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Source
+          </a>
+        ) : null}
+      </div>
+      <div className="flex min-w-0 flex-wrap gap-2 text-xs font-semibold text-muted">
+        <span className="badge border-line bg-panelAlt text-muted">{point.severity} severity</span>
+        <span className="badge border-line bg-panelAlt text-muted">{point.source_count} sources</span>
+        <span className="badge border-line bg-panelAlt text-muted">Trust {point.trust_tier ?? "unknown"}</span>
+        <span className="badge border-line bg-panelAlt text-muted">Geo {formatPercent(point.geo_confidence)}</span>
+        <span className="badge border-line bg-panelAlt text-muted">{point.area_label}</span>
+        <span className="badge border-line bg-panelAlt text-muted">{formatUtcTimestamp(point.source_published_at)}</span>
+        <span className="badge border-line bg-panelAlt text-muted">{coverageGaps.length} coverage gaps tracked</span>
+        {pointGap ? (
+          <span className="badge border-line bg-panelAlt text-muted">
+            {pointGap.label}: {pointGap.reason.replaceAll("_", " ")}
+          </span>
+        ) : null}
+      </div>
+      {point.score_reason_codes.length > 0 ? (
+        <div className="flex min-w-0 flex-wrap gap-2 text-xs font-semibold text-muted">
+          {point.score_reason_codes.map((code) => (
+            <span key={code} className="badge border-line bg-panelAlt text-muted">
+              {code.replaceAll("_", " ")}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      <div className="flex min-w-0 flex-wrap gap-2 text-xs font-semibold text-muted">
+        <span className="badge border-line bg-panelAlt text-muted">Point {point.point_id}</span>
+        {point.event_ids.map((eventId) => (
+          <span key={eventId} className="badge border-line bg-panelAlt text-muted">
+            Event {eventId}
+          </span>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -387,6 +598,92 @@ function withinUtcBounds(timestamp: number | null, bounds: UtcBounds) {
   return (bounds.fromMs === null || timestamp >= bounds.fromMs) && (bounds.toMs === null || timestamp <= bounds.toMs);
 }
 
+function eventMatchesMapControls(
+  event: PublicEvent,
+  severity: Severity | "all",
+  sector: string,
+  bounds: UtcBounds
+) {
+  return (
+    (severity === "all" || event.severity === severity) &&
+    (sector === "all" || event.sector_keys.includes(sector)) &&
+    withinUtcBounds(eventTimestampMs(event), bounds)
+  );
+}
+
+function mapPointMatchesMapControls(
+  point: NewsMapPoint,
+  severity: Severity | "all",
+  minimumSourceCount: MinimumSourceCount,
+  watchedRegionsOnly: boolean,
+  watchedRegionKeys: ReadonlySet<string>,
+  bounds: UtcBounds
+) {
+  return (
+    (severity === "all" || point.severity === severity) &&
+    withinUtcBounds(mapPointTimestampMs(point), bounds) &&
+    (minimumSourceCount === "all" || point.source_count >= Number(minimumSourceCount)) &&
+    (!watchedRegionsOnly || mapPointInWatchedRegion(point, watchedRegionKeys))
+  );
+}
+
+function selectActiveMapPoint(mapPoints: EnrichedNewsMapPoint[], selectedMapPointId: string | null) {
+  if (mapPoints.length === 0) return null;
+  if (!selectedMapPointId) return mapPoints[0] ?? null;
+  return mapPoints.find((point) => mapPointMatchesSelectedId(point, selectedMapPointId)) ?? mapPoints[0] ?? null;
+}
+
+function resolveSelectedEventId(
+  selectedMapPointId: string | null,
+  mapPoints: EnrichedNewsMapPoint[],
+  events: PublicEvent[]
+) {
+  if (!selectedMapPointId) return null;
+  if (events.some((event) => event.id === selectedMapPointId)) return selectedMapPointId;
+  return mapPoints.find((point) => mapPointMatchesSelectedId(point, selectedMapPointId))?.event_id ?? null;
+}
+
+function mapPointMatchesSelectedId(point: NewsMapPoint, selectedId: string) {
+  return point.point_id === selectedId || point.event_id === selectedId || point.event_ids.includes(selectedId);
+}
+
+function buildMapComparison(
+  allMapPoints: NewsMapPoint[],
+  allEvents: PublicEvent[],
+  currentMapPoints: number,
+  currentEvents: number,
+  severity: Severity | "all",
+  sector: string,
+  minimumSourceCount: MinimumSourceCount,
+  watchedRegionsOnly: boolean,
+  watchedRegionKeys: ReadonlySet<string>,
+  bounds: UtcBounds
+): MapComparison | null {
+  const previousBounds = previousUtcBounds(bounds);
+  if (!previousBounds) return null;
+  const previousMapPoints = allMapPoints.filter((point) =>
+    mapPointMatchesMapControls(point, severity, minimumSourceCount, watchedRegionsOnly, watchedRegionKeys, previousBounds)
+  ).length;
+  const previousEvents = allEvents.filter((event) => eventMatchesMapControls(event, severity, sector, previousBounds)).length;
+  return {
+    currentMapPoints,
+    previousMapPoints,
+    currentEvents,
+    previousEvents,
+    previousLabel: "Previous"
+  };
+}
+
+function previousUtcBounds(bounds: UtcBounds): UtcBounds | null {
+  if (bounds.fromMs === null || bounds.toMs === null) return null;
+  const durationMs = bounds.toMs - bounds.fromMs;
+  if (durationMs <= 0) return null;
+  return {
+    fromMs: bounds.fromMs - durationMs,
+    toMs: bounds.fromMs
+  };
+}
+
 function eventTimestampMs(event: PublicEvent) {
   return timestampMs(event.published_at) ?? timestampMs(event.occurred_at);
 }
@@ -431,6 +728,18 @@ function enrichMapPoints(
   });
 }
 
+function defaultMapControlState(): MapControlState {
+  return {
+    severity: "all",
+    sector: "all",
+    timeRange: "all",
+    customStartUtc: "",
+    customEndUtc: "",
+    minimumSourceCount: "all",
+    watchedRegionsOnly: false
+  };
+}
+
 function readMapControlState(): MapControlState {
   const params = new URLSearchParams(globalThis.window.location.search);
   const from = normalizeUtcInputValue(params.get("from"));
@@ -468,6 +777,58 @@ function writeMapControlState(state: MapControlState) {
   }
 }
 
+function readSavedMapViews(): SavedMapView[] {
+  try {
+    const rawViews = globalThis.window.localStorage.getItem(savedMapViewsStorageKey);
+    const parsedViews = rawViews ? JSON.parse(rawViews) : [];
+    if (!Array.isArray(parsedViews)) return [];
+    return parsedViews.map(normalizeSavedMapView).filter((view): view is SavedMapView => view !== null).slice(0, maxSavedMapViews);
+  } catch {
+    return [];
+  }
+}
+
+function writeSavedMapViews(views: SavedMapView[]) {
+  try {
+    globalThis.window.localStorage.setItem(savedMapViewsStorageKey, JSON.stringify(views));
+  } catch {
+    // Saved views are optional client state, so storage failures should not block map controls.
+  }
+}
+
+function normalizeSavedMapView(value: unknown): SavedMapView | null {
+  if (!isRecord(value)) return null;
+  const id = normalizeSavedText(value.id);
+  const name = normalizeSavedText(value.name);
+  if (!id || !name) return null;
+  const from = normalizeUtcInputValue(stringOrNull(value.customStartUtc));
+  const to = normalizeUtcInputValue(stringOrNull(value.customEndUtc));
+  return {
+    id,
+    name,
+    savedAt: normalizeSavedText(value.savedAt) ?? new Date(0).toISOString(),
+    severity: normalizeSeverityParam(stringOrNull(value.severity)),
+    sector: normalizeTextParam(stringOrNull(value.sector)),
+    timeRange: normalizeTimeRangeParam(stringOrNull(value.timeRange), from, to),
+    customStartUtc: from,
+    customEndUtc: to,
+    minimumSourceCount: normalizeSourceCountParam(stringOrNull(value.minimumSourceCount)),
+    watchedRegionsOnly: value.watchedRegionsOnly === true
+  };
+}
+
+function savedMapViewName(state: MapControlState, bounds: UtcBounds) {
+  const parts = [
+    state.severity !== "all" ? state.severity : "",
+    state.sector !== "all" ? state.sector : "",
+    state.timeRange !== "all" ? mapTimeRangeLabel(state.timeRange, bounds) : "",
+    state.minimumSourceCount !== "all" ? `${state.minimumSourceCount}+ sources` : "",
+    state.watchedRegionsOnly ? "watched" : ""
+  ].filter(Boolean);
+  const label = parts.length > 0 ? parts.slice(0, 4).join(" / ") : "All map";
+  return `${label} - ${new Date().toISOString().slice(11, 16)} UTC`;
+}
+
 function normalizeSeverityParam(value: string | null): Severity | "all" {
   return severityValues.includes(value as Severity) ? (value as Severity) : "all";
 }
@@ -497,4 +858,27 @@ function normalizeUtcInputValue(value: string | null) {
 
 function normalizeBooleanParam(value: string | null) {
   return value === "1" || value === "true";
+}
+
+function normalizeSavedText(value: unknown) {
+  return typeof value === "string" && value.trim().length > 0 && value.length <= 120 ? value.trim() : null;
+}
+
+function stringOrNull(value: unknown) {
+  return typeof value === "string" ? value : null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function formatPercent(value: number) {
+  if (!Number.isFinite(value)) return "unknown";
+  return `${Math.round(value * 100)}%`;
+}
+
+function formatUtcTimestamp(value: string) {
+  const ms = timestampMs(value);
+  if (ms === null) return "Unknown UTC";
+  return `${new Date(ms).toISOString().slice(0, 16).replace("T", " ")} UTC`;
 }

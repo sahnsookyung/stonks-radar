@@ -1,5 +1,6 @@
 import type { AssumptionSet, Instrument, Portfolio } from "./portfolioAtlas";
 import { defaultAssumptions } from "./portfolioAtlas";
+import { syncCsrfTokenFromCookie } from "./api";
 
 export type ReviewRequestStatus = "queued" | "in-review" | "resolved" | "closed";
 
@@ -31,6 +32,12 @@ export type ManualHoldingDraftFields = {
   marketValueText: string;
 };
 
+type ServerPortfolioWorkspaceResponse = {
+  portfolio_id?: string;
+  workspace?: Partial<StoredPortfolioWorkspace>;
+  updated_at?: string;
+};
+
 export const PORTFOLIO_WORKSPACE_STORAGE_VERSION = 1;
 export const PORTFOLIO_WORKSPACE_STORAGE_PREFIX = "stonks-radar:portfolio-workspace:";
 export const MANUAL_TEXT_MAX_LENGTH = 96;
@@ -57,14 +64,7 @@ export function loadPortfolioWorkspace(portfolioId: string): StoredPortfolioWork
     const raw = globalThis.window.localStorage.getItem(workspaceStorageKey(portfolioId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StoredPortfolioWorkspace>;
-    if (parsed.version !== PORTFOLIO_WORKSPACE_STORAGE_VERSION || !parsed.portfolio) return null;
-    return {
-      version: PORTFOLIO_WORKSPACE_STORAGE_VERSION,
-      portfolio: parsed.portfolio,
-      manualInstruments: parsed.manualInstruments ?? [],
-      reviewRequests: parsed.reviewRequests ?? [],
-      assumptions: parsed.assumptions ?? defaultAssumptions
-    };
+    return normalizeStoredWorkspace(parsed);
   } catch {
     return null;
   }
@@ -83,6 +83,52 @@ export function savePortfolioWorkspace(
     );
   } catch {
     // Browser storage may be disabled or full; the workspace still functions as an in-memory session.
+  }
+}
+
+export async function loadServerPortfolioWorkspace(
+  portfolioId: string,
+  signal?: AbortSignal
+): Promise<StoredPortfolioWorkspace | null> {
+  const response = await fetch(serverWorkspacePath(portfolioId), {
+    credentials: "include",
+    headers: { Accept: "application/json" },
+    signal
+  });
+  if (response.status === 401 || response.status === 403 || response.status === 404) return null;
+  if (!response.ok) return null;
+  const payload = (await response.json()) as ServerPortfolioWorkspaceResponse;
+  return normalizeStoredWorkspace(payload.workspace);
+}
+
+export async function saveServerPortfolioWorkspace(
+  portfolioId: string,
+  workspace: Omit<StoredPortfolioWorkspace, "version">,
+  signal?: AbortSignal
+): Promise<boolean> {
+  const csrfToken = syncCsrfTokenFromCookie();
+  if (!csrfToken) return false;
+  try {
+    const response = await fetch(serverWorkspacePath(portfolioId), {
+      method: "PUT",
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "x-csrf-token": csrfToken
+      },
+      body: JSON.stringify({
+        workspace: {
+          version: PORTFOLIO_WORKSPACE_STORAGE_VERSION,
+          ...workspace
+        }
+      }),
+      signal
+    });
+    return response.ok;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    return false;
   }
 }
 
@@ -131,4 +177,19 @@ export function manualNumberInvalid(value: string, numeric: number, required: bo
   const hasInput = value.trim().length > 0;
   if (!required && !hasInput) return false;
   return !Number.isFinite(numeric) || numeric < min || numeric > max;
+}
+
+function normalizeStoredWorkspace(parsed: Partial<StoredPortfolioWorkspace> | null | undefined): StoredPortfolioWorkspace | null {
+  if (parsed?.version !== PORTFOLIO_WORKSPACE_STORAGE_VERSION || !parsed.portfolio) return null;
+  return {
+    version: PORTFOLIO_WORKSPACE_STORAGE_VERSION,
+    portfolio: parsed.portfolio,
+    manualInstruments: parsed.manualInstruments ?? [],
+    reviewRequests: parsed.reviewRequests ?? [],
+    assumptions: parsed.assumptions ?? defaultAssumptions
+  };
+}
+
+function serverWorkspacePath(portfolioId: string) {
+  return `/api/portfolio-workspaces/${encodeURIComponent(toSafeId(portfolioId))}`;
 }

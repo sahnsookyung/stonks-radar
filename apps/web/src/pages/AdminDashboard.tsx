@@ -51,6 +51,24 @@ interface AdminDashboardPayload {
         counters: Record<string, number>;
       }[];
     };
+    pipeline_health?: {
+      status: string;
+      stage_count: number;
+      last_completed_at: string | null;
+      total_duration_ms: number;
+      stages: {
+        source_key: string;
+        stage: string;
+        status: string;
+        health_status: string;
+        release_id: string | null;
+        runtime_enabled: boolean | null;
+        stage_started_at: string | null;
+        stage_completed_at: string | null;
+        duration_ms: number;
+        counters: Record<string, number>;
+      }[];
+    };
     provenance: {
       release_id: string;
       source_documents: number;
@@ -729,6 +747,7 @@ function ReleaseControlsPanel({
   quarantineRelease: (releaseId: string) => void;
 }>) {
   const funnelTotals = releaseControls.source_funnel.totals;
+  const pipelineHealth = releaseControls.pipeline_health;
 
   return (
     <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
@@ -804,6 +823,37 @@ function ReleaseControlsPanel({
             ))}
           </div>
         </div>
+        {pipelineHealth ? (
+          <div className="panel p-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="font-semibold">Pipeline health</div>
+              <span className={`rounded-md border px-2 py-1 text-xs font-semibold ${statusClass(pipelineHealth.status)}`}>
+                {pipelineHealth.status}
+              </span>
+            </div>
+            <div className="grid gap-2 text-sm">
+              <ReleaseMetaRow label="Stages" value={String(pipelineHealth.stage_count)} />
+              <ReleaseMetaRow label="Total duration" value={`${pipelineHealth.total_duration_ms}ms`} />
+              <ReleaseMetaRow label="Last completed" value={formatOptionalDate(pipelineHealth.last_completed_at)} />
+            </div>
+            {pipelineHealth.stages.length > 0 ? (
+              <div className="mt-3 overflow-x-auto">
+                <table className="min-w-full text-left text-xs">
+                  <tbody className="divide-y divide-line">
+                    {pipelineHealth.stages.map((stage) => (
+                      <tr key={stage.source_key}>
+                        <td className="py-2 font-semibold">{stage.stage}</td>
+                        <td className="py-2">{stage.duration_ms}ms</td>
+                        <td className="py-2 text-muted">{formatOptionalDate(stage.stage_completed_at)}</td>
+                        <td className={`py-2 font-semibold ${statusTextClass(stage.health_status)}`}>{stage.health_status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <div className="panel p-4">
           <div className="mb-3 font-semibold">Provenance cleanup estimate</div>
           <p className="text-sm text-muted">

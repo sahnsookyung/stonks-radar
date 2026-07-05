@@ -107,6 +107,7 @@ defmodule StonksBackend.News.Pipeline do
   end
 
   def normalize_documents(payload) do
+    timing = stage_timing()
     rows = news_documents(limit(payload), require_unclassified: false)
     now = now_iso8601()
 
@@ -128,12 +129,13 @@ defmodule StonksBackend.News.Pipeline do
       end)
       |> Enum.count(&(&1 == :ok))
 
-    record_pipeline_health("normalized", %{parsed: length(rows)})
+    record_pipeline_health("normalized", %{parsed: length(rows)}, timing)
 
     {:ok, %{status: "ready", documents_seen: length(rows), documents_normalized: touched}}
   end
 
   def classify_documents(payload) do
+    timing = stage_timing()
     rows = news_documents(limit(payload), require_unclassified: true)
     now = now_iso8601()
 
@@ -158,16 +160,17 @@ defmodule StonksBackend.News.Pipeline do
       end)
       |> Enum.count(&(&1 == :ok))
 
-    record_pipeline_health("classified", %{classified: classified, parsed: length(rows)})
+    record_pipeline_health("classified", %{classified: classified, parsed: length(rows)}, timing)
 
     {:ok, %{status: "ready", documents_seen: length(rows), documents_classified: classified}}
   end
 
   def cluster_events(payload) do
+    timing = stage_timing()
     rows = classified_news_documents(limit(payload))
 
     if rows == [] do
-      record_pipeline_health("clustered", %{clustered: 0, parsed: 0})
+      record_pipeline_health("clustered", %{clustered: 0, parsed: 0}, timing)
 
       {:ok, %{status: "ready", documents_seen: 0, clusters_upserted: 0, links_upserted: 0}}
     else
@@ -196,11 +199,15 @@ defmodule StonksBackend.News.Pipeline do
           end
         end)
 
-      record_pipeline_health("clustered", %{
-        clustered: clusters_upserted,
-        parsed: length(rows),
-        published_or_projected: clusters_upserted
-      })
+      record_pipeline_health(
+        "clustered",
+        %{
+          clustered: clusters_upserted,
+          parsed: length(rows),
+          published_or_projected: clusters_upserted
+        },
+        timing
+      )
 
       {:ok,
        %{
@@ -213,6 +220,8 @@ defmodule StonksBackend.News.Pipeline do
   end
 
   def score_events(_payload \\ %{}) do
+    timing = stage_timing()
+
     rows =
       Sql.all("""
       select c.id,
@@ -241,7 +250,7 @@ defmodule StonksBackend.News.Pipeline do
 
     scored = Enum.count(rows, &score_event_row/1)
 
-    record_pipeline_health("scored", %{published_or_projected: scored})
+    record_pipeline_health("scored", %{published_or_projected: scored}, timing)
 
     {:ok, %{status: "ready", events_scored: scored}}
   end
@@ -478,11 +487,19 @@ defmodule StonksBackend.News.Pipeline do
     _ -> :error
   end
 
-  defp record_pipeline_health(stage, counters) do
+  defp record_pipeline_health(stage, counters, timing) do
+    completed_at = DateTime.utc_now()
+
     details =
       %{
         elixir_component: "news_pipeline",
         stage: stage,
+        status: "ready",
+        release_id: release_id(),
+        runtime_enabled: Settings.truthy?(Settings.get(:news_pipeline_runtime_enabled, "true")),
+        stage_started_at: timing_started_at(timing),
+        stage_completed_at: DateTime.to_iso8601(completed_at),
+        duration_ms: timing_duration_ms(timing),
         discovery:
           Map.merge(
             %{
@@ -512,6 +529,29 @@ defmodule StonksBackend.News.Pipeline do
     )
   rescue
     _ -> :ok
+  end
+
+  defp stage_timing do
+    %{
+      started_at: DateTime.utc_now(),
+      started_monotonic_ms: System.monotonic_time(:millisecond)
+    }
+  end
+
+  defp timing_started_at(%{started_at: %DateTime{} = started_at}),
+    do: DateTime.to_iso8601(started_at)
+
+  defp timing_started_at(_), do: nil
+
+  defp timing_duration_ms(%{started_monotonic_ms: started_ms}) when is_integer(started_ms),
+    do: max(System.monotonic_time(:millisecond) - started_ms, 0)
+
+  defp timing_duration_ms(_), do: nil
+
+  defp release_id do
+    System.get_env("STONKS_RELEASE_ID") ||
+      System.get_env("GITHUB_SHA") ||
+      "local"
   end
 
   defp stringify_counter_keys(counters) do
