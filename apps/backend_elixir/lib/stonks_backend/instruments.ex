@@ -250,21 +250,11 @@ defmodule StonksBackend.Instruments do
     |> Base.encode16(case: :lower)
   end
 
-  def normalize_search_query(value) do
-    value
-    |> to_string()
-    |> String.trim()
-    |> String.downcase()
-  end
+  defdelegate normalize_search_query(value),
+    to: StonksBackend.Instruments.Normalization,
+    as: :search_query
 
-  def normalize_symbol(nil), do: ""
-
-  def normalize_symbol(value) do
-    value
-    |> to_string()
-    |> String.upcase()
-    |> String.replace(~r/[^A-Z0-9]/, "")
-  end
+  defdelegate normalize_symbol(value), to: StonksBackend.Instruments.Normalization, as: :symbol
 
   defp db_detail(id, normalized_listing) do
     row =
@@ -1557,28 +1547,8 @@ defmodule StonksBackend.Instruments do
     |> Enum.uniq()
   end
 
-  defp normalize_symbol_list(value) when is_list(value) do
-    value
-    |> Enum.map(&normalize_provider_symbol/1)
-    |> Enum.reject(&blank?/1)
-    |> Enum.uniq()
-  end
-
-  defp normalize_symbol_list(value) when is_binary(value) do
-    value
-    |> String.split(",", trim: true)
-    |> normalize_symbol_list()
-  end
-
-  defp normalize_symbol_list(_value), do: []
-
-  defp normalize_provider_symbol(value) do
-    value
-    |> to_string()
-    |> String.trim()
-    |> String.upcase()
-    |> String.replace(~r/[^A-Z0-9.\-]/, "")
-  end
+  defp normalize_symbol_list(value),
+    do: StonksBackend.Instruments.Normalization.provider_symbol_list(value)
 
   defp provider_api_key(:fmp_api_key) do
     Settings.get(:fmp_api_key)

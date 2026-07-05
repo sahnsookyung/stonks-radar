@@ -217,7 +217,9 @@ defmodule StonksBackend.SnapshotsTest do
           })
         ],
         "breaking_market_map" => %{
-          "events" => [breaking_event("shipping_watch", timestamp, %{"geo_points" => [map_point]})],
+          "events" => [
+            breaking_event("shipping_watch", timestamp, %{"geo_points" => [map_point]})
+          ],
           "map_points" => [map_point],
           "watched_regions" => [
             %{
