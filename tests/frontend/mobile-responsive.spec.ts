@@ -297,11 +297,32 @@ async function mockOptionalPublicApis(page: Page) {
       body: JSON.stringify({})
     });
   });
+  await page.route("**/api/portfolio-workspaces/**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ workspace: null })
+    });
+  });
   await page.route("**/api/instruments/search**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ results: [] })
+    });
+  });
+  await page.route("**/api/instruments/resolve", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ status: "NO_MATCH", confidence: "LOW", matches: [] })
+    });
+  });
+  await page.route(/\/api\/instruments\/(?!search|resolve|review-requests)[^/?]+(?:\?.*)?$/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({})
     });
   });
   await page.route("**/api/public/filings**", async (route) => {
