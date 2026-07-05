@@ -179,6 +179,121 @@ defmodule StonksBackend.SnapshotsTest do
     assert message =~ "item_kind"
   end
 
+  test "map events snapshot fixture covers enriched map contract", %{published_root: root} do
+    timestamp = ~U[2026-07-05 09:15:00Z]
+    timestamp_iso = DateTime.to_iso8601(timestamp)
+    map_point = map_point("shipping_watch", timestamp)
+
+    write_manifest!(root, %{
+      "map_events" => %{"en" => "public/v1/en/map_events.json"}
+    })
+
+    write_snapshot!(root, "v1/en/map_events.json", %{
+      "object_type" => "map_events",
+      "object_key" => "map_events",
+      "generated_at" => timestamp_iso,
+      "data" => %{
+        "events" => [],
+        "breaking_market_events" => [
+          breaking_event("shipping_watch", timestamp, %{
+            "geo_points" => [map_point],
+            "regions" => [
+              %{
+                "key" => "USA",
+                "name" => "United States",
+                "relation" => "event_region",
+                "confidence" => 0.9
+              }
+            ],
+            "topics" => [%{"key" => "shipping", "label" => "Shipping", "confidence" => 0.8}],
+            "tickers" => [
+              %{
+                "symbol" => "FDX",
+                "name" => "FedEx",
+                "relationship" => "affected_company",
+                "confidence" => 0.7
+              }
+            ]
+          })
+        ],
+        "breaking_market_map" => %{
+          "events" => [
+            breaking_event("shipping_watch", timestamp, %{"geo_points" => [map_point]})
+          ],
+          "map_points" => [map_point],
+          "watched_regions" => [
+            %{
+              "key" => "USA",
+              "type" => "country",
+              "label" => "United States",
+              "iso3" => "USA",
+              "natural_earth_names" => ["United States of America"],
+              "groups" => ["g7"],
+              "priority" => 95,
+              "gdp_rank" => 1,
+              "gather_news" => true,
+              "render_on_map" => true,
+              "nav_visible" => true,
+              "coverage_status" => "active",
+              "coverage_window_days" => 7,
+              "event_count" => 1,
+              "map_point_count" => 1,
+              "newest_source_published_at" => timestamp_iso,
+              "quiet_reason" => nil
+            }
+          ],
+          "coverage_gaps" => [
+            %{
+              "region_key" => "strait_of_hormuz",
+              "label" => "Strait of Hormuz",
+              "reason" => "no_recent_evidence",
+              "coverage_window_days" => 7,
+              "newest_source_published_at" => nil
+            }
+          ],
+          "regional_briefs" => [
+            %{
+              "region_key" => "USA",
+              "label" => "United States",
+              "coverage_window_days" => 7,
+              "generated_at" => timestamp_iso,
+              "summary" => "Source-linked regional brief for the enriched map contract.",
+              "event_count" => 1,
+              "source_count" => 1,
+              "newest_source_published_at" => timestamp_iso,
+              "evidence" => [
+                %{
+                  "event_id" => "shipping_watch",
+                  "title" => "Reviewed market update",
+                  "source_url" => "https://example.com/shipping_watch",
+                  "source_published_at" => timestamp_iso,
+                  "severity" => "high"
+                }
+              ],
+              "confidence" => "source_linked"
+            }
+          ],
+          "shown_count" => 1,
+          "total_count" => 1,
+          "ranking_cutoff" => nil,
+          "registry_version" => 1,
+          "scoring_version" => "test",
+          "thinning_version" => "test",
+          "generated_at" => timestamp_iso
+        },
+        "filters" => %{
+          "countries_regions" => ["USA"],
+          "sectors" => ["shipping"],
+          "severities" => ["high"],
+          "event_types" => ["market_news"]
+        }
+      }
+    })
+
+    assert :ok = Snapshots.validate_snapshot_tree(root)
+    assert String.ends_with?(timestamp_iso, "Z")
+  end
+
   test "snapshot validation rejects placeholder wording in public display fields", %{
     published_root: root
   } do

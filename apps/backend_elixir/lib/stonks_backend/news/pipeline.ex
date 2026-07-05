@@ -1,7 +1,14 @@
 defmodule StonksBackend.News.Pipeline do
   @moduledoc "Metadata-only news normalization, classification, clustering, and scoring."
 
-  alias StonksBackend.{News.SourceFetcher, Settings, Sql, TrackedTickers, WatchedRegions}
+  alias StonksBackend.{
+    News.Scoring,
+    News.SourceFetcher,
+    Settings,
+    Sql,
+    TrackedTickers,
+    WatchedRegions
+  }
 
   @topic_keywords %{
     "semiconductors" => [
@@ -100,6 +107,7 @@ defmodule StonksBackend.News.Pipeline do
   end
 
   def normalize_documents(payload) do
+    timing = stage_timing()
     rows = news_documents(limit(payload), require_unclassified: false)
     now = now_iso8601()
 
@@ -121,12 +129,13 @@ defmodule StonksBackend.News.Pipeline do
       end)
       |> Enum.count(&(&1 == :ok))
 
-    record_pipeline_health("normalized", %{parsed: length(rows)})
+    record_pipeline_health("normalized", %{parsed: length(rows)}, timing)
 
     {:ok, %{status: "ready", documents_seen: length(rows), documents_normalized: touched}}
   end
 
   def classify_documents(payload) do
+    timing = stage_timing()
     rows = news_documents(limit(payload), require_unclassified: true)
     now = now_iso8601()
 
@@ -151,16 +160,17 @@ defmodule StonksBackend.News.Pipeline do
       end)
       |> Enum.count(&(&1 == :ok))
 
-    record_pipeline_health("classified", %{classified: classified, parsed: length(rows)})
+    record_pipeline_health("classified", %{classified: classified, parsed: length(rows)}, timing)
 
     {:ok, %{status: "ready", documents_seen: length(rows), documents_classified: classified}}
   end
 
   def cluster_events(payload) do
+    timing = stage_timing()
     rows = classified_news_documents(limit(payload))
 
     if rows == [] do
-      record_pipeline_health("clustered", %{clustered: 0, parsed: 0})
+      record_pipeline_health("clustered", %{clustered: 0, parsed: 0}, timing)
 
       {:ok, %{status: "ready", documents_seen: 0, clusters_upserted: 0, links_upserted: 0}}
     else
@@ -189,11 +199,15 @@ defmodule StonksBackend.News.Pipeline do
           end
         end)
 
-      record_pipeline_health("clustered", %{
-        clustered: clusters_upserted,
-        parsed: length(rows),
-        published_or_projected: clusters_upserted
-      })
+      record_pipeline_health(
+        "clustered",
+        %{
+          clustered: clusters_upserted,
+          parsed: length(rows),
+          published_or_projected: clusters_upserted
+        },
+        timing
+      )
 
       {:ok,
        %{
@@ -206,6 +220,8 @@ defmodule StonksBackend.News.Pipeline do
   end
 
   def score_events(_payload \\ %{}) do
+    timing = stage_timing()
+
     rows =
       Sql.all("""
       select c.id,
@@ -234,7 +250,7 @@ defmodule StonksBackend.News.Pipeline do
 
     scored = Enum.count(rows, &score_event_row/1)
 
-    record_pipeline_health("scored", %{published_or_projected: scored})
+    record_pipeline_health("scored", %{published_or_projected: scored}, timing)
 
     {:ok, %{status: "ready", events_scored: scored}}
   end
@@ -248,10 +264,10 @@ defmodule StonksBackend.News.Pipeline do
   end
 
   defp score_event_row(row) do
-    score = trust_score(row["trust_tiers"] || [])
+    score = Scoring.trust_score(row["trust_tiers"] || [])
 
     breaking =
-      breaking_score(%{
+      Scoring.breaking_score(%{
         recency_score: 70,
         source_trust_score: score,
         source_velocity_score: min(100, to_int(row["source_count"]) * 20),
@@ -382,48 +398,11 @@ defmodule StonksBackend.News.Pipeline do
     |> Enum.sort_by(&(-&1.document_count))
   end
 
-  def trust_score(trust_tiers) do
-    scores =
-      trust_tiers
-      |> List.wrap()
-      |> Enum.map(fn
-        tier when is_binary(tier) ->
-          cond do
-            String.starts_with?(tier, "T0_") -> 95
-            String.starts_with?(tier, "T1_") -> 88
-            String.starts_with?(tier, "T2_") -> 74
-            String.starts_with?(tier, "T3_") -> 62
-            String.starts_with?(tier, "T4_") -> 38
-            true -> 50
-          end
+  def trust_score(trust_tiers), do: Scoring.trust_score(trust_tiers)
 
-        _ ->
-          50
-      end)
+  def breaking_score(parts), do: Scoring.breaking_score(parts)
 
-    if scores == [], do: 50, else: round(Enum.sum(scores) / length(scores))
-  end
-
-  def breaking_score(parts) do
-    round(
-      parts.recency_score * 0.2 +
-        parts.source_trust_score * 0.24 +
-        parts.source_velocity_score * 0.16 +
-        parts.novelty_score * 0.12 +
-        parts.affected_entity_importance_score * 0.12 +
-        parts.topic_severity_score * 0.1 +
-        parts.cross_region_impact_score * 0.06
-    )
-  end
-
-  def independent_source_count(rows) do
-    rows
-    |> List.wrap()
-    |> Enum.map(&source_identity/1)
-    |> Enum.reject(&(&1 == ""))
-    |> MapSet.new()
-    |> MapSet.size()
-  end
+  def independent_source_count(rows), do: Scoring.independent_source_count(rows)
 
   defp ok_stage(job_type, payload) do
     {:ok,
@@ -508,11 +487,19 @@ defmodule StonksBackend.News.Pipeline do
     _ -> :error
   end
 
-  defp record_pipeline_health(stage, counters) do
+  defp record_pipeline_health(stage, counters, timing) do
+    completed_at = DateTime.utc_now()
+
     details =
       %{
         elixir_component: "news_pipeline",
         stage: stage,
+        status: "ready",
+        release_id: release_id(),
+        runtime_enabled: Settings.truthy?(Settings.get(:news_pipeline_runtime_enabled, "true")),
+        stage_started_at: timing_started_at(timing),
+        stage_completed_at: DateTime.to_iso8601(completed_at),
+        duration_ms: timing_duration_ms(timing),
         discovery:
           Map.merge(
             %{
@@ -542,6 +529,29 @@ defmodule StonksBackend.News.Pipeline do
     )
   rescue
     _ -> :ok
+  end
+
+  defp stage_timing do
+    %{
+      started_at: DateTime.utc_now(),
+      started_monotonic_ms: System.monotonic_time(:millisecond)
+    }
+  end
+
+  defp timing_started_at(%{started_at: %DateTime{} = started_at}),
+    do: DateTime.to_iso8601(started_at)
+
+  defp timing_started_at(_), do: nil
+
+  defp timing_duration_ms(%{started_monotonic_ms: started_ms}) when is_integer(started_ms),
+    do: max(System.monotonic_time(:millisecond) - started_ms, 0)
+
+  defp timing_duration_ms(_), do: nil
+
+  defp release_id do
+    System.get_env("STONKS_RELEASE_ID") ||
+      System.get_env("GITHUB_SHA") ||
+      "local"
   end
 
   defp stringify_counter_keys(counters) do
@@ -1116,30 +1126,6 @@ defmodule StonksBackend.News.Pipeline do
   defp primary_source?(metadata) do
     tier = to_string(metadata["trust_tier"] || metadata[:trust_tier])
     String.starts_with?(tier, "T0_") or String.starts_with?(tier, "T1_")
-  end
-
-  defp source_identity(row) do
-    metadata = metadata(row)
-
-    [
-      row["publisher"] || row[:publisher],
-      metadata["gdelt_domain"] || metadata[:gdelt_domain],
-      host(
-        row["canonical_url"] || row[:canonical_url] || row["original_url"] || row[:original_url]
-      ),
-      metadata["source_key"] || metadata[:source_key] || row["source_key"] || row[:source_key],
-      row["id"] || row[:id]
-    ]
-    |> Enum.find_value("", fn value ->
-      value
-      |> to_string()
-      |> String.downcase()
-      |> String.trim()
-      |> case do
-        "" -> nil
-        text -> text
-      end
-    end)
   end
 
   defp official_host?("", _profile), do: false

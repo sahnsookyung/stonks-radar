@@ -11,6 +11,23 @@ interface AdminDashboardPayload {
   release_controls?: {
     release_id: string;
     payload_version: number;
+    deployment: {
+      release_id: string;
+      expected_commit: string;
+      api_image_ref: string;
+      web_artifact_version: string;
+      runtime_environment: string;
+    };
+    snapshot_publish_health: {
+      status: string;
+      latest_manifest_version: number | null;
+      latest_manifest_hash: string | null;
+      latest_manifest_generated_at: string | null;
+      latest_manifest_published_at: string | null;
+      snapshot_age_seconds: number | null;
+      max_snapshot_age_seconds: number | null;
+      publish_health: string;
+    };
     runtime_switches: {
       key: string;
       enabled: boolean;
@@ -31,6 +48,24 @@ interface AdminDashboardPayload {
       sources: {
         source_key: string;
         status: string;
+        counters: Record<string, number>;
+      }[];
+    };
+    pipeline_health?: {
+      status: string;
+      stage_count: number;
+      last_completed_at: string | null;
+      total_duration_ms: number;
+      stages: {
+        source_key: string;
+        stage: string;
+        status: string;
+        health_status: string;
+        release_id: string | null;
+        runtime_enabled: boolean | null;
+        stage_started_at: string | null;
+        stage_completed_at: string | null;
+        duration_ms: number;
         counters: Record<string, number>;
       }[];
     };
@@ -712,6 +747,7 @@ function ReleaseControlsPanel({
   quarantineRelease: (releaseId: string) => void;
 }>) {
   const funnelTotals = releaseControls.source_funnel.totals;
+  const pipelineHealth = releaseControls.pipeline_health;
 
   return (
     <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
@@ -744,6 +780,29 @@ function ReleaseControlsPanel({
       </div>
       <div className="grid gap-4">
         <div className="panel p-4">
+          <div className="mb-3 font-semibold">Deployment identity</div>
+          <div className="grid gap-2 text-sm">
+            <ReleaseMetaRow label="API image" value={releaseControls.deployment.api_image_ref} />
+            <ReleaseMetaRow label="Web artifact" value={releaseControls.deployment.web_artifact_version} />
+            <ReleaseMetaRow label="Expected commit" value={releaseControls.deployment.expected_commit} />
+            <ReleaseMetaRow label="Runtime" value={releaseControls.deployment.runtime_environment} />
+          </div>
+        </div>
+        <div className="panel p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="font-semibold">Snapshot publish health</div>
+            <span className={`rounded-md border px-2 py-1 text-xs font-semibold ${statusClass(releaseControls.snapshot_publish_health.status)}`}>
+              {releaseControls.snapshot_publish_health.status}
+            </span>
+          </div>
+          <div className="grid gap-2 text-sm">
+            <ReleaseMetaRow label="Manifest version" value={String(releaseControls.snapshot_publish_health.latest_manifest_version ?? "n/a")} />
+            <ReleaseMetaRow label="Manifest hash" value={releaseControls.snapshot_publish_health.latest_manifest_hash ?? "n/a"} />
+            <ReleaseMetaRow label="Snapshot age" value={`${releaseControls.snapshot_publish_health.snapshot_age_seconds ?? "n/a"}s`} />
+            <ReleaseMetaRow label="Published at" value={formatOptionalDate(releaseControls.snapshot_publish_health.latest_manifest_published_at)} />
+          </div>
+        </div>
+        <div className="panel p-4">
           <div className="mb-3 font-semibold">Runtime rollback switches</div>
           <div className="flex flex-wrap gap-2">
             {releaseControls.runtime_switches.map((item) => (
@@ -764,6 +823,37 @@ function ReleaseControlsPanel({
             ))}
           </div>
         </div>
+        {pipelineHealth ? (
+          <div className="panel p-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="font-semibold">Pipeline health</div>
+              <span className={`rounded-md border px-2 py-1 text-xs font-semibold ${statusClass(pipelineHealth.status)}`}>
+                {pipelineHealth.status}
+              </span>
+            </div>
+            <div className="grid gap-2 text-sm">
+              <ReleaseMetaRow label="Stages" value={String(pipelineHealth.stage_count)} />
+              <ReleaseMetaRow label="Total duration" value={`${pipelineHealth.total_duration_ms}ms`} />
+              <ReleaseMetaRow label="Last completed" value={formatOptionalDate(pipelineHealth.last_completed_at)} />
+            </div>
+            {pipelineHealth.stages.length > 0 ? (
+              <div className="mt-3 overflow-x-auto">
+                <table className="min-w-full text-left text-xs">
+                  <tbody className="divide-y divide-line">
+                    {pipelineHealth.stages.map((stage) => (
+                      <tr key={stage.source_key}>
+                        <td className="py-2 font-semibold">{stage.stage}</td>
+                        <td className="py-2">{stage.duration_ms}ms</td>
+                        <td className="py-2 text-muted">{formatOptionalDate(stage.stage_completed_at)}</td>
+                        <td className={`py-2 font-semibold ${statusTextClass(stage.health_status)}`}>{stage.health_status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <div className="panel p-4">
           <div className="mb-3 font-semibold">Provenance cleanup estimate</div>
           <p className="text-sm text-muted">
@@ -784,6 +874,15 @@ function ReleaseControlsPanel({
         </div>
       </div>
     </section>
+  );
+}
+
+function ReleaseMetaRow({ label, value }: Readonly<{ label: string; value: string }>) {
+  return (
+    <div className="grid gap-1 rounded-md border border-line bg-panelSoft p-2">
+      <span className="text-xs uppercase text-muted">{label}</span>
+      <span className="safe-text font-semibold">{value}</span>
+    </div>
   );
 }
 

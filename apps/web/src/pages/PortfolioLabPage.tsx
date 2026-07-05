@@ -36,6 +36,29 @@ import {
 } from "react";
 import { TermTooltip } from "../components/TermTooltip";
 import {
+  createPortfolioInstrumentReviewRequest,
+  enrichPortfolioInstrumentSelection,
+  searchPortfolioInstruments,
+  type InstrumentSearchApiResponse
+} from "../lib/portfolioInstrumentApi";
+import {
+  MANUAL_MONEY_MAX,
+  MANUAL_QUANTITY_MAX,
+  MANUAL_TEXT_MAX_LENGTH,
+  type InstrumentReviewRequest,
+  type ReviewRequestStatus,
+  cleanCurrency,
+  cleanManualText,
+  clearSourceLinkedRecords,
+  loadPortfolioWorkspace,
+  loadServerPortfolioWorkspace,
+  manualNumberInvalid,
+  savePortfolioWorkspace,
+  saveServerPortfolioWorkspace,
+  toSafeId,
+  validateManualDraft
+} from "../lib/portfolioWorkspace";
+import {
   type AssumptionSet,
   type ExposureRow,
   type Instrument,
@@ -111,7 +134,6 @@ const sectionLabels: Record<PortfolioSection, string> = {
   glossary: "Glossary"
 };
 
-type ReviewRequestStatus = "queued" | "in-review" | "resolved" | "closed";
 type ManualEditorContext = "HOLDING_ENTRY" | "BUILDER";
 type ManualInstrumentType = "" | Instrument["instrumentType"];
 
@@ -146,32 +168,6 @@ type ManualHoldingDraft = {
   quantityText: string;
   priceText: string;
   marketValueText: string;
-};
-
-type InstrumentReviewRequest = {
-  requestId: string;
-  userId: string;
-  query: string;
-  contextScreen: ManualEditorContext;
-  optionalNotes?: string;
-  createdAt: string;
-  status: ReviewRequestStatus;
-};
-
-type InstrumentSearchApiResponse = {
-  results: InstrumentSearchResult[];
-  warnings?: string[];
-  cache?: string;
-  dataFreshness?: {
-    instrumentIndexLastUpdatedAt?: string;
-    observedAt?: string;
-    status?: string;
-    stalenessState?: string;
-    ageSeconds?: number | null;
-    staleAfter?: string | null;
-    hardExpiresAt?: string | null;
-    source?: string;
-  };
 };
 
 type MarketHistoryCoverageStatus = "idle" | "loading" | "ready" | "partial" | "limited" | "error";
@@ -228,12 +224,6 @@ type AdminAuthState =
   | { status: "checking" }
   | { status: "signed_out" }
   | { status: "signed_in"; email: string; role: string };
-
-const PORTFOLIO_WORKSPACE_STORAGE_VERSION = 1;
-const PORTFOLIO_WORKSPACE_STORAGE_PREFIX = "stonks-radar:portfolio-workspace:";
-const MANUAL_TEXT_MAX_LENGTH = 96;
-const MANUAL_MONEY_MAX = 1_000_000_000_000;
-const MANUAL_QUANTITY_MAX = 1_000_000_000;
 
 const ASSET_CLASS_OPTIONS: AssetClass[] = [
   "Cash & Cash Equivalents",
@@ -358,17 +348,43 @@ export function PortfolioLabPage() { // NOSONAR - route-level state orchestratio
   );
 
   useEffect(() => {
+    const controller = new AbortController();
+    const applyWorkspace = (workspace: ReturnType<typeof loadPortfolioWorkspace>) => {
+      setPortfolio(workspace?.portfolio ?? createPortfolioForWorkspace(workspacePortfolioId));
+      setManualInstruments(workspace?.manualInstruments ?? []);
+      setReviewRequests(workspace?.reviewRequests ?? []);
+      setAssumptions(workspace?.assumptions ?? defaultAssumptions);
+      setLoadedWorkspaceId(workspacePortfolioId);
+    };
     const saved = loadPortfolioWorkspace(workspacePortfolioId);
-    setPortfolio(saved?.portfolio ?? createPortfolioForWorkspace(workspacePortfolioId));
-    setManualInstruments(saved?.manualInstruments ?? []);
-    setReviewRequests(saved?.reviewRequests ?? []);
-    setAssumptions(saved?.assumptions ?? defaultAssumptions);
-    setLoadedWorkspaceId(workspacePortfolioId);
+    applyWorkspace(saved);
+    void loadServerPortfolioWorkspace(workspacePortfolioId, controller.signal)
+      .then((serverWorkspace) => {
+        if (controller.signal.aborted || !serverWorkspace) return;
+        applyWorkspace(serverWorkspace);
+        savePortfolioWorkspace(workspacePortfolioId, {
+          portfolio: serverWorkspace.portfolio,
+          manualInstruments: serverWorkspace.manualInstruments,
+          reviewRequests: serverWorkspace.reviewRequests,
+          assumptions: serverWorkspace.assumptions
+        });
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
   }, [workspacePortfolioId]);
 
   useEffect(() => {
     if (loadedWorkspaceId !== workspacePortfolioId) return;
-    savePortfolioWorkspace(workspacePortfolioId, { portfolio, manualInstruments, reviewRequests, assumptions });
+    const workspace = { portfolio, manualInstruments, reviewRequests, assumptions };
+    savePortfolioWorkspace(workspacePortfolioId, workspace);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      void saveServerPortfolioWorkspace(workspacePortfolioId, workspace, controller.signal).catch(() => undefined);
+    }, 600);
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, [assumptions, loadedWorkspaceId, manualInstruments, portfolio, reviewRequests, workspacePortfolioId]);
 
   useEffect(() => {
@@ -594,13 +610,20 @@ export function PortfolioLabPage() { // NOSONAR - route-level state orchestratio
     };
   }
 
-  function currentHoldingAlreadyExists(currentPortfolio: Portfolio, instrumentIdentifier: string, listingId?: string) {
-    return currentPortfolio.holdings.some((holding) =>
-      listingId ? holding.listingId === listingId : holding.instrumentId === instrumentIdentifier
-    );
-  }
+function currentHoldingAlreadyExists(currentPortfolio: Portfolio, instrumentIdentifier: string, listingId?: string) {
+  return currentPortfolio.holdings.some((holding) =>
+    listingId ? holding.listingId === listingId : holding.instrumentId === instrumentIdentifier
+  );
+}
 
-  function requestInstrumentReview(query: string, contextScreen: ManualEditorContext) {
+function reviewStatusFromApi(status: string | undefined): ReviewRequestStatus {
+  if (status === "in_review") return "in-review";
+  if (status === "resolved") return "resolved";
+  if (status === "closed") return "closed";
+  return "queued";
+}
+
+function requestInstrumentReview(query: string, contextScreen: ManualEditorContext) {
     const normalizedQuery = query.trim();
     if (!normalizedQuery) return;
     const requestId = `review-${toSafeId(normalizedQuery)}-${Date.now()}`;
@@ -624,14 +647,26 @@ export function PortfolioLabPage() { // NOSONAR - route-level state orchestratio
         }
       ];
     });
-    void fetch("/api/instruments/review-requests", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: normalizedQuery, context_screen: contextScreen })
-    }).catch(() => {
-      // Local review state is retained when the API is unavailable in static/demo mode.
-    });
+    void createPortfolioInstrumentReviewRequest({
+      query: normalizedQuery,
+      contextScreen
+    })
+      .then((payload) => {
+        setReviewRequests((current) =>
+          current.map((item) =>
+            item.requestId === requestId
+              ? {
+                  ...item,
+                  requestId: payload.id ?? item.requestId,
+                  status: reviewStatusFromApi(payload.status)
+                }
+              : item
+          )
+        );
+      })
+      .catch(() => {
+        // Local review state is retained when the API is unavailable in static/demo mode.
+      });
   }
 
   function resetPortfolio() {
@@ -1884,6 +1919,7 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
     error: string | null;
     freshness: InstrumentSearchApiResponse["dataFreshness"];
   }>({ query: "", loading: false, results: [], error: null, freshness: undefined });
+  const [pendingSelectionKey, setPendingSelectionKey] = useState<string | null>(null);
   const [manualDraft, setManualDraft] = useState<ManualHoldingDraft | null>(null);
   const trimmedQuery = searchTerm.trim();
   const isSymbolLikeQuery = /^[-.A-Za-z0-9]+$/.test(trimmedQuery);
@@ -1917,13 +1953,6 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
       return;
     }
     const controller = new AbortController();
-    const params = new URLSearchParams({
-      q: debouncedSearchTerm,
-      limit: "10",
-      include_advanced: String(includeAdvancedInstruments),
-      include_inactive: String(includeInactiveInstruments),
-      context: contextScreen
-    });
     setApiSearch((current) => ({
       query: debouncedSearchTerm,
       loading: true,
@@ -1931,15 +1960,16 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
       error: null,
       freshness: current.query === debouncedSearchTerm ? current.freshness : undefined
     }));
-    fetch(`/api/instruments/search?${params.toString()}`, {
-      credentials: "include",
-      headers: { Accept: "application/json" },
-      signal: controller.signal
-    })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`Instrument search failed: ${response.status}`);
-        return (await response.json()) as InstrumentSearchApiResponse;
-      })
+    searchPortfolioInstruments(
+      {
+        query: debouncedSearchTerm,
+        limit: 10,
+        includeAdvanced: includeAdvancedInstruments,
+        includeInactive: includeInactiveInstruments,
+        context: contextScreen
+      },
+      controller.signal
+    )
       .then((payload) => {
         setApiSearch({
           query: debouncedSearchTerm,
@@ -2031,9 +2061,23 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
 
   const selectResult = (result: InstrumentSearchResult) => {
-    addHolding({ instrumentId: result.instrumentId, listingId: result.listingId, searchResult: result });
-    resetManualDraft();
-    setSearchTerm("");
+    const selectionKey = `${result.instrumentId}:${result.listingId}`;
+    if (pendingSelectionKey) return;
+    setPendingSelectionKey(selectionKey);
+    void enrichPortfolioInstrumentSelection(result, contextScreen)
+      .catch(() => result)
+      .then((enrichedResult) => {
+        addHolding({
+          instrumentId: enrichedResult.instrumentId,
+          listingId: enrichedResult.listingId,
+          searchResult: enrichedResult
+        });
+        resetManualDraft();
+        setSearchTerm("");
+      })
+      .finally(() => {
+        setPendingSelectionKey((current) => (current === selectionKey ? null : current));
+      });
   };
 
   const selectManual = () => {
@@ -2061,8 +2105,9 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
   };
 
   const activeResult = searchResults[activeResultIndex] ?? null;
+  const isResolvingSelection = pendingSelectionKey !== null;
   const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (!isSearching) {
+    if (!isSearching && !isResolvingSelection) {
       if (event.key === "ArrowDown") {
         event.preventDefault();
         setActiveResultIndex((current) => (searchResults.length ? (current + 1) % searchResults.length : 0));
@@ -2300,12 +2345,15 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
               aria-label="Instrument search results"
               aria-live="polite"
             >
-              {searchResults.map((result, index) => (
+              {searchResults.map((result, index) => {
+                const isPendingSelection = pendingSelectionKey === `${result.instrumentId}:${result.listingId}`;
+                return (
                 <button
                   id={`${resultListId}-option-${index}`}
                   key={`${result.instrumentId}-${result.listingId}`}
                   type="button"
                   aria-current={index === activeResultIndex ? "true" : undefined}
+                  disabled={isResolvingSelection}
                   className={`block w-full border-b border-line px-3 py-3 text-left text-sm last:border-b-0 ${
                     index === activeResultIndex ? "bg-accentSoft text-ink" : "hover:bg-panel"
                   }`}
@@ -2349,8 +2397,15 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
                       Directory match only. Add a manual price or market value after selection to include it in calculations.
                     </p>
                   ) : null}
+                  {isPendingSelection ? (
+                    <p className="mt-2 inline-flex items-center gap-2 text-xs text-muted">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Resolving listing...
+                    </p>
+                  ) : null}
                 </button>
-              ))}
+                );
+              })}
             </div>
           )}
           {hasHeldSearchResults && !hasSearchResults ? (
@@ -2486,10 +2541,10 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
             type="button"
             className="primary-action justify-center"
             onClick={() => hasSearchResults && activeResult ? selectResult(activeResult) : null}
-            disabled={!hasSearchResults}
+            disabled={!hasSearchResults || isResolvingSelection}
           >
-            <Plus className="h-4 w-4" />
-            Add selected holding
+            {isResolvingSelection ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            {isResolvingSelection ? "Resolving" : "Add selected holding"}
           </button>
           <button type="button" className="secondary-action justify-center" onClick={resetPortfolio}>
             <RefreshCcw className="h-4 w-4" />
@@ -3314,12 +3369,6 @@ function ManualNumberField({
   );
 }
 
-function manualNumberInvalid(value: string, numeric: number, required: boolean, min: number, max: number) {
-  const hasInput = value.trim().length > 0;
-  if (!required && !hasInput) return false;
-  return !Number.isFinite(numeric) || numeric < min || numeric > max;
-}
-
 function TablePanel({ title, termKey, children }: Readonly<{ title: string; termKey: string; children: ReactNode }>) {
   return (
     <div className="panel min-w-0 p-4">
@@ -3368,19 +3417,6 @@ function normalizedInstrumentId(value: string) {
   return value.trim().toUpperCase().replace(/[^A-Z0-9.-]/g, "-").replace(/-+/g, "-");
 }
 
-function toSafeId(value: string) {
-  const safe = value.trim().toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-");
-  return safe.replace(/^-|-$/g, "") || "holding";
-}
-
-type StoredPortfolioWorkspace = {
-  version: number;
-  portfolio: Portfolio;
-  manualInstruments: Instrument[];
-  reviewRequests: InstrumentReviewRequest[];
-  assumptions: AssumptionSet;
-};
-
 function createPortfolioForWorkspace(portfolioId: string): Portfolio {
   const demo = createDemoPortfolio();
   if (portfolioId === demo.portfolioId) return demo;
@@ -3395,88 +3431,6 @@ function createPortfolioForWorkspace(portfolioId: string): Portfolio {
     taxLots: [],
     goal: { ...demo.goal, portfolioId }
   };
-}
-
-function workspaceStorageKey(portfolioId: string) {
-  return `${PORTFOLIO_WORKSPACE_STORAGE_PREFIX}${toSafeId(portfolioId)}`;
-}
-
-function canPersistWorkspace(portfolioId: string) {
-  return portfolioId === "demo-growth-income";
-}
-
-function loadPortfolioWorkspace(portfolioId: string): StoredPortfolioWorkspace | null {
-  if (!canPersistWorkspace(portfolioId)) return null;
-  if (globalThis.window === undefined) return null;
-  try {
-    const raw = globalThis.window.localStorage.getItem(workspaceStorageKey(portfolioId));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<StoredPortfolioWorkspace>;
-    if (parsed.version !== PORTFOLIO_WORKSPACE_STORAGE_VERSION || !parsed.portfolio) return null;
-    return {
-      version: PORTFOLIO_WORKSPACE_STORAGE_VERSION,
-      portfolio: parsed.portfolio,
-      manualInstruments: parsed.manualInstruments ?? [],
-      reviewRequests: parsed.reviewRequests ?? [],
-      assumptions: parsed.assumptions ?? defaultAssumptions
-    };
-  } catch {
-    return null;
-  }
-}
-
-function savePortfolioWorkspace(portfolioId: string, workspace: Omit<StoredPortfolioWorkspace, "version">) {
-  if (!canPersistWorkspace(portfolioId)) return;
-  if (globalThis.window === undefined) return;
-  try {
-    globalThis.window.localStorage.setItem(
-      workspaceStorageKey(portfolioId),
-      JSON.stringify({ version: PORTFOLIO_WORKSPACE_STORAGE_VERSION, ...workspace })
-    );
-  } catch {
-    // Browser storage may be disabled or full; the workspace still functions as an in-memory session.
-  }
-}
-
-function clearSourceLinkedRecords(portfolio: Portfolio): Portfolio {
-  if (!portfolio.transactions.length && !portfolio.taxLots.length) return portfolio;
-  return { ...portfolio, transactions: [], taxLots: [] };
-}
-
-function cleanManualText(value: string) {
-  return value.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, MANUAL_TEXT_MAX_LENGTH);
-}
-
-function cleanCurrency(value: string) {
-  const normalized = value.trim().toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3);
-  return /^[A-Z]{3}$/.test(normalized) ? normalized : "USD";
-}
-
-function validateManualDraft(draft: ManualHoldingDraft): string[] {
-  const errors: string[] = [];
-  const symbol = cleanManualText(draft.symbolOrCode);
-  const name = cleanManualText(draft.name);
-  const currency = draft.currency.trim().toUpperCase();
-  const quantity = Number(draft.quantityText);
-  const price = draft.priceText.trim() ? Number(draft.priceText) : undefined;
-  const marketValue = draft.marketValueText.trim() ? Number(draft.marketValueText) : undefined;
-  if (!symbol) errors.push("Symbol or local code is required.");
-  if (!name) errors.push("Instrument name is required.");
-  if (!/^[A-Z]{3}$/.test(currency)) errors.push("Currency must be a 3-letter ISO-style code such as USD, KRW, or JPY.");
-  if (!draft.assetClass) errors.push("Asset class is required.");
-  if (!Number.isFinite(quantity) || quantity <= 0 || quantity > MANUAL_QUANTITY_MAX) {
-    errors.push("Quantity must be a positive finite number.");
-  }
-  if (price !== undefined && (!Number.isFinite(price) || price < 0 || price > MANUAL_MONEY_MAX)) {
-    errors.push("Price must be a non-negative finite number.");
-  }
-  if (marketValue !== undefined && (!Number.isFinite(marketValue) || marketValue < 0 || marketValue > MANUAL_MONEY_MAX)) {
-    errors.push("Market value must be a non-negative finite number.");
-  }
-  if (price === undefined && marketValue === undefined) {
-    errors.push("Enter either price or market value so the holding is visible in portfolio value.");
-  }
-  return errors;
 }
 
 function portfolioIdFromPath(pathname: string): string | null {

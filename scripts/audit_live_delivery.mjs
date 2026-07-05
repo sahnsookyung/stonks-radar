@@ -5,13 +5,19 @@ const target = new URL(process.env.STONKS_AUDIT_BASE_URL ?? "https://stonks.sook
 const originTarget = optionalUrl(process.env.STONKS_AUDIT_ORIGIN_BASE_URL);
 const cdnTarget = optionalUrl(process.env.STONKS_AUDIT_CDN_BASE_URL);
 const skipApi = process.env.STONKS_AUDIT_SKIP_API === "true";
+const expectedCommit = optionalText(process.env.STONKS_AUDIT_EXPECTED_COMMIT);
+const expectedWebArtifact =
+  optionalText(process.env.STONKS_AUDIT_EXPECTED_WEB_ARTIFACT) ?? expectedCommit;
+const expectedManifestVersion = optionalText(process.env.STONKS_AUDIT_EXPECTED_MANIFEST_VERSION);
+const expectedManifestHash = optionalText(process.env.STONKS_AUDIT_EXPECTED_MANIFEST_HASH);
 let latestManifest = null;
 let latestManifestHash = null;
+let observedWebArtifact = null;
 const checks = [
   {
     name: "html",
     path: "/en",
-    expect(response) {
+    async expect(response) {
       const csp = response.headers.get("content-security-policy") ?? "";
       assert(response.status === 200, "HTML route must return 200");
       assert(csp.includes("connect-src 'self'"), "HTML CSP must restrict connect-src to self");
@@ -20,6 +26,14 @@ const checks = [
         (response.headers.get("cache-control") ?? "").includes("no-cache"),
         "HTML route must be no-cache"
       );
+      const html = await response.text();
+      observedWebArtifact = htmlMetaContent(html, "stonks-web-artifact-version");
+      if (expectedWebArtifact) {
+        assert(
+          observedWebArtifact === expectedWebArtifact,
+          `HTML web artifact must match expected ${expectedWebArtifact}, got ${observedWebArtifact ?? "missing"}`
+        );
+      }
     }
   },
   {
@@ -46,6 +60,18 @@ const checks = [
       latestManifestHash = sha256(manifestText);
       latestManifest = JSON.parse(manifestText);
       assert(latestManifest?.objects?.home?.en, "Latest manifest must expose current home snapshot path");
+      if (expectedManifestVersion) {
+        assert(
+          String(latestManifest.current_version) === expectedManifestVersion,
+          `Latest manifest version must match expected ${expectedManifestVersion}, got ${latestManifest.current_version}`
+        );
+      }
+      if (expectedManifestHash) {
+        assert(
+          latestManifestHash === expectedManifestHash,
+          `Latest manifest hash must match expected ${expectedManifestHash}, got ${latestManifestHash}`
+        );
+      }
     }
   },
   {
@@ -61,6 +87,12 @@ const checks = [
       );
       const snapshot = await response.json();
       assert(snapshot?.snapshot_version === latestManifest?.current_version, "Versioned snapshot must match latest manifest version");
+      if (expectedManifestVersion) {
+        assert(
+          String(snapshot?.snapshot_version) === expectedManifestVersion,
+          `Versioned snapshot must match expected version ${expectedManifestVersion}`
+        );
+      }
       assertNoBlockedMarketPulseSources(snapshot);
       assertRecentBreakingNews(snapshot);
     }
@@ -102,7 +134,24 @@ const edgeComparison = await compareOriginAndCdnManifests();
 
 console.log(
   JSON.stringify(
-    { target: target.origin, manifestHash: latestManifestHash, results, edgeComparison, failures },
+    {
+      target: target.origin,
+      expected: {
+        commit: expectedCommit,
+        webArtifact: expectedWebArtifact,
+        manifestVersion: expectedManifestVersion,
+        manifestHash: expectedManifestHash
+      },
+      observed: {
+        webArtifact: observedWebArtifact,
+        manifestVersion: latestManifest?.current_version,
+        manifestHash: latestManifestHash,
+        manifestGeneratedAt: latestManifest?.generated_at
+      },
+      results,
+      edgeComparison,
+      failures
+    },
     null,
     2
   )
@@ -120,8 +169,24 @@ function optionalUrl(value) {
   return new URL(value);
 }
 
+function optionalText(value) {
+  if (!value?.trim()) return null;
+  return value.trim();
+}
+
 function sha256(text) {
   return `sha256:${createHash("sha256").update(text).digest("hex")}`;
+}
+
+function htmlMetaContent(html, name) {
+  const pattern = new RegExp(String.raw`<meta\s+[^>]*name=["']${escapeRegExp(name)}["'][^>]*>`, "i");
+  const tag = html.match(pattern)?.[0];
+  if (!tag) return null;
+  return tag.match(/\scontent=["']([^"']*)["']/i)?.[1] ?? null;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
 async function compareOriginAndCdnManifests() {

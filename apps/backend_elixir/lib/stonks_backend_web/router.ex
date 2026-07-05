@@ -70,6 +70,11 @@ defmodule StonksBackendWeb.Router do
       post "/review-requests", InstrumentsController, :create_review_request
     end
 
+    scope "/portfolio-workspaces" do
+      get "/:portfolio_id", PortfolioWorkspacesController, :show
+      put "/:portfolio_id", PortfolioWorkspacesController, :update
+    end
+
     scope "/internal" do
       post "/news/email-alerts", InternalController, :receive_news_email_alert
     end

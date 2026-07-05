@@ -269,6 +269,57 @@
       },
       "additionalProperties": false
     },
+    "newsTickerRef": {
+      "type": "object",
+      "required": ["symbol", "name", "relationship", "confidence"],
+      "properties": {
+        "symbol": { "type": "string" },
+        "name": { "type": "string" },
+        "exchange": { "type": "string" },
+        "relationship": {
+          "enum": [
+            "direct_subject",
+            "affected_company",
+            "competitor",
+            "supplier",
+            "customer",
+            "mentioned_only"
+          ]
+        },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "newsRegionRef": {
+      "type": "object",
+      "required": ["key", "name", "relation", "confidence"],
+      "properties": {
+        "key": { "type": "string" },
+        "name": { "type": "string" },
+        "relation": {
+          "enum": [
+            "source_region",
+            "event_region",
+            "company_region",
+            "affected_region",
+            "market_region",
+            "mentioned_region"
+          ]
+        },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "newsTopicRef": {
+      "type": "object",
+      "required": ["key", "label", "confidence"],
+      "properties": {
+        "key": { "type": "string" },
+        "label": { "type": "string" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
     "breakingMarketEvent": {
       "type": "object",
       "required": [
@@ -327,9 +378,9 @@
         "score_reason_codes": { "type": "array", "items": { "type": "string" } },
         "dedupe_key": { "type": "string" },
         "label": { "enum": ["breaking", "developing", "latest", "stale", "unmappable"] },
-        "tickers": { "type": "array" },
-        "regions": { "type": "array" },
-        "topics": { "type": "array" },
+        "tickers": { "type": "array", "items": { "$ref": "#/$defs/newsTickerRef" } },
+        "regions": { "type": "array", "items": { "$ref": "#/$defs/newsRegionRef" } },
+        "topics": { "type": "array", "items": { "$ref": "#/$defs/newsTopicRef" } },
         "source_count": { "type": "integer", "minimum": 0 }
       },
       "additionalProperties": false

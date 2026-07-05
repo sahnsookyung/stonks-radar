@@ -94,6 +94,10 @@ defmodule StonksBackendWeb.ContractOpsTest do
     refute ci_workflow =~ "apps/fetch-sandbox/Dockerfile"
     assert ci_workflow =~ "backend:check"
     assert ci_workflow =~ "apps/backend_elixir/Dockerfile"
+    assert ci_workflow =~ "concurrency:"
+    assert ci_workflow =~ "github.head_ref || github.ref_name"
+    assert ci_workflow =~ "cancel-in-progress: true"
+    assert ci_workflow =~ "timeout-minutes: 25"
   end
 
   test "production autodeploy waits for green main CI and Sonar before dispatching deploy" do
@@ -138,6 +142,18 @@ defmodule StonksBackendWeb.ContractOpsTest do
     assert gitignore =~ "apps/backend_elixir/deps/"
   end
 
+  test "retired Python runtime roots have no tracked files" do
+    tracked =
+      @repo_root
+      |> git_lines(["ls-files", "apps/api", "apps/worker"])
+
+    assert tracked == []
+
+    cleanup_doc = read_repo_file("docs/legacy-python-runtime-cleanup.md")
+    assert cleanup_doc =~ "apps/backend_elixir"
+    assert cleanup_doc =~ "old Python `apps/api` and `apps/worker`"
+  end
+
   test "fixture loader stays inside the sanitized contract fixture tree" do
     assert_raise ArgumentError, ~r/contract fixtures must stay under/, fn ->
       StonksBackendWeb.ContractCase.load_fixture("../contract_case.ex")
@@ -155,5 +171,12 @@ defmodule StonksBackendWeb.ContractOpsTest do
     @repo_root
     |> Path.join(relative_path)
     |> File.read!()
+  end
+
+  defp git_lines(cwd, args) do
+    {output, 0} = System.cmd("git", args, cd: cwd, stderr_to_stdout: true)
+
+    output
+    |> String.split("\n", trim: true)
   end
 end
