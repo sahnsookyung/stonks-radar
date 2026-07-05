@@ -1,5 +1,7 @@
 FROM node:22-alpine AS build
 WORKDIR /app
+ARG VITE_WEB_ARTIFACT_VERSION=local
+ENV VITE_WEB_ARTIFACT_VERSION=$VITE_WEB_ARTIFACT_VERSION
 RUN apk add --no-cache tzdata
 COPY package.json package-lock*.json ./
 COPY apps/web/package.json apps/web/package.json

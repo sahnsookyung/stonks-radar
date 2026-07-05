@@ -733,7 +733,10 @@ function createNewsFeatureCollection(mapPoints: NewsMapPoint[]) {
           urgency_score: point.urgency_score,
           source_count: point.source_count,
           source_url: point.source_url ?? "",
-          source_published_at: point.source_published_at
+          source_published_at: point.source_published_at,
+          geo_confidence: point.geo_confidence,
+          score_reason_codes: point.score_reason_codes.join(", "),
+          trust_tier: enrichedTrustTier(point)
         }
       }))
   };
@@ -825,7 +828,9 @@ function createNewsClusterPopup(
     meta.textContent = [
       safeProperty(leaf.properties, "area_label"),
       safeProperty(leaf.properties, "severity"),
-      `urgency ${safeProperty(leaf.properties, "urgency_score")}`
+      `urgency ${safeProperty(leaf.properties, "urgency_score")}`,
+      sourceCountLabel(leaf.properties),
+      safeProperty(leaf.properties, "trust_tier")
     ]
       .filter(Boolean)
       .join(" · ");
@@ -877,8 +882,37 @@ function createNewsMapPointPopup(properties: maplibregl.MapGeoJSONFeature["prope
 
   const meta = document.createElement("div");
   meta.className = "text-[11px] font-semibold uppercase leading-4 text-warning";
-  meta.textContent = `${safeProperty(properties, "severity")} · urgency ${safeProperty(properties, "urgency_score")}`;
+  meta.textContent = [
+    safeProperty(properties, "severity"),
+    `urgency ${safeProperty(properties, "urgency_score")}`,
+    sourceCountLabel(properties),
+    safeProperty(properties, "trust_tier")
+  ]
+    .filter(Boolean)
+    .join(" · ");
   wrapper.appendChild(meta);
+
+  const confidence = safeProperty(properties, "geo_confidence");
+  const reasonCodes = safeProperty(properties, "score_reason_codes");
+  if (confidence || reasonCodes) {
+    const scoring = document.createElement("div");
+    scoring.className = "text-[11px] leading-4 text-muted";
+    scoring.textContent = [
+      confidence ? `geo confidence ${confidence}` : "",
+      reasonCodes ? `signals ${reasonCodes}` : ""
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    wrapper.appendChild(scoring);
+  }
+
+  const publishedAt = safeProperty(properties, "source_published_at");
+  if (publishedAt) {
+    const published = document.createElement("div");
+    published.className = "text-[11px] leading-4 text-muted";
+    published.textContent = `published ${publishedAt}`;
+    wrapper.appendChild(published);
+  }
 
   const sourceUrl = safeHttpUrl(safeProperty(properties, "source_url", 2048));
   if (sourceUrl) {
@@ -892,6 +926,17 @@ function createNewsMapPointPopup(properties: maplibregl.MapGeoJSONFeature["prope
   }
 
   return wrapper;
+}
+
+function enrichedTrustTier(point: NewsMapPoint) {
+  const value = (point as NewsMapPoint & { trust_tier?: unknown }).trust_tier;
+  return typeof value === "string" ? value : "";
+}
+
+function sourceCountLabel(properties: Record<string, unknown> | null | undefined) {
+  const sourceCount = safeProperty(properties, "source_count");
+  if (!sourceCount) return "";
+  return `${sourceCount} source${sourceCount === "1" ? "" : "s"}`;
 }
 
 function safeProperty(properties: Record<string, unknown> | null | undefined, key: string, maxLength = 320) {

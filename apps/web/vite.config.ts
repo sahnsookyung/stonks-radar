@@ -2,6 +2,9 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 const env = (globalThis as typeof globalThis & { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
+if (!env.VITE_WEB_ARTIFACT_VERSION) {
+  env.VITE_WEB_ARTIFACT_VERSION = env.GITHUB_SHA ?? "local";
+}
 
 export default defineConfig({
   plugins: [react()],

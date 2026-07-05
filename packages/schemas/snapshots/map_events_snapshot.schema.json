@@ -13,7 +13,20 @@
             "events": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/event" } },
             "breaking_market_events": { "type": "array", "items": { "$ref": "./_envelope.schema.json#/$defs/breakingMarketEvent" } },
             "breaking_market_map": { "$ref": "./_envelope.schema.json#/$defs/breakingMarketMapData" },
-            "filters": { "type": "object" }
+            "filters": {
+              "type": "object",
+              "required": ["countries_regions", "sectors", "severities", "event_types"],
+              "properties": {
+                "countries_regions": { "type": "array", "items": { "type": "string" } },
+                "sectors": { "type": "array", "items": { "type": "string" } },
+                "severities": {
+                  "type": "array",
+                  "items": { "enum": ["low", "medium", "high", "critical"] }
+                },
+                "event_types": { "type": "array", "items": { "type": "string" } }
+              },
+              "additionalProperties": false
+            }
           },
           "additionalProperties": false
         }

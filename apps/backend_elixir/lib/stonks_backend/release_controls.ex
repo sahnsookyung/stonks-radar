@@ -49,6 +49,8 @@ defmodule StonksBackend.ReleaseControls do
     %{
       release_id: release_id,
       payload_version: @payload_version,
+      deployment: deployment_summary(release_id, opts),
+      snapshot_publish_health: snapshot_publish_health(metrics, thresholds, opts),
       runtime_switches: runtime_switches(opts),
       canary: evaluate_canary(metrics, thresholds),
       source_funnel: source_funnel_totals(source_health_rows(opts)),
@@ -157,6 +159,65 @@ defmodule StonksBackend.ReleaseControls do
       end)
 
     %{totals: totals, sources: per_source}
+  end
+
+  def deployment_summary(release_id, opts \\ []) do
+    github_sha = env_value(opts, "GITHUB_SHA")
+
+    %{
+      release_id: release_id,
+      expected_commit: first_present([env_value(opts, "STONKS_EXPECTED_COMMIT"), github_sha, release_id]),
+      api_image_ref:
+        first_present([
+          env_value(opts, "STONKS_API_IMAGE_REF"),
+          env_value(opts, "OCI_IMAGE_REF"),
+          env_value(opts, "IMAGE_REF")
+        ]) || "unknown",
+      web_artifact_version:
+        first_present([
+          env_value(opts, "STONKS_WEB_ARTIFACT_VERSION"),
+          env_value(opts, "WEB_ARTIFACT_VERSION"),
+          github_sha,
+          release_id
+        ]) || "unknown",
+      runtime_environment:
+        env_value(opts, "MIX_ENV") ||
+          to_string(Application.get_env(:stonks_backend, :runtime_env, "prod"))
+    }
+  end
+
+  def snapshot_publish_health(metrics, thresholds, opts \\ []) do
+    row =
+      query_one(
+        opts,
+        """
+        select snapshot_version, content_hash, generated_at, published_at, publication_status
+        from publication_manifest
+        where publication_status = 'published'
+        order by published_at desc nulls last, generated_at desc
+        limit 1
+        """,
+        []
+      )
+
+    snapshot_age_seconds = metric(metrics, :snapshot_age_seconds)
+    max_age_seconds = threshold(thresholds, :snapshot_age_seconds)
+    status = snapshot_publish_status(row, snapshot_age_seconds, max_age_seconds)
+
+    %{
+      status: status,
+      latest_manifest_version: row["snapshot_version"],
+      latest_manifest_hash: row["content_hash"] || metric(metrics, :manifest_hash),
+      latest_manifest_generated_at: row["generated_at"],
+      latest_manifest_published_at: row["published_at"],
+      snapshot_age_seconds: snapshot_age_seconds,
+      max_snapshot_age_seconds: max_age_seconds,
+      publish_health:
+        if(status == "ready",
+          do: "published_manifest_fresh",
+          else: "published_manifest_#{status}"
+        )
+    }
   end
 
   def provenance_summary(release_id, opts \\ []) do
@@ -351,6 +412,15 @@ defmodule StonksBackend.ReleaseControls do
     %{key: key, status: status, value: value, threshold: "info_or_ok", summary: summary}
   end
 
+  defp snapshot_publish_status(row, _age_seconds, _max_age_seconds) when row == %{},
+    do: "missing"
+
+  defp snapshot_publish_status(_row, nil, _max_age_seconds), do: "unknown"
+
+  defp snapshot_publish_status(_row, age_seconds, max_age_seconds) do
+    if normalize_float(age_seconds) <= normalize_float(max_age_seconds), do: "ready", else: "stale"
+  end
+
   defp aggregate_status(checks) do
     cond do
       Enum.any?(checks, &(&1.status == "blocked")) -> "blocked"
@@ -443,6 +513,23 @@ defmodule StonksBackend.ReleaseControls do
 
   defp setting_value(nil, key, default), do: Settings.get(key, default)
   defp setting_value(settings, key, default), do: Keyword.get(settings, key, default)
+
+  defp env_value(opts, key) do
+    cond do
+      env = Keyword.get(opts, :env) ->
+        Map.get(env, key)
+
+      env_fun = Keyword.get(opts, :env_fun) ->
+        env_fun.(key)
+
+      true ->
+        System.get_env(key)
+    end
+  end
+
+  defp first_present(values) do
+    Enum.find(values, fn value -> is_binary(value) and String.trim(value) != "" end)
+  end
 
   defp default_switch_value(:news_gdelt_enabled), do: "false"
   defp default_switch_value(:gdelt_runtime_fetch_enabled), do: "false"

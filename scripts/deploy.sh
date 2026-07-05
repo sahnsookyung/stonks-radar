@@ -28,6 +28,7 @@ if [[ "$deploy_mode" == "clean" || "$deploy_verify" == "true" ]]; then
   npm run backend:check
 fi
 
+export VITE_WEB_ARTIFACT_VERSION="${VITE_WEB_ARTIFACT_VERSION:-${GITHUB_SHA:-local}}"
 npm run build
 
 if [[ "$deploy_mode" == "clean" ]]; then

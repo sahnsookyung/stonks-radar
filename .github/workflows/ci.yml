@@ -127,6 +127,8 @@ jobs:
       - run: npm run build:map-assets
       - run: npm run web:test
       - run: npm run web:build
+        env:
+          VITE_WEB_ARTIFACT_VERSION: ${{ github.sha }}
       - run: npm run backend:check
       - run: npm run backend:test:db
       - run: npm run backend:snapshots:validate-static
