@@ -170,7 +170,7 @@ function optionalUrl(value) {
 }
 
 function optionalText(value) {
-  if (!value || !value.trim()) return null;
+  if (!value?.trim()) return null;
   return value.trim();
 }
 
@@ -179,14 +179,14 @@ function sha256(text) {
 }
 
 function htmlMetaContent(html, name) {
-  const pattern = new RegExp(`<meta\\s+[^>]*name=["']${escapeRegExp(name)}["'][^>]*>`, "i");
+  const pattern = new RegExp(String.raw`<meta\s+[^>]*name=["']${escapeRegExp(name)}["'][^>]*>`, "i");
   const tag = html.match(pattern)?.[0];
   if (!tag) return null;
   return tag.match(/\scontent=["']([^"']*)["']/i)?.[1] ?? null;
 }
 
 function escapeRegExp(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return value.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
 async function compareOriginAndCdnManifests() {

@@ -54,7 +54,7 @@ function parseArgs(args) {
     if (arg === "--json") options.json = true;
     else if (arg === "--strict") options.strict = true;
     else if (arg === "--root") options.root = args[++index];
-    else if (!options.root) options.root = arg;
+    else if (options.root === undefined) options.root = arg;
     else throw new Error(`Unexpected argument: ${arg}`);
   }
   return options;

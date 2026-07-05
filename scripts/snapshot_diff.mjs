@@ -54,12 +54,12 @@ function parseArgs(args) {
 function diffManifestObjects(baseRoot, targetRoot, baseManifest, targetManifest) {
   const keys = new Set([...Object.keys(baseManifest.objects ?? {}), ...Object.keys(targetManifest.objects ?? {})]);
   const rows = [];
-  for (const objectKey of [...keys].sort()) {
+  for (const objectKey of [...keys].sort(compareText)) {
     const locales = new Set([
       ...Object.keys(baseManifest.objects?.[objectKey] ?? {}),
       ...Object.keys(targetManifest.objects?.[objectKey] ?? {})
     ]);
-    for (const locale of [...locales].sort()) {
+    for (const locale of [...locales].sort(compareText)) {
       const baseManifestPath = baseManifest.objects?.[objectKey]?.[locale];
       const targetManifestPath = targetManifest.objects?.[objectKey]?.[locale];
       rows.push(diffSnapshot(baseRoot, targetRoot, objectKey, locale, baseManifestPath, targetManifestPath));
@@ -170,11 +170,15 @@ function stableStringify(value) {
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
   if (value && typeof value === "object") {
     return `{${Object.keys(value)
-      .sort()
+      .sort(compareText)
       .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
       .join(",")}}`;
   }
   return JSON.stringify(value);
+}
+
+function compareText(left, right) {
+  return left.localeCompare(right);
 }
 
 function count(value) {
