@@ -87,7 +87,10 @@ defmodule StonksBackend.JobsCleanupDbTest do
       end
     end)
 
-    window_start = ~U[2026-05-26 01:15:00Z]
+    refresh_seconds = 900
+    current_window = div(DateTime.to_unix(DateTime.utc_now()), refresh_seconds)
+    window = current_window + 1
+    window_start = DateTime.from_unix!(window * refresh_seconds)
     assert Jobs.snapshot_refresh_due?(window_start)
 
     version = System.unique_integer([:positive])
@@ -111,7 +114,19 @@ defmodule StonksBackend.JobsCleanupDbTest do
     )
 
     refute Jobs.snapshot_refresh_due?(window_start)
-    assert Jobs.snapshot_refresh_due?(DateTime.add(window_start, 900, :second))
+    assert Jobs.snapshot_refresh_due?(DateTime.add(window_start, refresh_seconds, :second))
+
+    job = %Oban.Job{
+      id: System.unique_integer([:positive]),
+      args: %{
+        "job_type" => "snapshot_refresh",
+        "idempotency_key" => "snapshot-refresh:#{window}",
+        "payload" => %{}
+      }
+    }
+
+    assert {:discard, reason} = GenericWorker.perform(job)
+    assert reason == "snapshot refresh window #{window} is already published"
   end
 
   defp insert_snapshot_job!(idempotency_key) do

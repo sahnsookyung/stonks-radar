@@ -18,6 +18,7 @@ defmodule StonksBackend.Jobs.Workers.GenericWorker do
     YieldCurves
   }
 
+  alias StonksBackend.Jobs
   alias StonksBackend.Jobs.RuntimeLock
 
   require Logger
@@ -74,12 +75,18 @@ defmodule StonksBackend.Jobs.Workers.GenericWorker do
     case RuntimeLock.acquire_many(scopes, owner) do
       {:ok, acquired_scopes} ->
         try do
-          if runtime_job_enabled?(job_type) do
-            job_type
-            |> dispatch(payload)
-            |> normalize_result(job_type)
-          else
-            {:ok, disabled_result(job_type, "news_pipeline_runtime_enabled_false")}
+          case execution_gate(job_type, args) do
+            :ready ->
+              if runtime_job_enabled?(job_type) do
+                job_type
+                |> dispatch(payload)
+                |> normalize_result(job_type)
+              else
+                {:ok, disabled_result(job_type, "news_pipeline_runtime_enabled_false")}
+              end
+
+            {:discard, _reason} = discard ->
+              discard
           end
         after
           RuntimeLock.release_many(acquired_scopes, owner)
@@ -111,6 +118,26 @@ defmodule StonksBackend.Jobs.Workers.GenericWorker do
   end
 
   defp recurring_window_gate(_job_type, _args), do: :ready
+
+  defp execution_gate(
+         "snapshot_refresh",
+         %{"idempotency_key" => "snapshot-refresh:" <> raw_window}
+       ) do
+    refresh_seconds = positive_int_setting(:snapshot_refresh_seconds, 900)
+
+    with {window, ""} when window >= 0 <- Integer.parse(raw_window),
+         {:ok, window_start} <- DateTime.from_unix(window * refresh_seconds) do
+      if Jobs.snapshot_refresh_due?(window_start) do
+        :ready
+      else
+        {:discard, "snapshot refresh window #{window} is already published"}
+      end
+    else
+      _ -> :ready
+    end
+  end
+
+  defp execution_gate(_job_type, _args), do: :ready
 
   defp positive_int_setting(key, default) do
     case Settings.get(key, default) do
