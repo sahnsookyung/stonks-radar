@@ -76,6 +76,44 @@ defmodule StonksBackend.JobsCleanupDbTest do
     assert Repo.aggregate(Oban.Job, :count, :id) == 1
   end
 
+  @tag :db
+  test "published manifests durably gate snapshot refresh windows" do
+    {:ok, _repo_pid} = start_repo()
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
+
+    on_exit(fn ->
+      if Process.whereis(Repo) do
+        Ecto.Adapters.SQL.Sandbox.checkin(Repo)
+      end
+    end)
+
+    window_start = ~U[2026-05-26 01:15:00Z]
+    assert Jobs.snapshot_refresh_due?(window_start)
+
+    version = System.unique_integer([:positive])
+
+    Ecto.Adapters.SQL.query!(
+      Repo,
+      """
+      insert into publication_manifest(
+        snapshot_version,
+        manifest_json,
+        storage_object_key,
+        content_hash,
+        byte_size,
+        generated_at,
+        published_at,
+        publication_status
+      )
+      values ($1, '{}'::jsonb, $2, $3, 2, $4, $4, 'published')
+      """,
+      [version, "test/manifests/#{version}.json", "test-#{version}", window_start]
+    )
+
+    refute Jobs.snapshot_refresh_due?(window_start)
+    assert Jobs.snapshot_refresh_due?(DateTime.add(window_start, 900, :second))
+  end
+
   defp insert_snapshot_job!(idempotency_key) do
     args =
       Jobs.worker_args("snapshot_refresh", %{},

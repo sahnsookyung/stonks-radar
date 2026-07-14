@@ -96,18 +96,25 @@ defmodule StonksBackend.Jobs.Scheduler do
     refresh_seconds = int_setting(settings, :snapshot_refresh_seconds, 900)
 
     if scheduler_enabled?(settings) and refresh_seconds > 0 do
-      window = div(DateTime.to_unix(now(opts)), refresh_seconds)
+      timestamp = DateTime.to_unix(now(opts))
+      window = div(timestamp, refresh_seconds)
+      window_start = DateTime.from_unix!(window * refresh_seconds)
+      refresh_due? = Keyword.get(opts, :snapshot_refresh_due_fun, &Jobs.snapshot_refresh_due?/1)
 
-      [
-        %{
-          job_type: "snapshot_refresh",
-          idempotency_key: "snapshot-refresh:#{window}",
-          payload: %{},
-          job_group: "snapshots",
-          priority: 60,
-          unique_states: [:available, :scheduled, :executing, :completed]
-        }
-      ]
+      if refresh_due?.(window_start) do
+        [
+          %{
+            job_type: "snapshot_refresh",
+            idempotency_key: "snapshot-refresh:#{window}",
+            payload: %{},
+            job_group: "snapshots",
+            priority: 60,
+            unique_states: [:available, :scheduled, :executing, :completed]
+          }
+        ]
+      else
+        []
+      end
     else
       []
     end

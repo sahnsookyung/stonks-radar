@@ -59,6 +59,23 @@ defmodule StonksBackend.Jobs do
     result.num_rows
   end
 
+  def snapshot_refresh_due?(%DateTime{} = window_start) do
+    case Sql.one(
+           """
+           select not exists (
+             select 1
+             from publication_manifest
+             where publication_status = 'published'
+               and coalesce(published_at, generated_at) >= $1::timestamptz
+           ) as refresh_due
+           """,
+           [window_start]
+         ) do
+      %{"refresh_due" => false} -> false
+      _query_succeeded_or_failed_open -> true
+    end
+  end
+
   def replay(external_id) do
     with {:ok, parsed} <- parse_external_id(external_id) do
       replay_parsed(parsed)

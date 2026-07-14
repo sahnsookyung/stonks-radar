@@ -42,7 +42,11 @@ defmodule StonksBackend.JobsSchedulerTest do
 
   test "snapshot refresh specs preserve the 15 minute idempotency window" do
     specs =
-      Scheduler.snapshot_refresh_job_specs(now: ~U[2026-05-26 01:17:00Z], settings: settings())
+      Scheduler.snapshot_refresh_job_specs(
+        now: ~U[2026-05-26 01:17:00Z],
+        settings: settings(),
+        snapshot_refresh_due_fun: fn _window_start -> true end
+      )
 
     assert specs == [
              %{
@@ -54,6 +58,17 @@ defmodule StonksBackend.JobsSchedulerTest do
                unique_states: [:available, :scheduled, :executing, :completed]
              }
            ]
+  end
+
+  test "snapshot refresh specs skip a window that is already published" do
+    assert Scheduler.snapshot_refresh_job_specs(
+             now: ~U[2026-05-26 01:17:00Z],
+             settings: settings(),
+             snapshot_refresh_due_fun: fn window_start ->
+               assert window_start == ~U[2026-05-26 01:15:00Z]
+               false
+             end
+           ) == []
   end
 
   test "news fetch specs respect source toggles and keep GDELT disabled by default" do
