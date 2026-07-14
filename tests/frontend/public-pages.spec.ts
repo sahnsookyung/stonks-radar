@@ -27,6 +27,7 @@ type NewsEvent = {
   id?: string;
   title?: string;
   summary?: string;
+  regions?: Array<{ key?: string }>;
   topics?: Array<{ key?: string; label?: string }>;
   source_links?: Array<{ label?: string }>;
 };
@@ -268,16 +269,14 @@ test("news filters and detail routes render from snapshots", async ({
   page,
   request,
 }) => {
-  const regionalSnapshot = await getSnapshotData<NewsListSnapshot>(
-    request,
-    "news_region_KOR",
-  );
-  const regionalEvent = regionalSnapshot.events?.find(
-    (candidate) => candidate.title,
-  );
   const newsIndex = await getSnapshotData<NewsListSnapshot>(
     request,
     "news_index",
+  );
+  const regionalEvent = newsIndex.events?.find(
+    (candidate) =>
+      candidate.title &&
+      candidate.regions?.some((region) => region.key === "KOR"),
   );
   const keywordEvent =
     newsIndex.events?.find((event) =>
