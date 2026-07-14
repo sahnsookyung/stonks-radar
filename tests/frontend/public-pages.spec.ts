@@ -35,6 +35,27 @@ type NewsListSnapshot = {
   events?: NewsEvent[];
 };
 
+test.beforeEach(async ({ page }) => {
+  if (!process.env.STONKS_E2E_BASE_URL) {
+    await page.clock.setFixedTime(new Date("2026-07-06T12:00:00Z"));
+    await page.route("**/api/public/readiness", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          status: "ready",
+          reason: "fixture_fresh",
+          version: 3546,
+          generated_at: "2026-07-04T11:17:41Z",
+          stale_after: "2026-07-05T11:17:41Z",
+          hard_expires_at: "2026-07-11T11:17:41Z",
+          age_seconds: 176_539
+        })
+      });
+    });
+  }
+});
+
 async function getSnapshotData<T>(
   request: APIRequestContext,
   objectKey: string,
@@ -325,11 +346,24 @@ test("portfolio ticker autocomplete resolves identifiers locally and exposes hel
   page,
 }) => {
   await page.addInitScript(() => window.localStorage.clear());
+  await page.route("**/api/instruments/search**", async (route) => {
+    const query = new URL(route.request().url()).searchParams.get("q")?.toUpperCase();
+    const symbol = query === "US67066G1040" ? "NVDA" : "AAPL";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        results: [instrumentSearchFixture(symbol)],
+        warnings: [],
+        cache: "fixture"
+      })
+    });
+  });
   await page.goto("/en/portfolios/demo-growth-income/builder");
   const apiRequests: string[] = [];
   page.on("request", (request) => {
     const url = request.url();
-    if (url.includes("/api/instruments/search")) apiRequests.push(url);
+    if (url.includes("/api/instruments/")) apiRequests.push(url);
   });
 
   if ((page.viewportSize()?.width ?? 1280) < 1280) {
@@ -337,8 +371,8 @@ test("portfolio ticker autocomplete resolves identifiers locally and exposes hel
   }
   const search = page.getByRole("combobox", { name: "Add holding" });
   await search.fill("US67066G1040");
-  await expect(page.getByRole("button", { name: /NVDA/ })).toBeVisible();
-  await page.getByRole("button", { name: /NVDA/ }).click();
+  await expect(page.getByRole("option", { name: /NVDA/ })).toBeVisible();
+  await page.getByRole("option", { name: /NVDA/ }).click();
   await expect(page.getByRole("button", { name: "Remove NVDA" })).toBeVisible();
 
   await search.fill("AAPL");
@@ -348,6 +382,36 @@ test("portfolio ticker autocomplete resolves identifiers locally and exposes hel
     apiRequests.every((url) => url.includes("/api/instruments/search")),
   ).toBeTruthy();
 });
+
+function instrumentSearchFixture(symbol: "AAPL" | "NVDA") {
+  const isNvda = symbol === "NVDA";
+  return {
+    instrumentId: symbol,
+    listingId: `NASDAQ:${symbol}`,
+    displaySymbol: symbol,
+    name: isNvda ? "NVIDIA Corporation" : "Apple Inc.",
+    exchange: "NASDAQ",
+    country: "US",
+    currency: "USD",
+    assetClass: "Equity",
+    instrumentType: "stock",
+    sector: "Technology",
+    isPrimaryListing: true,
+    isAdvancedInstrument: false,
+    isActive: true,
+    isStale: false,
+    qualityLevel: "COMPLETE",
+    qualityMessage: "Complete fixture record.",
+    metadataCoverage: "full",
+    priceCoverage: "available",
+    calculationEligible: true,
+    requiresUserPrice: false,
+    sourceProviders: ["playwright_fixture"],
+    score: 100,
+    matchedOn: [isNvda ? "ISIN_EXACT" : "SYMBOL_EXACT"],
+    tooltipKeys: []
+  };
+}
 
 async function expectPortfolioEditorAccess(page: Page) {
   const viewportWidth = page.viewportSize()?.width ?? 1280;

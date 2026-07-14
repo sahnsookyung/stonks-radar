@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createPortfolioInstrumentReviewRequest,
-  enrichPortfolioInstrumentSelection,
   searchPortfolioInstruments
 } from "./portfolioInstrumentApi";
 import type { InstrumentSearchResult } from "./portfolioAtlas";
@@ -39,64 +38,6 @@ describe("portfolio instrument API client", () => {
         method: "GET"
       })
     );
-  });
-
-  it("resolves and enriches selected search results through resolve and detail endpoints", async () => {
-    const base = searchResult({ instrumentId: "005930.KS", listingId: "KRX:005930", displaySymbol: "005930" });
-    const resolved = searchResult({
-      instrumentId: "005930.KS",
-      listingId: "KRX:005930",
-      displaySymbol: "005930",
-      currency: "KRW"
-    });
-    const fetchMock = vi.fn(async (url: string) => {
-      if (url === "/api/instruments/resolve") {
-        return jsonResponse({ status: "MATCHED", confidence: "HIGH", matches: [resolved] });
-      }
-      if (url === "/api/instruments/005930.KS?listing_id=KRX%3A005930") {
-        return jsonResponse({
-          instrumentId: "005930.KS",
-          symbol: "005930",
-          name: "Samsung Electronics",
-          assetClass: "Equity",
-          instrumentType: "stock",
-          country: "Korea",
-          currency: "KRW",
-          sector: "Technology",
-          isActive: true,
-          dataQualityLevel: "COMPLETE",
-          dataQualityMessage: "Resolved by Phoenix index.",
-          listings: [
-            {
-              listingId: "KRX:005930",
-              displaySymbol: "005930",
-              exchangeCode: "KRX",
-              country: "Korea",
-              tradingCurrency: "KRW",
-              isPrimaryListing: true,
-              isActive: true
-            }
-          ]
-        });
-      }
-      return new Response("missing", { status: 404 });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    await expect(enrichPortfolioInstrumentSelection(base, "HOLDING_ENTRY")).resolves.toMatchObject({
-      name: "Samsung Electronics",
-      exchange: "KRX",
-      currency: "KRW",
-      sourceProviders: expect.arrayContaining(["phoenix_instruments_api"])
-    });
-  });
-
-  it("rejects failed enrichment so callers can keep local fallback behavior", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("down", { status: 503 })));
-
-    await expect(
-      enrichPortfolioInstrumentSelection(searchResult({ instrumentId: "AAPL", listingId: "NASDAQ:AAPL" }), "HOLDING_ENTRY")
-    ).rejects.toThrow("Instrument API failed: 503");
   });
 
   it("creates review requests with backend context fields", async () => {

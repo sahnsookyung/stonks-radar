@@ -39,6 +39,27 @@ test.describe("mobile responsive public routes", () => {
     test.skip(testInfo.project.name !== "mobile", "responsive matrix runs once in the mobile project");
   });
 
+  test.beforeEach(async ({ page }) => {
+    if (!process.env.STONKS_E2E_BASE_URL) {
+      await page.clock.setFixedTime(new Date("2026-07-06T12:00:00Z"));
+      await page.route("**/api/public/readiness", async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            status: "ready",
+            reason: "fixture_fresh",
+            version: 3546,
+            generated_at: "2026-07-04T11:17:41Z",
+            stale_after: "2026-07-05T11:17:41Z",
+            hard_expires_at: "2026-07-11T11:17:41Z",
+            age_seconds: 176_539
+          })
+        });
+      });
+    }
+  });
+
   for (const viewport of mobileViewports) {
     test(`fits ${viewport.width}x${viewport.height} without hidden overflow`, async ({ page }, testInfo) => {
       await page.setViewportSize(viewport);
@@ -59,6 +80,10 @@ test.describe("mobile responsive public routes", () => {
         await assertAllowedScrollers(page, route);
         await assertNoUnexpectedOverflow(page, route);
         await assertTapTargets(page, route);
+        await assertNoNestedInteractiveControls(page, route);
+        if (route === "/en") {
+          await exerciseMobileNavigation(page);
+        }
         if (route === "/en/portfolio") {
           await assertPortfolioFirstViewport(page, route);
         }
@@ -79,13 +104,28 @@ test.describe("mobile responsive public routes", () => {
 });
 
 async function exerciseTickerTabs(page: Page, route: string) {
-  for (const tab of ["Chart", "Technicals", "Options", "News", "Filings", "Fundamentals", "Notes"]) {
+  for (const tab of ["Chart", "Technicals", "Options", "News", "Filings", "Fundamentals", "Notes & alerts", "Compare"]) {
     await page.getByRole("tab", { name: tab }).click();
     await page.waitForTimeout(150);
     await assertAllowedScrollers(page, `${route}#${tab}`);
     await assertNoUnexpectedOverflow(page, `${route}#${tab}`);
     await assertTapTargets(page, `${route}#${tab}`);
   }
+}
+
+async function exerciseMobileNavigation(page: Page) {
+  for (const label of ["Dashboard", "Map", "News", "Portfolio", "Menu"]) {
+    await expect(page.getByRole(label === "Menu" ? "button" : "link", { name: label, exact: true }).first()).toBeVisible();
+  }
+  const menuButton = page.getByRole("button", { name: "Menu", exact: true });
+  await menuButton.click();
+  const dialog = page.getByRole("dialog", { name: "Site menu" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("link", { name: "Tickers" })).toBeVisible();
+  await expect(dialog.getByRole("link", { name: "Calendar" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(menuButton).toBeFocused();
 }
 
 async function assertHeaderHeight(page: Page, width: number) {
@@ -192,12 +232,30 @@ async function assertTapTargets(page: Page, route: string) {
         const style = window.getComputedStyle(element);
         return style.pointerEvents !== "none";
       })
-      .map((element) => ({ element, rect: element.getBoundingClientRect() }))
+      .map((element) => {
+        const label = element.matches("input[type='checkbox'], input[type='radio']")
+          ? element.closest("label")
+          : null;
+        return { element, rect: (label ?? element).getBoundingClientRect() };
+      })
       .filter(({ rect }) => rect.width < 43.5 || rect.height < 43.5)
       .map(({ element, rect }) => `${describeElement(element, rect)} ${Math.round(rect.width)}x${Math.round(rect.height)}`)
       .slice(0, 12);
   });
   expect(offenders, `${route} has tap targets below 44px`).toEqual([]);
+}
+
+async function assertNoNestedInteractiveControls(page: Page, route: string) {
+  const offenders = await page.locator("button button, button a[href], a[href] button, label button").evaluateAll((elements) =>
+    elements
+      .filter((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = window.getComputedStyle(element as HTMLElement);
+        return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
+      })
+      .map((element) => `${element.parentElement?.tagName.toLowerCase()} > ${element.tagName.toLowerCase()}`)
+  );
+  expect(offenders, `${route} has nested interactive controls`).toEqual([]);
 }
 
 async function assertPortfolioFirstViewport(page: Page, route: string) {
@@ -294,7 +352,7 @@ async function mockOptionalPublicApis(page: Page) {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({})
+      body: JSON.stringify({ authenticated: false })
     });
   });
   await page.route("**/api/portfolio-workspaces/**", async (route) => {
@@ -344,6 +402,24 @@ async function mockOptionalPublicApis(page: Page) {
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ insiders: [], transactions: [], limitations: [] })
+    });
+  });
+  await page.route("**/api/public/tickers/**/fundamentals", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        symbol: "NVDA",
+        status: "unavailable",
+        coverage_reason: "no_compatible_companyfacts",
+        metrics: { missing_reasons: {} },
+        period_end: null,
+        form: null,
+        filing_url: null,
+        source_filed_at: null,
+        fetched_at: null,
+        stale_after: null
+      })
     });
   });
   await page.route("**/api/public/trump-disclosures/summary**", async (route) => {

@@ -37,7 +37,6 @@ import {
 import { TermTooltip } from "../components/TermTooltip";
 import {
   createPortfolioInstrumentReviewRequest,
-  enrichPortfolioInstrumentSelection,
   searchPortfolioInstruments,
   type InstrumentSearchApiResponse
 } from "../lib/portfolioInstrumentApi";
@@ -805,7 +804,7 @@ function requestInstrumentReview(query: string, contextScreen: ManualEditorConte
           reviewRequests={reviewRequests}
           requestInstrumentReview={(query) => requestInstrumentReview(query, "BUILDER")}
         >
-          <MonteCarloSection result={monteCarlo} portfolio={portfolio} updateGoal={updateGoal} />
+          <MonteCarloSection result={monteCarlo} portfolio={portfolio} analysis={analysis} updateGoal={updateGoal} />
         </EditablePortfolioWorkspace>
       ) : null}
       {section === "rebalance" ? (
@@ -827,7 +826,7 @@ function requestInstrumentReview(query: string, contextScreen: ManualEditorConte
           reviewRequests={reviewRequests}
           requestInstrumentReview={(query) => requestInstrumentReview(query, "BUILDER")}
         >
-          <RebalanceSection plan={rebalancePlan} analysis={analysis} />
+          <RebalanceSection plan={rebalancePlan} analysis={analysis} portfolio={portfolio} />
         </EditablePortfolioWorkspace>
       ) : null}
       {section === "fees" ? <FeesSection analysis={analysis} assumptions={assumptions} setAssumptions={setAssumptions} /> : null}
@@ -1479,9 +1478,11 @@ function DashboardSection({
   const dataTone = analysis.coverageQuality === "LOW" || analysis.coverageQuality === "INSUFFICIENT" ? "watch" : "normal";
   return (
     <section className="grid gap-4" data-testid="portfolio-cockpit">
+      <PortfolioTrustWarning portfolio={portfolio} analysis={analysis} />
+      <ModelEstimateQualifier portfolio={portfolio} analysis={analysis} />
       <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
         <CockpitCard icon={<WalletCards />} title="Portfolio value" termKey="portfolio_value" value={formatMoney(analysis.portfolioValue)} detail="Holdings plus user-entered cash" />
-        <CockpitCard icon={<Target />} title="Goal status" termKey="success_probability" value={formatPercent(monteCarlo.successProbability)} detail={`${formatMoney(monteCarlo.medianOutcome)} median projection`} tone={goalTone} />
+        <CockpitCard icon={<Target />} title="Goal status · model estimate" termKey="success_probability" value={formatPercent(monteCarlo.successProbability)} detail={`${formatMoney(monteCarlo.medianOutcome)} median model estimate`} tone={goalTone} />
         <CockpitCard icon={<RefreshCcw />} title="Allocation drift" termKey="allocation_drift" value={formatPercent(analysis.allocationDrift)} detail="Current mix vs target" tone={driftTone} />
         <CockpitCard
           icon={<DatabaseZap />}
@@ -1504,7 +1505,8 @@ function DashboardSection({
           <div className="panel p-4">
             <SectionTitle icon={<ArrowRight />} title="Next planning action" termKey="rebalancing" />
             <div className="mt-4 rounded-md border border-line bg-panelAlt p-4">
-              <div className="safe-text text-xl font-bold text-accent">{nextContribution?.assetClass ?? "Hold course"}</div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted">Model estimate</div>
+              <div className="safe-text mt-1 text-xl font-bold text-accent">{nextContribution?.assetClass ?? "Hold course"}</div>
               <p className="safe-text mt-2 text-sm leading-6 text-muted">
                 {nextContribution
                   ? `Route ${formatMoney(nextContribution.amount)} of the next contribution toward this underweight area before considering sells.`
@@ -1546,6 +1548,41 @@ function DashboardSection({
         ) : null}
       </details>
     </section>
+  );
+}
+
+function PortfolioTrustWarning({ portfolio, analysis }: Readonly<{ portfolio: Portfolio; analysis: ReturnType<typeof analyzePortfolio> }>) {
+  const locale = useLocale();
+  if (!(["LOW", "INSUFFICIENT"] as string[]).includes(analysis.coverageQuality)) return null;
+  const summary = analysis.coverageSummary;
+  return (
+    <div className="signal-danger p-4" role="alert" data-testid="portfolio-low-coverage-warning">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+        <div className="min-w-0">
+          <h2 className="text-base font-bold">Low-confidence model inputs</h2>
+          <p className="mt-1 text-sm leading-6">
+            Coverage is {analysis.coverageQuality.toLowerCase()} ({formatPercent(summary.coveredWeight)} covered or manually priced). Projections and rebalance guidance remain visible, but they are model estimates and may be materially unreliable.
+            {summary.oldestPriceAsOf ? ` Price dates span ${summary.oldestPriceAsOf} to ${summary.latestPriceAsOf}.` : " No usable price-date range is available."}
+          </p>
+          <Link className="secondary-action mt-3 border-current" to="/$locale/portfolios/$portfolioId/holdings" params={{ locale, portfolioId: portfolio.portfolioId }}>
+            Edit holding prices
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModelEstimateQualifier({ portfolio, analysis }: Readonly<{ portfolio: Portfolio; analysis: ReturnType<typeof analyzePortfolio> }>) {
+  const locale = useLocale();
+  const summary = analysis.coverageSummary;
+  const priceRange = summary.oldestPriceAsOf ? `${summary.oldestPriceAsOf} – ${summary.latestPriceAsOf}` : "unavailable";
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-panelAlt px-4 py-3 text-sm">
+      <p><span className="font-bold">Model estimate</span><span className="text-muted"> · {formatPercent(summary.coveredWeight)} coverage · price dates {priceRange}</span></p>
+      <Link className="focus-ring inline-flex min-h-11 items-center rounded-md px-2 font-semibold text-accent hover:underline" to="/$locale/portfolios/$portfolioId/holdings" params={{ locale, portfolioId: portfolio.portfolioId }}>Edit holding prices</Link>
+    </div>
   );
 }
 
@@ -1788,9 +1825,9 @@ function BuilderSection({
             <SectionTitle icon={<Target />} title="Goal setup" termKey="success_probability" />
             <NumberField label="Target amount" termKey="portfolio_value" value={portfolio.goal.targetAmount} onChange={(value) => updateGoal("targetAmount", value)} />
             <NumberField label="Monthly contribution" termKey="rebalancing" value={portfolio.goal.monthlyContribution} onChange={(value) => updateGoal("monthlyContribution", value)} />
-            <label className="mt-4 block text-sm font-semibold">
+            <label htmlFor="portfolio-target-date" className="mt-4 block text-sm font-semibold">
               <span>Target date</span>
-              <input className="input-control mt-2 w-full" type="date" value={portfolio.goal.targetDate} onChange={(event) => updateGoal("targetDate", event.target.value)} />
+              <input id="portfolio-target-date" className="input-control mt-2 w-full" type="date" value={portfolio.goal.targetDate} onChange={(event) => updateGoal("targetDate", event.target.value)} />
             </label>
           </div>
           <TargetAllocationPanel portfolio={portfolio} analysis={analysis} updateTarget={updateTarget} />
@@ -1827,9 +1864,10 @@ function TargetAllocationPanel({
       <SectionTitle icon={<PieChart />} title="Target allocation" termKey="target_allocation" />
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         {Object.entries(portfolio.targetAllocation).map(([assetClass, value]) => (
-          <label key={assetClass} className="grid gap-2">
+          <label key={assetClass} htmlFor={`target-allocation-${toSafeId(assetClass)}`} className="grid gap-2">
             <span className="text-sm font-semibold text-muted">{assetClass}</span>
             <input
+              id={`target-allocation-${toSafeId(assetClass)}`}
               className="input-control w-full"
               type="number"
               min={0}
@@ -1917,8 +1955,9 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
     loading: boolean;
     results: InstrumentSearchResult[];
     error: string | null;
+    warnings: string[];
     freshness: InstrumentSearchApiResponse["dataFreshness"];
-  }>({ query: "", loading: false, results: [], error: null, freshness: undefined });
+  }>({ query: "", loading: false, results: [], error: null, warnings: [], freshness: undefined });
   const [pendingSelectionKey, setPendingSelectionKey] = useState<string | null>(null);
   const [manualDraft, setManualDraft] = useState<ManualHoldingDraft | null>(null);
   const trimmedQuery = searchTerm.trim();
@@ -1949,7 +1988,7 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
 
   useEffect(() => {
     if (!isSearchReady || !debouncedSearchTerm) {
-      setApiSearch({ query: "", loading: false, results: [], error: null, freshness: undefined });
+      setApiSearch({ query: "", loading: false, results: [], error: null, warnings: [], freshness: undefined });
       return;
     }
     const controller = new AbortController();
@@ -1958,6 +1997,7 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
       loading: true,
       results: current.query === debouncedSearchTerm ? current.results : [],
       error: null,
+      warnings: current.query === debouncedSearchTerm ? current.warnings : [],
       freshness: current.query === debouncedSearchTerm ? current.freshness : undefined
     }));
     searchPortfolioInstruments(
@@ -1976,6 +2016,7 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
           loading: false,
           results: payload.results ?? [],
           error: null,
+          warnings: payload.warnings ?? [],
           freshness: payload.dataFreshness
         });
       })
@@ -1986,6 +2027,7 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
           loading: false,
           results: [],
           error: error instanceof Error ? error.message : "Instrument search API unavailable",
+          warnings: [],
           freshness: undefined
         });
       });
@@ -2064,20 +2106,14 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
     const selectionKey = `${result.instrumentId}:${result.listingId}`;
     if (pendingSelectionKey) return;
     setPendingSelectionKey(selectionKey);
-    void enrichPortfolioInstrumentSelection(result, contextScreen)
-      .catch(() => result)
-      .then((enrichedResult) => {
-        addHolding({
-          instrumentId: enrichedResult.instrumentId,
-          listingId: enrichedResult.listingId,
-          searchResult: enrichedResult
-        });
-        resetManualDraft();
-        setSearchTerm("");
-      })
-      .finally(() => {
-        setPendingSelectionKey((current) => (current === selectionKey ? null : current));
-      });
+    addHolding({
+      instrumentId: result.instrumentId,
+      listingId: result.listingId,
+      searchResult: result
+    });
+    resetManualDraft();
+    setSearchTerm("");
+    setPendingSelectionKey(null);
   };
 
   const selectManual = () => {
@@ -2179,21 +2215,13 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
           </div>
         </details>
       )}
-      <label className="mt-4 block text-sm font-semibold">
-        <MetricLabel label="Cash balance" termKey="portfolio_value" />
-        <input
-          className="input-control mt-2 w-full"
-          type="number"
-          min={0}
-          value={portfolio.cashBalance}
-          onChange={(event) => updateCashBalance(Number(event.target.value))}
-        />
-      </label>
+      <NumberField label="Cash balance" termKey="portfolio_value" value={portfolio.cashBalance} onChange={updateCashBalance} />
       <div className="mt-4 grid gap-2">
         {portfolio.holdings.map((holding) => {
           const instrument = instrumentCatalog.find((item) => item.instrumentId === holding.instrumentId);
           const row = analysis.topHoldings.find((item) => item.key === holding.instrumentId);
           const symbol = instrument?.symbol ?? holding.instrumentId;
+          const holdingFieldPrefix = `holding-${toSafeId(holding.holdingId)}`;
           const needsManualValue = Boolean(instrument?.requiresUserPrice) && !Number.isFinite(holding.manualPrice) && !Number.isFinite(holding.manualMarketValue);
           return (
             <div key={holding.holdingId} className="rounded-md border border-line bg-panelAlt p-3">
@@ -2212,9 +2240,10 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
                 </button>
               </div>
               <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_1fr_120px] sm:items-end">
-                <label className="block text-xs font-semibold uppercase tracking-wide text-muted">
+                <label htmlFor={`${holdingFieldPrefix}-quantity`} className="block text-xs font-semibold uppercase tracking-wide text-muted">
                   <span>Quantity</span>
                   <input
+                    id={`${holdingFieldPrefix}-quantity`}
                     className="input-control mt-2 w-full"
                     aria-label={`${symbol} quantity`}
                     type="number"
@@ -2224,9 +2253,10 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
                     onChange={(event) => updateHoldingQuantity(holding.holdingId, Number(event.target.value))}
                   />
                 </label>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-muted">
+                <label htmlFor={`${holdingFieldPrefix}-price`} className="block text-xs font-semibold uppercase tracking-wide text-muted">
                   <span>Manual price</span>
                   <input
+                    id={`${holdingFieldPrefix}-price`}
                     className="input-control mt-2 w-full"
                     aria-label={`${symbol} manual price`}
                     type="number"
@@ -2237,9 +2267,10 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
                     onChange={(event) => updateHoldingManualPrice(holding.holdingId, event.target.value === "" ? undefined : Number(event.target.value))}
                   />
                 </label>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-muted">
+                <label htmlFor={`${holdingFieldPrefix}-market-value`} className="block text-xs font-semibold uppercase tracking-wide text-muted">
                   <span>Market value</span>
                   <input
+                    id={`${holdingFieldPrefix}-market-value`}
                     className="input-control mt-2 w-full"
                     aria-label={`${symbol} manual market value`}
                     type="number"
@@ -2280,7 +2311,7 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
           <div className="mt-1 flex min-w-0 flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between">
             <span className="safe-text min-w-0 text-muted">Search ticker, company, ETF, ISIN, FIGI, or local code</span>
             <div className="grid min-w-0 grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:inline-flex sm:items-center sm:gap-3">
-              <label className="focus-ring relative inline-flex min-h-11 min-w-0 items-center gap-2 rounded-md border border-line bg-panelAlt px-3 py-2 text-left">
+              <label className="focus-ring relative inline-flex min-h-11 min-w-0 items-center gap-2 rounded-md border border-line bg-panelAlt px-3 py-2 text-left" title={portfolioTerms.advanced_instrument?.short}>
                 <input
                   className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                   type="checkbox"
@@ -2288,12 +2319,9 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
                   onChange={(event) => setIncludeAdvancedInstruments(event.target.checked)}
                 />
                 <span aria-hidden="true" className={`h-4 w-4 shrink-0 rounded border ${includeAdvancedInstruments ? "border-accent bg-accent" : "border-line bg-panel"}`} />
-                <span className="safe-text inline-flex min-w-0 items-center gap-1">
-                  Include advanced
-                  <TermTooltip termKey="advanced_instrument" />
-                </span>
+                <span className="safe-text min-w-0">Include advanced</span>
               </label>
-              <label className="focus-ring relative inline-flex min-h-11 min-w-0 items-center gap-2 rounded-md border border-line bg-panelAlt px-3 py-2 text-left">
+              <label className="focus-ring relative inline-flex min-h-11 min-w-0 items-center gap-2 rounded-md border border-line bg-panelAlt px-3 py-2 text-left" title={portfolioTerms.inactive_security?.short}>
                 <input
                   className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                   type="checkbox"
@@ -2301,10 +2329,7 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
                   onChange={(event) => setIncludeInactiveInstruments(event.target.checked)}
                 />
                 <span aria-hidden="true" className={`h-4 w-4 shrink-0 rounded border ${includeInactiveInstruments ? "border-accent bg-accent" : "border-line bg-panel"}`} />
-                <span className="safe-text inline-flex min-w-0 items-center gap-1">
-                  Include inactive
-                  <TermTooltip termKey="inactive_security" />
-                </span>
+                <span className="safe-text min-w-0">Include inactive</span>
               </label>
             </div>
           </div>
@@ -2317,6 +2342,7 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
               aria-autocomplete="list"
               aria-expanded={hasSearchResults}
               aria-controls={hasSearchResults ? resultListId : undefined}
+              aria-activedescendant={hasSearchResults ? `${resultListId}-option-${activeResultIndex}` : undefined}
               placeholder="AAPL / Apple / US0378331005"
               maxLength={INSTRUMENT_SEARCH_QUERY_MAX_LENGTH}
               value={searchTerm}
@@ -2337,10 +2363,16 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
             </div>
           ) : null}
           {noResultGuidance ? <div className="mt-2 text-xs text-muted">{noResultGuidance}</div> : null}
+          {apiSearch.query === debouncedSearchTerm && apiSearch.warnings.length ? (
+            <div className="mt-2 text-xs text-warning" role="status">
+              {apiSearch.warnings[0]}
+            </div>
+          ) : null}
           {searchError ? <div className="mt-2 text-xs text-danger">{searchError}</div> : null}
           {hasSearchResults && (
             <div
               id={resultListId}
+              role="listbox"
               className="mt-2 max-h-80 overflow-auto rounded-md border border-line bg-panelAlt"
               aria-label="Instrument search results"
               aria-live="polite"
@@ -2352,7 +2384,8 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
                   id={`${resultListId}-option-${index}`}
                   key={`${result.instrumentId}-${result.listingId}`}
                   type="button"
-                  aria-current={index === activeResultIndex ? "true" : undefined}
+                  role="option"
+                  aria-selected={index === activeResultIndex}
                   disabled={isResolvingSelection}
                   className={`block w-full border-b border-line px-3 py-3 text-left text-sm last:border-b-0 ${
                     index === activeResultIndex ? "bg-accentSoft text-ink" : "hover:bg-panel"
@@ -2377,20 +2410,12 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
                     <InstrumentMetaChip label={result.assetClass} termKey="asset_class" />
                     <InstrumentMetaChip label={result.sector} termKey="sector" />
                   </div>
-                  <div className="mt-2 text-xs text-muted">
-                    <MetricLabel label={result.qualityMessage} termKey="data_quality" />
-                  </div>
+                  <div className="mt-2 text-xs text-muted">{result.qualityMessage}</div>
                   {result.qualityLevel === "STALE" ? (
-                    <p className="mt-1 text-xs text-warning">
-                      <TermTooltip termKey="stale_data" />
-                      <span className="ml-1">Instrument record may be stale.</span>
-                    </p>
+                    <p className="mt-1 text-xs text-warning">Instrument record may be stale.</p>
                   ) : null}
                   {result.qualityLevel === "PARTIAL" || result.qualityLevel === "ESTIMATED" ? (
-                    <p className="mt-1 text-xs text-warning">
-                      <TermTooltip termKey={qualityTooltipKey(result.qualityLevel)} />
-                      <span className="ml-1">Some metadata is incomplete.</span>
-                    </p>
+                    <p className="mt-1 text-xs text-warning">Some metadata is incomplete.</p>
                   ) : null}
                   {result.requiresUserPrice ? (
                     <p className="mt-1 text-xs text-warning">
@@ -2561,27 +2586,17 @@ function PortfolioEditorPanel({ // NOSONAR - editor owns coordinated search/manu
 }
 
 function InstrumentMetaChip({ label, termKey }: Readonly<{ label: string; termKey: string }>) {
+  const description = portfolioTerms[termKey]?.short;
   return (
-    <span className="inline-flex items-center gap-1 rounded border border-line bg-paper px-2 py-1 text-xs text-muted">
-      {label}
-      <TermTooltip termKey={termKey} />
-    </span>
+    <span className="inline-flex items-center rounded border border-line bg-paper px-2 py-1 text-xs text-muted" title={description}>{label}</span>
   );
-}
-
-function qualityTooltipKey(qualityLevel: string) {
-  if (qualityLevel === "PARTIAL") return "partial_data";
-  if (qualityLevel === "ESTIMATED") return "estimated_data";
-  return "data_quality";
 }
 
 function InlineBadge({ label, termKey, tone }: Readonly<{ label: string; termKey: string; tone: "warning" | "danger" | "muted" }>) {
   const toneClass = inlineBadgeToneClass(tone);
+  const description = portfolioTerms[termKey]?.short;
   return (
-    <span className={`ml-2 inline-flex items-center gap-1 text-xs ${toneClass}`}>
-      {label}
-      <TermTooltip termKey={termKey} />
-    </span>
+    <span className={`ml-2 inline-flex items-center text-xs ${toneClass}`} title={description}>{label}</span>
   );
 }
 
@@ -2618,14 +2633,19 @@ function BacktestSection({ result }: Readonly<{ result: ReturnType<typeof runBac
 function MonteCarloSection({
   result,
   portfolio,
+  analysis,
   updateGoal
 }: Readonly<{
   result: ReturnType<typeof runMonteCarlo>;
   portfolio: Portfolio;
+  analysis: ReturnType<typeof analyzePortfolio>;
   updateGoal: <K extends keyof Portfolio["goal"]>(key: K, value: Portfolio["goal"][K]) => void;
 }>) {
   return (
-    <section className="grid gap-4 xl:grid-cols-[0.75fr_1.25fr]">
+    <section className="grid gap-4">
+      <PortfolioTrustWarning portfolio={portfolio} analysis={analysis} />
+      <ModelEstimateQualifier portfolio={portfolio} analysis={analysis} />
+      <div className="grid gap-4 xl:grid-cols-[0.75fr_1.25fr]">
       <div className="panel p-4">
         <SectionTitle icon={<Calculator />} title="Simulation inputs" termKey="monte_carlo" />
         <NumberField label="Target amount" termKey="success_probability" value={portfolio.goal.targetAmount} onChange={(value) => updateGoal("targetAmount", value)} />
@@ -2637,25 +2657,29 @@ function MonteCarloSection({
         <SectionTitle icon={<LineChart />} title="Monte Carlo fan chart" termKey="monte_carlo" />
         <FanChart rows={result.fanChart} targetAmount={portfolio.goal.targetAmount} />
         <div className="mt-4 grid gap-3 md:grid-cols-4">
-          <MetricCard title="Success probability" termKey="success_probability" value={formatPercent(result.successProbability)} />
-          <MetricCard title="Median outcome" termKey="percentile" value={formatMoney(result.medianOutcome)} />
-          <MetricCard title="P10 / P90" termKey="percentile" value={`${formatMoney(result.p10Outcome)} / ${formatMoney(result.p90Outcome)}`} />
-          <MetricCard title="Required monthly" termKey="money_weighted_return" value={formatMoney(result.requiredMonthlyContribution)} />
+          <MetricCard title="Success probability · model estimate" termKey="success_probability" value={formatPercent(result.successProbability)} />
+          <MetricCard title="Median outcome · model estimate" termKey="percentile" value={formatMoney(result.medianOutcome)} />
+          <MetricCard title="P10 / P90 · model estimate" termKey="percentile" value={`${formatMoney(result.p10Outcome)} / ${formatMoney(result.p90Outcome)}`} />
+          <MetricCard title="Required monthly · model estimate" termKey="money_weighted_return" value={formatMoney(result.requiredMonthlyContribution)} />
         </div>
+      </div>
       </div>
     </section>
   );
 }
 
-function RebalanceSection({ plan, analysis }: Readonly<{ plan: ReturnType<typeof generateContributionRebalancePlan>; analysis: ReturnType<typeof analyzePortfolio> }>) {
+function RebalanceSection({ plan, analysis, portfolio }: Readonly<{ plan: ReturnType<typeof generateContributionRebalancePlan>; analysis: ReturnType<typeof analyzePortfolio>; portfolio: Portfolio }>) {
   return (
-    <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+    <section className="grid gap-4">
+      <PortfolioTrustWarning portfolio={portfolio} analysis={analysis} />
+      <ModelEstimateQualifier portfolio={portfolio} analysis={analysis} />
+      <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
       <div className="panel p-4">
         <SectionTitle icon={<RefreshCcw />} title="Rebalancing compass" termKey="rebalancing" />
         <Compass rows={analysis.currentTargetRows.slice(0, 6)} />
       </div>
       <div className="panel p-4">
-        <SectionTitle icon={<ArrowRight />} title="Contribution-first plan" termKey="rebalancing_band" />
+        <SectionTitle icon={<ArrowRight />} title="Contribution-first plan · model estimate" termKey="rebalancing_band" />
         <div className="mt-4 grid gap-3">
           {plan.cashContributionPlan.map((item) => (
             <div key={item.assetClass} className="rounded-md border border-line bg-panelAlt p-3">
@@ -2668,6 +2692,7 @@ function RebalanceSection({ plan, analysis }: Readonly<{ plan: ReturnType<typeof
           ))}
         </div>
         <p className="mt-4 text-sm text-warning">{plan.warnings[0]}</p>
+      </div>
       </div>
     </section>
   );
@@ -3214,10 +3239,10 @@ function MetricCard({ title, termKey, value }: Readonly<{ title: string; termKey
 
 function SectionTitle({ icon, title, termKey }: Readonly<{ icon: ReactNode; title: string; termKey: string }>) {
   return (
-    <div className="flex items-center gap-2 text-lg font-bold">
+    <h2 className="flex items-center gap-2 text-lg font-bold">
       <IconWrap>{icon}</IconWrap>
       <MetricLabel label={title} termKey={termKey} />
-    </div>
+    </h2>
   );
 }
 
@@ -3282,20 +3307,26 @@ function StepCard({ number, title, body }: Readonly<{ number: string; title: str
 }
 
 function NumberField({ label, termKey, value, onChange }: Readonly<{ label: string; termKey: string; value: number; onChange: (value: number) => void }>) {
+  const id = useId();
+  const descriptionId = `${id}-description`;
   return (
-    <label className="mt-4 block text-sm font-semibold">
-      <MetricLabel label={label} termKey={termKey} />
-      <input className="input-control mt-2 w-full" type="number" min={0} value={value} onChange={(event) => onChange(Number(event.target.value))} />
-    </label>
+    <div className="mt-4 block text-sm font-semibold">
+      <div className="flex items-center gap-1.5"><label htmlFor={id}>{label}</label><TermTooltip termKey={termKey} /></div>
+      <span id={descriptionId} className="sr-only">{portfolioTerms[termKey]?.short}</span>
+      <input id={id} aria-describedby={descriptionId} className="input-control mt-2 w-full" type="number" min={0} value={value} onChange={(event) => onChange(Number(event.target.value))} />
+    </div>
   );
 }
 
 function PercentField({ label, termKey, value, onChange }: Readonly<{ label: string; termKey: string; value: number; onChange: (value: number) => void }>) {
+  const id = useId();
+  const descriptionId = `${id}-description`;
   return (
-    <label className="mt-4 block text-sm font-semibold">
-      <MetricLabel label={label} termKey={termKey} />
-      <input className="input-control mt-2 w-full" type="number" min={0} step={0.01} value={(value * 100).toFixed(2)} onChange={(event) => onChange(Number(event.target.value) / 100)} />
-    </label>
+    <div className="mt-4 block text-sm font-semibold">
+      <div className="flex items-center gap-1.5"><label htmlFor={id}>{label}</label><TermTooltip termKey={termKey} /></div>
+      <span id={descriptionId} className="sr-only">{portfolioTerms[termKey]?.short}</span>
+      <input id={id} aria-describedby={descriptionId} className="input-control mt-2 w-full" type="number" min={0} step={0.01} value={(value * 100).toFixed(2)} onChange={(event) => onChange(Number(event.target.value) / 100)} />
+    </div>
   );
 }
 

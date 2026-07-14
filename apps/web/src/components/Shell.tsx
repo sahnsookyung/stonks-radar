@@ -4,18 +4,21 @@ import {
   BriefcaseBusiness,
   Calculator,
   LayoutDashboard,
+  LineChart,
   Map,
+  Menu,
   Newspaper,
   Scale,
   SearchCheck,
   ShieldAlert,
   TrendingUp,
-  LineChart,
+  X
 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { alternateLocale, asLocale, useLocale } from "../lib/locale";
 import { navVisibleRegions } from "../lib/watchedRegions";
+import { SnapshotIncidentBanner } from "./SnapshotIncidentBanner";
 
 const sectorLinks = [
   ["space", "Space", "우주"],
@@ -23,328 +26,212 @@ const sectorLinks = [
   ["quantum", "Quantum", "양자"],
   ["semiconductors", "Semiconductors", "반도체"],
   ["oil-energy", "Oil/Energy", "석유/에너지"],
-  ["big-tech", "Big Tech", "빅테크"],
+  ["big-tech", "Big Tech", "빅테크"]
 ];
+
+type NavigationItem = {
+  key: string;
+  to: string;
+  params: Record<string, string>;
+  icon: ReactElement;
+  label: string;
+};
 
 export function Shell({ children }: Readonly<{ children: React.ReactNode }>) {
   const locale = useLocale();
   const { t } = useTranslation();
   const coverageLinks = navVisibleRegions();
-  const pathname = useRouterState({
-    select: (state) => state.location.pathname,
-  });
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const other = alternateLocale(locale);
   const alternatePath = pathname.replace(/^\/(en|ko)(?=\/|$)/, `/${other}`);
   const activePrimaryNavKey = getActivePrimaryNavKey(pathname);
-  const primaryNavRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
-  const compactNavLabels = {
-    marketPulse: locale === "ko" ? "펄스" : "Pulse",
-    yieldCurves: locale === "ko" ? "금리곡선" : "Curves",
+  const [menuOpen, setMenuOpen] = useState(false);
+  const desktopMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuPanelRef = useRef<HTMLDivElement>(null);
+  const compact = {
+    pulse: locale === "ko" ? "펄스" : "Pulse",
+    curves: locale === "ko" ? "금리곡선" : "Curves",
     portfolio: locale === "ko" ? "포트폴리오" : "Portfolio",
     funds: locale === "ko" ? "펀드" : "Funds",
-    disclaimer: locale === "ko" ? "고지" : "Legal",
+    legal: locale === "ko" ? "고지" : "Legal"
   };
+  const primaryItems: NavigationItem[] = [
+    { key: "dashboard", to: "/$locale", params: { locale }, icon: <LayoutDashboard />, label: t("dashboard") },
+    { key: "map", to: "/$locale/map", params: { locale }, icon: <Map />, label: t("map") },
+    { key: "news", to: "/$locale/news", params: { locale }, icon: <Newspaper />, label: t("news") },
+    { key: "portfolio", to: "/$locale/portfolio", params: { locale }, icon: <Calculator />, label: compact.portfolio }
+  ];
+  const menuItems: NavigationItem[] = [
+    { key: "tickers", to: "/$locale/tickers/$symbol", params: { locale, symbol: "NVDA" }, icon: <TrendingUp />, label: t("tickers") },
+    { key: "calendar", to: "/$locale/calendar", params: { locale }, icon: <Activity />, label: t("calendar") },
+    { key: "market-pulse", to: "/$locale/market-pulse", params: { locale }, icon: <TrendingUp />, label: compact.pulse },
+    { key: "yield-curves", to: "/$locale/yield-curves", params: { locale }, icon: <LineChart />, label: compact.curves },
+    { key: "shorts", to: "/$locale/shorts", params: { locale }, icon: <ShieldAlert />, label: t("shorts") },
+    { key: "funds", to: "/$locale/funds", params: { locale }, icon: <BriefcaseBusiness />, label: compact.funds },
+    { key: "legal", to: "/$locale/$legalSlug", params: { locale, legalSlug: "financial-disclaimer" }, icon: <Scale />, label: compact.legal }
+  ];
+
+  useEffect(() => setMenuOpen(false), [pathname]);
 
   useEffect(() => {
-    const node = activePrimaryNavKey
-      ? primaryNavRefs.current[activePrimaryNavKey]
-      : null;
-    if (!node) return;
-    if (globalThis.window.matchMedia("(min-width: 1024px)").matches) return;
-    const prefersReducedMotion = globalThis.window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    node.scrollIntoView({
-      block: "nearest",
-      inline: "center",
-      behavior: prefersReducedMotion ? "auto" : "smooth",
-    });
-  }, [activePrimaryNavKey]);
+    if (!menuOpen) return undefined;
+    const focusable = menuPanelRef.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])');
+    focusable?.[0]?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeMenuAndRestoreFocus();
+        return;
+      }
+      if (event.key !== "Tab" || !focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen]);
 
-  const registerPrimaryNavRef = (
-    key: string,
-    element: HTMLAnchorElement | null,
-  ) => {
-    primaryNavRefs.current[key] = element;
-  };
+  function closeMenuAndRestoreFocus() {
+    setMenuOpen(false);
+    globalThis.window.requestAnimationFrame(() => {
+      const desktop = globalThis.window.matchMedia("(min-width: 1024px)").matches;
+      (desktop ? desktopMenuButtonRef : mobileMenuButtonRef).current?.focus();
+    });
+  }
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <header className="sticky top-0 z-20 overflow-x-hidden border-b border-line bg-panel/95 shadow-insetLine backdrop-blur [contain:paint]">
-        <div className="flex w-full items-center gap-2 px-3 py-2 sm:px-4 md:gap-4 md:py-3 lg:px-6 2xl:px-8">
-          <Link
-            to="/$locale"
-            params={{ locale }}
-            activeOptions={{ exact: true }}
-            className="focus-ring flex min-h-11 min-w-[190px] shrink-0 items-center gap-2 md:gap-3 lg:min-w-[270px]"
-          >
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-accent text-paper shadow-insetLine md:h-10 md:w-10">
-              <SearchCheck className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <div className="truncate text-sm font-bold leading-5 sm:text-base">
-                {t("appName")}
-              </div>
-              <div className="sr-only text-xs text-muted md:not-sr-only md:block">
-                {t("noAdvice")}
-              </div>
-            </div>
+      <header className="sticky top-0 z-20 border-b border-line bg-panel/95 shadow-insetLine backdrop-blur">
+        <div className="flex w-full items-center gap-3 px-3 py-2 sm:px-4 md:py-3 lg:px-6 2xl:px-8">
+          <Link to="/$locale" params={{ locale }} activeOptions={{ exact: true }} className="focus-ring flex min-h-11 min-w-0 shrink items-center gap-2 rounded-md md:gap-3 lg:min-w-[245px]">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-accent text-paper shadow-insetLine md:h-10 md:w-10"><SearchCheck className="h-5 w-5" /></div>
+            <div className="min-w-0"><div className="truncate text-sm font-bold leading-5 sm:text-base">{t("appName")}</div><div className="sr-only text-xs text-muted xl:not-sr-only xl:block">{t("noAdvice")}</div></div>
           </Link>
-          <nav
-            className="scroll-fade-x-end -mr-3 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto py-1 pr-3 text-sm [contain:paint] md:mr-0 md:pr-0"
-            data-allow-horizontal-scroll
-            aria-label={locale === "ko" ? "기본 탐색" : "Primary navigation"}
-          >
-            <NavLink
-              active={activePrimaryNavKey === "dashboard"}
-              navKey="dashboard"
-              registerRef={registerPrimaryNavRef}
-              to="/$locale"
-              params={{ locale }}
-              icon={<LayoutDashboard />}
-              label={t("dashboard")}
-            />
-            <NavLink
-              active={activePrimaryNavKey === "map"}
-              navKey="map"
-              registerRef={registerPrimaryNavRef}
-              to="/$locale/map"
-              params={{ locale }}
-              icon={<Map />}
-              label={t("map")}
-            />
-            <NavLink
-              active={activePrimaryNavKey === "calendar"}
-              navKey="calendar"
-              registerRef={registerPrimaryNavRef}
-              to="/$locale/calendar"
-              params={{ locale }}
-              icon={<Activity />}
-              label={t("calendar")}
-            />
-            <NavLink
-              active={activePrimaryNavKey === "market-pulse"}
-              navKey="market-pulse"
-              registerRef={registerPrimaryNavRef}
-              to="/$locale/market-pulse"
-              params={{ locale }}
-              icon={<TrendingUp />}
-              label={compactNavLabels.marketPulse}
-            />
-            <NavLink
-              active={activePrimaryNavKey === "yield-curves"}
-              navKey="yield-curves"
-              registerRef={registerPrimaryNavRef}
-              to="/$locale/yield-curves"
-              params={{ locale }}
-              icon={<LineChart />}
-              label={compactNavLabels.yieldCurves}
-            />
-            <NavLink
-              active={activePrimaryNavKey === "portfolio"}
-              navKey="portfolio"
-              registerRef={registerPrimaryNavRef}
-              to="/$locale/portfolio"
-              params={{ locale }}
-              icon={<Calculator />}
-              label={compactNavLabels.portfolio}
-            />
-            <NavLink
-              active={activePrimaryNavKey === "tickers"}
-              navKey="tickers"
-              registerRef={registerPrimaryNavRef}
-              to="/$locale/tickers/$symbol"
-              params={{ locale, symbol: "NVDA" }}
-              icon={<TrendingUp />}
-              label={t("tickers")}
-            />
-            <NavLink
-              active={activePrimaryNavKey === "news"}
-              navKey="news"
-              registerRef={registerPrimaryNavRef}
-              to="/$locale/news"
-              params={{ locale }}
-              icon={<Newspaper />}
-              label={t("news")}
-            />
-            <NavLink
-              active={activePrimaryNavKey === "shorts"}
-              navKey="shorts"
-              registerRef={registerPrimaryNavRef}
-              to="/$locale/shorts"
-              params={{ locale }}
-              icon={<ShieldAlert />}
-              label={t("shorts")}
-            />
-            <NavLink
-              active={activePrimaryNavKey === "funds"}
-              navKey="funds"
-              registerRef={registerPrimaryNavRef}
-              to="/$locale/funds"
-              params={{ locale }}
-              icon={<BriefcaseBusiness />}
-              label={compactNavLabels.funds}
-            />
-            <NavLink
-              active={activePrimaryNavKey === "legal"}
-              navKey="legal"
-              registerRef={registerPrimaryNavRef}
-              to="/$locale/$legalSlug"
-              params={{ locale, legalSlug: "financial-disclaimer" }}
-              icon={<Scale />}
-              label={compactNavLabels.disclaimer}
-            />
-            <a
-              href={alternatePath}
-              className="focus-ring inline-flex h-11 shrink-0 items-center rounded-md border border-line bg-panelAlt px-3 font-semibold text-ink hover:border-accent hover:bg-accentSoft"
-            >
-              {other.toUpperCase()}
-            </a>
+
+          <nav className="ml-auto hidden min-w-0 items-center gap-1 text-sm lg:flex" aria-label={locale === "ko" ? "기본 탐색" : "Primary navigation"}>
+            {primaryItems.map((item) => <NavLink key={item.key} item={item} active={activePrimaryNavKey === item.key} />)}
+            <MenuButton ref={desktopMenuButtonRef} open={menuOpen} label={locale === "ko" ? "더보기" : "More"} onClick={() => setMenuOpen((open) => !open)} />
           </nav>
         </div>
-        <div
-          className="scroll-fade-x flex w-full min-w-0 gap-2 overflow-x-auto px-3 pb-2 text-xs [contain:paint] sm:px-4 md:pb-3 lg:px-6 2xl:px-8"
-          data-allow-horizontal-scroll
-          aria-label={
-            locale === "ko" ? "시장 범위 탐색" : "Market coverage navigation"
-          }
-        >
-          <span className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-md px-1 font-semibold text-muted">
-            {locale === "ko" ? "테마" : "Themes"}
-          </span>
-          {sectorLinks.map(([key, labelEn, labelKo]) => (
-            <Link
-              key={key}
-              to="/$locale/sectors/$sectorKey"
-              params={{ locale, sectorKey: key }}
-              className="focus-ring inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap rounded-md px-2.5 hover:bg-panelAlt hover:text-accent"
-            >
-              {locale === "ko" ? labelKo : labelEn}
-            </Link>
-          ))}
-          <span className="ml-1 inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-md px-1 font-semibold text-muted">
-            {locale === "ko" ? "지역" : "Regions"}
-          </span>
-          {coverageLinks.map((region) => {
-            const route = region.type === "country" ? "/$locale/countries/$objectKey" : "/$locale/regions/$objectKey";
-            return (
-              <Link
-                key={region.key}
-                to={route}
-                params={{ locale: asLocale(locale), objectKey: region.key }}
-                className="focus-ring inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap rounded-md px-2.5 hover:bg-panelAlt hover:text-accent"
-              >
-                {region.display_names[asLocale(locale)] ?? region.display_names.en}
-              </Link>
-            );
-          })}
-        </div>
+
+        <nav className="grid grid-cols-5 border-t border-line px-1 py-1 lg:hidden" aria-label={locale === "ko" ? "모바일 기본 탐색" : "Mobile primary navigation"}>
+          {primaryItems.map((item) => <NavLink key={item.key} item={item} active={activePrimaryNavKey === item.key} mobile />)}
+          <MenuButton ref={mobileMenuButtonRef} open={menuOpen} label={locale === "ko" ? "메뉴" : "Menu"} onClick={() => setMenuOpen((open) => !open)} mobile />
+        </nav>
       </header>
-      <main className="min-w-0 px-3 py-4 sm:px-4 sm:py-6 lg:px-6 2xl:px-8">
-        {children}
-      </main>
+
+      {menuOpen ? (
+        <NavigationMenu
+          panelRef={menuPanelRef}
+          locale={locale}
+          alternatePath={alternatePath}
+          otherLocale={other}
+          activeKey={activePrimaryNavKey}
+          menuItems={menuItems}
+          coverageLinks={coverageLinks}
+          onClose={closeMenuAndRestoreFocus}
+        />
+      ) : null}
+
+      <SnapshotIncidentBanner />
+      <main className="min-w-0 px-3 py-4 sm:px-4 sm:py-6 lg:px-6 2xl:px-8">{children}</main>
       <footer className="border-t border-line bg-panel">
         <div className="grid gap-4 px-4 py-6 text-sm text-muted md:grid-cols-4 lg:px-6 2xl:px-8">
-          <Link
-            to="/$locale/$legalSlug"
-            params={{ locale, legalSlug: "terms" }}
-            className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent"
-          >
-            {t("legal.terms")}
-          </Link>
-          <Link
-            to="/$locale/$legalSlug"
-            params={{ locale, legalSlug: "privacy" }}
-            className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent"
-          >
-            {t("legal.privacy")}
-          </Link>
-          <Link
-            to="/$locale/$legalSlug"
-            params={{ locale, legalSlug: "source-policy" }}
-            className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent"
-          >
-            {t("legal.source-policy")}
-          </Link>
-          <Link
-            to="/$locale/$legalSlug"
-            params={{ locale, legalSlug: "contact" }}
-            className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent"
-          >
-            {t("legal.contact")}
-          </Link>
+          {["terms", "privacy", "source-policy", "contact"].map((legalSlug) => (
+            <Link key={legalSlug} to="/$locale/$legalSlug" params={{ locale, legalSlug }} className="focus-ring inline-flex min-h-11 items-center rounded-md hover:text-accent">{t(`legal.${legalSlug}`)}</Link>
+          ))}
         </div>
       </footer>
     </div>
   );
 }
 
-function NavLink({
-  to,
-  params,
-  icon,
-  label,
-  navKey,
-  registerRef,
-  active = false,
+function NavigationMenu({
+  panelRef,
+  locale,
+  alternatePath,
+  otherLocale,
+  activeKey,
+  menuItems,
+  coverageLinks,
+  onClose
 }: Readonly<{
-  to: string;
-  params: Record<string, string>;
-  icon: React.ReactElement;
-  label: string;
-  navKey?: string;
-  registerRef?: (key: string, element: HTMLAnchorElement | null) => void;
-  active?: boolean;
+  panelRef: React.RefObject<HTMLDivElement | null>;
+  locale: "en" | "ko";
+  alternatePath: string;
+  otherLocale: "en" | "ko";
+  activeKey: string | null;
+  menuItems: NavigationItem[];
+  coverageLinks: ReturnType<typeof navVisibleRegions>;
+  onClose: () => void;
 }>) {
   return (
-    <Link
-      ref={(element) => {
-        if (navKey && registerRef) registerRef(navKey, element);
-      }}
-      to={to as never}
-      params={params as never}
-      activeOptions={{ exact: true }}
-      aria-current={active ? "page" : undefined}
-      className={`focus-ring inline-flex h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-md px-2.5 text-[13px] transition-colors hover:bg-panelAlt hover:text-ink xl:gap-2 xl:px-3 xl:text-sm ${
-        active ? "bg-accentSoft font-semibold text-accent" : "text-muted"
-      }`}
-    >
-      {icon}
-      {label}
-    </Link>
+    <div className="fixed inset-0 z-50">
+      <button type="button" tabIndex={-1} aria-hidden="true" className="absolute inset-0 cursor-default bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="site-menu-heading" className="absolute inset-y-0 right-0 w-[min(92vw,430px)] overflow-y-auto border-l border-line bg-panel p-4 shadow-2xl transition-transform motion-reduce:transition-none sm:p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div><h2 id="site-menu-heading" className="text-lg font-bold">{locale === "ko" ? "사이트 메뉴" : "Site menu"}</h2><p className="mt-1 text-xs text-muted">{locale === "ko" ? "탐색, 테마, 지역, 언어" : "Navigation, themes, regions, and language"}</p></div>
+          <button type="button" className="focus-ring grid h-11 w-11 place-items-center rounded-md border border-line hover:bg-panelAlt" aria-label={locale === "ko" ? "메뉴 닫기" : "Close menu"} onClick={onClose}><X className="h-5 w-5" /></button>
+        </div>
+
+        <nav className="mt-5 grid grid-cols-2 gap-2" aria-label={locale === "ko" ? "추가 탐색" : "Additional navigation"}>
+          {menuItems.map((item) => <MenuLink key={item.key} item={item} active={activeKey === item.key} onClick={onClose} />)}
+          <a href={alternatePath} onClick={onClose} className="focus-ring flex min-h-12 items-center justify-center rounded-md border border-line bg-panelAlt px-3 font-semibold hover:border-accent hover:text-accent">{otherLocale.toUpperCase()}</a>
+        </nav>
+
+        <MenuSection title={locale === "ko" ? "테마" : "Themes"}>
+          {sectorLinks.map(([key, labelEn, labelKo]) => (
+            <Link key={key} to="/$locale/sectors/$sectorKey" params={{ locale, sectorKey: key }} onClick={onClose} className="focus-ring inline-flex min-h-11 items-center rounded-md border border-line bg-panelAlt px-3 text-sm font-semibold hover:border-accent hover:text-accent">{locale === "ko" ? labelKo : labelEn}</Link>
+          ))}
+        </MenuSection>
+
+        <MenuSection title={locale === "ko" ? "지역" : "Regions"}>
+          {coverageLinks.map((region) => {
+            const route = region.type === "country" ? "/$locale/countries/$objectKey" : "/$locale/regions/$objectKey";
+            return <Link key={region.key} to={route} params={{ locale: asLocale(locale), objectKey: region.key }} onClick={onClose} className="focus-ring inline-flex min-h-11 items-center rounded-md border border-line bg-panelAlt px-3 text-sm font-semibold hover:border-accent hover:text-accent">{region.display_names[asLocale(locale)] ?? region.display_names.en}</Link>;
+          })}
+        </MenuSection>
+      </div>
+    </div>
   );
+}
+
+function MenuSection({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
+  return <section className="mt-6 border-t border-line pt-5"><h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{title}</h3><div className="mt-3 flex flex-wrap gap-2">{children}</div></section>;
+}
+
+const MenuButton = function MenuButton({ open, label, onClick, mobile = false, ref }: Readonly<{ open: boolean; label: string; onClick: () => void; mobile?: boolean; ref: React.Ref<HTMLButtonElement> }>) {
+  return <button ref={ref} type="button" aria-expanded={open} aria-haspopup="dialog" className={`focus-ring inline-flex min-h-11 min-w-11 items-center justify-center rounded-md font-semibold transition-colors motion-reduce:transition-none hover:bg-panelAlt hover:text-ink ${open ? "bg-accentSoft text-accent" : "text-muted"} ${mobile ? "flex-col gap-0.5 px-1 text-[10px]" : "gap-2 px-3 text-sm"}`} onClick={onClick}><Menu className="h-5 w-5" />{label}</button>;
+};
+
+function NavLink({ item, active, mobile = false }: Readonly<{ item: NavigationItem; active: boolean; mobile?: boolean }>) {
+  return <Link to={item.to as never} params={item.params as never} activeOptions={{ exact: true }} aria-current={active ? "page" : undefined} className={`focus-ring inline-flex min-h-11 min-w-11 items-center justify-center rounded-md transition-colors motion-reduce:transition-none hover:bg-panelAlt hover:text-ink ${active ? "bg-accentSoft font-semibold text-accent" : "text-muted"} ${mobile ? "flex-col gap-0.5 px-1 text-[10px]" : "gap-2 px-3 text-sm"}`}>{item.icon}{item.label}</Link>;
+}
+
+function MenuLink({ item, active, onClick }: Readonly<{ item: NavigationItem; active: boolean; onClick: () => void }>) {
+  return <Link to={item.to as never} params={item.params as never} aria-current={active ? "page" : undefined} onClick={onClick} className={`focus-ring flex min-h-12 items-center gap-2 rounded-md border px-3 text-sm font-semibold ${active ? "border-accent bg-accentSoft text-accent" : "border-line bg-panelAlt hover:border-accent hover:text-accent"}`}>{item.icon}{item.label}</Link>;
 }
 
 function getActivePrimaryNavKey(pathname: string) {
   const path = pathname.replace(/^\/(en|ko)(?=\/|$)/, "") || "/";
   if (path === "/" || path === "") return "dashboard";
   if (path.startsWith("/map")) return "map";
-  if (path.startsWith("/calendar") || path.startsWith("/central-banks"))
-    return "calendar";
+  if (path.startsWith("/calendar") || path.startsWith("/central-banks")) return "calendar";
   if (path.startsWith("/market-pulse")) return "market-pulse";
   if (path.startsWith("/yield-curves")) return "yield-curves";
-  if (
-    path.startsWith("/portfolio") ||
-    path.startsWith("/dashboard") ||
-    path.startsWith("/onboarding") ||
-    path.startsWith("/portfolios") ||
-    path.startsWith("/settings")
-  )
-    return "portfolio";
-  if (path.startsWith("/funds") || path.startsWith("/trump-filings"))
-    return "funds";
+  if (path.startsWith("/portfolio") || path.startsWith("/dashboard") || path.startsWith("/onboarding") || path.startsWith("/portfolios") || path.startsWith("/settings")) return "portfolio";
+  if (path.startsWith("/funds") || path.startsWith("/trump-filings")) return "funds";
   if (path.startsWith("/tickers")) return "tickers";
   if (path.startsWith("/news")) return "news";
   if (path.startsWith("/shorts")) return "shorts";
-  if (
-    path.startsWith("/financial-disclaimer") ||
-    path.startsWith("/terms") ||
-    path.startsWith("/privacy") ||
-    path.startsWith("/source-policy") ||
-    path.startsWith("/contact") ||
-    path.startsWith("/corrections")
-  ) {
-    return "legal";
-  }
+  if (["/financial-disclaimer", "/terms", "/privacy", "/source-policy", "/contact", "/corrections"].some((prefix) => path.startsWith(prefix))) return "legal";
   return null;
 }
