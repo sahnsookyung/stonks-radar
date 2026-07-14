@@ -645,7 +645,13 @@ defmodule StonksBackend.SnapshotsTest do
       "object_type" => "map_events",
       "object_key" => "map_events",
       "data" => %{
-        "events" => [],
+        "events" => [
+          %{
+            "id" => "legacy_static_marker",
+            "latitude" => 37.5,
+            "longitude" => -96.0
+          }
+        ],
         "breaking_market_events" => [],
         "breaking_market_map" => %{
           "events" => [],

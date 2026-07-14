@@ -374,7 +374,7 @@ defmodule StonksBackend.Snapshots do
 
   defp enrich_map_news_data(data, generated_at, locale, context) do
     data
-    |> update_event_collection("events", "search_archive", generated_at, false)
+    |> Map.put("events", [])
     |> update_event_collection("breaking_market_events", "search_archive", generated_at, false)
     |> update_in(["breaking_market_map"], fn map ->
       map
