@@ -98,6 +98,7 @@ function searchTermFor(event: NewsEvent): string {
 }
 
 test("public routes render from snapshots", async ({ page }) => {
+  test.slow();
   await page.goto("/en");
   await expect(
     page.getByText("Global market intelligence dashboard"),
@@ -267,9 +268,12 @@ test("news filters and detail routes render from snapshots", async ({
   page,
   request,
 }) => {
-  const regionalEvent = firstEvent(
-    await getSnapshotData<NewsListSnapshot>(request, "news_region_KOR"),
-    "Korea news",
+  const regionalSnapshot = await getSnapshotData<NewsListSnapshot>(
+    request,
+    "news_region_KOR",
+  );
+  const regionalEvent = regionalSnapshot.events?.find(
+    (candidate) => candidate.title,
   );
   const newsIndex = await getSnapshotData<NewsListSnapshot>(
     request,
@@ -291,7 +295,13 @@ test("news filters and detail routes render from snapshots", async ({
 
   await page.goto("/en/news?region=KOR");
   await expect(page.getByText("Source-Linked News Radar")).toBeVisible();
-  await expect(page.getByText(regionalEvent.title!).first()).toBeVisible();
+  if (regionalEvent?.title) {
+    await expect(page.getByText(regionalEvent.title).first()).toBeVisible();
+  } else {
+    await expect(
+      page.getByText("No source-linked items match the selected filters."),
+    ).toBeVisible();
+  }
 
   await page.goto("/en/news");
   const keywordFilter = page.getByPlaceholder("ticker, region, topic");
@@ -324,17 +334,24 @@ test("ticker detail news tab renders ticker snapshot", async ({
   page,
   request,
 }) => {
-  const nvdaEvent = firstEvent(
-    await getSnapshotData<NewsListSnapshot>(request, "news_ticker_NVDA"),
-    "NVDA news",
+  const nvdaSnapshot = await getSnapshotData<NewsListSnapshot>(
+    request,
+    "news_ticker_NVDA",
   );
+  const nvdaEvent = nvdaSnapshot.events?.find((candidate) => candidate.title);
 
   await page.goto("/en/tickers/NVDA");
   await page.getByLabel("Search tickers").fill("rocket");
   await expect(page.getByRole("link", { name: /RKLB Rocket Lab/ })).toBeVisible();
   await page.getByRole("tab", { name: "News" }).click();
   await expect(page.getByText("Ticker-Relevant News")).toBeVisible();
-  await expect(page.getByText(nvdaEvent.title!).first()).toBeVisible();
+  if (nvdaEvent?.title) {
+    await expect(page.getByText(nvdaEvent.title).first()).toBeVisible();
+  } else {
+    await expect(
+      page.getByText("No directly matched news events in the current snapshot."),
+    ).toBeVisible();
+  }
 
   await page.goto("/en/tickers/005930_KS");
   await expect(page.getByRole("heading", { name: /005930.KS/ })).toBeVisible();

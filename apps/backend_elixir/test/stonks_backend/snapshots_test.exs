@@ -687,7 +687,7 @@ defmodule StonksBackend.SnapshotsTest do
       |> File.read!()
       |> Jason.decode!()
 
-    assert [%{"id" => "semiconductor_export_controls_seed"}] = map["data"]["events"]
+    assert map["data"]["events"] == []
 
     assert [%{"event_id" => "semiconductor_export_controls_seed"}] =
              map["data"]["breaking_market_events"]

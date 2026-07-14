@@ -396,7 +396,6 @@ defmodule StonksBackend.Snapshots do
 
       payload ->
         data
-        |> maybe_put_non_empty_list("events", payload.public_events)
         |> maybe_put_non_empty_list("breaking_market_events", payload.breaking_events)
         |> update_in(["breaking_market_map"], fn map ->
           map
