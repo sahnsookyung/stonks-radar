@@ -94,9 +94,11 @@ defmodule StonksBackendWeb.ContractOpsTest do
     assert deploy_workflow =~ "Inspect scheduler without mutation"
     assert deploy_workflow =~ "elixir_recurring_scheduler_scheduled"
     assert deploy_workflow =~ "snapshot_refresh_jobs"
+    assert deploy_workflow =~ "current_snapshot_publication"
+    assert deploy_workflow =~ "date_bin("
     assert deploy_workflow =~ "exec -T postgres"
     assert deploy_workflow =~ "</dev/null"
-    assert deploy_workflow =~ "No snapshot_refresh jobs found"
+    assert deploy_workflow =~ "No snapshot_refresh job or current-window publication found"
 
     caddyfile = read_repo_file("infra/Caddyfile")
     assert caddyfile =~ "reverse_proxy {$API_UPSTREAM:api-elixir:8000}"
