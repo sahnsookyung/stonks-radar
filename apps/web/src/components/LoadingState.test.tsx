@@ -1,15 +1,23 @@
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 import { ErrorState, LoadingState } from "./LoadingState";
 import { SnapshotHardExpiredError } from "../lib/snapshots";
 
 describe("ErrorState", () => {
   it("renders an actionable expired-snapshot state", () => {
-    render(<ErrorState error={new SnapshotHardExpiredError("home", "2026-06-06T00:00:00Z")} />);
+    const queryClient = new QueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ErrorState error={new SnapshotHardExpiredError("home", "2026-06-06T00:00:00Z")} />
+      </QueryClientProvider>
+    );
 
     expect(screen.getByRole("heading", { name: /Public data passed/i })).toBeInTheDocument();
     expect(screen.getByText("home")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Open admin system status/i })).toHaveAttribute("href", "/admin/system-config");
+    expect(screen.getByRole("button", { name: /Try again/i })).toBeInTheDocument();
+    expect(screen.getByText(/Last checked/i)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /admin/i })).not.toBeInTheDocument();
   });
 
   it("renders generic and fallback errors", () => {

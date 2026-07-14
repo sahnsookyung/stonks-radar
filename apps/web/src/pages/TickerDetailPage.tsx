@@ -28,6 +28,11 @@ import type { AlternativeSignalItem, HomeSnapshotData, NewsEventListItem, NewsTi
 import { EntityLink } from "../components/EntityLink";
 import { LineChart } from "../components/LineChart";
 import { NewsEventCard, SourcePill } from "../components/NewsEventCard";
+import { TickerComparisonPanel } from "../components/ticker/TickerComparisonPanel";
+import { TickerFundamentalsPanel } from "../components/ticker/TickerFundamentalsPanel";
+import { TickerOptionsPanel } from "../components/ticker/TickerOptionsPanel";
+import { TickerWorkspacePanel } from "../components/ticker/TickerWorkspacePanel";
+import { useTickerWorkspace } from "../hooks/useTickerWorkspace";
 import { apiGet } from "../lib/api";
 import { disclosureTransactionBucket, disclosureTransactionCaveat, disclosureTransactionLabel } from "../lib/disclosureLabels";
 import { useLocale } from "../lib/locale";
@@ -44,6 +49,7 @@ import {
   type MarketPoint
 } from "../lib/tickerDetailModel";
 import { getTrackedTicker, relatedTrackedEntities, resolveTrackedEntity, searchTrackedTickers, type TrackedEntity, type TrackedTicker } from "../lib/trackedTickers";
+import { saveComparison, toggleWatchedTicker } from "../lib/tickerWorkspace";
 
 interface DisclosureFiling {
   id: number;
@@ -100,7 +106,7 @@ interface InsidersResponse extends TransactionsResponse {
   }[];
 }
 
-type TabKey = "overview" | "chart" | "technicals" | "options" | "news" | "shorts" | "filings" | "fundamentals" | "notes";
+type TabKey = "overview" | "chart" | "technicals" | "options" | "news" | "shorts" | "filings" | "fundamentals" | "notes" | "comparison";
 type ChartPresetKey = "clean" | "trend" | "momentum" | "risk";
 
 const tabs: { key: TabKey; labelEn: string; labelKo: string; icon: ReactNode }[] = [
@@ -112,7 +118,8 @@ const tabs: { key: TabKey; labelEn: string; labelKo: string; icon: ReactNode }[]
   { key: "shorts", labelEn: "Shorts", labelKo: "공매도", icon: <TrendingDown className="h-4 w-4" /> },
   { key: "filings", labelEn: "Filings", labelKo: "공시", icon: <FileText className="h-4 w-4" /> },
   { key: "fundamentals", labelEn: "Fundamentals", labelKo: "펀더멘털", icon: <Database className="h-4 w-4" /> },
-  { key: "notes", labelEn: "Notes", labelKo: "노트", icon: <Bell className="h-4 w-4" /> }
+  { key: "notes", labelEn: "Notes & alerts", labelKo: "노트와 알림", icon: <Bell className="h-4 w-4" /> },
+  { key: "comparison", labelEn: "Compare", labelKo: "비교", icon: <GitCompare className="h-4 w-4" /> }
 ];
 
 const chartPresets: Record<ChartPresetKey, { labelEn: string; labelKo: string; studies: string[]; detailEn: string; detailKo: string }> = {
@@ -170,11 +177,22 @@ export function TickerDetailPage() { // NOSONAR - ticker detail owns tab/query o
   const isKo = locale === "ko";
   const params = useParams({ strict: false }) as { symbol?: string };
   const ticker = getTrackedTicker(params.symbol);
-  const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const initialComparison = useMemo(() => parseCompareSymbols(globalThis.window.location.search), []);
+  const [activeTab, setActiveTab] = useState<TabKey>(initialComparison.length ? "comparison" : "overview");
   const [chartPreset, setChartPreset] = useState<ChartPresetKey>("trend");
+  const [compareSymbols, setCompareSymbols] = useState(initialComparison);
+  const [workspaceFocus, setWorkspaceFocus] = useState<{ target: "note" | "alert"; request: number } | null>(null);
+  const [shareStatus, setShareStatus] = useState("");
+  const { workspace, setWorkspace, isSignedIn, syncStatus } = useTickerWorkspace();
   const defaultDates = useMemo(() => tickerDateRange(), []);
   const shouldLoadFilings = activeTab === "filings" || activeTab === "overview";
   const shouldLoadNews = activeTab === "news";
+
+  useEffect(() => {
+    if (!shareStatus) return undefined;
+    const timer = globalThis.window.setTimeout(() => setShareStatus(""), 3_000);
+    return () => globalThis.window.clearTimeout(timer);
+  }, [shareStatus]);
 
   const snapshotQuery = useQuery({
     queryKey: ["snapshot", "ticker-detail", locale],
@@ -256,6 +274,33 @@ export function TickerDetailPage() { // NOSONAR - ticker detail owns tab/query o
   const scoreStatValue = canDisplayMarketData ? `${indicators.score.total}/100` : localeText(locale, "withheld", "보류");
   const rsiStatValue = canDisplayMarketData ? formatFixed(indicators.rsi14, 1) : localeText(locale, "withheld", "보류");
   const historyWarnings = buildHistoryWarnings(historyQuery.error, historyQuery.data?.warnings, locale);
+  const isWatched = workspace.watchlist.includes(ticker.symbol);
+
+  function openWorkspace(target: "note" | "alert") {
+    setActiveTab("notes");
+    setWorkspaceFocus({ target, request: Date.now() });
+  }
+
+  function updateComparison(symbols: string[]) {
+    const normalized = Array.from(new Set(symbols.map((symbol) => symbol.toUpperCase()))).slice(0, 4);
+    setCompareSymbols(normalized);
+    setActiveTab("comparison");
+    setWorkspace((current) => saveComparison(current, normalized));
+    const url = new URL(globalThis.window.location.href);
+    if (normalized.length) url.searchParams.set("compare", normalized.join(","));
+    else url.searchParams.delete("compare");
+    globalThis.window.history.replaceState(globalThis.window.history.state, "", url);
+  }
+
+  async function sharePage() {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("clipboard_unavailable");
+      await navigator.clipboard.writeText(globalThis.window.location.href);
+      setShareStatus(isKo ? "링크를 복사했습니다." : "Link copied.");
+    } catch {
+      setShareStatus(isKo ? "링크를 복사하지 못했습니다." : "Could not copy the link.");
+    }
+  }
 
   return (
     <div className="relative left-1/2 right-1/2 -mx-[50vw] -my-4 min-h-screen w-screen max-w-[100vw] overflow-x-clip bg-[#071018] sm:-my-6">
@@ -297,9 +342,14 @@ export function TickerDetailPage() { // NOSONAR - ticker detail owns tab/query o
               data-allow-horizontal-scroll
               aria-label={isKo ? "티커 작업" : "Ticker actions"}
             >
-              <HeaderAction disabled label={isKo ? "관심" : "Watch"} icon={<PlusCircle className="h-4 w-4" />} />
-              <HeaderAction disabled label={isKo ? "알림" : "Alert"} icon={<Bell className="h-4 w-4" />} />
-              <HeaderAction disabled label={isKo ? "노트" : "Note"} icon={<StickyNote className="h-4 w-4" />} />
+              <HeaderAction
+                active={isWatched}
+                label={isWatched ? (isKo ? "관심 해제" : "Unwatch") : (isKo ? "관심" : "Watch")}
+                icon={<PlusCircle className="h-4 w-4" />}
+                onClick={() => setWorkspace((current) => toggleWatchedTicker(current, ticker.symbol))}
+              />
+              <HeaderAction label={isKo ? "알림" : "Alert"} icon={<Bell className="h-4 w-4" />} onClick={() => openWorkspace("alert")} />
+              <HeaderAction label={isKo ? "노트" : "Note"} icon={<StickyNote className="h-4 w-4" />} onClick={() => openWorkspace("note")} />
               <a className="secondary-action h-11 min-h-11 shrink-0 px-2.5 py-2 sm:px-3" href={`https://www.tradingview.com/chart/?symbol=${encodeURIComponent(ticker.tradingViewSymbol)}`} target="_blank" rel="noreferrer" aria-label="TradingView">
                 <ExternalLink className="h-4 w-4" />
                 <span className="hidden sm:inline">TradingView</span>
@@ -312,16 +362,22 @@ export function TickerDetailPage() { // NOSONAR - ticker detail owns tab/query o
                 <RefreshCw className="h-4 w-4" />
                 <span className="hidden sm:inline">{isKo ? "갱신" : "Refresh"}</span>
               </button>
-              <HeaderAction disabled label={isKo ? "비교" : "Compare"} icon={<GitCompare className="h-4 w-4" />} />
+              <HeaderAction
+                active={activeTab === "comparison"}
+                label={isKo ? "비교" : "Compare"}
+                icon={<GitCompare className="h-4 w-4" />}
+                onClick={() => updateComparison(compareSymbols.length ? compareSymbols : [ticker.symbol])}
+              />
               <button
                 type="button"
                 className="secondary-action h-11 min-h-11 shrink-0 px-2.5 py-2 sm:px-3"
-                onClick={() => void navigator.clipboard?.writeText(globalThis.window.location.href)}
+                onClick={() => void sharePage()}
                 aria-label={isKo ? "공유" : "Share"}
               >
                 <Copy className="h-4 w-4" />
                 <span className="hidden sm:inline">{isKo ? "공유" : "Share"}</span>
               </button>
+              <span className="sr-only" role="status" aria-live="polite">{shareStatus}</span>
             </div>
           </div>
 
@@ -390,7 +446,7 @@ export function TickerDetailPage() { // NOSONAR - ticker detail owns tab/query o
             </>
           ) : null}
           {activeTab === "technicals" ? <TechnicalsPanel indicators={indicators} ticker={ticker} freshness={freshness} canDisplayMarketData={canDisplayMarketData} locale={locale} /> : null}
-          {activeTab === "options" ? <OptionsPanel ticker={ticker} locale={locale} /> : null}
+          {activeTab === "options" ? <TickerOptionsPanel ticker={ticker} locale={locale} isSignedIn={isSignedIn} /> : null}
           {activeTab === "news" ? (
             <NewsPanel
               ticker={ticker}
@@ -413,8 +469,22 @@ export function TickerDetailPage() { // NOSONAR - ticker detail owns tab/query o
               locale={locale}
             />
           ) : null}
-          {activeTab === "fundamentals" ? <FundamentalsPanel ticker={ticker} locale={locale} /> : null}
-          {activeTab === "notes" ? <NotesPanel ticker={ticker} locale={locale} /> : null}
+          {activeTab === "fundamentals" ? <TickerFundamentalsPanel ticker={ticker} locale={locale} /> : null}
+          {activeTab === "notes" ? (
+            <TickerWorkspacePanel
+              ticker={ticker}
+              locale={locale}
+              workspace={workspace}
+              setWorkspace={setWorkspace}
+              isSignedIn={isSignedIn}
+              syncStatus={syncStatus}
+              focusTarget={workspaceFocus?.target}
+              focusRequest={workspaceFocus?.request}
+            />
+          ) : null}
+          {activeTab === "comparison" ? (
+            <TickerComparisonPanel symbols={compareSymbols.length ? compareSymbols : [ticker.symbol]} locale={locale} isSignedIn={isSignedIn} onSymbolsChange={updateComparison} />
+          ) : null}
         </div>
 
         <ResearchSidebar
@@ -871,59 +941,6 @@ function TechnicalsPanel({
   );
 }
 
-function OptionsPanel({ ticker, locale }: Readonly<{ ticker: TrackedTicker; locale: "en" | "ko" }>) {
-  const isKo = locale === "ko";
-  return (
-    <section className="panel min-w-0 p-5">
-      <SectionHeader
-        icon={<Activity className="h-5 w-5" />}
-        title={isKo ? "옵션 라이트" : "Options Lite"}
-        subtitle={isKo ? "항상 무료 범위에서는 같은 날 옵션 체인을 표시하지 않습니다." : "Same-day option chains are not available under the always-free source policy."}
-      />
-      <div className="signal-warning mt-4 p-4 text-sm leading-6">
-        {isKo
-          ? "Same-day 옵션 체인은 항상 무료 공개 표시 소스가 아니므로 현재 값처럼 보이는 체인을 만들지 않습니다. MarketData.app 같은 이전 세션/24시간 지연 소스가 연결되면 모든 값에 지연 배지를 붙여 표시합니다."
-          : "Same-day option chains are not available under the always-free public-display policy. When a previous-session or 24h-delayed source is connected, every value will be labeled with that delay."}
-      </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-3 xl:grid-cols-4">
-        {optionsSummaryFields(locale).map((field) => (
-          <MetricCard key={field.label} label={field.label} value={field.value} detail={field.detail} />
-        ))}
-      </div>
-      <div className="mt-5 table-surface" data-allow-horizontal-scroll aria-label={isKo ? "옵션 체인 표" : "Options chain table"}>
-        <table className="min-w-full text-left text-sm">
-          <thead className="table-head">
-            <tr>
-              {(isKo
-                ? ["행사가", "콜 매수", "콜 매도", "콜 거래량", "콜 OI", "콜 IV", "콜 델타", "풋 매수", "풋 매도", "풋 거래량", "풋 OI", "풋 IV", "풋 델타"]
-                : ["Strike", "Call bid", "Call ask", "Call vol", "Call OI", "Call IV", "Call delta", "Put bid", "Put ask", "Put vol", "Put OI", "Put IV", "Put delta"]
-              ).map((heading) => (
-                <th key={heading} className="px-3 py-3">{heading}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-t border-line">
-              <td className="px-3 py-4 text-muted" colSpan={13}>
-                {isKo ? "체인 데이터 미연결: 24시간 지연/이전 세션 공급자 연결 대기" : "Chain unavailable: waiting for a 24h-delayed/previous-session provider connection"}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <a
-        href={`https://www.tradingview.com/chart/?symbol=${encodeURIComponent(ticker.tradingViewSymbol)}`}
-        target="_blank"
-        rel="noreferrer"
-        className="secondary-action mt-5"
-      >
-        <ExternalLink className="h-4 w-4" />
-        {isKo ? "TradingView에서 확인" : "Open TradingView"}
-      </a>
-    </section>
-  );
-}
-
 function NewsPanel({
   ticker,
   tickerNews,
@@ -1174,105 +1191,6 @@ function FilingsPanel({
   );
 }
 
-function FundamentalsPanel({ ticker, locale }: Readonly<{ ticker: TrackedTicker; locale: "en" | "ko" }>) {
-  const isKo = locale === "ko";
-  const equityFields = [
-    "Market cap",
-    "Revenue",
-    "Revenue growth",
-    "Gross margin",
-    "Operating margin",
-    "Net income",
-    "Free cash flow",
-    "Cash",
-    "Debt",
-    "Shares outstanding",
-    "Dilution trend",
-    "Price / sales",
-    "EV / sales",
-    "Price / book"
-  ];
-  const etfFields = ["NAV", "Expense ratio", "AUM", "Holdings", "Premium / discount", "Leverage factor", "Issuer", "Rebalance frequency"];
-  const fields = ticker.assetType === "ETF" ? etfFields : equityFields;
-  return (
-    <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="panel p-5">
-        <SectionHeader
-          icon={<Database className="h-5 w-5" />}
-          title={isKo ? "펀더멘털" : "Fundamentals"}
-          subtitle={
-            isKo
-              ? "공식 SEC company facts 또는 공개 표시 허가가 있는 참조 공급자가 연결되면 값을 표시합니다."
-              : "Values appear after SEC company facts or a public-display-approved reference provider is connected."
-          }
-        />
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {fields.map((field) => (
-            <MetricCard
-              key={field}
-              label={isKo ? translateFundamental(field) : field}
-              value={isKo ? "없음" : "Unavailable"}
-              detail={isKo ? "공개 표시 허가/공식 filings 필요" : "Requires official filings or display permission"}
-            />
-          ))}
-        </div>
-      </div>
-      <div className="panel p-5">
-        <SectionHeader
-          icon={<FileText className="h-5 w-5" />}
-          title={isKo ? "소스 우선순위" : "Source Priority"}
-          subtitle={isKo ? "라이선스 제한을 값과 분리해 둡니다." : "License constraints stay separate from values."}
-        />
-        <div className="mt-4 grid gap-2 text-sm leading-6 text-muted">
-          <div>1. SEC company facts</div>
-          <div>2. FMP Basic profile/reference when terms allow</div>
-          <div>3. Finnhub profile when terms allow</div>
-          <a className="focus-ring mt-2 inline-flex min-h-11 items-center gap-1 rounded-md font-semibold text-accent hover:underline" href={`https://www.sec.gov/edgar/search/#/q=${encodeURIComponent(ticker.symbol)}`} target="_blank" rel="noreferrer">
-            SEC source
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function NotesPanel({ ticker, locale }: Readonly<{ ticker: TrackedTicker; locale: "en" | "ko" }>) {
-  const isKo = locale === "ko";
-  return (
-    <section className="grid gap-5 lg:grid-cols-2">
-      <div className="panel p-5">
-        <SectionHeader
-          icon={<Bell className="h-5 w-5" />}
-          title={isKo ? "알림" : "Alerts"}
-          subtitle={isKo ? "공개 익명 세션에서는 저장형 알림을 만들지 않습니다." : "Saved alerts are disabled for anonymous public sessions."}
-        />
-        <div className="mt-4 grid gap-3">
-          {["Price break", "SEC filing", "Short interest update", "Ticker news"].map((item) => (
-            <label key={item} className="flex items-center justify-between rounded-md border border-line bg-panelAlt px-3 py-2 text-sm text-muted">
-              {isKo ? translateAlert(item) : item}
-              <input type="checkbox" disabled className="h-4 w-4" />
-            </label>
-          ))}
-        </div>
-      </div>
-      <div className="panel p-5">
-        <SectionHeader
-          icon={<FileText className="h-5 w-5" />}
-          title={isKo ? "리서치 노트" : "Research Notes"}
-          subtitle={isKo ? "서버 저장 기능이 생기면 티커별 노트를 연결합니다." : "Ticker-scoped notes can attach here once server persistence is enabled."}
-        />
-        <textarea
-          className="input-control mt-4 min-h-[180px] w-full resize-y leading-6"
-          disabled
-          value={isKo ? `${ticker.symbol} 공개 노트는 아직 비활성화되어 있습니다.` : `${ticker.symbol} public notes are not enabled yet.`}
-          readOnly
-        />
-      </div>
-    </section>
-  );
-}
-
 function ResearchSidebar({ // NOSONAR - sidebar groups watchlist, quick read, and source-backed research blocks.
   ticker,
   snapshot,
@@ -1368,14 +1286,14 @@ function ResearchSidebar({ // NOSONAR - sidebar groups watchlist, quick read, an
           <div><span className="font-semibold text-success">{isKo ? "강세" : "Bull"}:</span> {ticker.thesisBull}</div>
           <div><span className="font-semibold text-danger">{isKo ? "약세" : "Bear"}:</span> {ticker.thesisBear}</div>
           <div><span className="font-semibold text-warning">{isKo ? "무효화" : "Invalidation"}:</span> {ticker.invalidation}</div>
-          <div>{isKo ? "목표/포지션/확신도는 노트 저장 기능 연결 후 표시됩니다." : "Target, position, and conviction appear once notes/watchlist persistence is connected."}</div>
+          <div>{isKo ? "개인 논지와 확신도는 노트 및 관심 목록에서 저장할 수 있습니다." : "Save your personal thesis and conviction in notes and the watchlist."}</div>
         </div>
       </div>
       <div className="panel p-4">
         <h2 className="text-sm font-semibold">{isKo ? "알림 / 예정 이벤트" : "Alerts / Upcoming Events"}</h2>
         <div className="mt-3 grid gap-2 text-xs leading-5 text-muted">
-          <div>{isKo ? "가격, RSI, MACD, 거래량, SEC 공시, 뉴스 급증 알림 준비." : "Price, RSI, MACD, volume, SEC filing, and news-spike alerts are modeled here."}</div>
-          <div>{isKo ? "옵션 알림은 same-day 옵션 데이터가 연결될 때까지 비활성화." : "Options alerts remain disabled until same-day options data is connected."}</div>
+          <div>{isKo ? "가격, RSI, MACD, 거래량, SEC 공시, 뉴스 급증, 공매도 업데이트 알림을 설정할 수 있습니다." : "Configure price, RSI, MACD, volume, SEC filing, news-spike, and short-update alerts."}</div>
+          <div>{isKo ? "옵션 IV 알림은 로그인 및 검증된 개인 데이터 제공업체 연결이 필요합니다." : "Option-IV alerts require sign-in and a verified private provider connection."}</div>
         </div>
       </div>
       <div className="panel p-4">
@@ -1468,14 +1386,15 @@ function SectionHeader({ icon, title, subtitle }: Readonly<{ icon: ReactNode; ti
   );
 }
 
-function HeaderAction({ icon, label, disabled = false }: Readonly<{ icon: ReactNode; label: string; disabled?: boolean }>) {
+function HeaderAction({ icon, label, onClick, active = false }: Readonly<{ icon: ReactNode; label: string; onClick: () => void; active?: boolean }>) {
   return (
     <button
       type="button"
-      disabled={disabled}
-      className="secondary-action h-11 min-h-11 shrink-0 px-2.5 py-2 disabled:cursor-not-allowed disabled:opacity-55 sm:px-3"
-      title={disabled ? "Persistence unavailable" : label}
+      aria-pressed={active}
+      className={`secondary-action h-11 min-h-11 shrink-0 px-2.5 py-2 sm:px-3 ${active ? "border-accent bg-accentSoft text-accent" : ""}`}
+      title={label}
       aria-label={label}
+      onClick={onClick}
     >
       {icon}
       <span className="hidden sm:inline">{label}</span>
@@ -1836,100 +1755,6 @@ function macdDirectionLabel(current: number, previous: number, locale: "en" | "k
   return localeText(locale, "flat", "횡보");
 }
 
-function optionsSummaryFields(locale: "en" | "ko") { // NOSONAR - static bilingual option empty-states are kept auditable together.
-  const isKo = locale === "ko";
-  return [
-    {
-      label: isKo ? "데이터 신선도" : "Data freshness",
-      value: isKo ? "미연결" : "Not connected",
-      detail: isKo ? "same-day 공개 표시 소스 없음" : "No same-day public-display source"
-    },
-    {
-      label: isKo ? "만기" : "Expiration",
-      value: isKo ? "없음" : "Unavailable",
-      detail: isKo ? "체인 연결 후 선택 가능" : "Selectable after chain data is connected"
-    },
-    {
-      label: isKo ? "만기까지" : "Days to expiry",
-      value: isKo ? "없음" : "Unavailable",
-      detail: isKo ? "선택 만기 기준" : "Based on selected expiration"
-    },
-    {
-      label: "ATM IV",
-      value: isKo ? "없음" : "Unavailable",
-      detail: isKo ? "24시간 지연이면 명시" : "Labeled if 24h delayed"
-    },
-    {
-      label: isKo ? "ATM 스트래들" : "ATM straddle",
-      value: isKo ? "없음" : "Unavailable",
-      detail: isKo ? "실제 bid/ask 연결 필요" : "Requires real bid/ask source"
-    },
-    {
-      label: isKo ? "예상 변동" : "Expected move",
-      value: isKo ? "없음" : "Unavailable",
-      detail: isKo ? "스트래들 기반 계산" : "Computed from straddle when available"
-    },
-    {
-      label: isKo ? "콜 거래량 / OI" : "Call volume / OI",
-      value: isKo ? "없음" : "Unavailable",
-      detail: isKo ? "체인 연결 후 집계" : "Aggregated after chain data is connected"
-    },
-    {
-      label: isKo ? "풋 거래량 / OI" : "Put volume / OI",
-      value: isKo ? "없음" : "Unavailable",
-      detail: isKo ? "체인 연결 후 집계" : "Aggregated after chain data is connected"
-    },
-    {
-      label: isKo ? "P/C 비율" : "Put/call ratios",
-      value: isKo ? "없음" : "Unavailable",
-      detail: isKo ? "거래량과 OI를 분리 표시" : "Volume and OI ratios stay separate"
-    },
-    {
-      label: isKo ? "최대 거래량 행사가" : "Highest-volume strikes",
-      value: isKo ? "없음" : "Unavailable",
-      detail: isKo ? "콜/풋 각각 표시" : "Shown separately for calls and puts"
-    },
-    {
-      label: isKo ? "최대 OI 행사가" : "Highest-OI strikes",
-      value: isKo ? "없음" : "Unavailable",
-      detail: isKo ? "콜/풋 각각 표시" : "Shown separately for calls and puts"
-    },
-    {
-      label: isKo ? "계산 금지" : "No synthetic chain",
-      value: isKo ? "명시" : "Explicit",
-      detail: isKo ? "실제 체인처럼 보이는 임의 값을 만들지 않음" : "No generated values that look like a live chain"
-    }
-  ];
-}
-
-function translateFundamental(field: string) {
-  const values: Record<string, string> = {
-    "Market cap": "시가총액",
-    Revenue: "매출",
-    "Revenue growth": "매출 성장률",
-    "Gross margin": "매출총이익률",
-    "Operating margin": "영업이익률",
-    "Net income": "순이익",
-    "Free cash flow": "잉여현금흐름",
-    Cash: "현금",
-    Debt: "부채",
-    "Shares outstanding": "발행주식수",
-    "Dilution trend": "희석 추세",
-    "Price / sales": "주가/매출",
-    "EV / sales": "EV/매출",
-    "Price / book": "주가/장부가",
-    NAV: "순자산가치",
-    "Expense ratio": "보수율",
-    AUM: "운용자산",
-    Holdings: "보유종목",
-    "Premium / discount": "프리미엄/할인",
-    "Leverage factor": "레버리지 배수",
-    Issuer: "운용사",
-    "Rebalance frequency": "리밸런싱 주기"
-  };
-  return values[field] ?? field;
-}
-
 function importanceLabel(severity: string | undefined, locale: "en" | "ko") {
   const key = (severity || "medium").toLowerCase();
   if (key === "critical") return locale === "ko" ? "긴급" : "critical";
@@ -2018,12 +1843,14 @@ function scoreMax(key: string) {
   return max[key] ?? 1;
 }
 
-function translateAlert(item: string) {
-  const values: Record<string, string> = {
-    "Price break": "가격 돌파",
-    "SEC filing": "SEC 공시",
-    "Short interest update": "공매도 잔고 갱신",
-    "Ticker news": "티커 뉴스"
-  };
-  return values[item] ?? item;
+function parseCompareSymbols(search: string) {
+  const value = new URLSearchParams(search).get("compare") || "";
+  return Array.from(
+    new Set(
+      value
+        .split(",")
+        .map((symbol) => symbol.trim().toUpperCase())
+        .filter((symbol) => /^[A-Z0-9.\-]{1,16}$/.test(symbol))
+    )
+  ).slice(0, 4);
 }

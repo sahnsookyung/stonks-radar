@@ -19,6 +19,16 @@ import type {
 
 const manifestUrl = "/public/latest/manifest.json";
 
+export type SnapshotReadiness = {
+  version: number | null;
+  generated_at: string | null;
+  stale_after: string | null;
+  hard_expires_at: string | null;
+  age_seconds: number | null;
+  status: "ready" | "degraded" | "unavailable";
+  reason: string;
+};
+
 export class SnapshotHardExpiredError extends Error {
   constructor(
     readonly objectKey: string,
@@ -43,6 +53,18 @@ async function fetchJson<T>(url: string): Promise<T> {
 
 export async function getManifest(): Promise<SnapshotManifest> {
   return fetchJson<SnapshotManifest>(manifestUrl);
+}
+
+export async function getSnapshotReadiness(): Promise<SnapshotReadiness> {
+  const response = await fetch("/api/public/readiness", {
+    headers: { Accept: "application/json" },
+    cache: "no-store"
+  });
+  const payload = (await response.json()) as SnapshotReadiness;
+  if (response.status !== 200 && response.status !== 503) {
+    throw new Error(`Failed to load snapshot readiness: ${response.status}`);
+  }
+  return payload;
 }
 
 export async function getSnapshot<T>(

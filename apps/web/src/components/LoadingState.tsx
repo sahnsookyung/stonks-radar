@@ -1,4 +1,6 @@
 import { SnapshotHardExpiredError } from "../lib/snapshots";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
 export function LoadingState({ label = "Loading snapshot" }: Readonly<{ label?: string }>) {
   return (
@@ -21,6 +23,14 @@ export function ErrorState({ error }: Readonly<{ error: unknown }>) {
 
 export function SnapshotExpiredState({ error }: Readonly<{ error: SnapshotHardExpiredError }>) {
   const isKo = globalThis.window?.location.pathname.startsWith("/ko") ?? false;
+  const queryClient = useQueryClient();
+  const [lastCheckedAt, setLastCheckedAt] = useState(() => new Date());
+
+  const retry = async () => {
+    setLastCheckedAt(new Date());
+    await queryClient.invalidateQueries({ queryKey: ["snapshot"] });
+  };
+
   return (
     <section className="mx-auto grid min-h-[60vh] max-w-2xl place-items-center px-4 py-10">
       <div className="w-full rounded-md border border-danger/40 bg-danger/10 p-5 text-sm text-ink shadow-soft">
@@ -45,12 +55,16 @@ export function SnapshotExpiredState({ error }: Readonly<{ error: SnapshotHardEx
             <dd className="font-mono text-ink">{new Date(error.hardExpiresAt).toLocaleString()}</dd>
           </div>
         </dl>
-        <a
+        <p className="mt-4 text-xs text-muted">
+          {isKo ? "마지막 확인" : "Last checked"}: {lastCheckedAt.toLocaleTimeString()}
+        </p>
+        <button
+          type="button"
           className="mt-5 inline-flex min-h-11 items-center rounded-md border border-line bg-panel px-4 font-semibold text-cyan hover:border-cyan"
-          href="/admin/system-config"
+          onClick={() => void retry()}
         >
-          {isKo ? "관리자 시스템 상태 보기" : "Open admin system status"}
-        </a>
+          {isKo ? "다시 시도" : "Try again"}
+        </button>
       </div>
     </section>
   );
