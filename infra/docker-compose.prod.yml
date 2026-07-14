@@ -16,6 +16,10 @@ services:
     env_file:
       - path: .secrets/stonks-radar.production.env
         required: false
+    environment:
+      START_SCHEDULER: "true"
+      WORKER_SCHEDULER_ENABLED: "true"
+      OBAN_QUEUES_ENABLED: "true"
     mem_limit: 1536m
     cpus: 0.75
     restart: unless-stopped

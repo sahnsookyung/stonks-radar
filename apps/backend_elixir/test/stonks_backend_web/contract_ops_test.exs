@@ -47,6 +47,9 @@ defmodule StonksBackendWeb.ContractOpsTest do
     refute compose_dev =~ "python-legacy"
 
     assert compose_prod =~ "api-elixir:"
+    assert compose_prod =~ ~s(START_SCHEDULER: "true")
+    assert compose_prod =~ ~s(WORKER_SCHEDULER_ENABLED: "true")
+    assert compose_prod =~ ~s(OBAN_QUEUES_ENABLED: "true")
     refute compose_prod =~ "\n  api:"
     refute compose_prod =~ "\n  worker:"
     refute compose_prod =~ "fetch-sandbox:"
