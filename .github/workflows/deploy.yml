@@ -34,6 +34,11 @@ on:
         required: false
         default: ""
         type: string
+      diagnose_scheduler_only:
+        description: "Inspect production scheduler and Oban state without changing services"
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   actions: read
@@ -45,8 +50,60 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  diagnose-scheduler:
+    if: ${{ inputs.diagnose_scheduler_only }}
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 5
+    steps:
+      - name: Prepare SSH
+        env:
+          STONKS_DEPLOY_KEY: ${{ secrets.STONKS_DEPLOY_KEY }}
+          STONKS_HOST: ${{ secrets.STONKS_HOST }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$STONKS_DEPLOY_KEY" > ~/.ssh/stonks_deploy_key
+          chmod 600 ~/.ssh/stonks_deploy_key
+          ssh-keyscan -H "$STONKS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Inspect scheduler without mutation
+        env:
+          STONKS_HOST: ${{ secrets.STONKS_HOST }}
+          STONKS_USER: ${{ secrets.STONKS_USER }}
+        run: |
+          set -euo pipefail
+          SSH_OPTS=(-o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o TCPKeepAlive=yes)
+          scheduler_report="$(
+            ssh "${SSH_OPTS[@]}" -i ~/.ssh/stonks_deploy_key "$STONKS_USER@$STONKS_HOST" bash -s <<'REMOTE'
+          set -euo pipefail
+          cd /opt/stonks-radar
+          printf 'scheduler_flags='
+          docker compose -f compose.yaml -f infra/docker-compose.prod.yml exec -T api-elixir sh -lc \
+            'printf "%s %s %s\n" "$START_SCHEDULER" "$WORKER_SCHEDULER_ENABLED" "$OBAN_QUEUES_ENABLED"'
+          printf 'scheduler_logs\n'
+          docker compose -f compose.yaml -f infra/docker-compose.prod.yml logs --since 30m --no-color api-elixir 2>&1 \
+            | grep -E 'elixir_recurring_scheduler_(scheduled|failed)' \
+            | tail -20 || true
+          printf 'snapshot_refresh_jobs\n'
+          docker compose -f compose.yaml -f infra/docker-compose.prod.yml exec -T postgres sh -lc '
+            psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -F "|" -c "
+              select id::text, state, queue, attempt::text, max_attempts::text,
+                     inserted_at::text, coalesce(scheduled_at::text, \$\$-\$\$),
+                     coalesce(attempted_at::text, \$\$-\$\$), coalesce(completed_at::text, \$\$-\$\$),
+                     replace(left(coalesce(errors -> -1 ->> \$\$error\$\$, \$\$\$\$), 500), E\$\$\\n\$\$, \$\$ \$\$)
+              from oban_jobs
+              where args ->> \$\$job_type\$\$ = \$\$snapshot_refresh\$\$
+              order by id desc
+              limit 10
+            "
+          '
+          REMOTE
+          )"
+          printf '%s\n' "$scheduler_report"
+
   deploy-self-hosted:
-    if: ${{ inputs.runner != 'github-hosted' }}
+    if: ${{ !inputs.diagnose_scheduler_only && inputs.runner != 'github-hosted' }}
     runs-on: [self-hosted, linux, stonks-radar-deploy]
     environment: production
     timeout-minutes: 45
@@ -188,7 +245,7 @@ jobs:
         run: scripts/deploy_self_hosted_runner.sh /tmp/stonks-production.env
 
   deploy-github-hosted:
-    if: ${{ inputs.runner == 'github-hosted' }}
+    if: ${{ !inputs.diagnose_scheduler_only && inputs.runner == 'github-hosted' }}
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 45

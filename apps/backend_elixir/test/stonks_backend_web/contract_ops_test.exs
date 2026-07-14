@@ -89,6 +89,8 @@ defmodule StonksBackendWeb.ContractOpsTest do
     assert deploy_workflow =~ "public_manifest_hash=$(sha256sum"
     assert deploy_workflow =~ "origin/public manifest hash matched"
     assert deploy_workflow =~ "Verify scheduler runtime"
+    assert deploy_workflow =~ "diagnose_scheduler_only"
+    assert deploy_workflow =~ "Inspect scheduler without mutation"
     assert deploy_workflow =~ "elixir_recurring_scheduler_scheduled"
     assert deploy_workflow =~ "snapshot_refresh_jobs"
     assert deploy_workflow =~ "exec -T postgres"
