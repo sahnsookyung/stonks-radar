@@ -68,6 +68,7 @@ defmodule StonksBackendWeb.ContractOpsTest do
     assert deploy_script =~ "elixir_recurring_scheduler_scheduled"
     assert deploy_script =~ "snapshot_refresh_jobs"
     assert deploy_script =~ "exec -T postgres"
+    assert deploy_script =~ "</dev/null"
     assert deploy_script =~ "No snapshot_refresh jobs found"
 
     refute deploy_workflow =~ "publish_runtime_snapshots.py"
@@ -94,6 +95,7 @@ defmodule StonksBackendWeb.ContractOpsTest do
     assert deploy_workflow =~ "elixir_recurring_scheduler_scheduled"
     assert deploy_workflow =~ "snapshot_refresh_jobs"
     assert deploy_workflow =~ "exec -T postgres"
+    assert deploy_workflow =~ "</dev/null"
     assert deploy_workflow =~ "No snapshot_refresh jobs found"
 
     caddyfile = read_repo_file("infra/Caddyfile")

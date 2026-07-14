@@ -203,7 +203,8 @@ verify_scheduler_runtime() {
   cd "$deploy_dir"
   flags="$(
     compose exec -T api-elixir sh -lc \
-      'printf "%s %s %s" "$START_SCHEDULER" "$WORKER_SCHEDULER_ENABLED" "$OBAN_QUEUES_ENABLED"'
+      'printf "%s %s %s" "$START_SCHEDULER" "$WORKER_SCHEDULER_ENABLED" "$OBAN_QUEUES_ENABLED"' \
+      </dev/null
   )"
   [[ "$flags" == "true true true" ]] || {
     echo "Production scheduler flags are not enabled: $flags" >&2
@@ -239,7 +240,7 @@ verify_scheduler_runtime() {
         order by id desc
         limit 5
       "
-    '
+    ' </dev/null
   )"
   [[ -n "$snapshot_jobs" ]] || {
     echo "No snapshot_refresh jobs found" >&2

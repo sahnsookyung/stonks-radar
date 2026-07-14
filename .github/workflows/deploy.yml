@@ -80,7 +80,8 @@ jobs:
           cd /opt/stonks-radar
           printf 'scheduler_flags='
           docker compose -f compose.yaml -f infra/docker-compose.prod.yml exec -T api-elixir sh -lc \
-            'printf "%s %s %s\n" "$START_SCHEDULER" "$WORKER_SCHEDULER_ENABLED" "$OBAN_QUEUES_ENABLED"'
+            'printf "%s %s %s\n" "$START_SCHEDULER" "$WORKER_SCHEDULER_ENABLED" "$OBAN_QUEUES_ENABLED"' \
+            </dev/null
           printf 'scheduler_logs\n'
           docker compose -f compose.yaml -f infra/docker-compose.prod.yml logs --since 30m --no-color api-elixir 2>&1 \
             | grep -E 'elixir_recurring_scheduler_(scheduled|failed)' \
@@ -97,7 +98,7 @@ jobs:
               order by id desc
               limit 10
             "
-          '
+          ' </dev/null
           REMOTE
           )"
           printf '%s\n' "$scheduler_report"
@@ -592,7 +593,8 @@ jobs:
           fi
           flags="$(
             docker compose -f compose.yaml -f infra/docker-compose.prod.yml exec -T api-elixir sh -lc \
-              'printf "%s %s %s" "$START_SCHEDULER" "$WORKER_SCHEDULER_ENABLED" "$OBAN_QUEUES_ENABLED"'
+              'printf "%s %s %s" "$START_SCHEDULER" "$WORKER_SCHEDULER_ENABLED" "$OBAN_QUEUES_ENABLED"' \
+              </dev/null
           )"
           if [[ "$flags" != "true true true" ]]; then
             echo "Production scheduler flags are not enabled: $flags" >&2
@@ -626,7 +628,7 @@ jobs:
                 order by id desc
                 limit 5
               "
-            '
+            ' </dev/null
           )"
           if [[ -z "$snapshot_jobs" ]]; then
             echo "No snapshot_refresh jobs found" >&2
