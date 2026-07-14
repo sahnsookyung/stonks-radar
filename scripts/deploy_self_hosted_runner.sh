@@ -227,26 +227,25 @@ verify_scheduler_runtime() {
     sleep 5
   done
 
-  compose run --rm --no-deps api-elixir \
-    env START_SCHEDULER=false OBAN_QUEUES_ENABLED=false \
-    /app/bin/stonks_backend eval '
-      {:ok, _} = Application.ensure_all_started(:stonks_backend)
-      sql = """
-      select id::text, state, attempt::text, max_attempts::text,
-             inserted_at::text, coalesce(attempted_at::text, $$$$),
-             coalesce(completed_at::text, $$$$),
-             coalesce(errors -> -1 ->> $$error$$, $$$$)
-      from oban_jobs
-      where args ->> $$job_type$$ = $$snapshot_refresh$$
-      order by id desc
-      limit 5
-      """
-      case Ecto.Adapters.SQL.query(StonksBackend.Repo, sql, []) do
-        {:ok, %{rows: rows}} when rows != [] -> IO.inspect(rows, label: "snapshot_refresh_jobs")
-        {:ok, %{rows: []}} -> raise "no snapshot_refresh jobs found"
-        {:error, reason} -> raise "snapshot_refresh job query failed: #{inspect(reason)}"
-      end
+  snapshot_jobs="$(
+    compose exec -T postgres sh -lc '
+      psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -F "|" -c "
+        select id::text, state, attempt::text, max_attempts::text,
+               inserted_at::text, coalesce(attempted_at::text, \$\$-\$\$),
+               coalesce(completed_at::text, \$\$-\$\$),
+               replace(left(coalesce(errors -> -1 ->> \$\$error\$\$, \$\$\$\$), 500), E\$\$\\n\$\$, \$\$ \$\$)
+        from oban_jobs
+        where args ->> \$\$job_type\$\$ = \$\$snapshot_refresh\$\$
+        order by id desc
+        limit 5
+      "
     '
+  )"
+  [[ -n "$snapshot_jobs" ]] || {
+    echo "No snapshot_refresh jobs found" >&2
+    return 1
+  }
+  printf 'snapshot_refresh_jobs\n%s\n' "$snapshot_jobs"
 }
 
 refresh_snapshots() {

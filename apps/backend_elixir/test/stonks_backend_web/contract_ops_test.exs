@@ -67,6 +67,8 @@ defmodule StonksBackendWeb.ContractOpsTest do
     assert deploy_script =~ "stonks-radar_published-snapshots"
     assert deploy_script =~ "elixir_recurring_scheduler_scheduled"
     assert deploy_script =~ "snapshot_refresh_jobs"
+    assert deploy_script =~ "exec -T postgres"
+    assert deploy_script =~ "No snapshot_refresh jobs found"
 
     refute deploy_workflow =~ "publish_runtime_snapshots.py"
     refute deploy_workflow =~ " up -d postgres valkey fetch-sandbox"
@@ -89,6 +91,8 @@ defmodule StonksBackendWeb.ContractOpsTest do
     assert deploy_workflow =~ "Verify scheduler runtime"
     assert deploy_workflow =~ "elixir_recurring_scheduler_scheduled"
     assert deploy_workflow =~ "snapshot_refresh_jobs"
+    assert deploy_workflow =~ "exec -T postgres"
+    assert deploy_workflow =~ "No snapshot_refresh jobs found"
 
     caddyfile = read_repo_file("infra/Caddyfile")
     assert caddyfile =~ "reverse_proxy {$API_UPSTREAM:api-elixir:8000}"
