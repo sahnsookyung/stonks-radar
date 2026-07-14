@@ -234,7 +234,7 @@ verify_scheduler_runtime() {
         select id::text, state, attempt::text, max_attempts::text,
                inserted_at::text, coalesce(attempted_at::text, \$\$-\$\$),
                coalesce(completed_at::text, \$\$-\$\$),
-               replace(left(coalesce(errors -> -1 ->> \$\$error\$\$, \$\$\$\$), 500), E\$\$\\n\$\$, \$\$ \$\$)
+               replace(left(coalesce(errors -> -1 ->> \$\$error\$\$, \$\$\$\$), 500), chr(10), \$\$ \$\$)
         from oban_jobs
         where args ->> \$\$job_type\$\$ = \$\$snapshot_refresh\$\$
         order by id desc
