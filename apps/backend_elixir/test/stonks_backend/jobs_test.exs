@@ -40,6 +40,7 @@ defmodule StonksBackend.JobsTest do
     assert Jobs.queue_for("snapshot_refresh") == :snapshots
     assert Jobs.queue_for("news.fetch_source") == :news
     assert Jobs.queue_for("market_data.refresh_history") == :market_data
+    assert Jobs.queue_for("calendar.alpha_vantage_earnings") == :market_data
     assert Jobs.queue_for("instrument_search_index_update") == :instruments
     assert Jobs.queue_for("trump_disclosures_ingest") == :disclosures
   end

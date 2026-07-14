@@ -10,6 +10,7 @@ const expectedWebArtifact =
   optionalText(process.env.STONKS_AUDIT_EXPECTED_WEB_ARTIFACT) ?? expectedCommit;
 const expectedManifestVersion = optionalText(process.env.STONKS_AUDIT_EXPECTED_MANIFEST_VERSION);
 const expectedManifestHash = optionalText(process.env.STONKS_AUDIT_EXPECTED_MANIFEST_HASH);
+const manifestMaxAgeMs = Number(process.env.STONKS_AUDIT_MANIFEST_MAX_AGE_MS ?? 2 * 60 * 60 * 1000);
 let latestManifest = null;
 let latestManifestHash = null;
 let observedWebArtifact = null;
@@ -60,6 +61,7 @@ const checks = [
       latestManifestHash = sha256(manifestText);
       latestManifest = JSON.parse(manifestText);
       assert(latestManifest?.objects?.home?.en, "Latest manifest must expose current home snapshot path");
+      assertFreshManifest(latestManifest);
       if (expectedManifestVersion) {
         assert(
           String(latestManifest.current_version) === expectedManifestVersion,
@@ -87,6 +89,7 @@ const checks = [
       );
       const snapshot = await response.json();
       assert(snapshot?.snapshot_version === latestManifest?.current_version, "Versioned snapshot must match latest manifest version");
+      assertUsableSnapshot(snapshot);
       if (expectedManifestVersion) {
         assert(
           String(snapshot?.snapshot_version) === expectedManifestVersion,
@@ -102,6 +105,15 @@ const checks = [
     path: "/api/public/health",
     expect(response) {
       assert(response.status === 200, "Public health endpoint must return 200");
+    }
+  },
+  !skipApi && {
+    name: "api readiness",
+    path: "/api/public/readiness",
+    async expect(response) {
+      assert(response.status === 200, "Public readiness endpoint must return 200");
+      const readiness = await response.json();
+      assert(readiness.status === "ready", `Public readiness must be ready, got ${readiness.status}`);
     }
   }
 ].filter(Boolean);
@@ -162,6 +174,21 @@ if (failures.length > 0) {
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function assertFreshManifest(manifest) {
+  assert(Number.isFinite(manifestMaxAgeMs) && manifestMaxAgeMs > 0, "Manifest max age must be positive");
+  const generatedAt = Date.parse(manifest?.generated_at);
+  assert(Number.isFinite(generatedAt), "Latest manifest generated_at must be parseable");
+  const ageMs = Date.now() - generatedAt;
+  assert(ageMs >= 0, "Latest manifest generated_at must not be in the future");
+  assert(ageMs <= manifestMaxAgeMs, `Latest manifest is ${Math.round(ageMs / 60_000)} minutes old; maximum is ${Math.round(manifestMaxAgeMs / 60_000)} minutes`);
+}
+
+function assertUsableSnapshot(snapshot) {
+  const hardExpiresAt = Date.parse(snapshot?.hard_expires_at);
+  assert(Number.isFinite(hardExpiresAt), "Versioned snapshot hard_expires_at must be parseable");
+  assert(hardExpiresAt > Date.now(), `Versioned snapshot hard-expired at ${snapshot?.hard_expires_at}`);
 }
 
 function optionalUrl(value) {

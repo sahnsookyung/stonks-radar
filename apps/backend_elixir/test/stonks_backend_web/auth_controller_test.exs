@@ -122,6 +122,35 @@ defmodule StonksBackendWeb.AuthControllerTest do
     assert byte_size(params["nonce"]) > 20
   end
 
+  test "member Google start is feature-gated and uses the shared validated callback" do
+    disabled =
+      :get
+      |> conn("/api/auth/google/member/start", %{"redirect_to" => "/en/tickers/AAPL"})
+      |> StonksBackendWeb.Router.call(@opts)
+
+    assert disabled.status == 404
+    assert disabled.resp_body == "Google OAuth member sign-in is not configured."
+
+    Application.put_env(:stonks_backend, :settings,
+      public_base_url: "https://stonks.example",
+      ticker_member_features_enabled: "true",
+      google_oauth_client_id: "client-id",
+      google_oauth_client_secret: "client-secret"
+    )
+
+    conn =
+      :get
+      |> conn("/api/auth/google/member/start", %{"redirect_to" => "https://evil.example"})
+      |> StonksBackendWeb.Router.call(@opts)
+
+    assert conn.status == 302
+    location = get_resp_header(conn, "location") |> List.first()
+    params = location |> URI.parse() |> Map.fetch!(:query) |> URI.decode_query()
+    assert params["redirect_uri"] == "https://stonks.example/api/auth/google/callback"
+    assert byte_size(params["state"]) > 20
+    assert byte_size(params["nonce"]) > 20
+  end
+
   test "google callback preserves error redirect and rejects invalid state" do
     conn =
       :get

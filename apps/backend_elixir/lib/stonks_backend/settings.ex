@@ -31,7 +31,21 @@ defmodule StonksBackend.Settings do
 
   def google_oauth_enabled? do
     truthy?(get(:google_oauth_admin_enabled, "false")) and
-      present?(get(:google_oauth_client_id)) and
+      google_oauth_configured?()
+  end
+
+  def google_member_oauth_enabled? do
+    ticker_member_features_enabled?() and
+      google_oauth_configured?()
+  end
+
+  def ticker_member_features_enabled?,
+    do: truthy?(get(:ticker_member_features_enabled, "false"))
+
+  def ticker_email_enabled?, do: truthy?(get(:ticker_email_enabled, "false"))
+
+  def google_oauth_configured? do
+    present?(get(:google_oauth_client_id)) and
       present?(get(:google_oauth_client_secret))
   end
 

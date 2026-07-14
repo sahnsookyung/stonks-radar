@@ -215,8 +215,11 @@ defmodule StonksBackend.Jobs do
       String.starts_with?(job_type, "news.") ->
         :news
 
-      String.starts_with?(job_type, "market_data.") ->
+      String.starts_with?(job_type, "market_data.") or String.starts_with?(job_type, "calendar.") ->
         :market_data
+
+      String.starts_with?(job_type, "ticker_alert") or job_type == "ticker_fundamentals_refresh" ->
+        :default
 
       job_type == "instrument_search_index_update" ->
         :instruments

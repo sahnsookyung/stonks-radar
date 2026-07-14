@@ -88,6 +88,30 @@ defmodule StonksBackend.ShortsTest do
              "daily_short_volume_is_transaction_flow_not_open_short_interest"
   end
 
+  test "daily ingestion falls back across recent weekdays when the latest FINRA file is unavailable" do
+    fetch_fun = fn
+      "https://cdn.finra.org/equity/regsho/daily/CNMSshvol20260703.txt" ->
+        {:error, {:http_status, 404}}
+
+      "https://cdn.finra.org/equity/regsho/daily/CNMSshvol20260702.txt" ->
+        {:ok, %{"text" => @sample_file}}
+    end
+
+    assert {:ok, result} =
+             Shorts.fetch_daily_short_volume(
+               %{"date" => "2026-07-03"},
+               fetch_fun: fetch_fun,
+               tracked_symbols: ["AAPL", "RKLB"],
+               fallback_trade_days: 2
+             )
+
+    assert result.status == "ready"
+    assert result.requested_as_of_date == "2026-07-03"
+    assert result.as_of_date == "2026-07-02"
+    assert Enum.map(result.attempts, & &1["as_of_date"]) == ["2026-07-03", "2026-07-02"]
+    assert Enum.map(result.attempts, & &1["status"]) == ["failed", "ready"]
+  end
+
   test "ingestion entrypoints honor the runtime kill switch" do
     fetch_fun = fn _url -> flunk("disabled shorts ingestion must not fetch FINRA files") end
 

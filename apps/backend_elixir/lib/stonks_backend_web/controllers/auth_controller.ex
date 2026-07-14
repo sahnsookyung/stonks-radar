@@ -5,13 +5,19 @@ defmodule StonksBackendWeb.AuthController do
 
   def google_config(conn, _params), do: json(conn, Accounts.google_config())
 
-  def google_start(conn, params) do
-    if Settings.google_oauth_enabled?() do
+  def google_start(conn, params), do: start_google(conn, params, "admin")
+  def google_member_start(conn, params), do: start_google(conn, params, "member")
+
+  defp start_google(conn, params, purpose) do
+    if Accounts.oauth_purpose_enabled?(purpose) do
       state = StonksBackend.Accounts.Crypto.new_token()
       nonce = StonksBackend.Accounts.Crypto.new_token()
-      redirect_to = Accounts.safe_admin_redirect_path(params["redirect_to"] || "/admin")
+      default_redirect = if purpose == "admin", do: "/admin", else: "/en/tickers/NVDA"
 
-      persist_google_state(state, nonce, redirect_to)
+      redirect_to =
+        Accounts.safe_oauth_redirect_path(params["redirect_to"] || default_redirect, purpose)
+
+      persist_google_state(state, nonce, redirect_to, purpose)
 
       query =
         URI.encode_query(%{
@@ -27,21 +33,23 @@ defmodule StonksBackendWeb.AuthController do
 
       redirect(conn, external: "https://accounts.google.com/o/oauth2/v2/auth?#{query}")
     else
-      conn |> send_resp(404, "Google OAuth admin login is not configured.")
+      access = if purpose == "admin", do: "admin login", else: "member sign-in"
+      conn |> send_resp(404, "Google OAuth #{access} is not configured.")
     end
   end
 
-  defp persist_google_state(state, nonce, redirect_to) do
+  defp persist_google_state(state, nonce, redirect_to, purpose) do
     StonksBackend.Sql.execute(
       """
-      insert into oauth_login_state(state_hash, nonce_hash, provider, redirect_to, expires_at)
-      values ($1, $2, 'google', $3, now() + interval '10 minutes')
+      insert into oauth_login_state(state_hash, nonce_hash, provider, redirect_to, purpose, expires_at)
+      values ($1, $2, 'google', $3, $4, now() + interval '10 minutes')
       on conflict (state_hash) do nothing
       """,
       [
         StonksBackend.Accounts.Crypto.hash_secret(state),
         StonksBackend.Accounts.Crypto.hash_secret(nonce),
-        redirect_to
+        redirect_to,
+        purpose
       ]
     )
   rescue
@@ -57,7 +65,7 @@ defmodule StonksBackendWeb.AuthController do
       blank?(params["code"]) or blank?(params["state"]) ->
         send_resp(conn, 400, "Missing Google OAuth callback parameters.")
 
-      not Settings.google_oauth_enabled?() ->
+      not (Settings.google_oauth_enabled?() or Settings.google_member_oauth_enabled?()) ->
         send_resp(conn, 404, "Google OAuth admin login is not configured.")
 
       true ->
@@ -67,13 +75,15 @@ defmodule StonksBackendWeb.AuthController do
 
   defp handle_google_callback(conn, code, state) do
     with {:ok, state_row} <- Accounts.consume_google_state(state),
+         true <- Accounts.oauth_purpose_enabled?(state_row["purpose"]),
          {:ok, profile} <- Accounts.fetch_google_profile(code, to_string(state_row["nonce_hash"])),
-         {:ok, user} <- Accounts.upsert_google_admin_user(profile),
+         {:ok, user} <- Accounts.upsert_google_user(profile, state_row["purpose"]),
          {%Plug.Conn{} = conn, _csrf_token} <-
            Accounts.create_session(conn, to_string(user["id"]), user["role"],
              expose_csrf_cookie: true
            ) do
-      redirect_to = Accounts.safe_admin_redirect_path(state_row["redirect_to"] || "/admin")
+      redirect_to =
+        Accounts.safe_oauth_redirect_path(state_row["redirect_to"], state_row["purpose"])
 
       Audit.write("auth.google_login_succeeded",
         target_table: "app_user",
@@ -85,6 +95,9 @@ defmodule StonksBackendWeb.AuthController do
     else
       {:error, :invalid_oauth_state} ->
         send_resp(conn, 400, "Invalid or expired OAuth state.")
+
+      false ->
+        send_resp(conn, 403, "OAuth login purpose is not enabled.")
 
       {:error, :google_account_not_authorized} ->
         send_resp(conn, 403, "Google account is not authorized for admin access.")

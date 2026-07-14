@@ -1,0 +1,27 @@
+name: production-canary
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stonks-radar-production-canary
+  cancel-in-progress: true
+
+jobs:
+  snapshot-freshness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Audit public snapshot freshness
+        run: npm run audit:delivery
+        env:
+          STONKS_AUDIT_BASE_URL: https://stonks.sookyungahn.com

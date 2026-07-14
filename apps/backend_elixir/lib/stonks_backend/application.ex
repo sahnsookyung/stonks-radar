@@ -9,6 +9,8 @@ defmodule StonksBackend.Application do
         repo_child(),
         {Phoenix.PubSub, name: StonksBackend.PubSub},
         {Finch, name: StonksBackend.Finch},
+        StonksBackend.InstrumentCache,
+        StonksBackend.PrivateMarketDataCache,
         oban_child(),
         scheduler_child(),
         StonksBackendWeb.Endpoint

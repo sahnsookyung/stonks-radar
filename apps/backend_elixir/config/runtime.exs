@@ -76,6 +76,17 @@ config :stonks_backend, :settings,
     System.get_env("GOOGLE_OAUTH_TOKENINFO_URL", "https://oauth2.googleapis.com/tokeninfo"),
   google_oauth_allowed_emails: System.get_env("GOOGLE_OAUTH_ALLOWED_EMAILS", ""),
   google_oauth_allowed_domains: System.get_env("GOOGLE_OAUTH_ALLOWED_DOMAINS", ""),
+  ticker_member_features_enabled: System.get_env("TICKER_MEMBER_FEATURES_ENABLED", "false"),
+  ticker_email_enabled: System.get_env("TICKER_EMAIL_ENABLED", "false"),
+  ticker_private_market_data_enabled:
+    System.get_env("TICKER_PRIVATE_MARKET_DATA_ENABLED", "false"),
+  ticker_credential_encryption_key: System.get_env("TICKER_CREDENTIAL_ENCRYPTION_KEY"),
+  smtp_relay: System.get_env("SMTP_RELAY"),
+  smtp_port: System.get_env("SMTP_PORT", "587"),
+  smtp_username: System.get_env("SMTP_USERNAME"),
+  smtp_password: System.get_env("SMTP_PASSWORD"),
+  smtp_from_email: System.get_env("SMTP_FROM_EMAIL"),
+  smtp_from_name: System.get_env("SMTP_FROM_NAME", "Stonks Radar"),
   yahoo_admin_enabled: System.get_env("YAHOO_ADMIN_ENABLED", "false"),
   published_snapshot_dir: System.get_env("PUBLISHED_SNAPSHOT_DIR", "apps/web/public/public"),
   snapshot_artifact_dir: System.get_env("SNAPSHOT_ARTIFACT_DIR", "artifacts/snapshots"),
@@ -103,6 +114,8 @@ config :stonks_backend, :settings,
   source_fetch_max_bytes: System.get_env("SOURCE_FETCH_MAX_BYTES", "5000000"),
   sec_user_agent:
     System.get_env("SEC_USER_AGENT", "StonksRadar/1.0 research contact=admin@example.com"),
+  ticker_fundamentals_refresh_seconds:
+    System.get_env("TICKER_FUNDAMENTALS_REFRESH_SECONDS", "86400"),
   gdelt_doc_cycle_budget: System.get_env("GDELT_DOC_CYCLE_BUDGET", "10"),
   gdelt_doc_max_records: System.get_env("GDELT_DOC_MAX_RECORDS", "250"),
   gdelt_doc_query_pack: System.get_env("GDELT_DOC_QUERY_PACK", "market_watch"),
@@ -133,6 +146,12 @@ config :stonks_backend, :settings,
   market_data_api_key: System.get_env("MARKET_DATA_API_KEY"),
   twelve_data_api_key: System.get_env("TWELVE_DATA_API_KEY"),
   alpha_vantage_api_key: System.get_env("ALPHA_VANTAGE_API_KEY"),
+  earnings_calendar_api_key: System.get_env("EARNINGS_CALENDAR_API_KEY"),
+  earnings_calendar_ingestion_enabled:
+    System.get_env("EARNINGS_CALENDAR_INGESTION_ENABLED", "true"),
+  earnings_calendar_refresh_seconds: System.get_env("EARNINGS_CALENDAR_REFRESH_SECONDS", "86400"),
+  earnings_calendar_horizon: System.get_env("EARNINGS_CALENDAR_HORIZON", "12month"),
+  earnings_calendar_symbols: System.get_env("EARNINGS_CALENDAR_SYMBOLS", ""),
   fmp_api_key: System.get_env("FMP_API_KEY"),
   finnhub_api_key: System.get_env("FINNHUB_API_KEY"),
   instrument_provider_search_enabled:
@@ -165,6 +184,7 @@ config :stonks_backend, :settings,
   market_data_refresh_after_close_minutes:
     System.get_env("MARKET_DATA_REFRESH_AFTER_CLOSE_MINUTES", "45"),
   shorts_ingestion_enabled: System.get_env("SHORTS_INGESTION_ENABLED", "true"),
+  shorts_daily_fallback_trade_days: System.get_env("SHORTS_DAILY_FALLBACK_TRADE_DAYS", "5"),
   yield_curve_history_enabled: System.get_env("YIELD_CURVE_HISTORY_ENABLED", "true"),
   yield_curve_history_months: System.get_env("YIELD_CURVE_HISTORY_MONTHS", "24"),
   yield_curve_fetch_timeout_seconds: System.get_env("YIELD_CURVE_FETCH_TIMEOUT_SECONDS", "15"),
@@ -195,3 +215,27 @@ end
 if app_env in ["production", "prod"] do
   config :logger, level: :info
 end
+
+email_enabled = truthy_env.("TICKER_EMAIL_ENABLED", "false")
+
+mailer_config =
+  if email_enabled do
+    _from_email = runtime_env.("SMTP_FROM_EMAIL", nil)
+
+    [
+      adapter: Swoosh.Adapters.SMTP,
+      relay: runtime_env.("SMTP_RELAY", nil),
+      port: System.get_env("SMTP_PORT", "587") |> String.to_integer(),
+      username: runtime_env.("SMTP_USERNAME", nil),
+      password: runtime_env.("SMTP_PASSWORD", nil),
+      ssl: false,
+      tls: :always,
+      auth: :always,
+      retries: 2,
+      no_mx_lookups: false
+    ]
+  else
+    [adapter: Swoosh.Adapters.Local]
+  end
+
+config :stonks_backend, StonksBackend.Mailer, mailer_config

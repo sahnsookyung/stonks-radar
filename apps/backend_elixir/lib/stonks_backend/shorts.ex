@@ -28,32 +28,33 @@ defmodule StonksBackend.Shorts do
   defp do_fetch_daily_short_volume(payload, opts) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
     date = payload_date(payload) || default_trade_date(now)
-    url = Map.get(payload, "url") || daily_short_volume_url(date)
     tracked_symbols = Keyword.get(opts, :tracked_symbols, tracked_symbols())
     fetch_fun = Keyword.get(opts, :fetch_fun, &safe_fetch_daily_file/1)
 
-    case fetch_fun.(url) do
-      {:ok, fetched} ->
+    case fetch_daily_short_volume_file(payload, date, fetch_fun, opts) do
+      {:ok, fetched, fetched_date, url, attempts} ->
         text = Map.get(fetched, "text", "")
 
         {:ok, parsed} =
           parse_daily_short_volume(text,
             source_url: url,
             tracked_symbols: tracked_symbols,
-            fallback_date: date
+            fallback_date: fetched_date
           )
 
-        rows = add_rollout_metadata(parsed.rows, date)
+        rows = add_rollout_metadata(parsed.rows, fetched_date)
         persisted = persist_short_volume_rows(rows)
 
         record_source_health("finra_daily_short_volume", health_status(parsed.rows), %{
-          as_of_date: Date.to_iso8601(date),
+          requested_as_of_date: Date.to_iso8601(date),
+          as_of_date: Date.to_iso8601(fetched_date),
           fetched: parsed.total_rows,
           parsed: length(parsed.rows),
           malformed: parsed.malformed_count,
           unknown_symbol: parsed.unknown_symbol_count,
           persisted: persisted.persisted,
-          persist_failed: persisted.failed
+          persist_failed: persisted.failed,
+          attempts: attempts
         })
 
         {:ok,
@@ -61,25 +62,78 @@ defmodule StonksBackend.Shorts do
            status: if(parsed.rows == [], do: "coverage_gap", else: "ready"),
            source_key: "finra_daily_short_volume",
            source_url: url,
-           as_of_date: Date.to_iso8601(date),
+           requested_as_of_date: Date.to_iso8601(date),
+           as_of_date: Date.to_iso8601(fetched_date),
            rows_seen: parsed.total_rows,
            rows_parsed: length(rows),
            malformed_count: parsed.malformed_count,
            unknown_symbol_count: parsed.unknown_symbol_count,
            persisted_count: persisted.persisted,
            persist_failed_count: persisted.failed,
+           attempts: attempts,
            short_interest_guardrail:
              "daily_short_volume_is_transaction_flow_not_open_short_interest"
          }}
 
-      {:error, reason} ->
+      {:error, reason, attempts} ->
         record_source_health("finra_daily_short_volume", "failed", %{
           as_of_date: Date.to_iso8601(date),
-          reason: inspect(reason)
+          reason: inspect(reason),
+          attempts: attempts
         })
 
         {:error, reason}
     end
+  end
+
+  defp fetch_daily_short_volume_file(payload, date, fetch_fun, opts) do
+    payload
+    |> daily_short_volume_attempts(date, opts)
+    |> Enum.reduce_while({:error, :no_attempts, []}, fn {attempt_date, url},
+                                                        {:error, _reason, errors} ->
+      case fetch_fun.(url) do
+        {:ok, fetched} ->
+          attempt = %{
+            "as_of_date" => Date.to_iso8601(attempt_date),
+            "url" => url,
+            "status" => "ready"
+          }
+
+          {:halt, {:ok, fetched, attempt_date, url, Enum.reverse([attempt | errors])}}
+
+        {:error, reason} ->
+          attempt = %{
+            "as_of_date" => Date.to_iso8601(attempt_date),
+            "url" => url,
+            "status" => "failed",
+            "reason" => inspect(reason)
+          }
+
+          {:cont, {:error, reason, [attempt | errors]}}
+      end
+    end)
+    |> case do
+      {:error, reason, attempts} -> {:error, reason, Enum.reverse(attempts)}
+      other -> other
+    end
+  end
+
+  defp daily_short_volume_attempts(%{"url" => url}, date, _opts)
+       when is_binary(url) and url != "" do
+    [{date, url}]
+  end
+
+  defp daily_short_volume_attempts(_payload, date, opts) do
+    fallback_days =
+      opts
+      |> Keyword.get(:fallback_trade_days, Settings.get(:shorts_daily_fallback_trade_days, 5))
+      |> normalize_int(5)
+      |> max(1)
+      |> min(10)
+
+    date
+    |> recent_weekdays(fallback_days)
+    |> Enum.map(&{&1, daily_short_volume_url(&1)})
   end
 
   def fetch_short_interest_release(payload \\ %{}, opts \\ []) do
@@ -759,5 +813,28 @@ defmodule StonksBackend.Shorts do
     if weekday?(date), do: date, else: previous_weekday(date)
   end
 
+  defp recent_weekdays(date, count), do: recent_weekdays(date, count, [])
+
+  defp recent_weekdays(_date, 0, acc), do: Enum.reverse(acc)
+
+  defp recent_weekdays(date, count, acc) do
+    if weekday?(date) do
+      recent_weekdays(Date.add(date, -1), count - 1, [date | acc])
+    else
+      recent_weekdays(Date.add(date, -1), count, acc)
+    end
+  end
+
   defp weekday?(date), do: Date.day_of_week(date) in 1..5
+
+  defp normalize_int(value, _default) when is_integer(value), do: value
+
+  defp normalize_int(value, default) when is_binary(value) do
+    case Integer.parse(String.trim(value)) do
+      {integer, ""} -> integer
+      _ -> default
+    end
+  end
+
+  defp normalize_int(_value, default), do: default
 end

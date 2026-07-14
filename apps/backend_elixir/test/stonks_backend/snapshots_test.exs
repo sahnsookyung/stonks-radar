@@ -597,6 +597,117 @@ defmodule StonksBackend.SnapshotsTest do
     assert :ok = Snapshots.validate_snapshot_tree(result.destination)
   end
 
+  test "map events snapshot backfills mappable news index rows without changing public paths", %{
+    published_root: root,
+    artifact_root: artifact_root
+  } do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    write_manifest!(root, %{
+      "news_index" => %{"en" => "public/v1/en/news/index.json"},
+      "map_events" => %{"en" => "public/v1/en/map/events.json"}
+    })
+
+    write_snapshot!(root, "v1/en/news/index.json", %{
+      "object_type" => "news_index",
+      "object_key" => "news_index",
+      "data" => %{
+        "generated_label" => DateTime.to_iso8601(now),
+        "filters" => empty_news_filters(),
+        "events" => [
+          news_event("semiconductor_export_controls_seed", DateTime.add(now, -2, :day), %{
+            "event_type" => "trade_policy",
+            "severity" => "high",
+            "source_count" => 3,
+            "topics" => [
+              %{"key" => "semiconductors", "label" => "Semiconductors", "confidence" => 0.92}
+            ],
+            "regions" => [
+              %{
+                "key" => "CHN",
+                "name" => "China",
+                "relation" => "event_region",
+                "confidence" => 0.92
+              },
+              %{
+                "key" => "USA",
+                "name" => "United States",
+                "relation" => "affected_region",
+                "confidence" => 0.86
+              }
+            ]
+          })
+        ]
+      }
+    })
+
+    write_snapshot!(root, "v1/en/map/events.json", %{
+      "object_type" => "map_events",
+      "object_key" => "map_events",
+      "data" => %{
+        "events" => [],
+        "breaking_market_events" => [],
+        "breaking_market_map" => %{
+          "events" => [],
+          "map_points" => [],
+          "watched_regions" => [],
+          "coverage_gaps" => [],
+          "regional_briefs" => [],
+          "shown_count" => 0,
+          "total_count" => 0,
+          "ranking_cutoff" => nil,
+          "registry_version" => 1,
+          "scoring_version" => "test",
+          "thinning_version" => "test",
+          "generated_at" => DateTime.to_iso8601(now)
+        },
+        "filters" => %{
+          "countries_regions" => [],
+          "sectors" => [],
+          "severities" => ["low", "medium", "high", "critical"],
+          "event_types" => []
+        }
+      }
+    })
+
+    assert {:ok, result} = Snapshots.build_candidate()
+    assert result.destination == Path.join([artifact_root, "candidates", "v2", "public"])
+
+    manifest =
+      result.destination
+      |> Path.join("latest/manifest.json")
+      |> File.read!()
+      |> Jason.decode!()
+
+    assert manifest["objects"]["map_events"]["en"] == "public/v2/en/map/events.json"
+
+    map =
+      result.destination
+      |> Path.join("v2/en/map/events.json")
+      |> File.read!()
+      |> Jason.decode!()
+
+    assert [%{"id" => "semiconductor_export_controls_seed"}] = map["data"]["events"]
+
+    assert [%{"event_id" => "semiconductor_export_controls_seed"}] =
+             map["data"]["breaking_market_events"]
+
+    assert Enum.map(map["data"]["breaking_market_map"]["map_points"], & &1["area_key"]) == [
+             "USA",
+             "CHN"
+           ]
+
+    assert map["data"]["breaking_market_map"]["shown_count"] == 2
+    assert "semiconductors" in map["data"]["filters"]["sectors"]
+    assert "trade_policy" in map["data"]["filters"]["event_types"]
+
+    assert "source_linked_news" in hd(map["data"]["breaking_market_map"]["map_points"])[
+             "score_reason_codes"
+           ]
+
+    assert :ok = Snapshots.validate_snapshot_tree(result.destination)
+  end
+
   test "snapshot tree validation rejects public operational status snapshots", %{
     published_root: root
   } do

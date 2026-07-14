@@ -26,6 +26,9 @@ defmodule StonksBackend.JobsSchedulerTest do
         yield_curve_history_enabled: true,
         yield_curve_history_months: 24,
         shorts_ingestion_enabled: true,
+        earnings_calendar_ingestion_enabled: true,
+        earnings_calendar_refresh_seconds: 86_400,
+        earnings_calendar_horizon: "12month",
         market_data_scheduled_refresh_enabled: true,
         market_data_refresh_symbol_list: [],
         market_data_refresh_spread_minutes: 240,
@@ -186,10 +189,12 @@ defmodule StonksBackend.JobsSchedulerTest do
             news_source_refresh_seconds: 0,
             news_pipeline_runtime_enabled: true,
             shorts_ingestion_enabled: false,
+            earnings_calendar_ingestion_enabled: false,
             yield_curve_history_enabled: false,
             trump_disclosure_sec_poll_seconds: 0,
             trump_disclosure_oge_poll_seconds: 0,
-            instrument_universe_refresh_seconds: 0
+            instrument_universe_refresh_seconds: 0,
+            ticker_fundamentals_refresh_seconds: 0
           ),
         enqueue_fun: enqueue
       )
@@ -241,6 +246,30 @@ defmodule StonksBackend.JobsSchedulerTest do
     assert metadata.job_group == "shorts"
     assert metadata.provider_key == "public_web"
     assert metadata.run_after == ~U[2026-07-02 22:09:00Z]
+  end
+
+  test "earnings calendar specs schedule Alpha Vantage provider refreshes" do
+    specs =
+      Scheduler.earnings_calendar_job_specs(
+        now: ~U[2026-07-05 12:00:00Z],
+        settings:
+          settings(
+            earnings_calendar_refresh_seconds: 86_400,
+            earnings_calendar_horizon: "12month"
+          )
+      )
+
+    assert [
+             %{
+               job_type: "calendar.alpha_vantage_earnings",
+               idempotency_key: "calendar:alpha-vantage-earnings:12month:20639",
+               payload: %{"horizon" => "12month"},
+               job_group: "market_data",
+               priority: 62,
+               provider_key: "alpha_vantage",
+               run_after: %DateTime{}
+             }
+           ] = specs
   end
 
   test "market history specs stagger rolling refreshes after US close" do

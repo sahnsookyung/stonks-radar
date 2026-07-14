@@ -224,7 +224,7 @@ defmodule StonksBackend.Accounts do
           and provider = 'google'
           and used_at is null
           and expires_at > now()
-        returning state_hash, nonce_hash, redirect_to
+        returning state_hash, nonce_hash, redirect_to, purpose
         """,
         [Crypto.hash_secret(state)]
       )
@@ -297,6 +297,58 @@ defmodule StonksBackend.Accounts do
     end
   end
 
+  def upsert_google_member_user(profile) when is_map(profile) do
+    email = profile |> Map.get("email", "") |> normalize_email()
+    subject = profile |> Map.get("sub", "") |> to_string() |> String.trim()
+
+    if email == "" or subject == "" or not google_email_verified?(profile["email_verified"]) do
+      {:error, :google_account_not_authorized}
+    else
+      user =
+        Sql.one(
+          """
+          insert into app_user(
+            email, password_hash, role, active, totp_required,
+            auth_provider, external_subject, last_login_at, auth_metadata
+          )
+          values ($1, $2, 'member', true, false, 'google', $3, now(), $4::jsonb)
+          on conflict (email) do update set
+            role = case
+              when app_user.role in ('owner','admin','editor','viewer') then app_user.role
+              else 'member'
+            end,
+            auth_provider = 'google',
+            external_subject = excluded.external_subject,
+            active = true,
+            last_login_at = now(),
+            auth_metadata = excluded.auth_metadata,
+            updated_at = now()
+          returning id, email, role
+          """,
+          [
+            email,
+            "oauth:google:#{Crypto.hash_secret(subject)}",
+            subject,
+            Jason.encode!(%{
+              "name" => profile["name"],
+              "picture" => profile["picture"],
+              "email_verified" => profile["email_verified"]
+            })
+          ]
+        )
+
+      if user, do: {:ok, user}, else: {:error, :google_user_upsert_failed}
+    end
+  end
+
+  def upsert_google_user(profile, "admin"), do: upsert_google_admin_user(profile)
+  def upsert_google_user(profile, "member"), do: upsert_google_member_user(profile)
+  def upsert_google_user(_profile, _purpose), do: {:error, :invalid_oauth_state}
+
+  def oauth_purpose_enabled?("admin"), do: Settings.google_oauth_enabled?()
+  def oauth_purpose_enabled?("member"), do: Settings.google_member_oauth_enabled?()
+  def oauth_purpose_enabled?(_purpose), do: false
+
   def google_config do
     enabled = Settings.google_oauth_enabled?()
 
@@ -323,6 +375,25 @@ defmodule StonksBackend.Accounts do
       @admin_root_path
     end
   end
+
+  def safe_member_redirect_path(path) do
+    path =
+      (path || "/en/tickers/NVDA")
+      |> to_string()
+      |> String.slice(0, @max_redirect_path_chars)
+      |> String.trim()
+
+    if path in ["/en", "/ko"] or String.starts_with?(path, "/en/") or
+         String.starts_with?(path, "/ko/") do
+      path
+    else
+      "/en/tickers/NVDA"
+    end
+  end
+
+  def safe_oauth_redirect_path(path, "admin"), do: safe_admin_redirect_path(path)
+  def safe_oauth_redirect_path(path, "member"), do: safe_member_redirect_path(path)
+  def safe_oauth_redirect_path(_path, _purpose), do: "/en/tickers/NVDA"
 
   def google_redirect_uri do
     base =

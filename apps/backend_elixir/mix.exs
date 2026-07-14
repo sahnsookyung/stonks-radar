@@ -46,6 +46,7 @@ defmodule StonksBackend.MixProject do
       {:nimble_csv, "~> 1.2"},
       {:sweet_xml, "~> 0.7"},
       {:swoosh, "~> 1.17"},
+      {:gen_smtp, "~> 1.3"},
       {:jsv, "~> 0.9"},
       {:broadway, "~> 1.2"},
       {:telemetry_metrics, "~> 1.0"},

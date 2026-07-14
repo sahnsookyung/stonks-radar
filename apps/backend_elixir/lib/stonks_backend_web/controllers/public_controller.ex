@@ -1,7 +1,7 @@
 defmodule StonksBackendWeb.PublicController do
   use StonksBackendWeb, :controller
 
-  alias StonksBackend.{MarketData, Sources, Sql}
+  alias StonksBackend.{MarketData, SnapshotReadiness, Sources, Sql}
 
   @disclosure_sources ["OGE", "SEC"]
   @public_search_limit 20
@@ -16,6 +16,16 @@ defmodule StonksBackendWeb.PublicController do
       public_read_path: "snapshot-first",
       time: DateTime.utc_now() |> DateTime.to_iso8601()
     })
+  end
+
+  def readiness(conn, _params) do
+    readiness = SnapshotReadiness.current()
+    status = if readiness.status == "unavailable", do: 503, else: 200
+
+    conn
+    |> put_public_status_headers()
+    |> put_status(status)
+    |> json(readiness)
   end
 
   def snapshot_manifest_proxy(conn, _params) do

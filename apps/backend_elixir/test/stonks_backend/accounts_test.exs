@@ -204,4 +204,18 @@ defmodule StonksBackend.AccountsTest do
     long_path = "/admin/" <> String.duplicate("a", 300)
     assert String.length(Accounts.safe_admin_redirect_path(long_path)) == 256
   end
+
+  test "member OAuth uses the same provider credentials but keeps local redirects outside admin" do
+    Application.put_env(:stonks_backend, :settings,
+      ticker_member_features_enabled: "true",
+      google_oauth_client_id: "client-id",
+      google_oauth_client_secret: "client-secret"
+    )
+
+    assert Accounts.oauth_purpose_enabled?("member")
+    refute Accounts.oauth_purpose_enabled?("admin")
+    assert Accounts.safe_member_redirect_path("/ko/tickers/MSFT") == "/ko/tickers/MSFT"
+    assert Accounts.safe_member_redirect_path("/admin") == "/en/tickers/NVDA"
+    assert Accounts.safe_member_redirect_path("//evil.example") == "/en/tickers/NVDA"
+  end
 end

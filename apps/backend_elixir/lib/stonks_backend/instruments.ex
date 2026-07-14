@@ -1,13 +1,14 @@
 defmodule StonksBackend.Instruments do
   @moduledoc "Instrument search/resolve compatibility."
 
-  alias StonksBackend.{Settings, Sql, TrackedTickers}
+  alias StonksBackend.{InstrumentCache, Settings, Sql, TrackedTickers}
 
   @index_schema_version 1
   @index_last_updated_at "2026-05-25T00:00:00Z"
   @contexts ["HOLDING_ENTRY", "TAX_LOT", "BUILDER", "IMPORT_RECONCILIATION", "CSV_IMPORT"]
   @reference_regex ~r/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/
   @provider_cache_table :stonks_backend_instrument_provider_cache
+  @index_cache_ttl_ms 5 * 60 * 1_000
   @provider_source "provider_symbol_lookup"
   @public_symbol_directory_source "nasdaq_trader_symbol_directory"
   @nasdaq_listed_url "https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt"
@@ -70,15 +71,25 @@ defmodule StonksBackend.Instruments do
         local_entries = instrument_index()
         local_results = search_entries(local_entries, normalized, filters)
 
+        provider_needed = provider_lookup_needed?(local_results, normalized, filters)
+
+        provider_entries =
+          if provider_needed, do: provider_lookup_entries(query, normalized), else: []
+
         results =
-          if provider_lookup_needed?(local_results, normalized, filters) do
-            (local_entries ++ provider_lookup_entries(query, normalized))
+          if provider_needed do
+            (local_entries ++ provider_entries)
             |> search_entries(normalized, filters)
           else
             local_results
           end
 
-        response(query, results, [], cache: "miss")
+        warnings =
+          if provider_needed and provider_entries == [],
+            do: ["Live instrument lookup is unavailable; showing the local index."],
+            else: []
+
+        response(query, results, warnings, cache: "shared")
     end
   end
 
@@ -197,6 +208,9 @@ defmodule StonksBackend.Instruments do
   end
 
   def refresh_index(payload) do
+    InstrumentCache.invalidate_index()
+    local_index = instrument_index()
+
     warm_queries =
       payload
       |> Map.get("symbols", default_provider_warm_symbols())
@@ -215,7 +229,7 @@ defmodule StonksBackend.Instruments do
        status: "refreshed",
        source: payload["source"],
        mode: payload["mode"],
-       local_index_count: length(instrument_index()),
+       local_index_count: length(local_index),
        provider_index_count: length(provider_hits),
        provider_lookup_enabled: provider_lookup_enabled?()
      }}
@@ -298,6 +312,11 @@ defmodule StonksBackend.Instruments do
   end
 
   defp instrument_index do
+    InstrumentCache.fetch_index(@index_cache_ttl_ms, &build_instrument_index/0)
+    |> elem(0)
+  end
+
+  defp build_instrument_index do
     (static_entries() ++ watchlist_entries() ++ db_entries())
     |> Enum.uniq_by(&normalize_symbol(&1.instrument_id <> ":" <> &1.listing_id))
   end
@@ -881,10 +900,7 @@ defmodule StonksBackend.Instruments do
   end
 
   defp cache_provider_entries(cache_key, entries, now) do
-    with {:ok, table} <- ensure_provider_cache() do
-      expires_at = now + provider_cache_ttl_ms()
-      :ets.insert(table, {cache_key, expires_at, entries})
-    end
+    InstrumentCache.put_provider(cache_key, now + provider_cache_ttl_ms(), entries)
   end
 
   defp fetch_provider_entries(query, normalized) do
@@ -1092,9 +1108,11 @@ defmodule StonksBackend.Instruments do
       _ ->
         entries = fetch_public_symbol_directory()
 
-        with {:ok, table} <- ensure_provider_cache() do
-          :ets.insert(table, {cache_key, now + public_symbol_directory_cache_ttl_ms(), entries})
-        end
+        InstrumentCache.put_provider(
+          cache_key,
+          now + public_symbol_directory_cache_ttl_ms(),
+          entries
+        )
 
         entries
     end

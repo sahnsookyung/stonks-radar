@@ -10,6 +10,8 @@ defmodule StonksBackend.Jobs.Scheduler do
 
     leading_specs =
       snapshot_refresh_job_specs(opts) ++
+        ticker_member_job_specs(opts) ++
+        earnings_calendar_job_specs(opts) ++
         market_history_job_specs(opts) ++
         yield_curve_history_job_specs(opts) ++
         instrument_search_index_job_specs(opts) ++
@@ -27,6 +29,51 @@ defmodule StonksBackend.Jobs.Scheduler do
       end)
 
     enqueue_specs(trump_disclosure_job_specs(opts), enqueue, ids)
+  end
+
+  def ticker_member_job_specs(opts \\ []) do
+    settings = Keyword.get(opts, :settings)
+
+    if scheduler_enabled?(settings) do
+      timestamp = DateTime.to_unix(now(opts))
+      fundamentals_seconds = int_setting(settings, :ticker_fundamentals_refresh_seconds, 86_400)
+      catch_up_window = div(timestamp, 3_600)
+
+      fundamentals =
+        if fundamentals_seconds > 0 do
+          [
+            %{
+              job_type: "ticker_fundamentals_refresh",
+              idempotency_key:
+                "ticker-fundamentals:#{div(timestamp, max(fundamentals_seconds, 3600))}",
+              payload: %{},
+              job_group: "default",
+              priority: 5
+            }
+          ]
+        else
+          []
+        end
+
+      alerts =
+        if truthy_setting?(settings, :ticker_member_features_enabled, false) do
+          [
+            %{
+              job_type: "ticker_alert_catch_up",
+              idempotency_key: "ticker-alert-catch-up:#{catch_up_window}",
+              payload: %{"watermark_window" => catch_up_window},
+              job_group: "default",
+              priority: 5
+            }
+          ]
+        else
+          []
+        end
+
+      fundamentals ++ alerts
+    else
+      []
+    end
   end
 
   def trump_disclosure_job_specs(opts \\ []) do
@@ -234,6 +281,40 @@ defmodule StonksBackend.Jobs.Scheduler do
     end
   end
 
+  def earnings_calendar_job_specs(opts \\ []) do
+    settings = Keyword.get(opts, :settings)
+    refresh_seconds = int_setting(settings, :earnings_calendar_refresh_seconds, 86_400)
+
+    if scheduler_enabled?(settings) and
+         truthy_setting?(settings, :earnings_calendar_ingestion_enabled, true) and
+         refresh_seconds > 0 do
+      refresh_seconds = max(3_600, refresh_seconds)
+      timestamp = DateTime.to_unix(now(opts))
+      window = div(timestamp, refresh_seconds)
+      window_start = DateTime.from_unix!(window * refresh_seconds)
+      horizon = setting(settings, :earnings_calendar_horizon, "12month")
+
+      [
+        %{
+          job_type: "calendar.alpha_vantage_earnings",
+          idempotency_key: "calendar:alpha-vantage-earnings:#{horizon}:#{window}",
+          payload: %{"horizon" => horizon},
+          job_group: "market_data",
+          priority: 62,
+          provider_key: "alpha_vantage",
+          run_after:
+            DateTime.add(
+              window_start,
+              stable_offset("calendar-alpha-vantage-earnings", min(refresh_seconds, 3_600)),
+              :second
+            )
+        }
+      ]
+    else
+      []
+    end
+  end
+
   def instrument_search_index_job_specs(opts \\ []) do
     settings = Keyword.get(opts, :settings)
     refresh_seconds = int_setting(settings, :instrument_universe_refresh_seconds, 14_400)
@@ -431,7 +512,7 @@ defmodule StonksBackend.Jobs.Scheduler do
       queue: spec.job_group,
       priority: spec.priority,
       idempotency_key: spec.idempotency_key,
-      provider_key: spec.provider_key,
+      provider_key: Map.get(spec, :provider_key),
       run_after: Map.get(spec, :run_after),
       depends_on_job_id: depends_on_job_id
     ]

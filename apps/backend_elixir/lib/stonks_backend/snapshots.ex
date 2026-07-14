@@ -1,7 +1,7 @@
 defmodule StonksBackend.Snapshots do
   @moduledoc "Snapshot candidate/publish compatibility for the local OCI volume model."
 
-  alias StonksBackend.{Repo, Settings, Sql, TrackedTickers}
+  alias StonksBackend.{EarningsCalendar, Repo, Settings, Sql, TrackedTickers}
   alias StonksBackend.Snapshots.{PublicGuards, SchemaResolver}
 
   @manifest_filename "manifest.json"
@@ -28,6 +28,23 @@ defmodule StonksBackend.Snapshots do
     "reference_entity" => "reference_entity_snapshot.schema.json",
     "scenario_basket" => "scenario_basket_snapshot.schema.json",
     "sector_page" => "sector_snapshot.schema.json"
+  }
+  @map_region_centroids %{
+    "USA" => %{label: "United States", latitude: 39.8283, longitude: -98.5795, priority: 95},
+    "CHN" => %{label: "China", latitude: 35.8617, longitude: 104.1954, priority: 92},
+    "EU" => %{label: "European Union", latitude: 50.1109, longitude: 8.6821, priority: 88},
+    "EUROZONE" => %{label: "Eurozone", latitude: 50.1109, longitude: 8.6821, priority: 86},
+    "KOR" => %{label: "South Korea", latitude: 35.9078, longitude: 127.7669, priority: 84},
+    "JPN" => %{label: "Japan", latitude: 36.2048, longitude: 138.2529, priority: 84},
+    "TWN" => %{label: "Taiwan", latitude: 23.6978, longitude: 120.9605, priority: 82},
+    "GBR" => %{label: "United Kingdom", latitude: 55.3781, longitude: -3.436, priority: 78},
+    "BRA" => %{label: "Brazil", latitude: -14.235, longitude: -51.9253, priority: 76},
+    "MIDDLE_EAST_OPEC_GCC" => %{
+      label: "Middle East / OPEC+ / GCC",
+      latitude: 24.7136,
+      longitude: 46.6753,
+      priority: 86
+    }
   }
 
   def published_root, do: Settings.get(:published_snapshot_dir, "apps/web/public/public")
@@ -92,6 +109,7 @@ defmodule StonksBackend.Snapshots do
       corrections: corrections(),
       generated_at: generated_at,
       hard_expires_at: DateTime.add(generated_at, 7, :day),
+      seed_manifest: seed_manifest,
       stale_after: DateTime.add(generated_at, 12, :hour),
       version: version
     }
@@ -214,7 +232,7 @@ defmodule StonksBackend.Snapshots do
   defp apply_template_runtime_data(
          %{"object_type" => "home"} = snapshot,
          _object_key,
-         _locale,
+         locale,
          context
        ) do
     update_in(snapshot, ["data"], fn data ->
@@ -222,7 +240,8 @@ defmodule StonksBackend.Snapshots do
       |> ensure_map()
       |> maybe_put_existing("generated_label", iso8601(context.generated_at))
       |> update_snapshot_health(context)
-      |> enrich_home_news_data(context.generated_at)
+      |> enrich_home_news_data(context.generated_at, locale, context)
+      |> EarningsCalendar.enrich_home_snapshot_data()
       |> StonksBackend.Shorts.enrich_home_snapshot_data()
       |> maybe_enrich_yield_curves()
     end)
@@ -254,13 +273,26 @@ defmodule StonksBackend.Snapshots do
   defp apply_template_runtime_data(
          %{"object_type" => "map_events"} = snapshot,
          _object_key,
-         _locale,
+         locale,
          context
        ) do
     update_in(snapshot, ["data"], fn data ->
       data
       |> ensure_map()
-      |> enrich_map_news_data(context.generated_at)
+      |> enrich_map_news_data(context.generated_at, locale, context)
+    end)
+  end
+
+  defp apply_template_runtime_data(
+         %{"object_type" => "calendar_upcoming"} = snapshot,
+         _object_key,
+         _locale,
+         _context
+       ) do
+    update_in(snapshot, ["data"], fn data ->
+      data
+      |> ensure_map()
+      |> EarningsCalendar.enrich_snapshot_data()
     end)
   end
 
@@ -325,7 +357,7 @@ defmodule StonksBackend.Snapshots do
     end
   end
 
-  defp enrich_home_news_data(data, generated_at) do
+  defp enrich_home_news_data(data, generated_at, locale, context) do
     data
     |> update_event_collection("breaking_market_events", "breaking_latest", generated_at, false)
     |> update_alternative_signal_window("breaking_market_news", "breaking_latest", generated_at)
@@ -337,20 +369,521 @@ defmodule StonksBackend.Snapshots do
       |> sanitize_regional_briefs(generated_at)
       |> refresh_breaking_market_map_counts()
     end)
+    |> backfill_home_map_news_from_index(locale, context, generated_at, "analysis")
   end
 
-  defp enrich_map_news_data(data, generated_at) do
+  defp enrich_map_news_data(data, generated_at, locale, context) do
     data
-    |> update_event_collection("events", "breaking_latest", generated_at, false)
-    |> update_event_collection("breaking_market_events", "breaking_latest", generated_at, false)
+    |> update_event_collection("events", "search_archive", generated_at, false)
+    |> update_event_collection("breaking_market_events", "search_archive", generated_at, false)
     |> update_in(["breaking_market_map"], fn map ->
       map
       |> ensure_map()
-      |> update_event_collection("events", "breaking_latest", generated_at, false)
+      |> update_event_collection("events", "search_archive", generated_at, false)
       |> filter_map_points_for_allowed_events(generated_at)
       |> sanitize_regional_briefs(generated_at)
       |> refresh_breaking_market_map_counts()
     end)
+    |> backfill_map_news_from_index(locale, context, generated_at, "search_archive")
+  end
+
+  defp backfill_map_news_from_index(data, locale, context, generated_at, window_kind) do
+    news_events = news_index_events(locale, context, generated_at, window_kind)
+
+    case news_events_to_map_payload(news_events, generated_at) do
+      %{public_events: [], breaking_events: [], map_points: []} ->
+        data
+
+      payload ->
+        data
+        |> maybe_put_non_empty_list("events", payload.public_events)
+        |> maybe_put_non_empty_list("breaking_market_events", payload.breaking_events)
+        |> update_in(["breaking_market_map"], fn map ->
+          map
+          |> ensure_map()
+          |> maybe_put_non_empty_list("events", payload.breaking_events)
+          |> maybe_put_non_empty_list("map_points", payload.map_points)
+          |> maybe_put_existing("generated_at", iso8601(generated_at))
+          |> refresh_breaking_market_map_counts()
+        end)
+        |> refresh_map_filters(payload.public_events, payload.map_points)
+    end
+  end
+
+  defp backfill_home_map_news_from_index(data, locale, context, generated_at, window_kind) do
+    news_events = news_index_events(locale, context, generated_at, window_kind)
+
+    case news_events_to_map_payload(news_events, generated_at) do
+      %{breaking_events: [], map_points: []} ->
+        data
+
+      payload ->
+        data
+        |> maybe_put_non_empty_list("breaking_market_events", payload.breaking_events)
+        |> update_in(["breaking_market_map"], fn map ->
+          map
+          |> ensure_map()
+          |> maybe_put_non_empty_list("events", payload.breaking_events)
+          |> maybe_put_non_empty_list("map_points", payload.map_points)
+          |> maybe_put_existing("generated_at", iso8601(generated_at))
+          |> refresh_breaking_market_map_counts()
+        end)
+    end
+  end
+
+  defp news_index_events(locale, context, generated_at, window_kind) do
+    with %{} = manifest <- Map.get(context, :seed_manifest),
+         source_path when is_binary(source_path) <-
+           get_in(manifest, ["objects", "news_index", locale]),
+         {:ok, relative} <- manifest_snapshot_relative_path(source_path),
+         {:ok, %{"data" => data}} <- read_snapshot(Path.join(published_root(), relative)) do
+      data
+      |> enrich_news_list_data("news_index", generated_at)
+      |> Map.get("events", [])
+      |> filter_news_items(window_kind, generated_at)
+    else
+      _ -> []
+    end
+  end
+
+  defp news_events_to_map_payload(events, generated_at) do
+    events
+    |> List.wrap()
+    |> Enum.filter(&is_map/1)
+    |> Enum.reduce(%{public_events: [], breaking_events: [], map_points: []}, fn event, acc ->
+      points = news_event_map_points(event, generated_at)
+
+      case {points, public_event_from_news_event(event, points),
+            breaking_event_from_news_event(event, points, generated_at)} do
+        {[], _public_event, _breaking_event} ->
+          acc
+
+        {_points, nil, _breaking_event} ->
+          acc
+
+        {_points, _public_event, nil} ->
+          acc
+
+        {_points, public_event, breaking_event} ->
+          %{
+            acc
+            | public_events: [public_event | acc.public_events],
+              breaking_events: [breaking_event | acc.breaking_events],
+              map_points: acc.map_points ++ points
+          }
+      end
+    end)
+    |> then(fn payload ->
+      %{
+        public_events: Enum.reverse(payload.public_events),
+        breaking_events: Enum.reverse(payload.breaking_events),
+        map_points: payload.map_points
+      }
+    end)
+  end
+
+  defp public_event_from_news_event(event, [primary_point | _points]) do
+    event_id = news_event_id(event)
+    timestamp = news_event_source_timestamp(event)
+
+    if event_id == "" or timestamp == "" do
+      nil
+    else
+      %{
+        "id" => event_id,
+        "title" => to_string(event["title"] || "Source-linked market event"),
+        "summary" => to_string(event["summary"] || ""),
+        "why_it_matters" => to_string(event["summary"] || ""),
+        "occurred_at" => timestamp,
+        "published_at" => timestamp,
+        "country_region_keys" => news_event_region_keys(event),
+        "sector_keys" => news_event_sector_keys(event),
+        "event_type" => to_string(event["event_type"] || "source_linked_news"),
+        "severity" => severity_value(event["severity"]),
+        "confidence" => bounded_float(event["confidence"], 0.5),
+        "source_strength" => trust_tier(event),
+        "freshness" => freshness_value(event["freshness"]),
+        "evidence_count" => source_count(event),
+        "latitude" => primary_point["latitude"],
+        "longitude" => primary_point["longitude"],
+        "affected_objects" => news_event_ticker_symbols(event),
+        "source_links" => public_source_links(event),
+        "correction_status" => "none"
+      }
+    end
+  end
+
+  defp public_event_from_news_event(_event, _points), do: nil
+
+  defp breaking_event_from_news_event(event, points, generated_at) do
+    event_id = news_event_id(event)
+    timestamp = news_event_source_timestamp(event)
+
+    if event_id == "" or timestamp == "" do
+      nil
+    else
+      %{
+        "event_id" => event_id,
+        "title" => to_string(event["title"] || "Source-linked market event"),
+        "summary" => to_string(event["summary"] || ""),
+        "source_url" => primary_source_url(event),
+        "source_published_at" => timestamp,
+        "observed_at" => news_event_observed_timestamp(event, timestamp),
+        "verified_at" => iso8601(generated_at),
+        "freshness_confidence" => bounded_float(event["confidence"], 0.5),
+        "urgency_score" => bounded_int(event["breaking_score"], 50, 0, 100),
+        "severity" => severity_value(event["severity"]),
+        "trust_tier" => trust_tier(event),
+        "discovery_only" =>
+          truthy?(event["discovery_only"]) || event["item_kind"] == "source_discovery",
+        "review_state" => review_state(event),
+        "citation_ids" => citation_ids(event),
+        "retention_class" => "summary_only",
+        "geo_points" => points,
+        "geo_confidence" => geo_confidence(points, event),
+        "score_reason_codes" => score_reason_codes(event),
+        "dedupe_key" => event_id,
+        "label" => breaking_label(event),
+        "tickers" =>
+          sanitize_news_refs(event["tickers"], [
+            "symbol",
+            "name",
+            "exchange",
+            "relationship",
+            "confidence"
+          ]),
+        "regions" =>
+          sanitize_news_refs(event["regions"], ["key", "name", "relation", "confidence"]),
+        "topics" => sanitize_news_refs(event["topics"], ["key", "label", "confidence"]),
+        "source_count" => source_count(event)
+      }
+      |> drop_nil_values()
+    end
+  end
+
+  defp news_event_map_points(event, generated_at) do
+    event_id = news_event_id(event)
+    timestamp = news_event_source_timestamp(event)
+    observed_at = news_event_observed_timestamp(event, timestamp)
+    source_url = primary_source_url(event)
+    reason_codes = score_reason_codes(event)
+    source_count = source_count(event)
+    severity = severity_value(event["severity"])
+    urgency = bounded_int(event["breaking_score"], 50, 0, 100)
+
+    event
+    |> Map.get("regions", [])
+    |> List.wrap()
+    |> Enum.filter(&is_map/1)
+    |> best_mappable_regions()
+    |> Enum.map(fn region ->
+      key = to_string(region["key"] || "")
+      centroid = @map_region_centroids[key]
+
+      %{
+        "point_id" => "#{event_id}:#{key}:#{map_point_relation(region["relation"])}",
+        "event_id" => event_id,
+        "event_ids" => [event_id],
+        "title" => to_string(event["title"] || "Source-linked market event"),
+        "summary" => to_string(event["summary"] || ""),
+        "area_id" => key,
+        "area_key" => key,
+        "area_label" => to_string(region["name"] || centroid.label),
+        "relation" => map_point_relation(region["relation"]),
+        "latitude" => centroid.latitude,
+        "longitude" => centroid.longitude,
+        "severity" => severity,
+        "urgency_score" => urgency,
+        "source_published_at" => timestamp,
+        "observed_at" => if(observed_at == "", do: iso8601(generated_at), else: observed_at),
+        "source_url" => source_url,
+        "source_count" => source_count,
+        "geo_confidence" =>
+          bounded_float(region["confidence"], bounded_float(event["confidence"], 0.5)),
+        "area_priority" => centroid.priority,
+        "score_reason_codes" => reason_codes
+      }
+      |> drop_nil_values()
+    end)
+  end
+
+  defp best_mappable_regions(regions) do
+    regions
+    |> Enum.filter(fn region ->
+      Map.has_key?(@map_region_centroids, to_string(region["key"] || ""))
+    end)
+    |> Enum.group_by(&to_string(&1["key"] || ""))
+    |> Enum.map(fn {_key, candidates} ->
+      Enum.max_by(candidates, fn region ->
+        {region_relation_priority(region["relation"]), bounded_float(region["confidence"], 0.0)}
+      end)
+    end)
+    |> Enum.sort_by(fn region ->
+      key = to_string(region["key"] || "")
+
+      {-Map.fetch!(@map_region_centroids, key).priority,
+       -bounded_float(region["confidence"], 0.0), key}
+    end)
+  end
+
+  defp region_relation_priority("event_region"), do: 5
+  defp region_relation_priority("source_region"), do: 4
+  defp region_relation_priority("market_region"), do: 3
+  defp region_relation_priority("affected_region"), do: 2
+  defp region_relation_priority(_relation), do: 1
+
+  defp map_point_relation("event_region"), do: "event_location"
+  defp map_point_relation("source_region"), do: "source_region"
+  defp map_point_relation(_relation), do: "affected_market"
+
+  defp maybe_put_non_empty_list(data, key, values) do
+    current = Map.get(data, key, [])
+
+    if current == [] and values != [] do
+      Map.put(data, key, values)
+    else
+      data
+    end
+  end
+
+  defp refresh_map_filters(data, public_events, map_points) do
+    update_in(data, ["filters"], fn filters ->
+      filters = ensure_map(filters)
+
+      filters
+      |> put_sorted_filter(
+        "countries_regions",
+        map_filter_country_keys(public_events, map_points)
+      )
+      |> put_sorted_filter("sectors", Enum.flat_map(public_events, &List.wrap(&1["sector_keys"])))
+      |> put_sorted_filter("event_types", Enum.map(public_events, & &1["event_type"]))
+      |> put_sorted_filter("severities", Enum.map(public_events, & &1["severity"]))
+    end)
+  end
+
+  defp put_sorted_filter(filters, key, values) do
+    merged =
+      filters
+      |> Map.get(key, [])
+      |> List.wrap()
+      |> Kernel.++(List.wrap(values))
+      |> Enum.map(&to_string/1)
+      |> Enum.reject(&(&1 == ""))
+      |> Enum.uniq()
+      |> Enum.sort()
+
+    Map.put(filters, key, merged)
+  end
+
+  defp map_filter_country_keys(public_events, map_points) do
+    Enum.flat_map(public_events, &List.wrap(&1["country_region_keys"])) ++
+      Enum.map(map_points, & &1["area_key"])
+  end
+
+  defp news_event_id(event), do: to_string(event["event_id"] || event["id"] || "")
+
+  defp news_event_source_timestamp(event) do
+    [
+      event["source_published_at"],
+      event["published_at"],
+      event["last_seen_at"],
+      event["first_seen_at"]
+    ]
+    |> Enum.find_value(&non_empty_string/1)
+    |> to_string()
+  end
+
+  defp news_event_observed_timestamp(event, fallback) do
+    [
+      event["observed_at"],
+      event["last_seen_at"],
+      event["first_seen_at"],
+      fallback
+    ]
+    |> Enum.find_value(&non_empty_string/1)
+    |> to_string()
+  end
+
+  defp non_empty_string(value) when is_binary(value) do
+    value = String.trim(value)
+    if value == "", do: nil, else: value
+  end
+
+  defp non_empty_string(_value), do: nil
+
+  defp news_event_region_keys(event) do
+    event
+    |> Map.get("regions", [])
+    |> List.wrap()
+    |> Enum.map(&to_string(&1["key"] || ""))
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.uniq()
+  end
+
+  defp news_event_sector_keys(event) do
+    event
+    |> Map.get("topics", [])
+    |> List.wrap()
+    |> Enum.map(&topic_sector_key/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.uniq()
+  end
+
+  defp topic_sector_key(%{"key" => "energy"}), do: "oil-energy"
+  defp topic_sector_key(%{"key" => "semiconductors"}), do: "semiconductors"
+  defp topic_sector_key(%{"key" => "space"}), do: "space"
+  defp topic_sector_key(%{"key" => "quantum"}), do: "quantum"
+  defp topic_sector_key(%{"key" => "big_tech"}), do: "big-tech"
+  defp topic_sector_key(%{"key" => key}), do: to_string(key)
+  defp topic_sector_key(_topic), do: ""
+
+  defp news_event_ticker_symbols(event) do
+    event
+    |> Map.get("tickers", [])
+    |> List.wrap()
+    |> Enum.map(&to_string(&1["symbol"] || ""))
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.uniq()
+  end
+
+  defp public_source_links(event) do
+    event
+    |> Map.get("source_links", [])
+    |> List.wrap()
+    |> Enum.filter(&is_map/1)
+    |> Enum.map(fn link ->
+      link
+      |> Map.take(["label", "evidence_id", "url", "source_key", "policy_version"])
+      |> Map.put_new("label", to_string(link["title"] || link["source_key"] || "Source"))
+      |> Map.put_new("source_key", to_string(link["source_key"] || "public_source"))
+      |> Map.put_new("policy_version", to_int(link["policy_version"], 1))
+    end)
+    |> Enum.filter(&(is_binary(&1["url"]) and String.trim(&1["url"]) != ""))
+  end
+
+  defp primary_source_url(event) do
+    event
+    |> Map.get("source_links", [])
+    |> List.wrap()
+    |> Enum.find_value(fn link ->
+      if is_map(link), do: non_empty_string(link["url"]), else: nil
+    end)
+  end
+
+  defp citation_ids(event) do
+    event
+    |> Map.get("source_links", [])
+    |> List.wrap()
+    |> Enum.filter(&is_map/1)
+    |> Enum.map(&to_string(&1["evidence_id"] || ""))
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.uniq()
+  end
+
+  defp trust_tier(%{"trust_tier" => tier}) when is_binary(tier), do: news_trust_tier(tier)
+
+  defp trust_tier(event) do
+    event
+    |> Map.get("source_links", [])
+    |> List.wrap()
+    |> Enum.filter(&is_map/1)
+    |> Enum.map(&news_trust_tier(&1["trust_tier"]))
+    |> Enum.min_by(&trust_tier_rank/1, fn -> "T3_REVIEWED_PUBLIC_SOURCE" end)
+  end
+
+  defp news_trust_tier(tier)
+       when tier in [
+              "T0_OFFICIAL",
+              "T1_REGULATED_FILING",
+              "T2_REPUTABLE_MEDIA",
+              "T3_REVIEWED_PUBLIC_SOURCE",
+              "T4_WEAK_SIGNAL",
+              "T5_UNREVIEWED",
+              "T6_BLOCKED"
+            ],
+       do: tier
+
+  defp news_trust_tier(_tier), do: "T3_REVIEWED_PUBLIC_SOURCE"
+
+  defp trust_tier_rank("T0_OFFICIAL"), do: 0
+  defp trust_tier_rank("T1_REGULATED_FILING"), do: 1
+  defp trust_tier_rank("T2_REPUTABLE_MEDIA"), do: 2
+  defp trust_tier_rank("T3_REVIEWED_PUBLIC_SOURCE"), do: 3
+  defp trust_tier_rank("T4_WEAK_SIGNAL"), do: 4
+  defp trust_tier_rank("T5_UNREVIEWED"), do: 5
+  defp trust_tier_rank("T6_BLOCKED"), do: 6
+  defp trust_tier_rank(_tier), do: 7
+
+  defp review_state(%{"claim_level" => "published"}), do: "published"
+  defp review_state(%{"claim_level" => "reviewed"}), do: "reviewed"
+
+  defp review_state(%{"review_state" => state})
+       when state in ["approved", "reviewed", "published"], do: state
+
+  defp review_state(_event), do: "approved"
+
+  defp breaking_label(%{"freshness" => "stale"}), do: "stale"
+
+  defp breaking_label(%{"breaking_score" => score}) when is_integer(score) and score >= 80,
+    do: "breaking"
+
+  defp breaking_label(%{"breaking_score" => score}) when is_integer(score) and score >= 60,
+    do: "developing"
+
+  defp breaking_label(_event), do: "latest"
+
+  defp score_reason_codes(event) do
+    base = ["source_linked_news", "region_mapped"]
+    source_code = if source_count(event) >= 2, do: ["multi_source"], else: []
+    trust_code = if trust_tier_rank(trust_tier(event)) <= 1, do: ["high_trust_source"], else: []
+    Enum.uniq(base ++ source_code ++ trust_code)
+  end
+
+  defp sanitize_news_refs(values, allowed_keys) do
+    values
+    |> List.wrap()
+    |> Enum.filter(&is_map/1)
+    |> Enum.map(&Map.take(&1, allowed_keys))
+  end
+
+  defp source_count(event),
+    do: bounded_int(event["source_count"], length(public_source_links(event)), 0, 10_000)
+
+  defp geo_confidence(points, event) do
+    points
+    |> Enum.map(&bounded_float(&1["geo_confidence"], 0.0))
+    |> Enum.max(fn -> bounded_float(event["confidence"], 0.5) end)
+  end
+
+  defp severity_value(value) when value in ["low", "medium", "high", "critical"], do: value
+  defp severity_value(_value), do: "medium"
+
+  defp freshness_value(value) when value in ["fresh", "watch", "stale", "unsupported"], do: value
+  defp freshness_value(_value), do: "watch"
+
+  defp bounded_float(value, default) do
+    value = to_float(value)
+
+    cond do
+      not is_number(value) -> default
+      value < 0 -> 0.0
+      value > 1 -> 1.0
+      true -> value
+    end
+  end
+
+  defp bounded_int(value, default, min, max) do
+    value = to_int(value, default)
+
+    cond do
+      value < min -> min
+      value > max -> max
+      true -> value
+    end
+  end
+
+  defp drop_nil_values(map) do
+    Map.reject(map, fn {_key, value} -> is_nil(value) end)
   end
 
   defp update_event_collection(data, key, window_kind, generated_at, enrich?) do

@@ -3,6 +3,7 @@ defmodule StonksBackend.Jobs.Workers.GenericWorker do
   use Oban.Worker, max_attempts: 5
 
   alias StonksBackend.{
+    EarningsCalendar,
     Instruments,
     MarketData,
     News,
@@ -11,6 +12,9 @@ defmodule StonksBackend.Jobs.Workers.GenericWorker do
     Snapshots,
     Sources,
     Sql,
+    TickerAlerts,
+    TickerFundamentals,
+    TickerNotifications,
     YieldCurves
   }
 
@@ -116,6 +120,7 @@ defmodule StonksBackend.Jobs.Workers.GenericWorker do
       "snapshot_refresh" -> Snapshots.refresh(payload)
       "news.publish_snapshots" -> Snapshots.refresh(payload)
       "instrument_search_index_update" -> Instruments.refresh_index(payload)
+      "calendar.alpha_vantage_earnings" -> EarningsCalendar.fetch_earnings_calendar(payload)
       "market_data.refresh_history" -> MarketData.refresh_history(payload)
       "yield_curves.refresh_history" -> YieldCurves.refresh_history(payload)
       "trump_disclosures_ingest" -> Sources.ingest_disclosures(payload)
@@ -137,6 +142,9 @@ defmodule StonksBackend.Jobs.Workers.GenericWorker do
       "news.translate_summary" -> News.translate_summary(payload)
       "news.rebuild_search_index" -> News.rebuild_search_index(payload)
       "news.backfill_source" -> News.backfill_source(payload)
+      "ticker_alert_email" -> TickerNotifications.deliver_event(payload)
+      "ticker_alert_catch_up" -> {:ok, TickerAlerts.catch_up(payload)}
+      "ticker_fundamentals_refresh" -> TickerFundamentals.refresh(payload)
       _ -> {:discard, "unsupported Elixir job type: #{job_type}"}
     end
   end

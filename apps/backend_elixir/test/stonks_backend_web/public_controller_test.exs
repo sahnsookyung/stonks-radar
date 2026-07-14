@@ -36,6 +36,25 @@ defmodule StonksBackendWeb.PublicControllerTest do
            }
   end
 
+  test "public readiness exposes only snapshot freshness metadata" do
+    conn =
+      :get
+      |> conn("/api/public/readiness")
+      |> dispatch()
+
+    assert conn.status in [200, 503]
+    assert get_resp_header(conn, "cache-control") == ["no-store"]
+    body = Jason.decode!(conn.resp_body)
+
+    assert Map.keys(body) |> Enum.sort() ==
+             ~w(age_seconds generated_at hard_expires_at reason stale_after status version)
+             |> Enum.sort()
+
+    assert body["status"] in ["ready", "degraded", "unavailable"]
+    refute Map.has_key?(body, "providers")
+    refute Map.has_key?(body, "sources")
+  end
+
   test "public status is not exposed" do
     assert_raise Phoenix.Router.NoRouteError, fn ->
       :get
