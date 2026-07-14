@@ -19,8 +19,12 @@ defmodule StonksBackend.Jobs.RuntimeLock do
       %{"scope_type" => normalized_type, "scope_key" => normalized_key} ->
         Sql.scalar(
           """
-          insert into job_runtime_lock(scope_type, scope_key, owner, lease_expires_at)
-          values ($1, $2, $3, now() + ($4 || ' seconds')::interval)
+          insert into job_runtime_lock(
+            scope_type, scope_key, owner, lease_expires_at, inserted_at, updated_at
+          )
+          values (
+            $1, $2, $3, now() + ($4::integer * interval '1 second'), now(), now()
+          )
           on conflict (scope_type, scope_key)
           do update set owner = excluded.owner,
                         lease_expires_at = excluded.lease_expires_at,

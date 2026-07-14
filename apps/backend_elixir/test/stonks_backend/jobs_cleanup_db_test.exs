@@ -2,6 +2,7 @@ defmodule StonksBackend.JobsCleanupDbTest do
   use ExUnit.Case, async: false
 
   alias StonksBackend.Jobs
+  alias StonksBackend.Jobs.RuntimeLock
   alias StonksBackend.Jobs.Workers.GenericWorker
   alias StonksBackend.Repo
 
@@ -22,6 +23,23 @@ defmodule StonksBackend.JobsCleanupDbTest do
     assert Jobs.discard_stale_snapshot_refresh_jobs("snapshot-refresh:101") == 1
     assert Repo.get!(Oban.Job, stale.id).state == "discarded"
     assert Repo.get!(Oban.Job, current.id).state == "available"
+  end
+
+  @tag :db
+  test "runtime locks acquire, reject contention, and release" do
+    {:ok, _repo_pid} = start_repo()
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
+
+    on_exit(fn ->
+      if Process.whereis(Repo) do
+        Ecto.Adapters.SQL.Sandbox.checkin(Repo)
+      end
+    end)
+
+    assert RuntimeLock.acquire("global", "snapshots", "oban:1", 900)
+    refute RuntimeLock.acquire("global", "snapshots", "oban:2", 900)
+    assert RuntimeLock.release("global", "snapshots", "oban:1").num_rows == 1
+    assert RuntimeLock.acquire("global", "snapshots", "oban:2", 900)
   end
 
   defp insert_snapshot_job!(idempotency_key) do
