@@ -42,6 +42,40 @@ defmodule StonksBackend.JobsCleanupDbTest do
     assert RuntimeLock.acquire("global", "snapshots", "oban:2", 900)
   end
 
+  @tag :db
+  test "completed snapshot refresh windows remain idempotent" do
+    {:ok, _repo_pid} = start_repo()
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
+
+    start_supervised!(
+      {Oban, repo: Repo, queues: false, plugins: false, peer: false, testing: :disabled}
+    )
+
+    on_exit(fn ->
+      if Process.whereis(Repo) do
+        Ecto.Adapters.SQL.Sandbox.checkin(Repo)
+      end
+    end)
+
+    opts = [
+      queue: "snapshots",
+      idempotency_key: "snapshot-refresh:101",
+      unique_states: [:available, :scheduled, :executing, :completed]
+    ]
+
+    assert {:ok, first_id} = Jobs.enqueue("snapshot_refresh", %{}, opts)
+    assert {:ok, {:oban, job_id}} = Jobs.parse_external_id(first_id)
+
+    job = Repo.get!(Oban.Job, job_id)
+
+    job
+    |> Ecto.Changeset.change(state: "completed", completed_at: DateTime.utc_now())
+    |> Repo.update!()
+
+    assert {:ok, ^first_id} = Jobs.enqueue("snapshot_refresh", %{}, opts)
+    assert Repo.aggregate(Oban.Job, :count, :id) == 1
+  end
+
   defp insert_snapshot_job!(idempotency_key) do
     args =
       Jobs.worker_args("snapshot_refresh", %{},

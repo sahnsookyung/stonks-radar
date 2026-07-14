@@ -104,7 +104,8 @@ defmodule StonksBackend.Jobs.Scheduler do
           idempotency_key: "snapshot-refresh:#{window}",
           payload: %{},
           job_group: "snapshots",
-          priority: 60
+          priority: 60,
+          unique_states: [:available, :scheduled, :executing, :completed]
         }
       ]
     else
@@ -513,7 +514,8 @@ defmodule StonksBackend.Jobs.Scheduler do
       idempotency_key: spec.idempotency_key,
       provider_key: Map.get(spec, :provider_key),
       run_after: Map.get(spec, :run_after),
-      depends_on_job_id: depends_on_job_id
+      depends_on_job_id: depends_on_job_id,
+      unique_states: Map.get(spec, :unique_states)
     ]
     |> Enum.reject(fn {_key, value} -> is_nil(value) end)
   end

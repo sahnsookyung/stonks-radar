@@ -23,7 +23,7 @@ defmodule StonksBackend.Jobs do
         unique: [
           period: :infinity,
           keys: [:job_type, :idempotency_key],
-          states: [:available, :scheduled, :executing]
+          states: Keyword.get(opts, :unique_states, [:available, :scheduled, :executing])
         ]
       ]
       |> put_scheduled_at(Keyword.get(opts, :scheduled_at) || Keyword.get(opts, :run_after))

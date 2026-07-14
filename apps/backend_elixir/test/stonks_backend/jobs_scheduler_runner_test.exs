@@ -44,6 +44,7 @@ defmodule StonksBackend.JobsSchedulerRunnerTest do
     assert opts[:queue] == "snapshots"
     refute Keyword.has_key?(opts, :provider_key)
     assert opts[:idempotency_key] == "snapshot-refresh:1977509"
+    assert opts[:unique_states] == [:available, :scheduled, :executing, :completed]
   end
 
   test "supervised runner performs an initial tick without requiring the Python worker loop" do

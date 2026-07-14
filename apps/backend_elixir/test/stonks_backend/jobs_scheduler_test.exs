@@ -50,7 +50,8 @@ defmodule StonksBackend.JobsSchedulerTest do
                idempotency_key: "snapshot-refresh:1977509",
                payload: %{},
                job_group: "snapshots",
-               priority: 60
+               priority: 60,
+               unique_states: [:available, :scheduled, :executing, :completed]
              }
            ]
   end
