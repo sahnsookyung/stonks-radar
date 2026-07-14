@@ -84,8 +84,8 @@ jobs:
             </dev/null
           printf 'scheduler_logs\n'
           docker compose -f compose.yaml -f infra/docker-compose.prod.yml logs --since 30m --no-color api-elixir 2>&1 \
-            | grep -E 'elixir_recurring_scheduler_(scheduled|failed)' \
-            | tail -20 || true
+            | grep -E 'elixir_recurring_scheduler_(scheduled|failed)|oban_job_runtime_lock_busy job_type=snapshot_refresh' \
+            | tail -40 || true
           printf 'snapshot_refresh_jobs\n'
           docker compose -f compose.yaml -f infra/docker-compose.prod.yml exec -T postgres sh -lc '
             psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -F "|" -c "
@@ -101,6 +101,16 @@ jobs:
               where args ->> \$\$job_type\$\$ = \$\$snapshot_refresh\$\$
               order by inserted_at desc
               limit 10
+            "
+          ' </dev/null
+          printf 'snapshot_runtime_locks\n'
+          docker compose -f compose.yaml -f infra/docker-compose.prod.yml exec -T postgres sh -lc '
+            psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -F "|" -c "
+              select scope_type, scope_key, owner, lease_expires_at::text, updated_at::text
+              from job_runtime_lock
+              where (scope_type = \$\$global\$\$ and scope_key = \$\$snapshots\$\$)
+                 or (scope_type = \$\$provider\$\$ and scope_key = \$\$snapshot_refresh\$\$)
+              order by scope_type, scope_key
             "
           ' </dev/null
           REMOTE
