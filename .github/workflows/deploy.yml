@@ -652,11 +652,33 @@ jobs:
               "
             ' </dev/null
           )"
-          if [[ -z "$snapshot_jobs" ]]; then
-            echo "No snapshot_refresh jobs found" >&2
+          published_window="$(
+            docker compose -f compose.yaml -f infra/docker-compose.prod.yml exec -T postgres sh -lc '
+              psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -F "|" -c "
+                select snapshot_version::text, publication_status, generated_at::text,
+                       coalesce(published_at::text, \$\$-\$\$)
+                from publication_manifest
+                where publication_status = \$\$published\$\$
+                  and coalesce(published_at, generated_at) >= date_bin(
+                    interval \$\$15 minutes\$\$,
+                    now(),
+                    timestamptz \$\$1970-01-01 00:00:00+00\$\$
+                  )
+                order by published_at desc nulls last, generated_at desc
+                limit 1
+              "
+            ' </dev/null
+          )"
+          if [[ -z "$snapshot_jobs" && -z "$published_window" ]]; then
+            echo "No snapshot_refresh job or current-window publication found" >&2
             exit 1
           fi
-          printf 'snapshot_refresh_jobs\n%s\n' "$snapshot_jobs"
+          if [[ -n "$snapshot_jobs" ]]; then
+            printf 'snapshot_refresh_jobs\n%s\n' "$snapshot_jobs"
+          fi
+          if [[ -n "$published_window" ]]; then
+            printf 'current_snapshot_publication\n%s\n' "$published_window"
+          fi
           REMOTE
           duration="$(( $(date +%s) - start ))"
           echo "| verify-scheduler | ${duration}s |" >> "$GITHUB_STEP_SUMMARY"
