@@ -42,7 +42,7 @@ defmodule StonksBackend.JobsSchedulerRunnerTest do
 
     assert_receive {:enqueue, "snapshot_refresh", %{}, opts}
     assert opts[:queue] == "snapshots"
-    assert opts[:provider_key] == "snapshot_refresh"
+    refute Keyword.has_key?(opts, :provider_key)
     assert opts[:idempotency_key] == "snapshot-refresh:1977509"
   end
 
@@ -60,9 +60,14 @@ defmodule StonksBackend.JobsSchedulerRunnerTest do
         initial_delay_ms: 0,
         now_fun: fn -> ~U[2026-05-26 01:17:00Z] end,
         settings: settings(worker_scheduler_tick_seconds: 1),
+        cleanup_fun: fn key ->
+          send(parent, {:cleanup, key})
+          0
+        end,
         enqueue_fun: enqueue
       )
 
+    assert_receive {:cleanup, "snapshot-refresh:1977509"}, 500
     assert_receive {:tick_enqueue, "snapshot_refresh", "snapshot-refresh:1977509"}, 500
     GenServer.stop(pid)
   end

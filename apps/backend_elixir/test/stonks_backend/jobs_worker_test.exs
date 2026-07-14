@@ -137,6 +137,26 @@ defmodule StonksBackend.JobsWorkerTest do
     assert {:snooze, 30} = GenericWorker.perform(job)
   end
 
+  test "obsolete snapshot refresh windows discard before runtime lock acquisition" do
+    Application.put_env(:stonks_backend, :settings, snapshot_refresh_seconds: 900)
+
+    job = %Oban.Job{
+      id: 135,
+      args: %{
+        "job_type" => "snapshot_refresh",
+        "idempotency_key" => "snapshot-refresh:1",
+        "payload" => %{},
+        "runtime_locks" => [
+          %{"scope_type" => "global", "scope_key" => "snapshots"},
+          %{"scope_type" => "provider", "scope_key" => "snapshot_refresh"}
+        ]
+      }
+    }
+
+    assert {:discard, message} = GenericWorker.perform(job)
+    assert message =~ "stale snapshot refresh window 1"
+  end
+
   test "LLM news stages drain as explicit policy-gated skips" do
     job = %Oban.Job{
       id: 127,

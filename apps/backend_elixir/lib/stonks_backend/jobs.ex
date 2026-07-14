@@ -41,6 +41,24 @@ defmodule StonksBackend.Jobs do
     end
   end
 
+  def discard_stale_snapshot_refresh_jobs(current_idempotency_key)
+      when is_binary(current_idempotency_key) do
+    result =
+      Sql.execute(
+        """
+        update oban_jobs
+        set state = 'discarded',
+            discarded_at = coalesce(discarded_at, now())
+        where args ->> 'job_type' = 'snapshot_refresh'
+          and coalesce(args ->> 'idempotency_key', '') <> $1
+          and state in ('available', 'scheduled', 'retryable')
+        """,
+        [current_idempotency_key]
+      )
+
+    result.num_rows
+  end
+
   def replay(external_id) do
     with {:ok, parsed} <- parse_external_id(external_id) do
       replay_parsed(parsed)

@@ -33,6 +33,7 @@ defmodule StonksBackend.Jobs.SchedulerRunner do
       enabled?: scheduler_enabled?(opts),
       interval_ms: tick_seconds(opts) * 1_000,
       enqueue_fun: Keyword.get(opts, :enqueue_fun, &Jobs.enqueue/3),
+      cleanup_fun: Keyword.get(opts, :cleanup_fun, &Jobs.discard_stale_snapshot_refresh_jobs/1),
       settings: Keyword.get(opts, :settings),
       now_fun: Keyword.get(opts, :now_fun, &DateTime.utc_now/0)
     }
@@ -47,13 +48,15 @@ defmodule StonksBackend.Jobs.SchedulerRunner do
   @impl GenServer
   def handle_info(:tick, state) do
     started_at = System.monotonic_time()
+    now = state.now_fun.()
+    discard_stale_snapshot_refresh_jobs(state, now)
 
     scheduled_ids =
       try do
         run_once(
           settings: state.settings,
           enqueue_fun: state.enqueue_fun,
-          now: state.now_fun.()
+          now: now
         )
       rescue
         exception ->
@@ -77,6 +80,27 @@ defmodule StonksBackend.Jobs.SchedulerRunner do
 
     Process.send_after(self(), :tick, state.interval_ms)
     {:noreply, state}
+  end
+
+  defp discard_stale_snapshot_refresh_jobs(state, now) do
+    refresh_seconds =
+      state.settings
+      |> setting_value(:snapshot_refresh_seconds, 900)
+      |> int_value(900)
+
+    if refresh_seconds > 0 do
+      current_key = "snapshot-refresh:#{div(DateTime.to_unix(now), refresh_seconds)}"
+      discarded = state.cleanup_fun.(current_key)
+
+      if is_integer(discarded) and discarded > 0 do
+        Logger.info("elixir_recurring_scheduler_discarded_stale_snapshots count=#{discarded}")
+      end
+    end
+  rescue
+    exception ->
+      Logger.error(
+        "elixir_recurring_scheduler_snapshot_cleanup_failed error=#{Exception.message(exception)}"
+      )
   end
 
   defp scheduler_opts(opts) do
@@ -119,6 +143,16 @@ defmodule StonksBackend.Jobs.SchedulerRunner do
       _settings -> default
     end
   end
+
+  defp setting_value(nil, key, default), do: Settings.get(key, default)
+
+  defp setting_value(settings, key, default) when is_map(settings),
+    do: Map.get(settings, key, default)
+
+  defp setting_value(settings, key, default) when is_list(settings),
+    do: Keyword.get(settings, key, default)
+
+  defp setting_value(_settings, _key, default), do: default
 
   defp int_value(value, _default) when is_integer(value), do: value
 

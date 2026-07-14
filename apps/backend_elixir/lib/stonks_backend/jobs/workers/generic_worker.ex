@@ -61,6 +61,13 @@ defmodule StonksBackend.Jobs.Workers.GenericWorker do
   end
 
   defp perform_ready(job, job_type, payload, args) do
+    case recurring_window_gate(job_type, args) do
+      :ready -> perform_with_runtime_locks(job, job_type, payload, args)
+      {:discard, reason} -> {:discard, reason}
+    end
+  end
+
+  defp perform_with_runtime_locks(job, job_type, payload, args) do
     owner = "oban:#{job.id}"
     scopes = RuntimeLock.scopes_from_args(args)
 
@@ -84,6 +91,40 @@ defmodule StonksBackend.Jobs.Workers.GenericWorker do
         )
 
         {:snooze, RuntimeLock.retry_in_seconds()}
+    end
+  end
+
+  defp recurring_window_gate(
+         "snapshot_refresh",
+         %{"idempotency_key" => "snapshot-refresh:" <> raw_window}
+       ) do
+    refresh_seconds = positive_int_setting(:snapshot_refresh_seconds, 900)
+    current_window = div(DateTime.to_unix(DateTime.utc_now()), refresh_seconds)
+
+    case Integer.parse(raw_window) do
+      {window, ""} when window < current_window ->
+        {:discard, "stale snapshot refresh window #{window}; current window #{current_window}"}
+
+      _ ->
+        :ready
+    end
+  end
+
+  defp recurring_window_gate(_job_type, _args), do: :ready
+
+  defp positive_int_setting(key, default) do
+    case Settings.get(key, default) do
+      value when is_integer(value) and value > 0 ->
+        value
+
+      value when is_binary(value) ->
+        case Integer.parse(String.trim(value)) do
+          {parsed, ""} when parsed > 0 -> parsed
+          _ -> default
+        end
+
+      _ ->
+        default
     end
   end
 

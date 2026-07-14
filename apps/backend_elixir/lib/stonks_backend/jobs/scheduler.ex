@@ -104,8 +104,7 @@ defmodule StonksBackend.Jobs.Scheduler do
           idempotency_key: "snapshot-refresh:#{window}",
           payload: %{},
           job_group: "snapshots",
-          priority: 60,
-          provider_key: "snapshot_refresh"
+          priority: 60
         }
       ]
     else
