@@ -92,10 +92,14 @@ jobs:
               select id::text, state, queue, attempt::text, max_attempts::text,
                      inserted_at::text, coalesce(scheduled_at::text, \$\$-\$\$),
                      coalesce(attempted_at::text, \$\$-\$\$), coalesce(completed_at::text, \$\$-\$\$),
-                     replace(left(coalesce(errors[array_upper(errors, 1)] ->> \$\$error\$\$, \$\$\$\$), 500), chr(10), \$\$ \$\$)
+                     replace(left(coalesce(
+                       errors[array_upper(errors, 1)] ->> \$\$message\$\$,
+                       errors[array_upper(errors, 1)] ->> \$\$error\$\$,
+                       \$\$\$\$
+                     ), 500), chr(10), \$\$ \$\$)
               from oban_jobs
               where args ->> \$\$job_type\$\$ = \$\$snapshot_refresh\$\$
-              order by id desc
+              order by inserted_at desc
               limit 10
             "
           ' </dev/null
@@ -622,10 +626,14 @@ jobs:
                 select id::text, state, attempt::text, max_attempts::text,
                        inserted_at::text, coalesce(attempted_at::text, \$\$-\$\$),
                        coalesce(completed_at::text, \$\$-\$\$),
-                       replace(left(coalesce(errors[array_upper(errors, 1)] ->> \$\$error\$\$, \$\$\$\$), 500), chr(10), \$\$ \$\$)
+                       replace(left(coalesce(
+                         errors[array_upper(errors, 1)] ->> \$\$message\$\$,
+                         errors[array_upper(errors, 1)] ->> \$\$error\$\$,
+                         \$\$\$\$
+                       ), 500), chr(10), \$\$ \$\$)
                 from oban_jobs
                 where args ->> \$\$job_type\$\$ = \$\$snapshot_refresh\$\$
-                order by id desc
+                order by inserted_at desc
                 limit 5
               "
             ' </dev/null
