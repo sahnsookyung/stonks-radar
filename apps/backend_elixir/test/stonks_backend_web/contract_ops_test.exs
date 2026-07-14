@@ -65,6 +65,8 @@ defmodule StonksBackendWeb.ContractOpsTest do
 
     assert deploy_script =~ "StonksBackend.Release.migrate()"
     assert deploy_script =~ "stonks-radar_published-snapshots"
+    assert deploy_script =~ "elixir_recurring_scheduler_scheduled"
+    assert deploy_script =~ "snapshot_refresh_jobs"
 
     refute deploy_workflow =~ "publish_runtime_snapshots.py"
     refute deploy_workflow =~ " up -d postgres valkey fetch-sandbox"
@@ -84,6 +86,9 @@ defmodule StonksBackendWeb.ContractOpsTest do
     assert deploy_workflow =~ "origin_manifest_hash=$(sha256sum"
     assert deploy_workflow =~ "public_manifest_hash=$(sha256sum"
     assert deploy_workflow =~ "origin/public manifest hash matched"
+    assert deploy_workflow =~ "Verify scheduler runtime"
+    assert deploy_workflow =~ "elixir_recurring_scheduler_scheduled"
+    assert deploy_workflow =~ "snapshot_refresh_jobs"
 
     caddyfile = read_repo_file("infra/Caddyfile")
     assert caddyfile =~ "reverse_proxy {$API_UPSTREAM:api-elixir:8000}"

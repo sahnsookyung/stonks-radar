@@ -197,6 +197,58 @@ start_services() {
   df -h / /opt /tmp || true
 }
 
+verify_scheduler_runtime() {
+  local attempt flags logs
+
+  cd "$deploy_dir"
+  flags="$(
+    compose exec -T api-elixir sh -lc \
+      'printf "%s %s %s" "$START_SCHEDULER" "$WORKER_SCHEDULER_ENABLED" "$OBAN_QUEUES_ENABLED"'
+  )"
+  [[ "$flags" == "true true true" ]] || {
+    echo "Production scheduler flags are not enabled: $flags" >&2
+    return 1
+  }
+
+  for attempt in 1 2 3 4 5 6; do
+    logs="$(compose logs --since 5m --no-color api-elixir 2>&1 || true)"
+    if grep -q "elixir_recurring_scheduler_failed" <<<"$logs"; then
+      grep "elixir_recurring_scheduler_failed" <<<"$logs" >&2
+      return 1
+    fi
+    if grep -q "elixir_recurring_scheduler_scheduled" <<<"$logs"; then
+      grep "elixir_recurring_scheduler_scheduled" <<<"$logs" | tail -1
+      break
+    fi
+    if [[ "$attempt" == "6" ]]; then
+      echo "Production scheduler did not emit a scheduling heartbeat within 30 seconds" >&2
+      return 1
+    fi
+    sleep 5
+  done
+
+  compose run --rm --no-deps api-elixir \
+    env START_SCHEDULER=false OBAN_QUEUES_ENABLED=false \
+    /app/bin/stonks_backend eval '
+      {:ok, _} = Application.ensure_all_started(:stonks_backend)
+      sql = """
+      select id::text, state, attempt::text, max_attempts::text,
+             inserted_at::text, coalesce(attempted_at::text, $$$$),
+             coalesce(completed_at::text, $$$$),
+             coalesce(errors -> -1 ->> $$error$$, $$$$)
+      from oban_jobs
+      where args ->> $$job_type$$ = $$snapshot_refresh$$
+      order by id desc
+      limit 5
+      """
+      case Ecto.Adapters.SQL.query(StonksBackend.Repo, sql, []) do
+        {:ok, %{rows: rows}} when rows != [] -> IO.inspect(rows, label: "snapshot_refresh_jobs")
+        {:ok, %{rows: []}} -> raise "no snapshot_refresh jobs found"
+        {:error, reason} -> raise "snapshot_refresh job query failed: #{inspect(reason)}"
+      end
+    '
+}
+
 refresh_snapshots() {
   if ! docker run --rm \
     -v stonks-radar_published-snapshots:/dest:ro \
@@ -256,5 +308,6 @@ run_phase install-env install_env
 run_phase build-or-pull-api build_api
 run_phase migrate migrate
 run_phase start start_services
+run_phase verify-scheduler verify_scheduler_runtime
 run_phase refresh-snapshots refresh_snapshots
 run_phase smoke smoke
