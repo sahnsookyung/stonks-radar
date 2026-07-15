@@ -15,6 +15,7 @@ let latestManifest = null;
 let latestManifestHash = null;
 let observedWebArtifact = null;
 let latestNewsIds = new Set();
+let latestNewsDetailId = null;
 let latestHomeIds = new Set();
 const checks = [
   {
@@ -113,7 +114,25 @@ const checks = [
       const snapshot = await assertCurrentSnapshotResponse(response, "News");
       assertNoStaticSeedData(snapshot, "news");
       latestNewsIds = eventIds(snapshot?.data?.events);
+      latestNewsDetailId = latestNewsIds.values().next().value ?? null;
       assertSubset(latestHomeIds, latestNewsIds, "Dashboard headlines must come from the News snapshot");
+    }
+  },
+  {
+    name: "news detail snapshot",
+    path() {
+      return latestNewsDetailId
+        ? latestManifest?.objects?.[`news_event_${latestNewsDetailId}`]?.en
+        : latestManifest?.objects?.news_index?.en;
+    },
+    async expect(response) {
+      if (!latestNewsDetailId) return;
+      const snapshot = await assertCurrentSnapshotResponse(response, "News detail");
+      assert(
+        snapshot?.object_key === `news_event_${latestNewsDetailId}`,
+        "News detail snapshot must match the selected News index event"
+      );
+      assertNoStaticSeedData(snapshot, "news detail");
     }
   },
   {

@@ -929,25 +929,34 @@ defmodule StonksBackend.SnapshotsTest do
     end
   end
 
-  test "published-volume refresh removes stale files from previous versions", %{
+  test "published-volume refresh retains recent immutable versions and removes older files", %{
     published_root: destination
   } do
     source = Path.join(System.tmp_dir!(), "stonks-source-#{System.unique_integer([:positive])}")
 
     try do
-      write_manifest!(source, %{"home" => %{"en" => "public/v2/en/home.json"}})
-      write_snapshot!(source, "v2/en/home.json", %{"data" => %{"entries" => []}})
+      write_manifest!(source, %{"home" => %{"en" => "public/v5/en/home.json"}})
+      write_snapshot!(source, "v5/en/home.json", %{"data" => %{"entries" => []}})
 
-      write_manifest!(destination, %{"home" => %{"en" => "public/v1/en/home.json"}})
-      write_snapshot!(destination, "v1/en/home.json", %{"data" => %{"entries" => []}})
-      write_snapshot!(destination, "v1/en/news/index.json", %{"data" => %{"entries" => []}})
+      write_manifest!(destination, %{"home" => %{"en" => "public/v4/en/home.json"}})
+
+      Enum.each(1..4, fn version ->
+        write_snapshot!(destination, "v#{version}/en/home.json", %{
+          "data" => %{"entries" => []}
+        })
+      end)
+
+      write_json!(destination, "obsolete.json", %{"remove" => true})
 
       assert {:ok, _result} = Snapshots.refresh_published_volume(source, destination)
 
       assert Path.join(destination, "latest/manifest.json") |> File.exists?()
+      assert Path.join(destination, "v5/en/home.json") |> File.exists?()
+      assert Path.join(destination, "v4/en/home.json") |> File.exists?()
+      assert Path.join(destination, "v3/en/home.json") |> File.exists?()
       assert Path.join(destination, "v2/en/home.json") |> File.exists?()
       refute Path.join(destination, "v1/en/home.json") |> File.exists?()
-      refute Path.join(destination, "v1/en/news/index.json") |> File.exists?()
+      refute Path.join(destination, "obsolete.json") |> File.exists?()
     after
       File.rm_rf!(source)
     end

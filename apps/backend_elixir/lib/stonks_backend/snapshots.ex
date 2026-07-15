@@ -13,6 +13,7 @@ defmodule StonksBackend.Snapshots do
   @json_file_glob "**/*.json"
   @default_publish_max_files 50_000
   @default_publish_max_bytes 2_000_000_000
+  @published_version_retention_count 4
   @prohibited_public_object_types ["source_status"]
   @prohibited_public_object_keys ["source_status"]
   @schema_by_object_type %{
@@ -2498,10 +2499,18 @@ defmodule StonksBackend.Snapshots do
       |> MapSet.new()
 
     with {:ok, destination_files} <- all_files(destination_root) do
+      retained_versions =
+        retained_published_versions(
+          source_relatives,
+          destination_files,
+          destination_root
+        )
+
       Enum.reduce_while(destination_files, {:ok, state}, fn destination, {:ok, state} ->
         relative = Path.relative_to(destination, destination_root)
 
-        if MapSet.member?(source_relatives, relative) do
+        if MapSet.member?(source_relatives, relative) or
+             retained_published_version?(relative, retained_versions) do
           {:cont, {:ok, state}}
         else
           case remove_obsolete_destination_file(destination, relative, rollback_root, state) do
@@ -2512,6 +2521,39 @@ defmodule StonksBackend.Snapshots do
       end)
     else
       {:error, reason} -> {:error, reason, state}
+    end
+  end
+
+  defp retained_published_versions(source_relatives, destination_files, destination_root) do
+    destination_relatives =
+      Enum.map(destination_files, &Path.relative_to(&1, destination_root))
+
+    source_relatives
+    |> MapSet.to_list()
+    |> Kernel.++(destination_relatives)
+    |> Enum.flat_map(fn relative ->
+      case published_version(relative) do
+        {:ok, version} -> [version]
+        :error -> []
+      end
+    end)
+    |> Enum.uniq()
+    |> Enum.sort(:desc)
+    |> Enum.take(@published_version_retention_count)
+    |> MapSet.new()
+  end
+
+  defp retained_published_version?(relative, retained_versions) do
+    case published_version(relative) do
+      {:ok, version} -> MapSet.member?(retained_versions, version)
+      :error -> false
+    end
+  end
+
+  defp published_version(relative) do
+    case Path.split(relative) do
+      ["v" <> version | suffix] when suffix != [] -> parse_positive_snapshot_version(version)
+      _ -> :error
     end
   end
 
