@@ -71,6 +71,14 @@ defmodule StonksBackendWeb.ContractOpsTest do
     assert deploy_script =~ "</dev/null"
     assert deploy_script =~ "No snapshot_refresh jobs found"
 
+    assert deploy_script =~
+             ~s(StonksBackend.Jobs.RuntimeLock.acquire("global", "snapshots")
+
+    assert deploy_script =~
+             ~s(StonksBackend.Jobs.RuntimeLock.release("global", "snapshots")
+
+    assert deploy_script =~ "snapshot refresh lock timed out"
+
     refute deploy_workflow =~ "publish_runtime_snapshots.py"
     refute deploy_workflow =~ " up -d postgres valkey fetch-sandbox"
     refute deploy_workflow =~ "python3 -c"
@@ -99,6 +107,14 @@ defmodule StonksBackendWeb.ContractOpsTest do
     assert deploy_workflow =~ "exec -T postgres"
     assert deploy_workflow =~ "</dev/null"
     assert deploy_workflow =~ "No snapshot_refresh job or current-window publication found"
+
+    assert deploy_workflow =~
+             ~s(StonksBackend.Jobs.RuntimeLock.acquire("global", "snapshots")
+
+    assert deploy_workflow =~
+             ~s(StonksBackend.Jobs.RuntimeLock.release("global", "snapshots")
+
+    assert deploy_workflow =~ "snapshot refresh lock timed out"
 
     caddyfile = read_repo_file("infra/Caddyfile")
     assert caddyfile =~ "reverse_proxy {$API_UPSTREAM:api-elixir:8000}"

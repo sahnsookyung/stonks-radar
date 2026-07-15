@@ -699,9 +699,36 @@ jobs:
             env START_SCHEDULER=false OBAN_QUEUES_ENABLED=false \
             /app/bin/stonks_backend eval '
               {:ok, _} = Application.ensure_all_started(:stonks_backend)
-              case StonksBackend.Snapshots.refresh(%{"requested_by" => "deploy", "mode" => "db_generated_publish"}) do
-                {:ok, result} -> IO.inspect(result, label: "published_snapshot")
-                {:error, reason} -> raise "snapshot refresh failed: #{inspect(reason)}"
+
+              owner = "deploy:" <> Ecto.UUID.generate()
+
+              acquire_lock = fn acquire_lock, attempts ->
+                cond do
+                  StonksBackend.Jobs.RuntimeLock.acquire("global", "snapshots", owner, 900) ->
+                    :ok
+
+                  attempts > 1 ->
+                    Process.sleep(5_000)
+                    acquire_lock.(acquire_lock, attempts - 1)
+
+                  true ->
+                    {:error, :timeout}
+                end
+              end
+
+              case acquire_lock.(acquire_lock, 60) do
+                :ok ->
+                  try do
+                    case StonksBackend.Snapshots.refresh(%{"requested_by" => "deploy", "mode" => "db_generated_publish"}) do
+                      {:ok, result} -> IO.inspect(result, label: "published_snapshot")
+                      {:error, reason} -> raise "snapshot refresh failed: #{inspect(reason)}"
+                    end
+                  after
+                    StonksBackend.Jobs.RuntimeLock.release("global", "snapshots", owner)
+                  end
+
+                {:error, :timeout} ->
+                  raise "snapshot refresh lock timed out"
               end
             '
           REMOTE
