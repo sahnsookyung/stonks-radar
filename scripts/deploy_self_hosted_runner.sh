@@ -254,18 +254,6 @@ verify_scheduler_runtime() {
 }
 
 refresh_snapshots() {
-  if ! docker run --rm \
-    -v stonks-radar_published-snapshots:/dest:ro \
-    alpine:3.24 \
-    test -s /dest/latest/manifest.json; then
-    echo "Snapshot volume is empty; seeding static public snapshots before Elixir refresh"
-    docker run --rm \
-      -v stonks-radar_published-snapshots:/dest \
-      -v "$deploy_dir/apps/web/public/public:/src:ro" \
-      alpine:3.24 \
-      sh -lc 'set -e; rm -rf /dest/* /dest/.[!.]* /dest/..?* 2>/dev/null || true; cp -a /src/. /dest/; chmod -R a+rwX /dest; test -s /dest/latest/manifest.json'
-  fi
-
   docker run --rm -v stonks-radar_published-snapshots:/dest alpine:3.24 chmod -R a+rwX /dest
 
   cd "$deploy_dir"

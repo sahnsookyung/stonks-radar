@@ -225,12 +225,9 @@ jobs:
             echo "Downloaded web artifact did not contain apps/web/dist/index.html" >&2
             exit 1
           fi
-          rm -rf apps/web/dist apps/web/public/public
-          mkdir -p apps/web/public
+          rm -rf apps/web/dist
           cp -a "$artifact_root/apps/web/dist" apps/web/dist
-          cp -a "$artifact_root/apps/web/public/public" apps/web/public/public
           test -s apps/web/dist/index.html
-          test -s apps/web/public/public/latest/manifest.json
 
       - name: Install Playwright browser
         if: ${{ inputs.mode == 'clean' || inputs.verify }}
@@ -382,12 +379,9 @@ jobs:
             echo "Downloaded web artifact did not contain apps/web/dist/index.html" >&2
             exit 1
           fi
-          rm -rf apps/web/dist apps/web/public/public
-          mkdir -p apps/web/public
+          rm -rf apps/web/dist
           cp -a "$artifact_root/apps/web/dist" apps/web/dist
-          cp -a "$artifact_root/apps/web/public/public" apps/web/public/public
           test -s apps/web/dist/index.html
-          test -s apps/web/public/public/latest/manifest.json
 
       - name: Install Playwright browser
         if: ${{ inputs.mode == 'clean' || inputs.verify }}
@@ -699,14 +693,6 @@ jobs:
           cd /opt/stonks-radar
           if [[ "${STONKS_DEPLOY_MODE:-fast}" == "fast" ]]; then
             export API_ELIXIR_IMAGE="$STONKS_API_IMAGE"
-          fi
-          if ! docker run --rm -v stonks-radar_published-snapshots:/dest:ro alpine:3.24 test -s /dest/latest/manifest.json; then
-            echo "Snapshot volume is empty; seeding static public snapshots before Elixir refresh"
-            docker run --rm \
-              -v stonks-radar_published-snapshots:/dest \
-              -v /opt/stonks-radar/apps/web/public/public:/src:ro \
-              alpine:3.24 \
-              sh -lc 'set -e; rm -rf /dest/* /dest/.[!.]* /dest/..?* 2>/dev/null || true; cp -a /src/. /dest/; chmod -R a+rwX /dest; test -s /dest/latest/manifest.json'
           fi
           docker run --rm -v stonks-radar_published-snapshots:/dest alpine:3.24 chmod -R a+rwX /dest
           docker compose -f compose.yaml -f infra/docker-compose.prod.yml run --rm --no-deps api-elixir \
