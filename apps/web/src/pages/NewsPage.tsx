@@ -37,6 +37,11 @@ export function NewsPage() { // NOSONAR - filter state, URL sync, and snapshot r
   });
 
   const events = newsQuery.data?.data.events ?? [];
+  const liveDataUnavailable = Boolean(
+    newsQuery.data?.warnings.some(
+      (warning) => warning.code === "live_data_unavailable",
+    ),
+  );
   const searchableEvents = useMemo(
     () =>
       events.map((event) => ({ event, searchableText: searchableText(event) })),
@@ -273,9 +278,7 @@ export function NewsPage() { // NOSONAR - filter state, URL sync, and snapshot r
         )}
         {filteredEvents.length === 0 && (
           <div className="panel border-dashed p-5 text-sm leading-6 text-muted">
-            {isKo
-              ? "선택한 필터와 일치하는 출처 연결 항목이 없습니다."
-              : "No source-linked items match the selected filters."}
+            {newsEmptyMessage(liveDataUnavailable, events.length, isKo)}
           </div>
         )}
       </section>
@@ -287,6 +290,22 @@ export function NewsPage() { // NOSONAR - filter state, URL sync, and snapshot r
       </section>
     </div>
   );
+}
+
+function newsEmptyMessage(
+  liveDataUnavailable: boolean,
+  eventCount: number,
+  isKo: boolean,
+) {
+  if (liveDataUnavailable && eventCount === 0) {
+    return isKo
+      ? "현재 출처 기반 뉴스 데이터를 사용할 수 없습니다. 정적 예시 뉴스는 표시하지 않습니다."
+      : "Current source-backed news is unavailable. Static example news is not displayed.";
+  }
+
+  return isKo
+    ? "선택한 필터와 일치하는 출처 연결 항목이 없습니다."
+    : "No source-linked items match the selected filters.";
 }
 
 function FilterSelect({

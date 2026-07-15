@@ -264,6 +264,12 @@ function monteCarloPathCountForSection(section: PortfolioSection) {
   return 0;
 }
 
+function validFutureDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(date.getTime()) && date.getTime() > Date.now();
+}
+
 function defaultQuantityForNewHolding(manual: AddHoldingPayload["manual"], instrument?: Instrument) {
   if (manual) return manual.quantity;
   if (!instrument) return 1;
@@ -291,14 +297,14 @@ function importedHoldingForPortfolio(
 export function PortfolioLabPage() { // NOSONAR - route-level state orchestration is split into helpers but remains a single page owner.
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const section = sectionFromPath(pathname);
-  const workspacePortfolioId = portfolioIdFromPath(pathname) ?? "demo-growth-income";
+  const workspacePortfolioId = portfolioIdFromPath(pathname) ?? "local-portfolio";
   const initialWorkspace = loadPortfolioWorkspace(workspacePortfolioId);
   const [loadedWorkspaceId, setLoadedWorkspaceId] = useState(workspacePortfolioId);
   const [portfolio, setPortfolio] = useState<Portfolio>(() => initialWorkspace?.portfolio ?? createPortfolioForWorkspace(workspacePortfolioId));
   const [manualInstruments, setManualInstruments] = useState<Instrument[]>(() => initialWorkspace?.manualInstruments ?? []);
   const [reviewRequests, setReviewRequests] = useState<InstrumentReviewRequest[]>(() => initialWorkspace?.reviewRequests ?? []);
   const [assumptions, setAssumptions] = useState<AssumptionSet>(() => initialWorkspace?.assumptions ?? defaultAssumptions);
-  const [csvText, setCsvText] = useState("symbol,quantity,price\nAAPL,10,195.40\nVXUS,30,62.10");
+  const [csvText, setCsvText] = useState("symbol,quantity,price");
   const [csvErrors, setCsvErrors] = useState<string[]>([]);
   const instrumentsCatalog = useMemo(() => [...demoInstruments, ...manualInstruments], [manualInstruments]);
   const marketHistorySymbols = useMemo(
@@ -314,8 +320,11 @@ export function PortfolioLabPage() { // NOSONAR - route-level state orchestratio
     [instrumentsCatalog, marketHistoryCoverage]
   );
   const analysis = useMemo(() => analyzePortfolio(portfolio, calculationInstruments, assumptions), [portfolio, assumptions, calculationInstruments]);
-  const shouldRunBacktest = section === "backtest";
-  const monteCarloPathCount = monteCarloPathCountForSection(section);
+  const hasPortfolioInputs = portfolio.holdings.length > 0 || portfolio.cashBalance > 0;
+  const hasGoalInputs = hasPortfolioInputs && portfolio.goal.targetAmount > 0 && validFutureDate(portfolio.goal.targetDate);
+  const hasAllocationTargets = hasPortfolioInputs && Object.values(portfolio.targetAllocation).some((weight) => weight > 0);
+  const shouldRunBacktest = section === "backtest" && hasPortfolioInputs;
+  const monteCarloPathCount = hasGoalInputs ? monteCarloPathCountForSection(section) : null;
   const backtest = useMemo<ReturnType<typeof runBacktest> | null>(
     () => {
       if (!shouldRunBacktest) return null;
@@ -638,7 +647,7 @@ function requestInstrumentReview(query: string, contextScreen: ManualEditorConte
         ...current,
         {
           requestId,
-          userId: "demo-user",
+          userId: "local-user",
           query: normalizedQuery,
           contextScreen,
           createdAt: new Date().toISOString(),
@@ -664,7 +673,7 @@ function requestInstrumentReview(query: string, contextScreen: ManualEditorConte
         );
       })
       .catch(() => {
-        // Local review state is retained when the API is unavailable in static/demo mode.
+        // Local review state is retained when the API is unavailable.
       });
   }
 
@@ -705,7 +714,7 @@ function requestInstrumentReview(query: string, contextScreen: ManualEditorConte
       {section === "onboarding" ? (
         <OnboardingSection csvText={csvText} setCsvText={setCsvText} csvErrors={csvErrors} importCsv={importCsv} />
       ) : null}
-      {(section === "dashboard" || section === "overview") && monteCarlo ? (
+      {section === "dashboard" || section === "overview" ? (
         <EditablePortfolioWorkspace
           portfolio={portfolio}
           instrumentCatalog={calculationInstruments}
@@ -724,7 +733,14 @@ function requestInstrumentReview(query: string, contextScreen: ManualEditorConte
           reviewRequests={reviewRequests}
           requestInstrumentReview={(query) => requestInstrumentReview(query, "BUILDER")}
         >
-          <DashboardSection portfolio={portfolio} analysis={analysis} monteCarlo={monteCarlo} rebalancePlan={rebalancePlan} />
+          {monteCarlo ? (
+            <DashboardSection portfolio={portfolio} analysis={analysis} monteCarlo={monteCarlo} rebalancePlan={rebalancePlan} />
+          ) : (
+            <PortfolioDataRequiredState
+              cockpit
+              reason="Add a holding or cash balance, then enter a target amount and future target date before model estimates are available."
+            />
+          )}
         </EditablePortfolioWorkspace>
       ) : null}
       {section === "portfolios" ? <PortfoliosSection portfolio={portfolio} analysis={analysis} /> : null}
@@ -763,7 +779,7 @@ function requestInstrumentReview(query: string, contextScreen: ManualEditorConte
           onRequestInstrumentReview={(query) => requestInstrumentReview(query, "BUILDER")}
         />
       ) : null}
-      {section === "backtest" && backtest ? (
+      {section === "backtest" ? (
         <EditablePortfolioWorkspace
           portfolio={portfolio}
           instrumentCatalog={calculationInstruments}
@@ -782,10 +798,14 @@ function requestInstrumentReview(query: string, contextScreen: ManualEditorConte
           reviewRequests={reviewRequests}
           requestInstrumentReview={(query) => requestInstrumentReview(query, "BUILDER")}
         >
-          <BacktestSection result={backtest} />
+          {backtest ? (
+            <BacktestSection result={backtest} />
+          ) : (
+            <PortfolioDataRequiredState reason="Add a holding or cash balance before running a backtest." />
+          )}
         </EditablePortfolioWorkspace>
       ) : null}
-      {section === "monte-carlo" && monteCarlo ? (
+      {section === "monte-carlo" ? (
         <EditablePortfolioWorkspace
           portfolio={portfolio}
           instrumentCatalog={calculationInstruments}
@@ -804,7 +824,11 @@ function requestInstrumentReview(query: string, contextScreen: ManualEditorConte
           reviewRequests={reviewRequests}
           requestInstrumentReview={(query) => requestInstrumentReview(query, "BUILDER")}
         >
-          <MonteCarloSection result={monteCarlo} portfolio={portfolio} analysis={analysis} updateGoal={updateGoal} />
+          {monteCarlo ? (
+            <MonteCarloSection result={monteCarlo} portfolio={portfolio} analysis={analysis} updateGoal={updateGoal} />
+          ) : (
+            <PortfolioDataRequiredState reason="Add portfolio value, a target amount, and a future target date before running a simulation." />
+          )}
         </EditablePortfolioWorkspace>
       ) : null}
       {section === "rebalance" ? (
@@ -826,7 +850,11 @@ function requestInstrumentReview(query: string, contextScreen: ManualEditorConte
           reviewRequests={reviewRequests}
           requestInstrumentReview={(query) => requestInstrumentReview(query, "BUILDER")}
         >
-          <RebalanceSection plan={rebalancePlan} analysis={analysis} portfolio={portfolio} />
+          {hasAllocationTargets ? (
+            <RebalanceSection plan={rebalancePlan} analysis={analysis} portfolio={portfolio} />
+          ) : (
+            <PortfolioDataRequiredState reason="Add portfolio value and a target allocation before generating rebalance guidance." />
+          )}
         </EditablePortfolioWorkspace>
       ) : null}
       {section === "fees" ? <FeesSection analysis={analysis} assumptions={assumptions} setAssumptions={setAssumptions} /> : null}
@@ -1112,22 +1140,22 @@ function PortfolioHeader({
   const locale = useLocale();
   const coverageLabel = coverageShortLabel(analysis, marketHistoryCoverage);
   return (
-    <section className="panel grid gap-4 p-4 md:p-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+    <section className="panel grid gap-3 p-3 sm:gap-4 sm:p-4 md:p-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
       <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-accent">
+        <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-accent sm:text-xs">
           <Calculator className="h-4 w-4" />
           <span>{locale === "ko" ? "포트폴리오 작업공간" : "Portfolio Workspace"}</span>
           <span className="rounded border border-line bg-panelAlt px-2 py-1 text-muted">analysis only</span>
         </div>
-        <h1 className="safe-text mt-3 text-2xl font-bold leading-tight md:text-4xl">
+        <h1 className="safe-text mt-2 text-xl font-bold leading-tight sm:mt-3 sm:text-2xl md:text-4xl">
           {portfolio.name}
         </h1>
-        <p className="safe-text mt-2 max-w-4xl text-sm leading-6 text-muted">
+        <p className="safe-text mt-2 hidden max-w-4xl text-sm leading-6 text-muted sm:block">
           {sectionLabels[section]} view for allocation, goal progress, and source-aware planning. No broker execution or
           buy/sell instructions.
         </p>
       </div>
-      <div className="grid gap-3 xl:min-w-[580px]">
+      <div className="grid gap-2 sm:gap-3 xl:min-w-[580px]">
         <div className="grid grid-cols-3 gap-2">
           <CompactStatus label="Value" value={formatMoney(analysis.portfolioValue)} />
           <CompactStatus label="Drift" value={formatPercent(analysis.allocationDrift)} tone={analysis.allocationDrift > 0.12 ? "warning" : "normal"} />
@@ -1571,6 +1599,21 @@ function PortfolioTrustWarning({ portfolio, analysis }: Readonly<{ portfolio: Po
         </div>
       </div>
     </div>
+  );
+}
+
+function PortfolioDataRequiredState({
+  reason,
+  cockpit = false
+}: Readonly<{ reason: string; cockpit?: boolean }>) {
+  return (
+    <section className="signal-warning p-5" data-testid={cockpit ? "portfolio-cockpit" : undefined}>
+      <h2 className="text-lg font-bold">Portfolio data required</h2>
+      <p className="mt-2 max-w-3xl text-sm leading-6">{reason}</p>
+      <p className="mt-2 text-sm leading-6 text-muted">
+        No sample holdings, prices, goals, or model output are substituted while these inputs are missing.
+      </p>
+    </section>
   );
 }
 
@@ -3449,18 +3492,20 @@ function normalizedInstrumentId(value: string) {
 }
 
 function createPortfolioForWorkspace(portfolioId: string): Portfolio {
-  const demo = createDemoPortfolio();
-  if (portfolioId === demo.portfolioId) return demo;
+  const emptyPortfolio = createDemoPortfolio();
+  if (portfolioId === emptyPortfolio.portfolioId) return emptyPortfolio;
   return {
-    ...demo,
+    ...emptyPortfolio,
     portfolioId,
+    userId: "local-user",
     name: `${portfolioId} workspace`,
-    description: "User-local planning workspace based on the planning template.",
+    description: "User-local planning workspace. Add only source-backed or manually entered holdings.",
     isDemo: false,
-    holdings: demo.holdings.map((holding) => ({ ...holding, portfolioId })),
+    holdings: [],
     transactions: [],
     taxLots: [],
-    goal: { ...demo.goal, portfolioId }
+    cashBalance: 0,
+    goal: { ...emptyPortfolio.goal, portfolioId }
   };
 }
 

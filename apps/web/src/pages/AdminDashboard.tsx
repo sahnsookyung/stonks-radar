@@ -3,7 +3,6 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { AlertTriangle, Database, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiGet, apiPost, syncCsrfTokenFromCookie } from "../lib/api";
-import { featureGates, usageQuotas } from "../lib/portfolioAtlas";
 
 interface AdminDashboardPayload {
   user: { email: string; role: string };
@@ -1011,20 +1010,8 @@ function FeatureGateAdminPanel() {
   return (
     <section className="panel p-4">
       <div className="mb-3 font-semibold">Feature gates</div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-left text-sm">
-          <tbody className="divide-y divide-line">
-            {featureGates.map((gate) => (
-              <tr key={gate.key}>
-                <td className="py-3 font-semibold">{gate.displayName}</td>
-                <td className="py-3">{gate.enabledGlobally ? "global on" : "global off"}</td>
-                <td className="py-3">{gate.enabledForFreeUsers ? "free allowed" : "free blocked"}</td>
-                <td className="py-3">{gate.rolloutPercentage}% rollout</td>
-                <td className="py-3 text-muted">{gate.enabledForAdmins ? "admin eligible" : "admin blocked"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="rounded-md border border-warning/40 bg-warning/10 p-4 text-sm leading-6 text-muted">
+        Runtime feature-gate telemetry is not connected to this view. No inferred or checked-in gate states are shown.
       </div>
     </section>
   );
@@ -1042,15 +1029,8 @@ function UsageAdminPanel({ currentUser }: Readonly<{ currentUser: { email: strin
       </div>
       <div className="panel p-4">
         <div className="mb-3 font-semibold">Usage quotas</div>
-        <div className="grid gap-2 text-sm">
-          {usageQuotas.map((quota) => (
-            <div key={quota.resource} className="grid grid-cols-[1fr_auto] gap-3 rounded-md border border-line bg-panelAlt p-3">
-              <span className="font-semibold">{quota.resource}</span>
-              <span>{quota.used} / {quota.freeUserDefault}</span>
-              <span className="text-muted">Admin limit</span>
-              <span className="text-muted">{quota.adminDefault}</span>
-            </div>
-          ))}
+        <div className="rounded-md border border-warning/40 bg-warning/10 p-4 text-sm leading-6 text-muted">
+          Runtime quota and usage telemetry is not connected to this view. No estimated usage is displayed.
         </div>
       </div>
     </section>

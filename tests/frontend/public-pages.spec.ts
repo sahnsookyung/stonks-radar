@@ -34,6 +34,17 @@ type NewsEvent = {
 
 type NewsListSnapshot = {
   events?: NewsEvent[];
+  filters?: {
+    tickers?: Array<{ count?: number; key?: string; label?: string }>;
+  };
+};
+
+type HomeSnapshot = {
+  headline?: string;
+};
+
+type CalendarSnapshot = {
+  items?: Array<{ title?: string }>;
 };
 
 test.beforeEach(async ({ page }) => {
@@ -98,32 +109,27 @@ function searchTermFor(event: NewsEvent): string {
   return token ?? text.slice(0, 12);
 }
 
-test("public routes render from snapshots", async ({ page }) => {
+test("public routes render from snapshots", async ({ page, request }) => {
+  const home = await getSnapshotData<HomeSnapshot>(request, "home", "en");
+  const homeKo = await getSnapshotData<HomeSnapshot>(request, "home", "ko");
+  expect(home.headline, "English home snapshot has an explicit live-data state").toBeTruthy();
+  expect(homeKo.headline, "Korean home snapshot has an explicit live-data state").toBeTruthy();
+
   test.slow();
   await page.goto("/en");
-  await expect(
-    page.getByText("Global market intelligence dashboard"),
-  ).toBeVisible();
+  await expect(page.getByText(home.headline!).first()).toBeVisible();
   await expect(page.getByText("Priority Event")).toHaveCount(0);
   await expect(page.getByText("Approved Events")).toHaveCount(0);
-  await expect(
-    page.getByRole("heading", { name: "Scenario Evidence" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: /Open evidence/ }).first(),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: /Open external tracker/ }),
-  ).toBeVisible();
   await page.goto("/en/calendar");
+  const calendar = await getSnapshotData<CalendarSnapshot>(request, "calendar_upcoming");
   await expect(
     page.getByRole("heading", { name: "Economic Calendar" }),
   ).toBeVisible();
-  await expect(
-    page
-      .getByRole("link", { name: /Federal Reserve|NVIDIA IR|FMP|BLS|TSMC IR/ })
-      .first(),
-  ).toBeVisible();
+  if (calendar.items?.[0]?.title) {
+    await expect(page.getByText(calendar.items[0].title).first()).toBeVisible();
+  } else {
+    await expect(page.getByText("No current source-backed data is available for this view.").first()).toBeVisible();
+  }
   await page.goto("/en/scenario-baskets/ai-infra-capex");
   await expect(page.getByText("Scenario evidence")).toBeVisible();
   await expect(page.getByText("Illustrative methodology")).toHaveCount(0);
@@ -135,16 +141,15 @@ test("public routes render from snapshots", async ({ page }) => {
   await expect(page.getByText("Source-Linked News Radar")).toBeVisible();
   await page.goto("/en/portfolio");
   await expect(page.getByText("Portfolio Workspace")).toBeVisible();
-  await expect(page.getByText("Investment checkup")).toBeVisible();
-  await expect(page.getByText("Goal runway")).toBeVisible();
+  await expect(page.getByText("Portfolio data required")).toBeVisible();
   await page.goto("/en/dashboard");
-  await expect(page.getByText("Cockpit").first()).toBeVisible();
+  await expect(page.getByTestId("portfolio-cockpit")).toBeVisible();
   await page.goto("/en/onboarding");
   await expect(page.getByText("CSV import", { exact: true })).toBeVisible();
   await page.goto("/en/portfolios");
   await expect(
     page
-      .getByRole("heading", { name: "Growth + shock absorber portfolio" })
+      .getByRole("heading", { name: "New portfolio" })
       .first(),
   ).toBeVisible();
   await page.goto("/en/portfolios/demo-growth-income/xray");
@@ -156,11 +161,11 @@ test("public routes render from snapshots", async ({ page }) => {
   await expect(page.getByText("Target allocation").first()).toBeVisible();
   await expectPortfolioEditorAccess(page);
   await page.goto("/en/portfolios/demo-growth-income/backtest");
-  await expect(page.getByText("Backtest equity curve")).toBeVisible();
+  await expect(page.getByText("Portfolio data required")).toBeVisible();
   await page.goto("/en/portfolios/demo-growth-income/monte-carlo");
-  await expect(page.getByText("Monte Carlo fan chart")).toBeVisible();
+  await expect(page.getByText("Portfolio data required")).toBeVisible();
   await page.goto("/en/portfolios/demo-growth-income/rebalance");
-  await expect(page.getByText("Contribution-first plan")).toBeVisible();
+  await expect(page.getByText("Portfolio data required")).toBeVisible();
   await page.goto("/en/portfolios/demo-growth-income/fees");
   await expect(page.getByText("Fee leak chart")).toBeVisible();
   await page.goto("/en/portfolios/demo-growth-income/tax-lots");
@@ -260,7 +265,7 @@ test("public routes render from snapshots", async ({ page }) => {
   ).toBeVisible();
   await expect(page).toHaveURL(/\/admin\/system-config$/);
   await page.goto("/ko");
-  await expect(page.getByText("글로벌 시장 인텔리전스 대시보드")).toBeVisible();
+  await expect(page.getByText(homeKo.headline!).first()).toBeVisible();
   await page.goto("/ko/news");
   await expect(page.getByText("출처 연결 뉴스 레이더")).toBeVisible();
 });
@@ -312,7 +317,15 @@ test("news filters and detail routes render from snapshots", async ({
   await expect(keywordFilter).toBeVisible();
   const tickerOptions = await page.getByLabel("Ticker").locator("option").allTextContents();
   expect(tickerOptions.some((option) => option.includes("Rocket Lab"))).toBe(true);
-  expect(tickerOptions.some((option) => option.includes("Advanced Micro Devices") && option.includes("(0)"))).toBe(true);
+  const amdFilter = newsIndex.filters?.tickers?.find((ticker) => ticker.key === "AMD");
+  expect(amdFilter, "news snapshot exposes the AMD filter").toBeTruthy();
+  expect(
+    tickerOptions.some(
+      (option) =>
+        option.includes(amdFilter?.label ?? "Advanced Micro Devices") &&
+        option.includes(`(${amdFilter?.count ?? 0})`),
+    ),
+  ).toBe(true);
   await keywordFilter.fill(searchTermFor(keywordEvent));
   await expect(page.getByText(keywordEvent.title!).first()).toBeVisible();
 
@@ -391,7 +404,7 @@ test("portfolio ticker autocomplete resolves identifiers locally and exposes hel
   await page.getByRole("option", { name: /NVDA/ }).click();
   await expect(page.getByRole("button", { name: "Remove NVDA" })).toBeVisible();
 
-  await search.fill("AAPL");
+  await search.fill("US67066G1040");
   await expect(page.getByText("Already in this workspace")).toBeVisible();
   expect(apiRequests.length).toBeGreaterThan(0);
   expect(
@@ -533,28 +546,40 @@ test("map renders news nodes at relevant geographies", async ({
   expect(response.ok()).toBeTruthy();
   const snapshot = (await response.json()) as {
     data?: {
-      events?: Array<{ latitude: number; longitude: number }>;
+      events?: Array<{ id?: string; latitude: number; longitude: number }>;
       breaking_market_map?: {
         map_points?: Array<{
           area_key?: string;
+          event_id?: string;
+          event_ids?: string[];
           latitude?: number;
           longitude?: number;
+          source_published_at?: string;
         }>;
       };
     };
   };
-  const staticEventCoordinates = new Set(
-    (snapshot.data?.events ?? []).map(
-      (event) => `${event.latitude.toFixed(1)},${event.longitude.toFixed(1)}`,
-    ),
-  );
+  const newsIndex = await getSnapshotData<NewsListSnapshot>(request, "news_index");
+  const newsEventIds = new Set((newsIndex.events ?? []).flatMap((event) => (event.id ? [event.id] : [])));
+  const mapEventIds = new Set((snapshot.data?.events ?? []).flatMap((event) => (event.id ? [event.id] : [])));
   const newsPoints = snapshot.data?.breaking_market_map?.map_points ?? [];
   const newsAreas = new Set(newsPoints.map((point) => point.area_key));
 
-  expect(staticEventCoordinates.size).toBe(0);
+  expect([...mapEventIds].filter((id) => id.includes("_seed"))).toEqual([]);
+  expect([...mapEventIds].filter((id) => !newsEventIds.has(id))).toEqual([]);
   if (newsPoints.length > 0) {
+    expect(mapEventIds.size).toBeGreaterThan(0);
     expect(newsAreas.size).toBeGreaterThan(3);
     expect([...newsAreas].some((key) => key && key !== "USA")).toBeTruthy();
+    const unownedPoints = newsPoints.filter((point) => {
+      const pointEventIds = point.event_ids?.length ? point.event_ids : point.event_id ? [point.event_id] : [];
+      return (
+        pointEventIds.length === 0 ||
+        pointEventIds.some((id) => !mapEventIds.has(id) || !newsEventIds.has(id)) ||
+        !point.source_published_at
+      );
+    });
+    expect(unownedPoints, "every map point is owned by a current source-dated news event").toEqual([]);
   }
 
   await page.goto("/en/map");

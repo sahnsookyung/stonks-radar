@@ -79,4 +79,31 @@ describe("MarketPulseBoard", () => {
     ).toBeInTheDocument();
     expect(within(card).queryByText("target missed")).not.toBeInTheDocument();
   });
+
+  it("does not present snapshot generation time as an observation for unavailable data", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-15T02:44:00Z"));
+    const tiles: MetricTile[] = [
+      {
+        key: "nasdaq_composite",
+        label: "Nasdaq Composite",
+        value: "unavailable",
+        source: "Yahoo Finance delayed quote",
+        source_url: "https://finance.yahoo.com/quote/%5EIXIC/",
+        freshness: "unsupported",
+        delay_label: "No current source-backed observation is available.",
+        updated_at: "2026-07-15T02:36:00Z",
+        coverage_status: "coverage_gap",
+        refresh_seconds: 900,
+        points: [],
+      },
+    ];
+
+    render(<MarketPulseBoard tiles={tiles} />);
+
+    const card = screen.getByRole("article");
+    expect(within(card).getByText("No live observation")).toBeInTheDocument();
+    expect(within(card).queryByText("last close 8m ago")).not.toBeInTheDocument();
+    expect(within(card).queryByText("every 15m")).not.toBeInTheDocument();
+  });
 });

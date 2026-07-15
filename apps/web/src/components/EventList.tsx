@@ -23,6 +23,9 @@ export function EventList({ events, selectedEventId = null, onEventSelect }: Eve
               <SeverityBadge value={event.severity} />
               <FreshnessBadge value={event.freshness} />
               <SourceBadge label={event.source_strength} />
+              {event.review_state === "candidate" || event.claim_level === "clustered_candidate" ? (
+                <SourceBadge label="Automated candidate · unreviewed" />
+              ) : null}
               <span className="px-1 text-xs leading-5 text-muted">{new Date(event.published_at).toLocaleString()}</span>
               {onEventSelect ? (
                 <button

@@ -38,7 +38,7 @@ export function NewsEventCard({
         <Link
           to="/$locale/news/events/$eventId"
           params={{ locale, eventId: event.id }}
-          className="focus-ring rounded-md hover:text-accent"
+          className="focus-ring inline-flex min-h-11 items-center rounded-md py-2 hover:text-accent"
         >
           {event.title}
         </Link>

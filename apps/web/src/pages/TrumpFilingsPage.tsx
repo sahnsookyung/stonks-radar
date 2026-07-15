@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Database, ExternalLink, FileText, Sparkles, Users } from "lucide-react";
+import { AlertTriangle, Database, ExternalLink, FileText, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import type { AlternativeSignalItem } from "@frw/shared-types";
-import { SeverityBadge, SourceBadge } from "../components/Badge";
+import { SourceBadge } from "../components/Badge";
 import { ErrorState, LoadingState } from "../components/LoadingState";
 import { SnapshotBanner } from "../components/SnapshotBanner";
 import { apiGet } from "../lib/api";
@@ -90,8 +89,6 @@ export function TrumpFilingsPage() { // NOSONAR - disclosure page coordinates fi
   if (snapshotQuery.isError || !snapshotQuery.data) return <ErrorState error={snapshotQuery.error} />;
 
   const lane = snapshotQuery.data.data.alternative_signals.find((item) => item.key === "trump_filings");
-  const summaryItem = lane?.items.find((item) => item.key.endsWith("_ai_summary"));
-  const fallbackItems = lane?.items.filter((item) => !item.key.endsWith("_ai_summary")) ?? [];
   const disclosure = disclosureQuery.data;
   const hasApiData = Boolean(disclosure);
   const recentFilings = disclosure?.filings ?? [];
@@ -153,14 +150,9 @@ export function TrumpFilingsPage() { // NOSONAR - disclosure page coordinates fi
           </div>
           <p className="safe-text mt-2 text-sm leading-6 text-muted">
             {locale === "ko"
-              ? "백엔드 공시 데이터베이스를 읽을 수 없어 스냅샷 요약으로 대체합니다."
-              : "The backend disclosure database is not readable from this session, so the page is falling back to the static snapshot digest."}
+              ? "백엔드 공시 데이터베이스를 읽을 수 없습니다. 정적 예시 공시는 표시하지 않습니다. 잠시 후 다시 시도하세요."
+              : "The disclosure database is unavailable. Static example filings are not displayed; try again shortly."}
           </p>
-          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {fallbackItems.map((item) => (
-              <FallbackCard key={item.key} item={item} locale={locale} />
-            ))}
-          </div>
         </section>
       )}
 
@@ -368,18 +360,6 @@ export function TrumpFilingsPage() { // NOSONAR - disclosure page coordinates fi
         <LoadingState />
       ) : null}
 
-      {summaryItem ? (
-        <section className="panel p-5">
-          <div className="flex items-center gap-2 text-sm font-semibold text-accent">
-            <Sparkles className="h-4 w-4" />
-            {summaryItem.label}
-          </div>
-          <p className="safe-text mt-2 text-sm leading-6 text-muted">{summaryItem.detail}</p>
-          <div className="mt-3">
-            <SeverityBadge value={summaryItem.severity} />
-          </div>
-        </section>
-      ) : null}
     </div>
   );
 }
@@ -589,34 +569,6 @@ function WatchPerson({ person }: Readonly<{ person: WatchedPerson }>) {
       {person.notes ? <p className="safe-text mt-2 text-xs leading-5 text-muted">{person.notes}</p> : null}
     </article>
   );
-}
-
-function FallbackCard({ item, locale }: Readonly<{ item: AlternativeSignalItem; locale: "en" | "ko" }>) {
-  const sourceHref = safeExternalUrl(item.source_url);
-  const content = (
-    <>
-      <div className="flex items-start justify-between gap-3">
-        <h3 className="safe-text min-w-0 text-sm font-semibold leading-5">{item.label}</h3>
-        <div className="safe-text shrink-0 text-xs font-semibold leading-5 text-accent">{item.value}</div>
-      </div>
-      <p className="safe-text mt-2 text-xs leading-5 text-muted">{item.detail}</p>
-      {sourceHref && (
-        <div className="mt-3 flex items-center gap-1 text-xs font-semibold leading-5 text-accent">
-          {locale === "ko" ? "출처" : "Source"}
-          <ExternalLink className="h-3.5 w-3.5" />
-        </div>
-      )}
-    </>
-  );
-  const className = "focus-ring block min-h-[160px] rounded-md border border-line bg-panelAlt p-4 hover:border-accent";
-  if (sourceHref) {
-    return (
-      <a className={className} href={sourceHref} target="_blank" rel="noreferrer">
-        {content}
-      </a>
-    );
-  }
-  return <article className={className}>{content}</article>;
 }
 
 function EmptyState({ text }: Readonly<{ text: string }>) {

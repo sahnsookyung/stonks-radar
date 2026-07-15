@@ -1079,8 +1079,6 @@ function TickerNewsEvent({ event, locale }: Readonly<{ event: NewsEventListItem;
 }
 
 function directlyMatchesTicker(event: NewsEventListItem, ticker: TrackedTicker) {
-  if (event.evidence_match_status !== "matched") return false;
-
   const acceptedSymbols = new Set([
     ticker.symbol.toUpperCase(),
     ticker.displaySymbol.toUpperCase(),

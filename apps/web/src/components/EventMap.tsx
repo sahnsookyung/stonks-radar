@@ -736,7 +736,9 @@ function createNewsFeatureCollection(mapPoints: NewsMapPoint[]) {
           source_published_at: point.source_published_at,
           geo_confidence: point.geo_confidence,
           score_reason_codes: point.score_reason_codes.join(", "),
-          trust_tier: enrichedTrustTier(point)
+          trust_tier: enrichedTrustTier(point),
+          review_state: point.review_state ?? "",
+          claim_level: point.claim_level ?? ""
         }
       }))
   };
@@ -886,7 +888,8 @@ function createNewsMapPointPopup(properties: maplibregl.MapGeoJSONFeature["prope
     safeProperty(properties, "severity"),
     `urgency ${safeProperty(properties, "urgency_score")}`,
     sourceCountLabel(properties),
-    safeProperty(properties, "trust_tier")
+    safeProperty(properties, "trust_tier"),
+    candidateLabel(properties)
   ]
     .filter(Boolean)
     .join(" · ");
@@ -926,6 +929,14 @@ function createNewsMapPointPopup(properties: maplibregl.MapGeoJSONFeature["prope
   }
 
   return wrapper;
+}
+
+function candidateLabel(properties: maplibregl.MapGeoJSONFeature["properties"]) {
+  const reviewState = safeProperty(properties, "review_state");
+  const claimLevel = safeProperty(properties, "claim_level");
+  return reviewState === "candidate" || claimLevel === "clustered_candidate"
+    ? "automated candidate · unreviewed"
+    : "";
 }
 
 function enrichedTrustTier(point: NewsMapPoint) {

@@ -287,7 +287,7 @@ export const DEFAULT_ASSET_CLASS_CORRELATION_MATRIX: Record<string, Record<strin
 };
 
 export type CoverageQualityTier = "HIGH" | "MEDIUM" | "LOW" | "INSUFFICIENT";
-export type PortfolioMarketDataMode = "STORED_DAILY" | "USER_PROVIDED" | "SAMPLE_STATIC" | "MIXED";
+export type PortfolioMarketDataMode = "STORED_DAILY" | "USER_PROVIDED" | "UNAVAILABLE" | "MIXED";
 
 export interface HoldingCoverageRow {
   holdingId: string;
@@ -946,201 +946,10 @@ export function instrumentReferenceKeys(instrument: Instrument): string[] {
   ].filter(Boolean);
 }
 
-export const demoInstruments: Instrument[] = [
-  instrument({
-    symbol: "AAPL",
-    name: "Apple Inc.",
-    exchange: "NASDAQ",
-    assetClass: "Equity",
-    subAssetClass: "Single Stocks",
-    country: "US",
-    currency: "USD",
-    sector: "Information Technology",
-    theme: ["Big Tech", "AI infrastructure"],
-    currentPrice: 195.4,
-    previousClose: 194.2,
-    expenseRatio: 0,
-    aliases: ["Apple", "Apple Computer"],
-    identifiers: [
-      { type: "ISIN", value: "US0378331005" },
-      { type: "FIGI", value: "BBG000B9XRY4" }
-    ]
-  }),
-  instrument({
-    symbol: "MSFT",
-    name: "Microsoft Corp.",
-    exchange: "NASDAQ",
-    assetClass: "Equity",
-    subAssetClass: "Single Stocks",
-    country: "US",
-    currency: "USD",
-    sector: "Information Technology",
-    theme: ["Big Tech", "AI infrastructure"],
-    currentPrice: 425.7,
-    previousClose: 421.3,
-    expenseRatio: 0,
-    aliases: ["Microsoft"],
-    identifiers: [
-      { type: "ISIN", value: "US5949181045" },
-      { type: "FIGI", value: "BBG000BPH459" }
-    ]
-  }),
-  instrument({
-    symbol: "NVDA",
-    name: "NVIDIA Corporation",
-    exchange: "NASDAQ",
-    assetClass: "Equity",
-    subAssetClass: "Single Stocks",
-    country: "US",
-    currency: "USD",
-    sector: "Information Technology",
-    theme: ["AI infrastructure", "Semiconductors"],
-    currentPrice: 1120,
-    previousClose: 1108.5,
-    expenseRatio: 0,
-    aliases: ["Nvidia", "NVIDIA Corp"],
-    identifiers: [{ type: "ISIN", value: "US67066G1040" }]
-  }),
-  instrument({
-    symbol: "TSLA",
-    name: "Tesla, Inc.",
-    exchange: "NASDAQ",
-    assetClass: "Equity",
-    subAssetClass: "Single Stocks",
-    country: "US",
-    currency: "USD",
-    sector: "Consumer Discretionary",
-    theme: ["EV", "Big Tech"],
-    currentPrice: 180.2,
-    previousClose: 178.9,
-    expenseRatio: 0,
-    aliases: ["Tesla"],
-    identifiers: [{ type: "ISIN", value: "US88160R1014" }]
-  }),
-  instrument({
-    symbol: "005930.KS",
-    name: "Samsung Electronics Co., Ltd.",
-    exchange: "KRX",
-    assetClass: "Equity",
-    subAssetClass: "Single Stocks",
-    country: "Korea",
-    currency: "KRW",
-    sector: "Information Technology",
-    theme: ["Semiconductors", "Korea"],
-    currentPrice: 75_300,
-    previousClose: 74_800,
-    expenseRatio: 0,
-    aliases: ["Samsung Electronics", "삼성전자"],
-    identifiers: [
-      { type: "ISIN", value: "KR7005930003" },
-      { type: "LOCAL_CODE", value: "005930" }
-    ],
-    listings: [
-      {
-        listingId: "KRX:005930",
-        symbol: "005930.KS",
-        exchange: "KRX",
-        country: "Korea",
-        currency: "KRW",
-        localCode: "005930",
-        isPrimary: true,
-        isActive: true
-      }
-    ],
-    primaryListingId: "KRX:005930"
-  }),
-  instrument({
-    symbol: "VXUS",
-    name: "Vanguard Total International Stock ETF",
-    exchange: "NASDAQ",
-    assetClass: "Equity",
-    subAssetClass: "Developed ex-US Equity",
-    country: "Global ex-US",
-    currency: "USD",
-    sector: "Multi-sector",
-    theme: ["Global diversification"],
-    currentPrice: 62.1,
-    previousClose: 61.8,
-    expenseRatio: 0.0007,
-    fundFlag: true,
-    lookThroughHoldings: [
-      { symbol: "TSM", weight: 0.031 },
-      { symbol: "NOVO.B", weight: 0.019 },
-      { symbol: "ASML", weight: 0.016 },
-      { symbol: "NESN", weight: 0.015 }
-    ]
-  }),
-  instrument({
-    symbol: "TLT",
-    name: "iShares 20+ Year Treasury Bond ETF",
-    exchange: "NASDAQ",
-    assetClass: "Fixed Income",
-    subAssetClass: "Government Bonds",
-    country: "US",
-    currency: "USD",
-    sector: "Government bonds",
-    theme: ["Duration hedge"],
-    currentPrice: 92.4,
-    previousClose: 92.1,
-    expenseRatio: 0.0015,
-    fundFlag: true,
-    lookThroughHoldings: [
-      { symbol: "US912810TZ12", weight: 0.089 },
-      { symbol: "US912810UB25", weight: 0.082 },
-      { symbol: "US912810UC08", weight: 0.077 }
-    ]
-  }),
-  instrument({
-    symbol: "SGOV",
-    name: "iShares 0-3 Month Treasury Bond ETF",
-    exchange: "NYSE",
-    assetClass: "Cash & Cash Equivalents",
-    subAssetClass: "T-bills",
-    country: "US",
-    currency: "USD",
-    sector: "Government bonds",
-    theme: ["Cash management"],
-    currentPrice: 100.8,
-    previousClose: 100.79,
-    expenseRatio: 0.0009,
-    fundFlag: true,
-    lookThroughHoldings: [
-      { symbol: "USTBILL-1M", weight: 0.48 },
-      { symbol: "USTBILL-2M", weight: 0.32 },
-      { symbol: "USTBILL-3M", weight: 0.2 }
-    ]
-  }),
-  instrument({
-    symbol: "GLD",
-    name: "SPDR Gold Shares",
-    exchange: "NYSE",
-    assetClass: "Real Assets",
-    subAssetClass: "Gold",
-    country: "US",
-    currency: "USD",
-    sector: "Commodities",
-    theme: ["Commodities"],
-    currentPrice: 210.2,
-    previousClose: 209.1,
-    expenseRatio: 0.004,
-    fundFlag: true,
-    lookThroughHoldings: [{ symbol: "GOLD-BULLION", weight: 1 }]
-  }),
-  instrument({
-    symbol: "BTC-USD",
-    name: "Bitcoin",
-    exchange: "CRYPTO",
-    assetClass: "Crypto / Digital Assets",
-    subAssetClass: "Bitcoin",
-    country: "Global",
-    currency: "USD",
-    sector: "Crypto",
-    theme: ["Crypto ecosystem"],
-    currentPrice: 67_000,
-    previousClose: 66_500,
-    expenseRatio: 0
-  })
-];
+// Observational instrument data must come from the instrument API or a user-entered record.
+// Keeping this catalog empty makes provider and directory failures visible instead of silently
+// substituting checked-in prices or metadata.
+export const demoInstruments: Instrument[] = [];
 
 export const defaultAssumptions: AssumptionSet = {
   assumptionId: "default-planning",
@@ -1176,84 +985,26 @@ export const defaultAssumptions: AssumptionSet = {
   correlationMatrix: DEFAULT_ASSET_CLASS_CORRELATION_MATRIX
 };
 
-export const featureGates: FeatureGate[] = [
-  gate("FEATURE_ADVANCED_BACKTESTING", "Advanced backtesting", "Longer windows, benchmark comparison, and rebalance-frequency controls."),
-  gate("FEATURE_MONTE_CARLO_HIGH_PATH_COUNT", "High-path Monte Carlo", "Allows up to 10,000 free-user paths and higher admin caps."),
-  gate("FEATURE_TAX_LOT_REBALANCING", "Tax-lot rebalancing", "Estimated lot-aware rebalancing. Not tax advice."),
-  gate("FEATURE_ETF_LOOKTHROUGH", "ETF look-through", "Uses public filings or user overrides where available."),
-  gate("FEATURE_AI_MONTHLY_REPORT", "AI monthly report", "Queued summary generation from approved portfolio facts."),
-  gate("FEATURE_PDF_EXPORT", "PDF export", "Queued report export."),
-  gate("FEATURE_MULTIPLE_PORTFOLIOS", "Multiple portfolios", "Allows more than one saved portfolio."),
-  gate("FEATURE_ADMIN_USAGE_DASHBOARD", "Admin usage dashboard", "Admin queue, quota, and usage views.")
-];
-
-export const usageQuotas: UsageQuota[] = [
-  quota("Dashboard refreshes", 60, "bypass_user_limit"),
-  quota("Manual recalculations", 20, "bypass_user_limit"),
-  quota("Backtests", 10, "bypass_user_limit"),
-  quota("Monte Carlo runs", 20, "bypass_user_limit"),
-  quota("PDF reports", 5, 25),
-  quota("CSV imports", 10, 50),
-  quota("AI reports", 3, 20)
-];
-
-export const queueJobs: PortfolioJob[] = [
-  job("BACKTEST", "SUCCEEDED", 100),
-  job("MONTE_CARLO", "SUCCEEDED", 100),
-  job("REBALANCE_PLAN", "QUEUED", 35),
-  job("DATA_IMPORT", "SUCCEEDED", 100)
-];
-
 export function createDemoPortfolio(): Portfolio {
   return {
-    portfolioId: "demo-growth-income",
-    userId: "demo-user",
-    name: "Growth + shock absorber portfolio",
+    portfolioId: "local-portfolio",
+    userId: "local-user",
+    name: "New portfolio",
     baseCurrency: "USD",
-    description: "A daily-resolution planning portfolio for modeling, not trading.",
-    isDemo: true,
-    cashBalance: 6_500,
-    holdings: [
-      holding("h-aapl", "AAPL", 44),
-      holding("h-msft", "MSFT", 34),
-      holding("h-vxus", "VXUS", 520),
-      holding("h-tlt", "TLT", 180),
-      holding("h-sgov", "SGOV", 85),
-      holding("h-gld", "GLD", 42),
-      holding("h-btc", "BTC-USD", 0.18)
-    ],
-    transactions: [
-      txn("t-deposit-1", "DEPOSIT", "SGOV", "2024-01-02", 0, 0, 110_000),
-      txn("t-aapl-1", "BUY", "AAPL", "2024-01-03", 44, 155, -6_830),
-      txn("t-msft-1", "BUY", "MSFT", "2024-01-03", 34, 310, -10_550),
-      txn("t-vxus-1", "BUY", "VXUS", "2024-01-05", 520, 55, -28_620),
-      txn("t-tlt-1", "BUY", "TLT", "2024-02-02", 180, 91, -16_390),
-      txn("t-gld-1", "BUY", "GLD", "2024-02-02", 42, 184, -7_735),
-      txn("t-btc-1", "BUY", "BTC-USD", "2024-03-15", 0.18, 53_000, -9_545)
-    ],
-    taxLots: [
-      lot("lot-aapl-1", "AAPL", "2024-01-03", 24, 155),
-      lot("lot-aapl-2", "AAPL", "2025-08-12", 20, 182),
-      lot("lot-msft-1", "MSFT", "2024-01-03", 34, 310),
-      lot("lot-vxus-1", "VXUS", "2024-01-05", 520, 55),
-      lot("lot-tlt-1", "TLT", "2024-02-02", 180, 91),
-      lot("lot-gld-1", "GLD", "2024-02-02", 42, 184),
-      lot("lot-btc-1", "BTC-USD", "2024-03-15", 0.18, 53_000)
-    ],
-    targetAllocation: {
-      Equity: 0.62,
-      "Fixed Income": 0.2,
-      "Cash & Cash Equivalents": 0.05,
-      "Real Assets": 0.1,
-      "Crypto / Digital Assets": 0.03
-    },
+    description: "Add holdings manually or from a source-backed instrument search.",
+    isDemo: false,
+    cashBalance: 0,
+    holdings: [],
+    transactions: [],
+    taxLots: [],
+    targetAllocation: {},
     goal: {
-      goalId: "goal-demo",
-      portfolioId: "demo-growth-income",
-      targetAmount: 300_000,
-      targetDate: "2036-12-31",
-      monthlyContribution: 1_200,
-      inflationAssumption: 0.025
+      goalId: "goal-local",
+      portfolioId: "local-portfolio",
+      targetAmount: 0,
+      targetDate: "",
+      monthlyContribution: 0,
+      inflationAssumption: 0
     }
   };
 }
@@ -1281,7 +1032,7 @@ export function analyzePortfolio(
   const dataQualityIssues = buildDataQualityIssues(assetAllocation, instruments, portfolio.holdings);
   const holdingCoverageRows = calculateHoldingCoverageRows(portfolio, instruments, portfolioValue);
   const coverageSummary = calculatePortfolioCoverageSummary(holdingCoverageRows);
-  const marketDataMode = calculatePortfolioMarketDataMode(holdingCoverageRows, portfolio.isDemo);
+  const marketDataMode = calculatePortfolioMarketDataMode(holdingCoverageRows);
   const benchmarkSymbol = resolvePortfolioBenchmarkSymbol(assetAllocation);
   const portfolioMoments = calculatePortfolioAssumptionMoments(assetAllocation, assumptions);
   const kellyEstimate = calculateContinuousKellyFraction({
@@ -2076,7 +1827,7 @@ export function calculateHoldingCoverageRows(
     const hasStoredDailyPrice =
       instrument?.priceCoverage === "available" &&
       Boolean(instrument.sourceProviders?.includes("stored_normalized_daily_bars"));
-    const dataMode = holdingDataMode(hasManualValuation, hasStoredDailyPrice, portfolio.isDemo);
+    const dataMode = holdingDataMode(hasManualValuation, hasStoredDailyPrice);
     return {
       holdingId: holding.holdingId,
       symbol: instrument ? primaryListingFor(instrument).symbol : holding.instrumentId,
@@ -2092,11 +1843,10 @@ export function calculateHoldingCoverageRows(
   });
 }
 
-function holdingDataMode(hasManualValuation: boolean, hasStoredDailyPrice: boolean, isDemo: boolean): HoldingCoverageRow["dataMode"] {
+function holdingDataMode(hasManualValuation: boolean, hasStoredDailyPrice: boolean): HoldingCoverageRow["dataMode"] {
   if (hasManualValuation) return "USER_PROVIDED";
   if (hasStoredDailyPrice) return "STORED_DAILY";
-  if (isDemo) return "SAMPLE_STATIC";
-  return "STORED_DAILY";
+  return "UNAVAILABLE";
 }
 
 export function calculatePortfolioCoverageSummary(rows: HoldingCoverageRow[]): PortfolioCoverageSummary {
@@ -2139,9 +1889,10 @@ function coverageQualityTier(input: Pick<PortfolioCoverageSummary, "coveredWeigh
   return "HIGH";
 }
 
-export function calculatePortfolioMarketDataMode(rows: HoldingCoverageRow[], isDemo: boolean): PortfolioMarketDataMode {
+export function calculatePortfolioMarketDataMode(rows: HoldingCoverageRow[]): PortfolioMarketDataMode {
   const modes = new Set(rows.map((row) => row.dataMode));
-  if (modes.size === 1) return [...modes][0] ?? (isDemo ? "SAMPLE_STATIC" : "STORED_DAILY");
+  if (modes.size === 0) return "UNAVAILABLE";
+  if (modes.size === 1) return [...modes][0] ?? "UNAVAILABLE";
   return "MIXED";
 }
 
@@ -2296,11 +2047,11 @@ export function estimateTaxLotImpact(
 
 export function validateHoldingsCsv(
   text: string,
-  portfolioIdOrOptions: string | CsvValidationOptions = "demo-growth-income"
+  portfolioIdOrOptions: string | CsvValidationOptions = "local-portfolio"
 ): { holdings: Holding[]; errors: string[] } {
   const options: CsvValidationOptions =
     typeof portfolioIdOrOptions === "string" ? { portfolioId: portfolioIdOrOptions } : portfolioIdOrOptions;
-  const portfolioId = options.portfolioId ?? "demo-growth-income";
+  const portfolioId = options.portfolioId ?? "local-portfolio";
   const maxBytes = options.maxBytes ?? 1_000_000;
   const maxRows = options.maxRows ?? 500;
   const errors: string[] = [];
@@ -2425,151 +2176,6 @@ function allocationDriftLabel(allocationDrift: number) {
   if (allocationDrift > 0.12) return "materially off target";
   if (allocationDrift > 0.05) return "slightly off target";
   return "close to target";
-}
-
-interface SampleInstrumentInput extends Partial<Pick<Instrument, "aliases" | "identifiers" | "listings" | "primaryListingId" | "priceQuality" | "isActive">> {
-  symbol: string;
-  name: string;
-  exchange: string;
-  assetClass: AssetClass;
-  subAssetClass: string;
-  country: string;
-  currency: string;
-  sector: string;
-  theme: string[];
-  currentPrice: number;
-  previousClose: number;
-  expenseRatio: number;
-  fundFlag?: boolean;
-  lookThroughHoldings?: { symbol: string; weight: number }[];
-}
-
-function instrument(input: Readonly<SampleInstrumentInput>): Instrument {
-  const {
-    symbol,
-    name,
-    exchange,
-    assetClass,
-    subAssetClass,
-    country,
-    currency,
-    sector,
-    theme,
-    currentPrice,
-    previousClose,
-    expenseRatio,
-    fundFlag = false,
-    lookThroughHoldings
-  } = input;
-  const options = input;
-  const primaryListing = options.listings?.find((listing) => listing.isPrimary) ?? options.listings?.[0];
-  const listingId = primaryListing?.listingId ?? `${exchange}:${symbol}`;
-  return {
-    instrumentId: symbol,
-    symbol,
-    exchange,
-    name,
-    instrumentType: instrumentTypeForSeed(fundFlag, assetClass),
-    assetClass,
-    subAssetClass,
-    country,
-    domicileCountry: country,
-    currency,
-    sector,
-    industry: sector,
-    theme,
-    expenseRatio,
-    fundFlag,
-    dataQualityScore: fundFlag ? 0.78 : 0.9,
-    currentPrice,
-    previousClose,
-    priceAsOf: "2026-05-29",
-    priceQuality: options.priceQuality ?? (fundFlag ? "PROXY" : "STALE"),
-    aliases: options.aliases,
-    identifiers: options.identifiers,
-    listings: options.listings ?? [
-      {
-        listingId,
-        symbol,
-        exchange,
-        country,
-        currency,
-        localCode: symbol,
-        isPrimary: true,
-        isActive: options.isActive ?? true
-      }
-    ],
-    primaryListingId: options.primaryListingId ?? listingId,
-    isActive: options.isActive,
-    lookThroughHoldings
-  };
-}
-
-function instrumentTypeForSeed(fundFlag: boolean, assetClass: AssetClass): Instrument["instrumentType"] {
-  if (fundFlag) return "etf";
-  if (assetClass === "Fixed Income") return "bond";
-  if (assetClass === "Crypto / Digital Assets") return "crypto";
-  return "stock";
-}
-
-function holding(holdingId: string, instrumentId: string, quantity: number): Holding {
-  return { holdingId, portfolioId: "demo-growth-income", accountId: "taxable", instrumentId, quantity, currency: "USD", source: "sample" };
-}
-
-function txn(transactionId: string, type: Transaction["type"], instrumentId: string, date: string, quantity: number, price: number, amount: number): Transaction {
-  return { transactionId, portfolioId: "demo-growth-income", accountId: "taxable", instrumentId, type, date, quantity, price, fees: type === "BUY" ? 5 : 0, amount, currency: "USD" };
-}
-
-function lot(lotId: string, instrumentId: string, purchaseDate: string, quantity: number, cost: number): TaxLot {
-  const instrument = demoInstruments.find((item) => item.instrumentId === instrumentId);
-  return {
-    lotId,
-    portfolioId: "demo-growth-income",
-    accountId: "taxable",
-    instrumentId,
-    purchaseDate,
-    quantityOriginal: quantity,
-    quantityRemaining: quantity,
-    costBasisPerUnit: cost,
-    fees: 5,
-    currency: "USD",
-    currentPrice: instrument?.currentPrice ?? cost,
-    source: "sample"
-  };
-}
-
-function gate(key: string, displayName: string, description: string): FeatureGate {
-  return {
-    key,
-    displayName,
-    description,
-    enabledGlobally: true,
-    enabledForFreeUsers: true,
-    enabledForPaidUsers: true,
-    enabledForAdmins: true,
-    rolloutPercentage: 100,
-    hardDisabled: false
-  };
-}
-
-function quota(resource: string, freeUserDefault: number, adminDefault: number | "bypass_user_limit"): UsageQuota {
-  return { resource, freeUserDefault, adminDefault, used: Math.round(freeUserDefault * 0.22), resetsAt: "2026-06-01T00:00:00Z" };
-}
-
-function job(jobType: JobType, status: JobStatus, progressPercent: number): PortfolioJob {
-  return {
-    jobId: `job-${jobType.toLowerCase()}`,
-    userId: "demo-user",
-    portfolioId: "demo-growth-income",
-    jobType,
-    status,
-    priority: jobType === "DATA_IMPORT" ? 20 : 100,
-    idempotencyKey: `${jobType}:demo-growth-income`,
-    progressPercent,
-    attempts: status === "SUCCEEDED" ? 1 : 0,
-    maxAttempts: 5,
-    createdAt: "2026-05-30T09:00:00Z"
-  };
 }
 
 function holdingMarketValue(holding: Holding, instruments: Instrument[]): number {

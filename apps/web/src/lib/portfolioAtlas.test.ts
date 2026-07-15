@@ -41,12 +41,147 @@ import {
   searchInstruments,
   validateHoldingsCsv
 } from "./portfolioAtlas";
+import type { Instrument, Portfolio } from "./portfolioAtlas";
 import { normalizeWeights } from "./portfolio";
 
+const testInstruments: Instrument[] = [
+  testInstrument("AAPL", "Apple Inc.", 195, {
+    aliases: ["Apple"],
+    identifiers: [{ type: "ISIN", value: "US0378331005" }]
+  }),
+  testInstrument("MSFT", "Microsoft Corp.", 425),
+  testInstrument("NVDA", "NVIDIA Corporation", 112),
+  testInstrument("005930.KS", "Samsung Electronics", 75_300, {
+    aliases: ["삼성전자"],
+    identifiers: [
+      { type: "ISIN", value: "KR7005930003" },
+      { type: "LOCAL_CODE", value: "005930" }
+    ],
+    exchange: "KRX",
+    country: "Korea",
+    currency: "KRW",
+    listings: [
+      {
+        listingId: "KRX:005930",
+        symbol: "005930.KS",
+        exchange: "KRX",
+        country: "Korea",
+        currency: "KRW",
+        localCode: "005930",
+        isPrimary: true,
+        isActive: true
+      }
+    ],
+    primaryListingId: "KRX:005930"
+  }),
+  testInstrument("VXUS", "International Equity ETF", 62, {
+    instrumentType: "etf",
+    fundFlag: true,
+    expenseRatio: 0.0007,
+    lookThroughHoldings: [
+      { symbol: "TSM", weight: 0.031 },
+      { symbol: "ASML", weight: 0.016 }
+    ]
+  })
+];
+
+function testInstrument(
+  symbol: string,
+  name: string,
+  currentPrice: number,
+  overrides: Partial<Instrument> = {}
+): Instrument {
+  const exchange = overrides.exchange ?? "NASDAQ";
+  const country = overrides.country ?? "US";
+  const currency = overrides.currency ?? "USD";
+  return {
+    instrumentId: symbol,
+    symbol,
+    exchange,
+    name,
+    instrumentType: "stock",
+    isActive: true,
+    assetClass: "Equity",
+    subAssetClass: "Single Stocks",
+    country,
+    domicileCountry: country,
+    currency,
+    sector: "Information Technology",
+    industry: "Information Technology",
+    theme: [],
+    expenseRatio: 0,
+    dataQualityScore: 1,
+    currentPrice,
+    previousClose: currentPrice * 0.99,
+    priceAsOf: "2026-05-29",
+    priceQuality: "COMPLETE",
+    priceCoverage: "available",
+    calculationEligible: true,
+    requiresUserPrice: false,
+    sourceProviders: ["test_fixture"],
+    sourceObservedAt: "2026-05-29T00:00:00Z",
+    listings: [
+      {
+        listingId: `${exchange}:${symbol}`,
+        symbol,
+        exchange,
+        country,
+        currency,
+        localCode: symbol,
+        isPrimary: true,
+        isActive: true
+      }
+    ],
+    primaryListingId: `${exchange}:${symbol}`,
+    ...overrides
+  };
+}
+
+function testPortfolio(): Portfolio {
+  const base = createDemoPortfolio();
+  return {
+    ...base,
+    cashBalance: 6_500,
+    targetAllocation: { Equity: 0.8, "Cash & Cash Equivalents": 0.2 },
+    goal: {
+      ...base.goal,
+      targetAmount: 300_000,
+      targetDate: "2036-12-31",
+      monthlyContribution: 1_200,
+      inflationAssumption: 0.025
+    },
+    holdings: [
+      { holdingId: "h-aapl", portfolioId: base.portfolioId, accountId: "taxable", instrumentId: "AAPL", quantity: 200, currency: "USD", source: "manual" },
+      { holdingId: "h-msft", portfolioId: base.portfolioId, accountId: "taxable", instrumentId: "MSFT", quantity: 100, currency: "USD", source: "manual" },
+      { holdingId: "h-vxus", portfolioId: base.portfolioId, accountId: "taxable", instrumentId: "VXUS", quantity: 500, currency: "USD", source: "manual" }
+    ],
+    transactions: [
+      { transactionId: "deposit", portfolioId: base.portfolioId, accountId: "taxable", instrumentId: "CASH", type: "DEPOSIT", date: "2024-01-01", quantity: 0, price: 0, fees: 0, amount: 100_000, currency: "USD" }
+    ],
+    taxLots: [
+      { lotId: "aapl-lot", portfolioId: base.portfolioId, accountId: "taxable", instrumentId: "AAPL", purchaseDate: "2024-01-01", quantityOriginal: 200, quantityRemaining: 200, costBasisPerUnit: 150, fees: 0, currency: "USD", currentPrice: 195, source: "manual" }
+    ]
+  };
+}
+
 describe("portfolio atlas calculation engine", () => {
-  it("calculates value, allocation, concentration, fees, and drift", () => {
+  it("ships without checked-in holdings or instrument observations", () => {
     const portfolio = createDemoPortfolio();
-    const analysis = analyzePortfolio(portfolio, demoInstruments, defaultAssumptions);
+
+    expect(demoInstruments).toEqual([]);
+    expect(portfolio.holdings).toEqual([]);
+    expect(portfolio.transactions).toEqual([]);
+    expect(portfolio.taxLots).toEqual([]);
+    expect(portfolio.cashBalance).toBe(0);
+    expect(portfolio.targetAllocation).toEqual({});
+    expect(portfolio.goal.targetAmount).toBe(0);
+    expect(portfolio.goal.monthlyContribution).toBe(0);
+    expect(portfolio.isDemo).toBe(false);
+  });
+
+  it("calculates value, allocation, concentration, fees, and drift", () => {
+    const portfolio = testPortfolio();
+    const analysis = analyzePortfolio(portfolio, testInstruments, defaultAssumptions);
 
     expect(analysis.portfolioValue).toBeGreaterThan(100_000);
     expect(analysis.netInvestedCapital).toBeGreaterThan(0);
@@ -155,12 +290,12 @@ describe("portfolio atlas calculation engine", () => {
   });
 
   it("runs backtest, monte carlo, rebalance, and tax-lot estimates deterministically", () => {
-    const portfolio = createDemoPortfolio();
-    const analysis = analyzePortfolio(portfolio, demoInstruments, defaultAssumptions);
-    const backtest = runBacktest({ portfolio, instruments: demoInstruments, assumptions: defaultAssumptions, years: 5 });
-    const monteCarlo = runMonteCarlo({ portfolio, instruments: demoInstruments, assumptions: defaultAssumptions, pathCount: 500, seed: 7 });
+    const portfolio = testPortfolio();
+    const analysis = analyzePortfolio(portfolio, testInstruments, defaultAssumptions);
+    const backtest = runBacktest({ portfolio, instruments: testInstruments, assumptions: defaultAssumptions, years: 5 });
+    const monteCarlo = runMonteCarlo({ portfolio, instruments: testInstruments, assumptions: defaultAssumptions, pathCount: 500, seed: 7 });
     const rebalance = generateContributionRebalancePlan(analysis, portfolio.targetAllocation, 1000, defaultAssumptions);
-    const taxImpact = estimateTaxLotImpact(portfolio.taxLots, demoInstruments, "AAPL", 5, "LOWEST_GAIN_FIRST");
+    const taxImpact = estimateTaxLotImpact(portfolio.taxLots, testInstruments, "AAPL", 5, "LOWEST_GAIN_FIRST");
 
     expect(backtest.equityCurve).toHaveLength(60);
     expect(backtest.endingValue).toBeGreaterThan(0);
@@ -238,12 +373,12 @@ describe("portfolio atlas calculation engine", () => {
   });
 
   it("searches instruments by ticker, ISIN, local code, aliases, and listing metadata", () => {
-    expect(searchInstruments("NVDA", demoInstruments)[0]?.instrumentId).toBe("NVDA");
-    expect(searchInstruments("US0378331005", demoInstruments)[0]?.instrumentId).toBe("AAPL");
-    expect(searchInstruments("KR7005930003", demoInstruments)[0]?.instrumentId).toBe("005930.KS");
-    expect(searchInstruments("005930", demoInstruments)[0]?.listingId).toBe("KRX:005930");
-    expect(searchInstruments("삼성전자", demoInstruments)[0]?.instrumentId).toBe("005930.KS");
-    expect(resolveInstrumentSearchResult("005930", demoInstruments)?.listingId).toBe("KRX:005930");
+    expect(searchInstruments("NVDA", testInstruments)[0]?.instrumentId).toBe("NVDA");
+    expect(searchInstruments("US0378331005", testInstruments)[0]?.instrumentId).toBe("AAPL");
+    expect(searchInstruments("KR7005930003", testInstruments)[0]?.instrumentId).toBe("005930.KS");
+    expect(searchInstruments("005930", testInstruments)[0]?.listingId).toBe("KRX:005930");
+    expect(searchInstruments("삼성전자", testInstruments)[0]?.instrumentId).toBe("005930.KS");
+    expect(resolveInstrumentSearchResult("005930", testInstruments)?.listingId).toBe("KRX:005930");
   });
 
   it("materializes API-only search results as metadata-only instruments", () => {
@@ -378,14 +513,14 @@ describe("portfolio atlas calculation engine", () => {
 
   it("keeps advanced and inactive instruments gated unless explicitly requested", () => {
     const advanced = {
-      ...demoInstruments[0],
+      ...testInstruments[0],
       instrumentId: "AAPL.WS",
       symbol: "AAPL.WS",
       name: "Apple warrant",
       listings: [{ listingId: "NASDAQ:AAPL.WS", symbol: "AAPL.WS", exchange: "NASDAQ", country: "US", currency: "USD", localCode: "AAPL.WS", isPrimary: true }]
     };
     const inactive = {
-      ...demoInstruments[0],
+      ...testInstruments[0],
       instrumentId: "OLD",
       symbol: "OLD",
       name: "Old Co",
@@ -400,20 +535,20 @@ describe("portfolio atlas calculation engine", () => {
   });
 
   it("calculates exposure wrappers, fund overlap, and data freshness", () => {
-    const portfolio = createDemoPortfolio();
-    const totalValue = analyzePortfolio(portfolio, demoInstruments, defaultAssumptions).portfolioValue;
-    expect(calculateGeographicExposure(portfolio.holdings, demoInstruments, totalValue, portfolio.cashBalance)[0]?.weight).toBeGreaterThan(0);
-    expect(calculateCurrencyExposure(portfolio.holdings, demoInstruments, totalValue, portfolio.cashBalance)[0]?.key).toBe("USD");
-    expect(calculateSectorExposure(portfolio.holdings, demoInstruments, totalValue)[0]?.weight).toBeGreaterThan(0);
+    const portfolio = testPortfolio();
+    const totalValue = analyzePortfolio(portfolio, testInstruments, defaultAssumptions).portfolioValue;
+    expect(calculateGeographicExposure(portfolio.holdings, testInstruments, totalValue, portfolio.cashBalance)[0]?.weight).toBeGreaterThan(0);
+    expect(calculateCurrencyExposure(portfolio.holdings, testInstruments, totalValue, portfolio.cashBalance)[0]?.key).toBe("USD");
+    expect(calculateSectorExposure(portfolio.holdings, testInstruments, totalValue)[0]?.weight).toBeGreaterThan(0);
 
     const overlapHoldings = [
       ...portfolio.holdings,
       { holdingId: "h-vxus2", portfolioId: portfolio.portfolioId, accountId: "taxable", instrumentId: "VXUS2", quantity: 10, currency: "USD", source: "sample" as const }
     ];
     const overlap = calculateFundOverlap(overlapHoldings, [
-      ...demoInstruments,
+      ...testInstruments,
       {
-        ...demoInstruments.find((item) => item.symbol === "VXUS")!,
+        ...testInstruments.find((item) => item.symbol === "VXUS")!,
         instrumentId: "VXUS2",
         symbol: "VXUS2",
         lookThroughHoldings: [
@@ -423,7 +558,7 @@ describe("portfolio atlas calculation engine", () => {
       }
     ]);
     expect(overlap[0]?.overlapWeight).toBeCloseTo(0.03, 6);
-    expect(calculateDataFreshnessScore(demoInstruments, new Date("2026-05-30T00:00:00Z"), 3)).toBeGreaterThan(0);
+    expect(calculateDataFreshnessScore(testInstruments, new Date("2026-05-30T00:00:00Z"), 3)).toBeGreaterThan(0);
   });
 
   it("supports feature gate resolution and duplicate weight aggregation", () => {

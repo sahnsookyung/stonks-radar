@@ -516,6 +516,9 @@ function MapSourceDrilldown({
         <span className="badge border-line bg-panelAlt text-muted">{point.severity} severity</span>
         <span className="badge border-line bg-panelAlt text-muted">{point.source_count} sources</span>
         <span className="badge border-line bg-panelAlt text-muted">Trust {point.trust_tier ?? "unknown"}</span>
+        {point.review_state === "candidate" || point.claim_level === "clustered_candidate" ? (
+          <span className="badge border-warning/40 bg-warning/10 text-warning">Automated candidate · unreviewed</span>
+        ) : null}
         <span className="badge border-line bg-panelAlt text-muted">Geo {formatPercent(point.geo_confidence)}</span>
         <span className="badge border-line bg-panelAlt text-muted">{point.area_label}</span>
         <span className="badge border-line bg-panelAlt text-muted">{formatUtcTimestamp(point.source_published_at)}</span>

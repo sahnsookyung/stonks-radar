@@ -54,7 +54,8 @@ export function workspaceStorageKey(portfolioId: string) {
 }
 
 export function canPersistWorkspace(portfolioId: string) {
-  return portfolioId === "demo-growth-income";
+  const normalized = portfolioId.trim();
+  return normalized.length > 0 && normalized.length <= 100;
 }
 
 export function loadPortfolioWorkspace(portfolioId: string): StoredPortfolioWorkspace | null {
@@ -181,12 +182,48 @@ export function manualNumberInvalid(value: string, numeric: number, required: bo
 
 function normalizeStoredWorkspace(parsed: Partial<StoredPortfolioWorkspace> | null | undefined): StoredPortfolioWorkspace | null {
   if (parsed?.version !== PORTFOLIO_WORKSPACE_STORAGE_VERSION || !parsed.portfolio) return null;
+  const portfolio = removeLegacySamplePortfolioData(parsed.portfolio);
   return {
     version: PORTFOLIO_WORKSPACE_STORAGE_VERSION,
-    portfolio: parsed.portfolio,
+    portfolio,
     manualInstruments: parsed.manualInstruments ?? [],
     reviewRequests: parsed.reviewRequests ?? [],
     assumptions: parsed.assumptions ?? defaultAssumptions
+  };
+}
+
+const legacySampleTransactionIds = new Set([
+  "t-deposit-1",
+  "t-aapl-1",
+  "t-msft-1",
+  "t-vxus-1",
+  "t-tlt-1",
+  "t-gld-1",
+  "t-btc-1"
+]);
+
+const legacySampleTaxLotIds = new Set([
+  "lot-aapl-1",
+  "lot-aapl-2",
+  "lot-msft-1",
+  "lot-vxus-1",
+  "lot-tlt-1",
+  "lot-gld-1",
+  "lot-btc-1"
+]);
+
+function removeLegacySamplePortfolioData(portfolio: Portfolio): Portfolio {
+  const hasLegacySamples = portfolio.holdings.some((holding) => holding.source === "sample");
+  if (!hasLegacySamples) return portfolio;
+
+  return {
+    ...portfolio,
+    cashBalance: portfolio.cashBalance === 6_500 ? 0 : portfolio.cashBalance,
+    holdings: portfolio.holdings.filter((holding) => holding.source !== "sample"),
+    transactions: portfolio.transactions.filter(
+      (transaction) => !legacySampleTransactionIds.has(transaction.transactionId)
+    ),
+    taxLots: portfolio.taxLots.filter((lot) => !legacySampleTaxLotIds.has(lot.lotId))
   };
 }
 

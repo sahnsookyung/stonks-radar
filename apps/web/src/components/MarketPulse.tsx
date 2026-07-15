@@ -533,6 +533,15 @@ function isUnavailableTile(tile: MetricTile) {
 }
 
 function metricUpdate(tile: MetricTile, locale: "en" | "ko", now: number) {
+  if (isUnavailableTile(tile)) {
+    return {
+      label: marketLocaleText(locale, "No live observation", "실시간 관측 없음"),
+      targetLabel: "",
+      isOverdue: false,
+      toneClass: "text-warning",
+    };
+  }
+
   const updatedAt = Date.parse(tile.updated_at);
   const refreshSeconds = tile.refresh_seconds;
   if (!Number.isFinite(updatedAt)) {

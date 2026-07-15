@@ -32,26 +32,26 @@ describe("portfolio workspace helpers", () => {
     vi.restoreAllMocks();
   });
 
-  it("round-trips demo workspace state through local storage", () => {
+  it("round-trips local workspace state through local storage", () => {
     const portfolio = createDemoPortfolio();
-    savePortfolioWorkspace("demo-growth-income", {
+    savePortfolioWorkspace(portfolio.portfolioId, {
       portfolio,
       manualInstruments: [],
       reviewRequests: [],
       assumptions: defaultAssumptions
     });
 
-    expect(globalThis.window.localStorage.getItem(workspaceStorageKey("demo-growth-income"))).toContain(
-      "demo-growth-income"
+    expect(globalThis.window.localStorage.getItem(workspaceStorageKey(portfolio.portfolioId))).toContain(
+      portfolio.portfolioId
     );
-    expect(loadPortfolioWorkspace("demo-growth-income")).toMatchObject({
+    expect(loadPortfolioWorkspace(portfolio.portfolioId)).toMatchObject({
       version: 1,
-      portfolio: { portfolioId: "demo-growth-income" },
+      portfolio: { portfolioId: portfolio.portfolioId },
       assumptions: { name: defaultAssumptions.name }
     });
   });
 
-  it("does not persist arbitrary portfolio ids in local demo mode", () => {
+  it("persists valid user portfolio ids locally", () => {
     const portfolio = createDemoPortfolio();
     savePortfolioWorkspace("private-plan", {
       portfolio: { ...portfolio, portfolioId: "private-plan" },
@@ -60,7 +60,43 @@ describe("portfolio workspace helpers", () => {
       assumptions: defaultAssumptions
     });
 
-    expect(loadPortfolioWorkspace("private-plan")).toBeNull();
+    expect(loadPortfolioWorkspace("private-plan")).toMatchObject({
+      portfolio: { portfolioId: "private-plan" }
+    });
+  });
+
+  it("removes only unmistakable legacy sample records from stored workspaces", () => {
+    const portfolio = createDemoPortfolio();
+    globalThis.window.localStorage.setItem(
+      workspaceStorageKey(portfolio.portfolioId),
+      JSON.stringify({
+        version: 1,
+        portfolio: {
+          ...portfolio,
+          cashBalance: 6_500,
+          holdings: [
+            { holdingId: "h-aapl", portfolioId: portfolio.portfolioId, accountId: "taxable", instrumentId: "AAPL", quantity: 44, currency: "USD", source: "sample" },
+            { holdingId: "manual", portfolioId: portfolio.portfolioId, accountId: "taxable", instrumentId: "USER", quantity: 1, currency: "USD", source: "manual" }
+          ],
+          transactions: [
+            { transactionId: "t-aapl-1", portfolioId: portfolio.portfolioId, accountId: "taxable", instrumentId: "AAPL", type: "BUY", date: "2024-01-01", quantity: 44, price: 155, fees: 0, amount: -6_820, currency: "USD" }
+          ],
+          taxLots: [
+            { lotId: "lot-aapl-1", portfolioId: portfolio.portfolioId, accountId: "taxable", instrumentId: "AAPL", purchaseDate: "2024-01-01", quantityOriginal: 44, quantityRemaining: 44, costBasisPerUnit: 155, fees: 0, currency: "USD", currentPrice: 195, source: "sample" }
+          ]
+        },
+        manualInstruments: [],
+        reviewRequests: [],
+        assumptions: defaultAssumptions
+      })
+    );
+
+    expect(loadPortfolioWorkspace(portfolio.portfolioId)?.portfolio).toMatchObject({
+      cashBalance: 0,
+      holdings: [{ holdingId: "manual" }],
+      transactions: [],
+      taxLots: []
+    });
   });
 
   it("loads an authenticated server workspace response", async () => {
@@ -70,7 +106,7 @@ describe("portfolio workspace helpers", () => {
       vi.fn().mockResolvedValue(
         new Response(
           JSON.stringify({
-            portfolio_id: "demo-growth-income",
+            portfolio_id: portfolio.portfolioId,
             workspace: {
               version: 1,
               portfolio,
@@ -84,12 +120,12 @@ describe("portfolio workspace helpers", () => {
       )
     );
 
-    await expect(loadServerPortfolioWorkspace("demo-growth-income")).resolves.toMatchObject({
-      portfolio: { portfolioId: "demo-growth-income" },
+    await expect(loadServerPortfolioWorkspace(portfolio.portfolioId)).resolves.toMatchObject({
+      portfolio: { portfolioId: portfolio.portfolioId },
       assumptions: { name: defaultAssumptions.name }
     });
     expect(fetch).toHaveBeenCalledWith(
-      "/api/portfolio-workspaces/demo-growth-income",
+      `/api/portfolio-workspaces/${portfolio.portfolioId}`,
       expect.objectContaining({ credentials: "include" })
     );
   });
@@ -100,7 +136,7 @@ describe("portfolio workspace helpers", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(
-      saveServerPortfolioWorkspace("demo-growth-income", {
+      saveServerPortfolioWorkspace(portfolio.portfolioId, {
         portfolio,
         manualInstruments: [],
         reviewRequests: [],
@@ -111,7 +147,7 @@ describe("portfolio workspace helpers", () => {
 
     sessionStorage.setItem("frw_csrf", "csrf-token");
     await expect(
-      saveServerPortfolioWorkspace("demo-growth-income", {
+      saveServerPortfolioWorkspace(portfolio.portfolioId, {
         portfolio,
         manualInstruments: [],
         reviewRequests: [],
@@ -119,14 +155,14 @@ describe("portfolio workspace helpers", () => {
       })
     ).resolves.toBe(true);
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/portfolio-workspaces/demo-growth-income",
+      `/api/portfolio-workspaces/${portfolio.portfolioId}`,
       expect.objectContaining({
         method: "PUT",
         headers: expect.objectContaining({ "x-csrf-token": "csrf-token" })
       })
     );
     expect(JSON.parse(String(fetchMock.mock.calls[0][1].body))).toMatchObject({
-      workspace: { version: 1, portfolio: { portfolioId: "demo-growth-income" } }
+      workspace: { version: 1, portfolio: { portfolioId: portfolio.portfolioId } }
     });
   });
 
