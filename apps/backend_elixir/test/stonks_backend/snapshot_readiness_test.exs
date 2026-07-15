@@ -62,7 +62,7 @@ defmodule StonksBackend.SnapshotReadinessTest do
     assert %{status: "unavailable", reason: "manifest_invalid"} = current(unsafe_root)
   end
 
-  test "reports degraded when a current snapshot exposes unavailable live data" do
+  test "reports ready when a current snapshot honestly exposes unavailable live data" do
     root = temp_root!()
 
     write_snapshot!(
@@ -79,7 +79,7 @@ defmodule StonksBackend.SnapshotReadinessTest do
       ]
     )
 
-    assert %{status: "degraded", reason: "content_unavailable", version: 42} = current(root)
+    assert %{status: "ready", reason: "fresh", version: 42} = current(root)
   end
 
   test "reports degraded when a current snapshot still contains a static seed source" do

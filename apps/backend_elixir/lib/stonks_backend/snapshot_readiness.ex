@@ -80,7 +80,7 @@ defmodule StonksBackend.SnapshotReadiness do
            {:ok, snapshot} <- read_json(path),
            :ok <- matching_version(snapshot["snapshot_version"], version) do
         next_status =
-          if unavailable_warning?(snapshot), do: :content_unavailable, else: status
+          if seed_payload_present?(snapshot["data"]), do: :content_unavailable, else: status
 
         {:cont, {:ok, next_status}}
       else
@@ -93,17 +93,6 @@ defmodule StonksBackend.SnapshotReadiness do
     do: %{payload | status: "degraded", reason: "content_unavailable"}
 
   defp apply_content_status(payload, _content_status), do: payload
-
-  defp unavailable_warning?(snapshot) do
-    unavailable_warning_present?(snapshot) or seed_payload_present?(snapshot["data"])
-  end
-
-  defp unavailable_warning_present?(snapshot) do
-    snapshot
-    |> Map.get("warnings", [])
-    |> List.wrap()
-    |> Enum.any?(&(&1["code"] == "live_data_unavailable"))
-  end
 
   defp seed_payload_present?(value) when is_list(value),
     do: Enum.any?(value, &seed_payload_present?/1)
