@@ -11,6 +11,7 @@ defmodule StonksBackend.News.PublicProjection do
 
   @default_limit 500
   @published_review_states ~w(approved reviewed published)
+  @ambiguous_legacy_region_keys ~w(ARE CAN NOR)
 
   def events(locale \\ "en", opts \\ []) do
     query_fun =
@@ -213,6 +214,8 @@ defmodule StonksBackend.News.PublicProjection do
       summary = public_summary(summary_json, source_links, locale)
       review_state = to_string(row["review_state"] || "candidate")
       source_count = length(source_links)
+      tickers = normalize_tickers(row["tickers"], locale)
+      regions = normalize_regions(row["regions"], locale, row["canonical_title"], tickers)
 
       %{
         "id" => to_string(row["id"]),
@@ -234,8 +237,8 @@ defmodule StonksBackend.News.PublicProjection do
         "breaking_score" => bounded_int(row["breaking_score"], 0, 100),
         "trust_score" => bounded_int(row["trust_score"], 0, 100),
         "source_count" => max(source_count, 1),
-        "tickers" => normalize_tickers(row["tickers"], locale),
-        "regions" => normalize_regions(row["regions"], locale),
+        "tickers" => tickers,
+        "regions" => regions,
         "topics" => normalize_topics(row["topics"], locale),
         "market_direction" => "unclear",
         "source_links" => source_links
@@ -313,7 +316,7 @@ defmodule StonksBackend.News.PublicProjection do
     |> Enum.uniq_by(& &1["symbol"])
   end
 
-  defp normalize_regions(regions, locale) do
+  defp normalize_regions(regions, locale, title, tickers) do
     names =
       WatchedRegions.all()
       |> Map.new(fn region ->
@@ -323,9 +326,16 @@ defmodule StonksBackend.News.PublicProjection do
         {to_string(region["key"]), to_string(label || region["key"])}
       end)
 
+    safe_keywords =
+      WatchedRegions.region_keyword_entries()
+      |> Map.new(&{to_string(&1.key), &1.keywords})
+
+    title = title |> to_string() |> String.downcase() |> String.replace(~r/[-_]/, " ")
+
     regions
     |> List.wrap()
     |> Enum.filter(&is_map/1)
+    |> Enum.filter(&reliable_stored_region?(&1, title, safe_keywords))
     |> Enum.map(fn region ->
       key = to_string(region["key"])
 
@@ -336,8 +346,65 @@ defmodule StonksBackend.News.PublicProjection do
         "confidence" => bounded_float(region["confidence"])
       }
     end)
+    |> Kernel.++(company_regions(tickers, names))
     |> Enum.reject(&blank?(&1["key"]))
     |> Enum.uniq_by(&{&1["key"], &1["relation"]})
+  end
+
+  defp reliable_stored_region?(region, title, safe_keywords) do
+    relation = region_relation(region["relation"])
+    key = to_string(region["key"])
+
+    if relation in ["event_region", "affected_region", "mentioned_region"] and
+         key in @ambiguous_legacy_region_keys do
+      safe_keywords
+      |> Map.get(key, [])
+      |> Enum.any?(&keyword_matches?(title, &1))
+    else
+      true
+    end
+  end
+
+  defp company_regions(tickers, names) do
+    country_by_symbol =
+      TrackedTickers.ticker_entities()
+      |> Map.new(fn entity ->
+        symbol = entity["symbol"] || entity["display_symbol"]
+        {symbol |> to_string() |> String.upcase(), entity["country"]}
+      end)
+
+    tickers
+    |> Enum.filter(fn ticker ->
+      ticker["relationship"] == "direct_subject" and ticker["confidence"] >= 0.75
+    end)
+    |> Enum.map(fn ticker ->
+      key = country_by_symbol[ticker["symbol"]] |> to_string()
+
+      %{
+        "key" => key,
+        "name" => names[key] || key,
+        "relation" => "company_region",
+        "confidence" => min(ticker["confidence"], 0.9)
+      }
+    end)
+    |> Enum.reject(&blank?(&1["key"]))
+    |> Enum.uniq_by(& &1["key"])
+  end
+
+  defp keyword_matches?(text, keyword) do
+    clean = keyword |> String.trim() |> String.downcase()
+    compact = String.replace(clean, ".", "")
+
+    cond do
+      clean == "" ->
+        false
+
+      Regex.match?(~r/^[a-z0-9.]+$/, clean) and String.length(compact) <= 4 ->
+        Regex.match?(~r/(?<![a-z0-9])#{Regex.escape(clean)}(?![a-z0-9])/, text)
+
+      true ->
+        String.contains?(text, clean)
+    end
   end
 
   defp normalize_topics(topics, locale) do

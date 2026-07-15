@@ -65,6 +65,58 @@ defmodule StonksBackend.News.PublicProjectionTest do
              []
   end
 
+  test "repairs stored common-word country matches and uses direct-company provenance" do
+    row =
+      projection_row(
+        "space-stocks",
+        "Which space stocks are retail traders watching?",
+        ~U[2026-07-14 23:00:00Z],
+        "space-stocks"
+      )
+      |> Map.put("tickers", [
+        %{"symbol" => "RKLB", "relationship" => "direct_subject", "confidence" => 0.92}
+      ])
+      |> Map.put("regions", [
+        %{"key" => "CAN", "relation" => "event_region", "confidence" => 0.8},
+        %{"key" => "ARE", "relation" => "event_region", "confidence" => 0.8}
+      ])
+
+    assert [event] =
+             PublicProjection.events("en",
+               query_fun: fn _sql, _params -> [row] end,
+               now: ~U[2026-07-15 00:00:00Z]
+             )
+
+    refute Enum.any?(event["regions"], &(&1["key"] in ["CAN", "ARE"]))
+
+    assert Enum.any?(event["regions"], fn region ->
+             region["key"] == "USA" and region["relation"] == "company_region"
+           end)
+  end
+
+  test "retains explicit geographic references from stored classifications" do
+    row =
+      projection_row(
+        "canada-policy",
+        "Canada announces a new aerospace investment policy",
+        ~U[2026-07-14 23:00:00Z],
+        "canada-policy"
+      )
+      |> Map.put("regions", [
+        %{"key" => "CAN", "relation" => "event_region", "confidence" => 0.8}
+      ])
+
+    assert [event] =
+             PublicProjection.events("en",
+               query_fun: fn _sql, _params -> [row] end,
+               now: ~U[2026-07-15 00:00:00Z]
+             )
+
+    assert Enum.any?(event["regions"], fn region ->
+             region["key"] == "CAN" and region["relation"] == "event_region"
+           end)
+  end
+
   test "filters projected lists by their stored relationships" do
     row = %{
       "id" => "live-event-2",

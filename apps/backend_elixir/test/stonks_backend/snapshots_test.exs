@@ -521,6 +521,23 @@ defmodule StonksBackend.SnapshotsTest do
         public_news_row("reviewed_event", now, %{
           "canonical_title" => "Reviewed official company update",
           "review_state" => "reviewed"
+        }),
+        public_news_row("official_candidate", now, %{
+          "canonical_title" => "Official company update still awaiting editorial review",
+          "breaking_score" => 63,
+          "review_state" => "candidate",
+          "source_links" => [
+            %{
+              "label" => "Official source",
+              "url" => "https://example.com/official_candidate",
+              "source_key" => "official_source",
+              "policy_version" => 1,
+              "title" => "Official company update",
+              "published_at" => now,
+              "trust_tier" => "T0_OFFICIAL",
+              "is_primary" => true
+            }
+          ]
         })
       ]
     end)
@@ -659,18 +676,14 @@ defmodule StonksBackend.SnapshotsTest do
       |> File.read!()
       |> Jason.decode!()
 
-    assert Enum.map(home["data"]["breaking_market_events"], & &1["event_id"]) == [
-             "reviewed_event"
-           ]
+    assert MapSet.new(home["data"]["breaking_market_events"], & &1["event_id"]) ==
+             MapSet.new(["official_candidate", "reviewed_event"])
 
-    assert Enum.map(home["data"]["breaking_market_map"]["events"], & &1["event_id"]) == [
-             "reviewed_event"
-           ]
+    assert MapSet.new(home["data"]["breaking_market_map"]["events"], & &1["event_id"]) ==
+             MapSet.new(["official_candidate", "reviewed_event"])
 
-    assert Enum.map(home["data"]["breaking_market_map"]["map_points"], & &1["event_id"]) == [
-             "reviewed_event",
-             "source_only"
-           ]
+    assert MapSet.new(home["data"]["breaking_market_map"]["map_points"], & &1["event_id"]) ==
+             MapSet.new(["official_candidate", "reviewed_event", "source_only"])
 
     assert %{
              "review_state" => "candidate",
@@ -684,8 +697,8 @@ defmodule StonksBackend.SnapshotsTest do
 
     assert home["data"]["headline"] == "Latest source-linked market intelligence"
 
-    assert home["data"]["breaking_market_map"]["shown_count"] == 2
-    assert home["data"]["breaking_market_map"]["total_count"] == 2
+    assert home["data"]["breaking_market_map"]["shown_count"] == 3
+    assert home["data"]["breaking_market_map"]["total_count"] == 3
 
     assert home["data"]["breaking_market_map"]["regional_briefs"] == []
     assert hd(home["data"]["alternative_signals"])["items"] == []
@@ -701,7 +714,7 @@ defmodule StonksBackend.SnapshotsTest do
 
     Application.put_env(:stonks_backend, :public_news_query_fun, fn _sql, _params ->
       [
-        public_news_row("semiconductor_live", DateTime.add(now, -2, :day), %{
+        public_news_row("semiconductor_live", DateTime.add(now, -2, :hour), %{
           "event_type" => "trade_policy",
           "severity" => "high",
           "source_count" => 3,

@@ -256,9 +256,11 @@ defmodule StonksBackend.News.Pipeline do
   end
 
   def classify_document(document) do
+    entities = classify_entities(document)
+
     %{
-      entities: classify_entities(document),
-      regions: classify_regions(document),
+      entities: entities,
+      regions: classify_regions(document, entities),
       topics: classify_topics(document)
     }
   end
@@ -352,7 +354,9 @@ defmodule StonksBackend.News.Pipeline do
     end)
   end
 
-  def classify_regions(document) do
+  def classify_regions(document), do: classify_regions(document, classify_entities(document))
+
+  defp classify_regions(document, entities) do
     text = searchable_text(document)
     source_region = document["source_region"] || document[:source_region]
     market_region = document["market_region"] || document[:market_region]
@@ -360,6 +364,7 @@ defmodule StonksBackend.News.Pipeline do
     []
     |> maybe_add_region(source_region, "source_region", 0.9)
     |> Enum.concat(keyword_regions(text))
+    |> Enum.concat(company_regions(entities))
     |> maybe_add_region(market_region, "market_region", 0.86)
     |> dedupe_best_by([:key, :relation])
     |> Enum.sort_by(&{&1.key, &1.relation})
@@ -872,6 +877,32 @@ defmodule StonksBackend.News.Pipeline do
     end)
   rescue
     _ -> []
+  end
+
+  defp company_regions(entities) do
+    country_by_symbol =
+      TrackedTickers.ticker_entities()
+      |> Map.new(fn entity ->
+        symbol = entity["symbol"] || entity["display_symbol"]
+        {symbol |> to_string() |> String.upcase(), entity["country"]}
+      end)
+
+    entities
+    |> List.wrap()
+    |> Enum.filter(fn entity ->
+      entity[:relationship] == "direct_subject" and to_float(entity[:confidence]) >= 0.75
+    end)
+    |> Enum.map(fn entity ->
+      key = country_by_symbol[entity[:symbol] |> to_string() |> String.upcase()]
+
+      %{
+        key: to_string(key),
+        relation: "company_region",
+        confidence: min(to_float(entity[:confidence]), 0.9)
+      }
+    end)
+    |> Enum.reject(&(&1.key == ""))
+    |> Enum.uniq_by(& &1.key)
   end
 
   defp maybe_add_region(regions, value, relation, confidence) do

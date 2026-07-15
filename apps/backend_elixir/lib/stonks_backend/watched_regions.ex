@@ -52,7 +52,6 @@ defmodule StonksBackend.WatchedRegions do
         key: region["key"],
         keywords:
           [
-            region["iso3"],
             get_in(region, ["display_names", "en"]),
             get_in(region, ["display_names", "ko"])
           ]

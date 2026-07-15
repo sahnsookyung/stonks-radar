@@ -75,5 +75,14 @@ defmodule StonksBackend.WatchedRegionsTest do
 
     norway = Enum.find(entries, &(&1.key == "NOR"))
     assert "norges bank" in norway.keywords
+    refute "nor" in norway.keywords
+
+    canada = Enum.find(entries, &(&1.key == "CAN"))
+    assert "canada" in canada.keywords
+    refute "can" in canada.keywords
+
+    united_arab_emirates = Enum.find(entries, &(&1.key == "ARE"))
+    assert "united arab emirates" in united_arab_emirates.keywords
+    refute "are" in united_arab_emirates.keywords
   end
 end

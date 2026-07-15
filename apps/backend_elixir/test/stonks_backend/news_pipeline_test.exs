@@ -51,6 +51,37 @@ defmodule StonksBackend.NewsPipelineTest do
     assert Enum.all?(result.regions, &(&1.key != ""))
   end
 
+  test "classify_document does not interpret common words as country codes" do
+    canada_false_positive =
+      Pipeline.classify_document(%{
+        "source_key" => "google_news_NVDA",
+        "title" => "Can Nvidia sustain demand for its newest AI systems?",
+        "snippet" => "Analysts review the US-listed chipmaker's outlook.",
+        "url" => "https://example.com/nvidia-demand",
+        "published_at" => "2026-07-15T12:00:00Z"
+      })
+
+    emirates_false_positive =
+      Pipeline.classify_document(%{
+        "source_key" => "google_news_RKLB",
+        "title" => "Which space stocks are retail traders watching?",
+        "snippet" => "Rocket Lab and AST SpaceMobile trade in the United States.",
+        "url" => "https://example.com/space-stocks",
+        "published_at" => "2026-07-15T12:00:00Z"
+      })
+
+    refute Enum.any?(canada_false_positive.regions, &(&1.key == "CAN"))
+    refute Enum.any?(emirates_false_positive.regions, &(&1.key == "ARE"))
+
+    assert Enum.any?(canada_false_positive.regions, fn region ->
+             region.key == "USA" and region.relation == "company_region"
+           end)
+
+    assert Enum.any?(emirates_false_positive.regions, fn region ->
+             region.key == "USA" and region.relation == "company_region"
+           end)
+  end
+
   test "classify_document uses registry supplement terms for region matching" do
     result =
       Pipeline.classify_document(%{

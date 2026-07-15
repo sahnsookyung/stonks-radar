@@ -266,7 +266,7 @@ export interface BreakingMarketEvent {
   severity: Severity;
   trust_tier: NewsTrustTier;
   discovery_only: boolean;
-  review_state: "approved" | "reviewed" | "published";
+  review_state: "candidate" | "approved" | "reviewed" | "published";
   citation_ids: string[];
   retention_class: "metadata_only" | "summary_only" | "full_text_reviewed";
   geo_points: NewsMapPoint[];

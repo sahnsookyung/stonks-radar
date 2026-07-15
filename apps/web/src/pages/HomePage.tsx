@@ -271,6 +271,7 @@ function BreakingMarketCard({
   onSelect: () => void;
 }>) {
   const locale = useLocale();
+  const { t } = useTranslation();
   const areaLabels = Array.from(new Set(event.geo_points.map((point) => point.area_label))).slice(0, 3);
   const sourceHref = safeExternalUrl(event.source_url);
   return (
@@ -286,6 +287,11 @@ function BreakingMarketCard({
             <span className="rounded border border-warning/40 bg-warning/10 px-2 py-1 text-[11px] font-bold uppercase text-warning">
               {event.label}
             </span>
+            {event.review_state === "candidate" ? (
+              <span className="rounded border border-line bg-panelAlt px-2 py-1 text-[11px] font-semibold text-muted">
+                {t("automatedCandidate")}
+              </span>
+            ) : null}
             <span className="text-xs font-semibold text-muted">{formatEventAge(event.source_published_at, locale)}</span>
           </div>
           <SeverityBadge value={event.severity} />

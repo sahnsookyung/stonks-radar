@@ -734,6 +734,7 @@ function createNewsFeatureCollection(mapPoints: NewsMapPoint[]) {
           source_count: point.source_count,
           source_url: point.source_url ?? "",
           source_published_at: point.source_published_at,
+          relation: point.relation,
           geo_confidence: point.geo_confidence,
           score_reason_codes: point.score_reason_codes.join(", "),
           trust_tier: enrichedTrustTier(point),
@@ -765,7 +766,7 @@ async function showNewsClusterPopup(
   const total = Number(feature.properties?.point_count ?? 0);
   let leaves: Array<maplibregl.MapGeoJSONFeature | Feature<Geometry>> = [];
   try {
-    leaves = await source.getClusterLeaves(clusterId, 10, 0);
+    leaves = await source.getClusterLeaves(clusterId, clusterLeafRequestLimit(total), 0);
   } catch {
     leaves = [];
   }
@@ -790,6 +791,11 @@ async function showNewsClusterPopup(
   });
 }
 
+export function clusterLeafRequestLimit(total: number) {
+  if (!Number.isFinite(total)) return 1;
+  return Math.max(1, Math.floor(total));
+}
+
 function closeNewsClusterPopup(map: maplibregl.Map) {
   const popup = clusterPopupRefs.get(map);
   if (popup) popup.remove();
@@ -806,7 +812,7 @@ function createNewsClusterPopup(
 
   const title = document.createElement("div");
   title.className = "text-xs font-semibold uppercase tracking-wide text-accent";
-  title.textContent = `${total || leaves.length} mapped news item${(total || leaves.length) === 1 ? "" : "s"}`;
+  title.textContent = `${total || leaves.length} mapped point${(total || leaves.length) === 1 ? "" : "s"} across this visual cluster`;
   wrapper.appendChild(title);
 
   const list = document.createElement("ul");
@@ -829,6 +835,7 @@ function createNewsClusterPopup(
     meta.className = "text-[11px] leading-4 text-muted";
     meta.textContent = [
       safeProperty(leaf.properties, "area_label"),
+      mapRelationLabel(safeProperty(leaf.properties, "relation")),
       safeProperty(leaf.properties, "severity"),
       `urgency ${safeProperty(leaf.properties, "urgency_score")}`,
       sourceCountLabel(leaf.properties),
@@ -869,7 +876,12 @@ function createNewsMapPointPopup(properties: maplibregl.MapGeoJSONFeature["prope
 
   const area = document.createElement("div");
   area.className = "text-[11px] font-semibold uppercase leading-4 text-accent";
-  area.textContent = safeProperty(properties, "area_label");
+  area.textContent = [
+    safeProperty(properties, "area_label"),
+    mapRelationLabel(safeProperty(properties, "relation"))
+  ]
+    .filter(Boolean)
+    .join(" · ");
   wrapper.appendChild(area);
 
   const title = document.createElement("div");
@@ -929,6 +941,14 @@ function createNewsMapPointPopup(properties: maplibregl.MapGeoJSONFeature["prope
   }
 
   return wrapper;
+}
+
+function mapRelationLabel(relation: string) {
+  if (relation === "event_location") return "event location";
+  if (relation === "source_region") return "publisher region";
+  if (relation === "affected_market") return "company or affected market";
+  if (relation === "chokepoint") return "market chokepoint";
+  return "";
 }
 
 function candidateLabel(properties: maplibregl.MapGeoJSONFeature["properties"]) {

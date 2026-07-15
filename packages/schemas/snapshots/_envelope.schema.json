@@ -379,7 +379,7 @@
           ]
         },
         "discovery_only": { "type": "boolean" },
-        "review_state": { "enum": ["approved", "reviewed", "published"] },
+        "review_state": { "enum": ["candidate", "approved", "reviewed", "published"] },
         "citation_ids": { "type": "array", "items": { "type": "string" } },
         "retention_class": { "enum": ["metadata_only", "summary_only", "full_text_reviewed"] },
         "geo_points": { "type": "array", "items": { "$ref": "#/$defs/newsMapPoint" } },

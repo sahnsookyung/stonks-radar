@@ -741,9 +741,9 @@ defmodule StonksBackend.Snapshots do
   defp breaking_event_from_news_event(event, points, generated_at) do
     event_id = news_event_id(event)
     timestamp = news_event_source_timestamp(event)
-    publishable_claim? = event["claim_level"] in ["reviewed", "published"]
 
-    if event_id == "" or timestamp == "" or not publishable_claim? do
+    if event_id == "" or timestamp == "" or
+         not breaking_event_eligible?(event, generated_at) do
       nil
     else
       %{
@@ -783,6 +783,20 @@ defmodule StonksBackend.Snapshots do
       }
       |> drop_nil_values()
     end
+  end
+
+  defp breaking_event_eligible?(event, generated_at) do
+    cutoff = DateTime.add(generated_at, -news_window_hours("breaking_latest"), :hour)
+    score = bounded_int(event["breaking_score"], 0, 0, 100)
+    reviewed? = event["claim_level"] in ["reviewed", "published"]
+    high_trust? = trust_tier_rank(trust_tier(event)) <= 1
+
+    corroborated? =
+      source_count(event) >= 2 and
+        event["evidence_match_status"] in ["matched", "weak_match"]
+
+    score >= 60 and news_item_within_window?(event, cutoff) and
+      (reviewed? or high_trust? or corroborated?)
   end
 
   defp maybe_prepend(nil, items), do: items
