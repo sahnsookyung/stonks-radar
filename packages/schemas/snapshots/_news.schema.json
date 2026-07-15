@@ -128,6 +128,7 @@
         "item_kind": { "$ref": "#/$defs/itemKind" },
         "claim_level": { "$ref": "#/$defs/claimLevel" },
         "evidence_match_status": { "$ref": "#/$defs/evidenceMatchStatus" },
+        "review_state": { "enum": ["candidate", "approved", "reviewed", "published"] },
         "first_seen_at": { "type": "string" },
         "last_seen_at": { "type": "string" },
         "published_at": { "type": "string" },

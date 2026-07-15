@@ -19,7 +19,7 @@ defmodule StonksBackend.TickerProviderConnections do
             user_id, provider_key, token_ciphertext, token_nonce, key_version,
             verification_status, verified_at, verification_metadata
           )
-          values ($1, $2, $3, $4, $5, 'verified', now(), $6::jsonb)
+          values ($1, $2, $3, $4, $5, 'verified', now(), $6::text::jsonb)
           on conflict (user_id, provider_key) do update set
             token_ciphertext = excluded.token_ciphertext,
             token_nonce = excluded.token_nonce,

@@ -93,6 +93,18 @@ defmodule StonksBackend.NewsPipelineTest do
     assert cluster.last_seen_at == "2026-06-30T14:30:00Z"
   end
 
+  test "cluster_documents excludes undated pages instead of treating fetch time as news time" do
+    documents = [
+      %{
+        "title" => "Evergreen product page",
+        "canonical_url" => "https://example.com/product",
+        "fetched_at" => "2026-07-15T00:00:00Z"
+      }
+    ]
+
+    assert Pipeline.cluster_documents(documents) == []
+  end
+
   test "score helpers keep weak discovery lower than official or regulated sources" do
     assert Pipeline.trust_score(["T0_OFFICIAL"]) > Pipeline.trust_score(["T4_WEAK_SIGNAL"])
 

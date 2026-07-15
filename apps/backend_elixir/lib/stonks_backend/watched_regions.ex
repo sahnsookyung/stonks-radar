@@ -4,6 +4,13 @@ defmodule StonksBackend.WatchedRegions do
   @repo_root Path.expand("../../../..", __DIR__)
   @default_path Path.join([@repo_root, "packages", "shared-config", "watched-regions.json"])
 
+  @default_map_path Path.join([
+                      @repo_root,
+                      "packages",
+                      "shared-config",
+                      "geopolitical-watch-registry.json"
+                    ])
+
   def all do
     registry()
     |> Map.get("regions", [])
@@ -20,6 +27,11 @@ defmodule StonksBackend.WatchedRegions do
 
   def render_on_map do
     Enum.filter(all(), &truthy?(&1["render_on_map"]))
+  end
+
+  def map_areas do
+    map_registry()
+    |> Map.get("areas", [])
   end
 
   def nav_visible do
@@ -64,6 +76,14 @@ defmodule StonksBackend.WatchedRegions do
 
   defp registry do
     path = System.get_env("WATCHED_REGIONS_PATH", @default_path)
+
+    path
+    |> File.read!()
+    |> Jason.decode!()
+  end
+
+  defp map_registry do
+    path = System.get_env("GEOPOLITICAL_WATCH_REGISTRY_PATH", @default_map_path)
 
     path
     |> File.read!()

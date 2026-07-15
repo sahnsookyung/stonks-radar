@@ -31,7 +31,7 @@ defmodule StonksBackend.TickerAlerts do
           insert into ticker_alert_rule(
             user_id, symbol, rule_type, configuration, cooldown_seconds, email_enabled, active
           )
-          values ($1, $2, $3, $4::jsonb, $5, $6, $7)
+          values ($1, $2, $3, $4::text::jsonb, $5, $6, $7)
           returning id, symbol, rule_type, configuration, cooldown_seconds, email_enabled,
                     active, last_evaluated_source_at, created_at, updated_at
           """,
@@ -58,7 +58,7 @@ defmodule StonksBackend.TickerAlerts do
           update ticker_alert_rule set
             symbol = $3,
             rule_type = $4,
-            configuration = $5::jsonb,
+            configuration = $5::text::jsonb,
             cooldown_seconds = $6,
             email_enabled = $7,
             active = $8,
@@ -135,11 +135,11 @@ defmodule StonksBackend.TickerAlerts do
         insert into ticker_alert_event(
           rule_id, user_id, source_event_key, source_at, reason, payload, delivery_status
         )
-        select $1, $2, $3, $4, $5, $6::jsonb, 'in_app'
+        select $1, $2, $3, $4, $5, $6::text::jsonb, 'in_app'
         where not exists (
           select 1 from ticker_alert_event
           where rule_id = $1
-            and source_at > $4::timestamptz - ($7::text || ' seconds')::interval
+            and source_at > $4::timestamptz - ($7 * interval '1 second')
         )
         on conflict (rule_id, source_event_key) do nothing
         returning id

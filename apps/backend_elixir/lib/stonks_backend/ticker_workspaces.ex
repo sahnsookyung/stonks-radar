@@ -35,7 +35,7 @@ defmodule StonksBackend.TickerWorkspaces do
         Sql.one(
           """
           insert into ticker_workspace(user_id, revision, workspace)
-          select $1, 1, $2::jsonb
+          select $1, 1, $2::text::jsonb
           where $3 = 0
           on conflict (user_id) do update set
             revision = ticker_workspace.revision + 1,

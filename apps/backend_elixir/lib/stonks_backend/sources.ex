@@ -402,7 +402,7 @@ defmodule StonksBackend.Sources do
       )
       values (
         $1, $2, $3, $4, $5, $6, $7,
-        cast($8 as date), cast($9 as timestamptz), $10, null, $11, $12::jsonb, $13
+        cast($8 as date), cast($9 as timestamptz), $10, null, $11, $12::text::jsonb, $13
       )
       on conflict (source, sha256) do update
       set form_type = excluded.form_type,
@@ -743,7 +743,9 @@ defmodule StonksBackend.Sources do
     rows =
       Sql.all(
         """
-        select sf.*,
+        select sf.id, sf.source, sf.form_type, sf.filer_name, sf.issuer_name,
+               sf.ticker, sf.cik, sf.accession_number, sf.doc_date, sf.filed_at,
+               sf.source_url, sf.parse_status, sf.created_at,
                (select count(*) from security_transactions st where st.filing_id = sf.id) as transaction_count
         from source_filings sf
         where #{Enum.join(conditions, " and ")}
@@ -771,7 +773,12 @@ defmodule StonksBackend.Sources do
     rows =
       Sql.all(
         """
-        select st.*, sf.source_url, sf.form_type, sf.filed_at, sf.doc_date
+        select st.id, st.source, st.person_name, st.owner_name, st.issuer_name,
+               st.ticker, st.cik, st.asset_description, st.transaction_type,
+               st.transaction_code, st.transaction_date, st.amount_min, st.amount_max,
+               st.shares, st.price, st.direct_or_indirect, st.ownership_nature,
+               st.post_transaction_shares, st.is_late, st.source_page, st.confidence,
+               sf.source_url, sf.form_type, sf.filed_at, sf.doc_date
         from security_transactions st
         join source_filings sf on sf.id = st.filing_id
         where #{Enum.join(conditions, " and ")}

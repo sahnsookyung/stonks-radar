@@ -101,5 +101,23 @@ defmodule StonksBackend.EarningsCalendarTest do
     assert apple["source"] == "Alpha Vantage"
     assert apple["expectation_value"] =~ "EPS estimate 2.31 USD"
     assert cpi["expectation_type"] == "official_calendar"
+    assert enriched["central_banks"] == []
+  end
+
+  test "expired template rows are removed instead of republished" do
+    data = %{
+      "items" => [
+        %{"id" => "expired", "scheduled_local_date" => "2026-07-01"},
+        %{"id" => "future", "scheduled_local_date" => "2099-07-01"}
+      ],
+      "central_banks" => [
+        %{"id" => "expired-bank", "scheduled_local_date" => "2026-07-01"}
+      ]
+    }
+
+    enriched = EarningsCalendar.enrich_snapshot_data(data, [])
+
+    assert Enum.map(enriched["items"], & &1["id"]) == ["future"]
+    assert enriched["central_banks"] == []
   end
 end

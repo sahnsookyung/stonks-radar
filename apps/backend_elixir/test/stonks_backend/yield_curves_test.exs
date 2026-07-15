@@ -49,6 +49,7 @@ defmodule StonksBackend.YieldCurvesTest do
     assert us_10y["updated_at"] == "2026-06-30T21:00:00Z"
     assert japan_10y["updated_at"] == "2026-06-30T21:00:00Z"
     assert us_10y["delay_label"] == "official daily data, monthly sampled through 2026-06-30"
+    assert us_10y["coverage_status"] == "active"
     assert is_number(us_10y["refresh_delta"])
   end
 

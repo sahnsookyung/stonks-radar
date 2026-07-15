@@ -23,6 +23,26 @@ defmodule StonksBackend.WatchedRegionsTest do
     assert missing == []
   end
 
+  test "every map-rendered region has authoritative coordinates" do
+    map_areas = Map.new(WatchedRegions.map_areas(), &{&1["key"], &1})
+
+    missing =
+      WatchedRegions.render_on_map()
+      |> Enum.reject(fn region ->
+        case map_areas[region["key"]] do
+          %{"latitude" => latitude, "longitude" => longitude} ->
+            is_number(latitude) and is_number(longitude)
+
+          _ ->
+            false
+        end
+      end)
+      |> Enum.map(& &1["key"])
+
+    assert missing == []
+    assert map_areas["AUS"]["latitude"] == -25.2744
+  end
+
   test "news-gathered regions include GDELT terms" do
     missing =
       WatchedRegions.gather_news()

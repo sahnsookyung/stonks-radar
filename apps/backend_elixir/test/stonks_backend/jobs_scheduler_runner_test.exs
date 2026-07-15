@@ -65,10 +65,15 @@ defmodule StonksBackend.JobsSchedulerRunnerTest do
           send(parent, {:cleanup, key})
           0
         end,
+        periodic_cleanup_fun: fn now ->
+          send(parent, {:periodic_cleanup, now})
+          0
+        end,
         enqueue_fun: enqueue
       )
 
     assert_receive {:cleanup, "snapshot-refresh:1977509"}, 500
+    assert_receive {:periodic_cleanup, ~U[2026-05-26 01:17:00Z]}, 500
     assert_receive {:tick_enqueue, "snapshot_refresh", "snapshot-refresh:1977509"}, 500
     GenServer.stop(pid)
   end

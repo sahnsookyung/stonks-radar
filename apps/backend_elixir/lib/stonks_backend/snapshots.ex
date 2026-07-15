@@ -1,8 +1,10 @@
 defmodule StonksBackend.Snapshots do
   @moduledoc "Snapshot candidate/publish compatibility for the local OCI volume model."
 
-  alias StonksBackend.{EarningsCalendar, Repo, Settings, Sql, TrackedTickers}
-  alias StonksBackend.Snapshots.{PublicGuards, SchemaResolver}
+  alias StonksBackend.{EarningsCalendar, Repo, Settings, Sql, TrackedTickers, WatchedRegions}
+  alias StonksBackend.Disclosures.PublicProjection, as: DisclosureProjection
+  alias StonksBackend.News.PublicProjection
+  alias StonksBackend.Snapshots.{LiveData, PublicGuards, SchemaResolver}
 
   @manifest_filename "manifest.json"
   @latest_manifest_path Path.join(["latest", @manifest_filename])
@@ -29,24 +31,6 @@ defmodule StonksBackend.Snapshots do
     "scenario_basket" => "scenario_basket_snapshot.schema.json",
     "sector_page" => "sector_snapshot.schema.json"
   }
-  @map_region_centroids %{
-    "USA" => %{label: "United States", latitude: 39.8283, longitude: -98.5795, priority: 95},
-    "CHN" => %{label: "China", latitude: 35.8617, longitude: 104.1954, priority: 92},
-    "EU" => %{label: "European Union", latitude: 50.1109, longitude: 8.6821, priority: 88},
-    "EUROZONE" => %{label: "Eurozone", latitude: 50.1109, longitude: 8.6821, priority: 86},
-    "KOR" => %{label: "South Korea", latitude: 35.9078, longitude: 127.7669, priority: 84},
-    "JPN" => %{label: "Japan", latitude: 36.2048, longitude: 138.2529, priority: 84},
-    "TWN" => %{label: "Taiwan", latitude: 23.6978, longitude: 120.9605, priority: 82},
-    "GBR" => %{label: "United Kingdom", latitude: 55.3781, longitude: -3.436, priority: 78},
-    "BRA" => %{label: "Brazil", latitude: -14.235, longitude: -51.9253, priority: 76},
-    "MIDDLE_EAST_OPEC_GCC" => %{
-      label: "Middle East / OPEC+ / GCC",
-      latitude: 24.7136,
-      longitude: 46.6753,
-      priority: 86
-    }
-  }
-
   def published_root, do: Settings.get(:published_snapshot_dir, "apps/web/public/public")
   def artifact_root, do: Settings.get(:snapshot_artifact_dir, "artifacts/snapshots")
   def manifest_path, do: @latest_manifest_path
@@ -56,11 +40,6 @@ defmodule StonksBackend.Snapshots do
 
   def candidate_root(version),
     do: Path.join([artifact_root(), "candidates", "v#{version}", "public"])
-
-  def build_local_seed do
-    root = published_root()
-    {:ok, %{files: json_files(root), uploaded: false, destination: root, snapshot_version: 1}}
-  end
 
   def build_candidate(payload \\ %{}) do
     if copy_published_tree_requested?(payload) do
@@ -98,10 +77,17 @@ defmodule StonksBackend.Snapshots do
   end
 
   defp write_template_snapshot_tree(candidate_root, seed_manifest, version, generated_at) do
+    locales = seed_manifest["locales"] || []
+
+    news_events =
+      Map.new(locales, fn locale ->
+        {locale, PublicProjection.events(locale, now: generated_at)}
+      end)
+
     manifest = %{
       "current_version" => version,
       "generated_at" => iso8601(generated_at),
-      "locales" => seed_manifest["locales"] || [],
+      "locales" => locales,
       "objects" => %{}
     }
 
@@ -109,29 +95,126 @@ defmodule StonksBackend.Snapshots do
       corrections: corrections(),
       generated_at: generated_at,
       hard_expires_at: DateTime.add(generated_at, 7, :day),
+      news_events: news_events,
       seed_manifest: seed_manifest,
       stale_after: DateTime.add(generated_at, 12, :hour),
       version: version
     }
 
-    (seed_manifest["objects"] || %{})
-    |> Enum.reject(fn {object_key, _locale_paths} ->
-      prohibited_public_object_key?(object_key)
-    end)
-    |> Enum.reduce_while({:ok, [], manifest}, fn {object_key, locale_paths},
-                                                 {:ok, files, manifest} ->
-      case write_template_locale_snapshots(
-             candidate_root,
-             object_key,
-             locale_paths,
-             context,
-             files,
-             manifest
-           ) do
+    base_result =
+      (seed_manifest["objects"] || %{})
+      |> Enum.reject(fn {object_key, _locale_paths} ->
+        prohibited_public_object_key?(object_key) or
+          String.starts_with?(object_key, "news_event_")
+      end)
+      |> Enum.reduce_while({:ok, [], manifest}, fn {object_key, locale_paths},
+                                                   {:ok, files, manifest} ->
+        case write_template_locale_snapshots(
+               candidate_root,
+               object_key,
+               locale_paths,
+               context,
+               files,
+               manifest
+             ) do
+          {:ok, files, manifest} -> {:cont, {:ok, files, manifest}}
+          {:error, reason} -> {:halt, {:error, reason}}
+        end
+      end)
+
+    with {:ok, files, manifest} <- base_result do
+      write_live_news_event_snapshots(candidate_root, context, files, manifest)
+    end
+  end
+
+  defp write_live_news_event_snapshots(candidate_root, context, files, manifest) do
+    context.seed_manifest
+    |> Map.get("locales", [])
+    |> Enum.reduce_while({:ok, files, manifest}, fn locale, {:ok, files, manifest} ->
+      context
+      |> news_events(locale)
+      |> Enum.reduce_while({:ok, files, manifest}, fn event, {:ok, files, manifest} ->
+        event_id = to_string(event["id"])
+        object_key = "news_event_#{event_id}"
+
+        relative =
+          Path.join(["v#{context.version}", locale, "news", "events", "#{event_id}.json"])
+
+        snapshot =
+          event_snapshot(event, object_key, locale, context)
+          |> LiveData.annotate_availability()
+
+        case write_snapshot(candidate_root, relative, snapshot) do
+          {:ok, target} ->
+            manifest =
+              put_manifest_object_path(manifest, object_key, locale, "public/#{relative}")
+
+            {:cont, {:ok, [target | files], manifest}}
+
+          {:error, reason} ->
+            {:halt, {:error, reason}}
+        end
+      end)
+      |> case do
         {:ok, files, manifest} -> {:cont, {:ok, files, manifest}}
         {:error, reason} -> {:halt, {:error, reason}}
       end
     end)
+  end
+
+  defp event_snapshot(event, object_key, locale, context) do
+    %{
+      "schema_version" => "1.0",
+      "min_reader_version" => "1.0",
+      "snapshot_version" => context.version,
+      "locale" => locale,
+      "generated_at" => iso8601(context.generated_at),
+      "stale_after" => iso8601(context.stale_after),
+      "hard_expires_at" => iso8601(context.hard_expires_at),
+      "object_type" => "news_event",
+      "object_key" => object_key,
+      "source_policy_versions" => event_source_policy_versions(event),
+      "data" => PublicProjection.detail(event, locale),
+      "warnings" => event_warnings(event, locale),
+      "corrections" => context.corrections
+    }
+  end
+
+  defp event_source_policy_versions(event) do
+    event
+    |> Map.get("source_links", [])
+    |> Enum.map(fn source ->
+      %{
+        "source_key" => source["source_key"],
+        "policy_version" => source["policy_version"] || 1
+      }
+    end)
+    |> Enum.reject(&(to_string(&1["source_key"]) == ""))
+    |> Enum.uniq_by(& &1["source_key"])
+  end
+
+  defp event_warnings(%{"claim_level" => level}, _locale)
+       when level in ["reviewed", "published"],
+       do: []
+
+  defp event_warnings(_event, "ko") do
+    [
+      %{
+        "code" => "unreviewed_event_candidate",
+        "message" => "자동 군집 후보이며 편집 검토가 완료되지 않았습니다.",
+        "severity" => "warning"
+      }
+    ]
+  end
+
+  defp event_warnings(_event, _locale) do
+    [
+      %{
+        "code" => "unreviewed_event_candidate",
+        "message" => "Automated cluster candidate; editorial review is not complete.",
+        "severity" => "warning"
+      }
+    ]
   end
 
   defp write_template_locale_snapshots(
@@ -149,6 +232,8 @@ defmodule StonksBackend.Snapshots do
            {:ok, relative} <-
              versioned_snapshot_relative_path(context.version, locale, source_path),
            snapshot <- apply_template_runtime_data(snapshot, object_key, locale, context),
+           snapshot <- refresh_source_policy_versions(snapshot),
+           snapshot <- LiveData.annotate_availability(snapshot),
            {:ok, target} <- write_snapshot(candidate_root, relative, snapshot),
            manifest <-
              put_manifest_object_path(manifest, object_key, locale, "public/#{relative}") do
@@ -202,7 +287,8 @@ defmodule StonksBackend.Snapshots do
        |> Map.put("corrections", context.corrections)
        |> Map.put_new("warnings", [])
        |> Map.put_new("source_policy_versions", [])
-       |> PublicGuards.scrub_placeholder_metadata()}
+       |> PublicGuards.scrub_placeholder_metadata()
+       |> LiveData.strip_seed_payload()}
     end
   end
 
@@ -243,6 +329,7 @@ defmodule StonksBackend.Snapshots do
       |> enrich_home_news_data(context.generated_at, locale, context)
       |> EarningsCalendar.enrich_home_snapshot_data()
       |> StonksBackend.Shorts.enrich_home_snapshot_data()
+      |> DisclosureProjection.enrich_home()
       |> maybe_enrich_yield_curves()
     end)
   end
@@ -259,13 +346,17 @@ defmodule StonksBackend.Snapshots do
   defp apply_template_runtime_data(
          %{"object_type" => object_type} = snapshot,
          _object_key,
-         _locale,
+         locale,
          context
        )
        when object_type in ["news_index", "news_region", "news_ticker", "news_topic"] do
     update_in(snapshot, ["data"], fn data ->
       data
       |> ensure_map()
+      |> PublicProjection.project_list(object_type, locale,
+        events: news_events(context, locale),
+        now: context.generated_at
+      )
       |> enrich_news_list_data(object_type, context.generated_at)
     end)
   end
@@ -323,15 +414,26 @@ defmodule StonksBackend.Snapshots do
   end
 
   defp apply_template_runtime_data(
+         %{"object_type" => "country_region"} = snapshot,
+         _object_key,
+         locale,
+         context
+       ) do
+    update_in(snapshot, ["data"], fn data ->
+      enrich_country_region_live_data(data, locale, context)
+    end)
+  end
+
+  defp apply_template_runtime_data(
          %{"object_type" => "sector_page"} = snapshot,
          _object_key,
-         _locale,
-         _context
+         locale,
+         context
        ) do
     update_in(snapshot, ["data"], fn data ->
       data
       |> ensure_map()
-      |> enrich_news_collection("sector_news")
+      |> enrich_sector_live_data(locale, context)
       |> enrich_ticker_calendar_items()
     end)
   end
@@ -339,13 +441,13 @@ defmodule StonksBackend.Snapshots do
   defp apply_template_runtime_data(
          %{"object_type" => "reference_entity"} = snapshot,
          _object_key,
-         _locale,
-         _context
+         locale,
+         context
        ) do
     update_in(snapshot, ["data"], fn data ->
       data
       |> ensure_map()
-      |> enrich_news_collection("latest_news")
+      |> enrich_reference_entity_live_data(locale, context)
     end)
   end
 
@@ -354,6 +456,77 @@ defmodule StonksBackend.Snapshots do
   defp maybe_enrich_yield_curves(data) do
     case StonksBackend.YieldCurves.enrich_home_snapshot_data(data) do
       {:ok, enriched_data} -> enriched_data
+    end
+  end
+
+  defp enrich_country_region_live_data(data, locale, context) do
+    data = ensure_map(data)
+    key = to_string(data["key"])
+
+    events =
+      context
+      |> news_events(locale)
+      |> Enum.filter(fn event -> key in news_event_region_keys(event) end)
+      |> filter_news_items("analysis", context.generated_at)
+
+    public_events = news_events_to_map_payload(events, context.generated_at).public_events
+
+    data
+    |> Map.put("recent_events", public_events)
+    |> put_live_collection_status(public_events)
+  end
+
+  defp enrich_sector_live_data(data, locale, context) do
+    key = to_string(data["key"])
+
+    events =
+      context
+      |> news_events(locale)
+      |> Enum.filter(fn event -> key in news_event_sector_keys(event) end)
+      |> filter_news_items("analysis", context.generated_at)
+
+    public_events = news_events_to_map_payload(events, context.generated_at).public_events
+
+    data
+    |> Map.put("sector_news", events)
+    |> Map.put("recent_events", public_events)
+    |> put_live_collection_status(events)
+  end
+
+  defp enrich_reference_entity_live_data(data, locale, context) do
+    entity = ensure_map(data["entity"])
+
+    symbol =
+      [entity["symbol"], entity["display_symbol"], entity["route_key"]]
+      |> Enum.find_value(&non_empty_string/1)
+      |> to_string()
+      |> String.upcase()
+
+    events =
+      context
+      |> news_events(locale)
+      |> Enum.filter(fn event -> symbol in news_event_ticker_symbols(event) end)
+      |> filter_news_items("analysis", context.generated_at)
+
+    data
+    |> Map.put("latest_news", events)
+    |> Map.put("freshness", collection_freshness(events))
+  end
+
+  defp put_live_collection_status(data, []), do: data
+
+  defp put_live_collection_status(data, events) do
+    data
+    |> Map.put("freshness", collection_freshness(events))
+    |> maybe_put_existing("source_strength", "source-linked")
+  end
+
+  defp collection_freshness(events) do
+    cond do
+      Enum.any?(events, &(&1["freshness"] == "fresh")) -> "fresh"
+      Enum.any?(events, &(&1["freshness"] == "watch")) -> "watch"
+      events != [] -> "stale"
+      true -> "unsupported"
     end
   end
 
@@ -396,6 +569,7 @@ defmodule StonksBackend.Snapshots do
 
       payload ->
         data
+        |> maybe_put_non_empty_list("events", payload.public_events)
         |> maybe_put_non_empty_list("breaking_market_events", payload.breaking_events)
         |> update_in(["breaking_market_map"], fn map ->
           map
@@ -418,6 +592,7 @@ defmodule StonksBackend.Snapshots do
 
       payload ->
         data
+        |> maybe_put_non_empty_list("top_events", Enum.take(payload.public_events, 6))
         |> maybe_put_non_empty_list("breaking_market_events", payload.breaking_events)
         |> update_in(["breaking_market_map"], fn map ->
           map
@@ -427,48 +602,61 @@ defmodule StonksBackend.Snapshots do
           |> maybe_put_existing("generated_at", iso8601(generated_at))
           |> refresh_breaking_market_map_counts()
         end)
+        |> restore_home_news_copy(locale, payload.public_events)
     end
+  end
+
+  defp restore_home_news_copy(data, _locale, []), do: data
+
+  defp restore_home_news_copy(data, "ko", _events) do
+    data
+    |> Map.put("headline", "최신 출처 연결 시장 정보")
+    |> Map.put("summary", "현재 수집된 공개 출처의 뉴스와 시장 메타데이터입니다.")
+  end
+
+  defp restore_home_news_copy(data, _locale, _events) do
+    data
+    |> Map.put("headline", "Latest source-linked market intelligence")
+    |> Map.put("summary", "Current news and market metadata from collected public sources.")
   end
 
   defp news_index_events(locale, context, generated_at, window_kind) do
-    with %{} = manifest <- Map.get(context, :seed_manifest),
-         source_path when is_binary(source_path) <-
-           get_in(manifest, ["objects", "news_index", locale]),
-         {:ok, relative} <- manifest_snapshot_relative_path(source_path),
-         {:ok, %{"data" => data}} <- read_snapshot(Path.join(published_root(), relative)) do
-      data
-      |> enrich_news_list_data("news_index", generated_at)
-      |> Map.get("events", [])
-      |> filter_news_items(window_kind, generated_at)
-    else
-      _ -> []
-    end
+    context
+    |> news_events(locale)
+    |> filter_news_items(window_kind, generated_at)
+  end
+
+  defp news_events(context, locale) do
+    context
+    |> Map.get(:news_events, %{})
+    |> Map.get(locale, [])
   end
 
   defp news_events_to_map_payload(events, generated_at) do
+    centroids = map_region_centroids()
+
     events
     |> List.wrap()
     |> Enum.filter(&is_map/1)
     |> Enum.reduce(%{public_events: [], breaking_events: [], map_points: []}, fn event, acc ->
-      points = news_event_map_points(event, generated_at)
+      points = news_event_map_points(event, generated_at, centroids)
 
-      case {points, public_event_from_news_event(event, points),
-            breaking_event_from_news_event(event, points, generated_at)} do
-        {[], _public_event, _breaking_event} ->
+      public_event = public_event_from_news_event(event, points)
+      breaking_event = breaking_event_from_news_event(event, points, generated_at)
+
+      case {points, public_event} do
+        {[], _public_event} ->
           acc
 
-        {_points, nil, _breaking_event} ->
+        {_points, nil} ->
           acc
 
-        {_points, _public_event, nil} ->
-          acc
-
-        {_points, public_event, breaking_event} ->
+        {_points, public_event} ->
           %{
             acc
             | public_events: [public_event | acc.public_events],
-              breaking_events: [breaking_event | acc.breaking_events],
-              map_points: acc.map_points ++ points
+              breaking_events: maybe_prepend(breaking_event, acc.breaking_events),
+              map_points: Enum.reverse(points, acc.map_points)
           }
       end
     end)
@@ -476,7 +664,7 @@ defmodule StonksBackend.Snapshots do
       %{
         public_events: Enum.reverse(payload.public_events),
         breaking_events: Enum.reverse(payload.breaking_events),
-        map_points: payload.map_points
+        map_points: Enum.reverse(payload.map_points)
       }
     end)
   end
@@ -507,8 +695,13 @@ defmodule StonksBackend.Snapshots do
         "longitude" => primary_point["longitude"],
         "affected_objects" => news_event_ticker_symbols(event),
         "source_links" => public_source_links(event),
+        "item_kind" => event["item_kind"],
+        "claim_level" => event["claim_level"],
+        "evidence_match_status" => event["evidence_match_status"],
+        "review_state" => review_state(event),
         "correction_status" => "none"
       }
+      |> drop_nil_values()
     end
   end
 
@@ -517,8 +710,9 @@ defmodule StonksBackend.Snapshots do
   defp breaking_event_from_news_event(event, points, generated_at) do
     event_id = news_event_id(event)
     timestamp = news_event_source_timestamp(event)
+    publishable_claim? = event["claim_level"] in ["reviewed", "published"]
 
-    if event_id == "" or timestamp == "" do
+    if event_id == "" or timestamp == "" or not publishable_claim? do
       nil
     else
       %{
@@ -560,7 +754,10 @@ defmodule StonksBackend.Snapshots do
     end
   end
 
-  defp news_event_map_points(event, generated_at) do
+  defp maybe_prepend(nil, items), do: items
+  defp maybe_prepend(item, items), do: [item | items]
+
+  defp news_event_map_points(event, generated_at, centroids) do
     event_id = news_event_id(event)
     timestamp = news_event_source_timestamp(event)
     observed_at = news_event_observed_timestamp(event, timestamp)
@@ -574,10 +771,10 @@ defmodule StonksBackend.Snapshots do
     |> Map.get("regions", [])
     |> List.wrap()
     |> Enum.filter(&is_map/1)
-    |> best_mappable_regions()
+    |> best_mappable_regions(centroids)
     |> Enum.map(fn region ->
       key = to_string(region["key"] || "")
-      centroid = @map_region_centroids[key]
+      centroid = centroids[key]
 
       %{
         "point_id" => "#{event_id}:#{key}:#{map_point_relation(region["relation"])}",
@@ -600,16 +797,21 @@ defmodule StonksBackend.Snapshots do
         "geo_confidence" =>
           bounded_float(region["confidence"], bounded_float(event["confidence"], 0.5)),
         "area_priority" => centroid.priority,
-        "score_reason_codes" => reason_codes
+        "score_reason_codes" => reason_codes,
+        "item_kind" => event["item_kind"],
+        "claim_level" => event["claim_level"],
+        "evidence_match_status" => event["evidence_match_status"],
+        "review_state" => review_state(event),
+        "trust_tier" => trust_tier(event)
       }
       |> drop_nil_values()
     end)
   end
 
-  defp best_mappable_regions(regions) do
+  defp best_mappable_regions(regions, centroids) do
     regions
     |> Enum.filter(fn region ->
-      Map.has_key?(@map_region_centroids, to_string(region["key"] || ""))
+      Map.has_key?(centroids, to_string(region["key"] || ""))
     end)
     |> Enum.group_by(&to_string(&1["key"] || ""))
     |> Enum.map(fn {_key, candidates} ->
@@ -620,8 +822,24 @@ defmodule StonksBackend.Snapshots do
     |> Enum.sort_by(fn region ->
       key = to_string(region["key"] || "")
 
-      {-Map.fetch!(@map_region_centroids, key).priority,
-       -bounded_float(region["confidence"], 0.0), key}
+      {-Map.fetch!(centroids, key).priority, -bounded_float(region["confidence"], 0.0), key}
+    end)
+  end
+
+  defp map_region_centroids do
+    WatchedRegions.map_areas()
+    |> Enum.filter(fn area ->
+      is_binary(area["key"]) and is_number(area["latitude"]) and
+        is_number(area["longitude"])
+    end)
+    |> Map.new(fn area ->
+      {area["key"],
+       %{
+         label: area["name"] || area["key"],
+         latitude: area["latitude"],
+         longitude: area["longitude"],
+         priority: bounded_int(area["base_market_weight"], 50, 0, 100)
+       }}
     end)
   end
 
@@ -816,10 +1034,13 @@ defmodule StonksBackend.Snapshots do
   defp review_state(%{"claim_level" => "published"}), do: "published"
   defp review_state(%{"claim_level" => "reviewed"}), do: "reviewed"
 
-  defp review_state(%{"review_state" => state})
-       when state in ["approved", "reviewed", "published"], do: state
+  defp review_state(%{"claim_level" => level})
+       when level in ["clustered_candidate", "source_only"], do: "candidate"
 
-  defp review_state(_event), do: "approved"
+  defp review_state(%{"review_state" => state})
+       when state in ["candidate", "approved", "reviewed", "published"], do: state
+
+  defp review_state(_event), do: "candidate"
 
   defp breaking_label(%{"freshness" => "stale"}), do: "stale"
 
@@ -1013,6 +1234,9 @@ defmodule StonksBackend.Snapshots do
       filters
       |> ensure_map()
       |> Map.put("tickers", news_ticker_filter_options(events, filters))
+      |> Map.put("regions", news_reference_filter_options(events, "regions", "key", "name"))
+      |> Map.put("topics", news_reference_filter_options(events, "topics", "key", "label"))
+      |> Map.put("trust_tiers", news_trust_filter_options(events))
     end)
   end
 
@@ -1041,7 +1265,7 @@ defmodule StonksBackend.Snapshots do
     end)
   end
 
-  defp enrich_news_collection(data, key, generated_at \\ nil) do
+  defp enrich_news_collection(data, key, generated_at) do
     update_in(data, [key], fn events ->
       events
       |> List.wrap()
@@ -1248,17 +1472,6 @@ defmodule StonksBackend.Snapshots do
 
   defp parse_iso8601_datetime(_), do: nil
 
-  defp enrich_news_item(%{"id" => "rklb_launch_window_seed"} = item) do
-    item
-    |> Map.put("title", "Rocket Lab source links for RKLB filings and company updates")
-    |> Map.put(
-      "summary",
-      "This is a source-linked watch item built from Rocket Lab IR and SEC links; it is not a verified launch-window event."
-    )
-    |> put_source_link_evidence_ids()
-    |> put_news_claim_defaults("source_discovery", "source_only", "weak_match")
-  end
-
   defp enrich_news_item(item) when is_map(item) do
     item
     |> put_source_link_evidence_ids()
@@ -1376,6 +1589,90 @@ defmodule StonksBackend.Snapshots do
 
     TrackedTickers.ticker_filter_options(event_counts, labels)
   end
+
+  defp news_reference_filter_options(events, collection_key, key_field, label_field) do
+    events
+    |> Enum.flat_map(fn event ->
+      event
+      |> Map.get(collection_key, [])
+      |> List.wrap()
+      |> Enum.filter(&is_map/1)
+      |> Enum.map(fn item ->
+        key = item[key_field] |> to_string() |> String.trim()
+        label = item[label_field] |> to_string() |> String.trim()
+        {key, if(label == "", do: key, else: label)}
+      end)
+      |> Enum.reject(fn {key, _label} -> key == "" end)
+      |> Enum.uniq_by(&elem(&1, 0))
+    end)
+    |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+    |> Enum.map(fn {key, labels} ->
+      %{"key" => key, "label" => List.first(labels) || key, "count" => length(labels)}
+    end)
+    |> Enum.sort_by(fn option -> {-option["count"], option["label"]} end)
+  end
+
+  defp news_trust_filter_options(events) do
+    events
+    |> Enum.flat_map(fn event ->
+      event
+      |> Map.get("source_links", [])
+      |> List.wrap()
+      |> Enum.map(&news_trust_tier(&1["trust_tier"]))
+      |> Enum.uniq()
+    end)
+    |> Enum.frequencies()
+    |> Enum.map(fn {tier, count} ->
+      %{"key" => tier, "label" => trust_tier_label(tier), "count" => count}
+    end)
+    |> Enum.sort_by(fn option -> {trust_tier_rank(option["key"]), option["label"]} end)
+  end
+
+  defp trust_tier_label("T0_OFFICIAL"), do: "T0 · Official"
+  defp trust_tier_label("T1_REGULATED_FILING"), do: "T1 · Regulated filing"
+  defp trust_tier_label("T2_REPUTABLE_MEDIA"), do: "T2 · Reputable media"
+  defp trust_tier_label("T3_REVIEWED_PUBLIC_SOURCE"), do: "T3 · Reviewed public source"
+  defp trust_tier_label("T4_WEAK_SIGNAL"), do: "T4 · Weak signal"
+  defp trust_tier_label("T5_UNREVIEWED"), do: "T5 · Unreviewed"
+  defp trust_tier_label("T6_BLOCKED"), do: "T6 · Blocked"
+  defp trust_tier_label(tier), do: tier
+
+  defp refresh_source_policy_versions(%{"data" => data} = snapshot) do
+    versions =
+      data
+      |> collect_source_policy_versions([])
+      |> Enum.uniq_by(& &1["source_key"])
+      |> Enum.sort_by(& &1["source_key"])
+
+    Map.put(snapshot, "source_policy_versions", versions)
+  end
+
+  defp refresh_source_policy_versions(snapshot), do: snapshot
+
+  defp collect_source_policy_versions(value, acc) when is_list(value) do
+    Enum.reduce(value, acc, &collect_source_policy_versions/2)
+  end
+
+  defp collect_source_policy_versions(value, acc) when is_map(value) do
+    acc =
+      case {value["source_key"], value["policy_version"]} do
+        {source_key, policy_version} when is_binary(source_key) and source_key != "" ->
+          [
+            %{
+              "source_key" => source_key,
+              "policy_version" => max(to_int(policy_version, 1), 1)
+            }
+            | acc
+          ]
+
+        _ ->
+          acc
+      end
+
+    Enum.reduce(Map.values(value), acc, &collect_source_policy_versions/2)
+  end
+
+  defp collect_source_policy_versions(_value, acc), do: acc
 
   defp write_snapshot(candidate_root, relative, snapshot) do
     snapshot = Map.put(snapshot, "content_hash", payload_hash(snapshot["data"]))

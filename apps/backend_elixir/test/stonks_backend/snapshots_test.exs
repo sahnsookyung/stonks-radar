@@ -8,6 +8,7 @@ defmodule StonksBackend.SnapshotsTest do
     published_root = Path.join(root, "published")
     artifact_root = Path.join(root, "artifacts")
     previous_settings = Application.get_env(:stonks_backend, :settings, [])
+    previous_news_query_fun = Application.get_env(:stonks_backend, :public_news_query_fun)
 
     Application.put_env(
       :stonks_backend,
@@ -21,6 +22,7 @@ defmodule StonksBackend.SnapshotsTest do
 
     on_exit(fn ->
       Application.put_env(:stonks_backend, :settings, previous_settings)
+      restore_application_env(:public_news_query_fun, previous_news_query_fun)
       File.rm_rf!(root)
     end)
 
@@ -331,6 +333,22 @@ defmodule StonksBackend.SnapshotsTest do
     two_days_old = DateTime.add(now, -2, :day)
     eight_days_old = DateTime.add(now, -8, :day)
     thirty_one_days_old = DateTime.add(now, -31, :day)
+    parent = self()
+
+    Application.put_env(:stonks_backend, :public_news_query_fun, fn _sql, [locale, _limit] ->
+      send(parent, {:public_news_query, locale})
+
+      [
+        public_news_row("rklb_live_update", recent, %{
+          "review_state" => "reviewed",
+          "summary_json" => %{"summary" => "Reviewed Rocket Lab source metadata."}
+        }),
+        public_news_row("analysis_window_source", two_days_old, %{
+          "review_state" => "candidate"
+        }),
+        public_news_row("stale_source_discovery", thirty_one_days_old, %{})
+      ]
+    end)
 
     write_manifest!(root, %{
       "news_index" => %{"en" => "public/v1/en/news/index.json"},
@@ -375,6 +393,8 @@ defmodule StonksBackend.SnapshotsTest do
     })
 
     assert {:ok, result} = Snapshots.build_candidate()
+    assert_receive {:public_news_query, "en"}
+    refute_receive {:public_news_query, "en"}
     assert result.destination == Path.join([artifact_root, "candidates", "v2", "public"])
 
     index =
@@ -386,29 +406,34 @@ defmodule StonksBackend.SnapshotsTest do
     assert index["data"]["coverage_window"] == "30d"
 
     assert index["source_policy_versions"] == [
-             %{"source_key" => "snapshot", "policy_version" => 1}
+             %{"source_key" => "public_source", "policy_version" => 1}
            ]
+
+    assert [%{"key" => "USA", "label" => "United States", "count" => 2}] =
+             index["data"]["filters"]["regions"]
+
+    assert [%{"key" => "space", "label" => "Space", "count" => 2}] =
+             index["data"]["filters"]["topics"]
+
+    assert [%{"key" => "T2_REPUTABLE_MEDIA", "count" => 2}] =
+             Enum.map(index["data"]["filters"]["trust_tiers"], &Map.drop(&1, ["label"]))
 
     refute Enum.any?(index["data"]["events"], &(&1["id"] == "stale_source_discovery"))
     refute Jason.encode!(index["data"]) =~ "seed event"
     refute Jason.encode!(index["data"]) =~ "Source policy seed"
-    refute Jason.encode!(index["data"]) =~ "source-linked news event"
+    refute Jason.encode!(index["data"]) =~ "rklb_launch_window_seed"
 
     assert %{"freshness" => "watch"} =
              Enum.find(index["data"]["events"], &(&1["id"] == "analysis_window_source"))
 
     assert %{
-             "title" => "Rocket Lab source links for RKLB filings and company updates",
+             "title" => "Live source-linked report for RKLB",
              "freshness" => "fresh",
-             "summary" => summary,
-             "item_kind" => "source_discovery",
-             "claim_level" => "source_only",
-             "evidence_match_status" => "weak_match",
-             "source_links" => [%{"evidence_id" => "doc_" <> evidence_hash}]
-           } = Enum.find(index["data"]["events"], &(&1["id"] == "rklb_launch_window_seed"))
-
-    assert summary =~ "not a verified launch-window event"
-    assert String.length(evidence_hash) == 24
+             "summary" => "Reviewed Rocket Lab source metadata.",
+             "item_kind" => "reviewed_event",
+             "claim_level" => "reviewed",
+             "source_links" => [%{"url" => "https://example.com/rklb_live_update"}]
+           } = Enum.find(index["data"]["events"], &(&1["id"] == "rklb_live_update"))
 
     assert %{"count" => 0} =
              Enum.find(index["data"]["filters"]["tickers"], &(&1["key"] == "AMD"))
@@ -420,16 +445,54 @@ defmodule StonksBackend.SnapshotsTest do
       |> Jason.decode!()
 
     assert ticker["data"]["coverage_window"] == "7d"
-    assert Enum.map(ticker["data"]["events"], & &1["id"]) == ["rklb_launch_window_seed"]
+
+    assert Enum.map(ticker["data"]["events"], & &1["id"]) == [
+             "rklb_live_update",
+             "analysis_window_source"
+           ]
+
+    manifest =
+      result.destination
+      |> Path.join("latest/manifest.json")
+      |> File.read!()
+      |> Jason.decode!()
+
+    refute Map.has_key?(manifest["objects"], "news_event_rklb_launch_window_seed")
+
+    assert manifest["objects"]["news_event_rklb_live_update"]["en"] ==
+             "public/v2/en/news/events/rklb_live_update.json"
+
+    detail =
+      result.destination
+      |> Path.join("v2/en/news/events/rklb_live_update.json")
+      |> File.read!()
+      |> Jason.decode!()
+
+    assert detail["data"]["id"] == "rklb_live_update"
+    assert detail["data"]["known_facts"] == ["Public source for rklb_live_update"]
     refute ticker["data"]["summary"] =~ "source-linked news event"
     assert :ok = Snapshots.validate_snapshot_tree(result.destination)
   end
 
-  test "candidate build keeps source-only discovery out of breaking map surfaces", %{
-    published_root: root,
-    artifact_root: artifact_root
-  } do
+  test "candidate build keeps source-only discovery out of breaking event lanes and labels map candidates",
+       %{
+         published_root: root,
+         artifact_root: artifact_root
+       } do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    Application.put_env(:stonks_backend, :public_news_query_fun, fn _sql, _params ->
+      [
+        public_news_row("source_only", now, %{
+          "canonical_title" => "Source-only company market report",
+          "review_state" => "candidate"
+        }),
+        public_news_row("reviewed_event", now, %{
+          "canonical_title" => "Reviewed official company update",
+          "review_state" => "reviewed"
+        })
+      ]
+    end)
 
     write_manifest!(root, %{
       "home" => %{"en" => "public/v1/en/home.json"}
@@ -574,26 +637,28 @@ defmodule StonksBackend.SnapshotsTest do
            ]
 
     assert Enum.map(home["data"]["breaking_market_map"]["map_points"], & &1["event_id"]) == [
-             "reviewed_event"
+             "reviewed_event",
+             "source_only"
            ]
 
-    assert home["data"]["breaking_market_map"]["shown_count"] == 1
-    assert home["data"]["breaking_market_map"]["total_count"] == 1
+    assert %{
+             "review_state" => "candidate",
+             "claim_level" => "clustered_candidate",
+             "item_kind" => "event_candidate"
+           } =
+             Enum.find(
+               home["data"]["breaking_market_map"]["map_points"],
+               &(&1["event_id"] == "source_only")
+             )
 
-    assert [
-             %{
-               "summary" =>
-                 "United States has 2 source-linked item(s) in the 7-day metadata window.",
-               "event_count" => 2,
-               "source_count" => 2,
-               "evidence" => [%{"event_id" => "reviewed_event"}, %{"event_id" => "source_only"}]
-             }
-           ] = home["data"]["breaking_market_map"]["regional_briefs"]
+    assert home["data"]["headline"] == "Latest source-linked market intelligence"
 
-    refute Jason.encode!(home["data"]["breaking_market_map"]["regional_briefs"]) =~
-             "breaking/developing event"
+    assert home["data"]["breaking_market_map"]["shown_count"] == 2
+    assert home["data"]["breaking_market_map"]["total_count"] == 2
 
-    assert Enum.map(hd(home["data"]["alternative_signals"])["items"], & &1["key"]) == ["fresh"]
+    assert home["data"]["breaking_market_map"]["regional_briefs"] == []
+    assert hd(home["data"]["alternative_signals"])["items"] == []
+    assert hd(home["data"]["alternative_signals"])["freshness"] == "unsupported"
     assert :ok = Snapshots.validate_snapshot_tree(result.destination)
   end
 
@@ -602,6 +667,23 @@ defmodule StonksBackend.SnapshotsTest do
     artifact_root: artifact_root
   } do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    Application.put_env(:stonks_backend, :public_news_query_fun, fn _sql, _params ->
+      [
+        public_news_row("semiconductor_live", DateTime.add(now, -2, :day), %{
+          "event_type" => "trade_policy",
+          "severity" => "high",
+          "source_count" => 3,
+          "review_state" => "reviewed",
+          "topics" => [%{"key" => "semiconductors", "confidence" => 0.92}],
+          "regions" => [
+            %{"key" => "CHN", "relation" => "event_region", "confidence" => 0.92},
+            %{"key" => "USA", "relation" => "affected_region", "confidence" => 0.86},
+            %{"key" => "AUS", "relation" => "mentioned_region", "confidence" => 0.72}
+          ]
+        })
+      ]
+    end)
 
     write_manifest!(root, %{
       "news_index" => %{"en" => "public/v1/en/news/index.json"},
@@ -693,17 +775,24 @@ defmodule StonksBackend.SnapshotsTest do
       |> File.read!()
       |> Jason.decode!()
 
-    assert map["data"]["events"] == []
+    assert [%{"id" => "semiconductor_live"}] = map["data"]["events"]
 
-    assert [%{"event_id" => "semiconductor_export_controls_seed"}] =
+    assert [%{"event_id" => "semiconductor_live"}] =
              map["data"]["breaking_market_events"]
 
     assert Enum.map(map["data"]["breaking_market_map"]["map_points"], & &1["area_key"]) == [
              "USA",
-             "CHN"
+             "CHN",
+             "AUS"
            ]
 
-    assert map["data"]["breaking_market_map"]["shown_count"] == 2
+    assert %{"latitude" => -25.2744, "longitude" => 133.7751} =
+             Enum.find(
+               map["data"]["breaking_market_map"]["map_points"],
+               &(&1["area_key"] == "AUS")
+             )
+
+    assert map["data"]["breaking_market_map"]["shown_count"] == 3
     assert "semiconductors" in map["data"]["filters"]["sectors"]
     assert "trade_policy" in map["data"]["filters"]["event_types"]
 
@@ -1042,6 +1131,56 @@ defmodule StonksBackend.SnapshotsTest do
     }
   end
 
+  defp public_news_row(id, timestamp, overrides) do
+    timestamp = timestamp |> DateTime.truncate(:second)
+
+    %{
+      "id" => id,
+      "canonical_title" => "Live source-linked report for RKLB",
+      "event_type" => "company_event",
+      "first_seen_at" => timestamp,
+      "last_seen_at" => timestamp,
+      "published_at" => timestamp,
+      "earliest_source_published_at" => timestamp,
+      "latest_source_published_at" => timestamp,
+      "severity" => "medium",
+      "confidence" => 0.8,
+      "breaking_score" => 60,
+      "trust_score" => 82,
+      "source_count" => 1,
+      "review_state" => "candidate",
+      "summary_json" => %{},
+      "tickers" => [
+        %{
+          "symbol" => "RKLB",
+          "relationship" => "direct_subject",
+          "confidence" => 0.8
+        }
+      ],
+      "regions" => [
+        %{
+          "key" => "USA",
+          "relation" => "event_region",
+          "confidence" => 0.8
+        }
+      ],
+      "topics" => [%{"key" => "space", "confidence" => 0.8}],
+      "source_links" => [
+        %{
+          "label" => "Public source",
+          "url" => "https://example.com/#{id}",
+          "source_key" => "public_source",
+          "policy_version" => 1,
+          "title" => "Public source for #{id}",
+          "published_at" => timestamp,
+          "trust_tier" => "T2_REPUTABLE_MEDIA",
+          "is_primary" => true
+        }
+      ]
+    }
+    |> deep_merge(overrides)
+  end
+
   defp news_event(id, timestamp, overrides) do
     timestamp = timestamp |> DateTime.truncate(:second) |> DateTime.to_iso8601()
 
@@ -1165,4 +1304,9 @@ defmodule StonksBackend.SnapshotsTest do
       end
     end)
   end
+
+  defp restore_application_env(key, nil), do: Application.delete_env(:stonks_backend, key)
+
+  defp restore_application_env(key, value),
+    do: Application.put_env(:stonks_backend, key, value)
 end

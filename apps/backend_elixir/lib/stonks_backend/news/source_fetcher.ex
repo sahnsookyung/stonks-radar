@@ -296,7 +296,7 @@ defmodule StonksBackend.News.SourceFetcher do
         yahoo_finance_profile(
           symbol,
           symbol_key,
-          Map.get(entity, "yahoo_discovery_enabled") != false
+          Map.get(entity, "yahoo_discovery_enabled") == true
         )
       ]
       |> Enum.reject(&is_nil/1)

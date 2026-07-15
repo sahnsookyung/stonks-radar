@@ -14,6 +14,8 @@ const manifestMaxAgeMs = Number(process.env.STONKS_AUDIT_MANIFEST_MAX_AGE_MS ?? 
 let latestManifest = null;
 let latestManifestHash = null;
 let observedWebArtifact = null;
+let latestNewsIds = new Set();
+let latestHomeIds = new Set();
 const checks = [
   {
     name: "html",
@@ -98,6 +100,35 @@ const checks = [
       }
       assertNoBlockedMarketPulseSources(snapshot);
       assertRecentBreakingNews(snapshot);
+      assertNoStaticSeedData(snapshot, "home");
+      latestHomeIds = eventIds(snapshot?.data?.top_events);
+    }
+  },
+  {
+    name: "news snapshot",
+    path() {
+      return latestManifest?.objects?.news_index?.en ?? "/public/v1/en/news/index.json";
+    },
+    async expect(response) {
+      const snapshot = await assertCurrentSnapshotResponse(response, "News");
+      assertNoStaticSeedData(snapshot, "news");
+      latestNewsIds = eventIds(snapshot?.data?.events);
+      assertSubset(latestHomeIds, latestNewsIds, "Dashboard headlines must come from the News snapshot");
+    }
+  },
+  {
+    name: "map snapshot",
+    path() {
+      return latestManifest?.objects?.map_events?.en ?? "/public/v1/en/map/events.json";
+    },
+    async expect(response) {
+      const snapshot = await assertCurrentSnapshotResponse(response, "Map");
+      assertNoStaticSeedData(snapshot, "map");
+      assertSubset(
+        eventIds(snapshot?.data?.events),
+        latestNewsIds,
+        "Map events must come from the News snapshot"
+      );
     }
   },
   !skipApi && {
@@ -189,6 +220,41 @@ function assertUsableSnapshot(snapshot) {
   const hardExpiresAt = Date.parse(snapshot?.hard_expires_at);
   assert(Number.isFinite(hardExpiresAt), "Versioned snapshot hard_expires_at must be parseable");
   assert(hardExpiresAt > Date.now(), `Versioned snapshot hard-expired at ${snapshot?.hard_expires_at}`);
+}
+
+async function assertCurrentSnapshotResponse(response, label) {
+  assert(response.status === 200, `${label} snapshot must return 200`);
+  assert(
+    (response.headers.get("cache-control") ?? "").includes("max-age=60"),
+    `${label} snapshot must have a bounded cache TTL`
+  );
+  const snapshot = await response.json();
+  assert(
+    snapshot?.snapshot_version === latestManifest?.current_version,
+    `${label} snapshot must match latest manifest version`
+  );
+  assertUsableSnapshot(snapshot);
+  return snapshot;
+}
+
+function assertNoStaticSeedData(snapshot, label) {
+  assert(
+    !JSON.stringify(snapshot).includes("_seed"),
+    `${label} snapshot must not contain checked-in seed data`
+  );
+}
+
+function eventIds(events) {
+  return new Set(
+    (Array.isArray(events) ? events : [])
+      .map((event) => event?.id ?? event?.event_id)
+      .filter((id) => typeof id === "string" && id.length > 0)
+  );
+}
+
+function assertSubset(subset, superset, message) {
+  const missing = [...subset].filter((id) => !superset.has(id));
+  assert(missing.length === 0, `${message}; missing IDs: ${missing.slice(0, 5).join(", ")}`);
 }
 
 function optionalUrl(value) {

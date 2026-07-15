@@ -24,7 +24,7 @@
     "backend:check": "npm run backend:deps && npm run backend:compile && npm run backend:test:contract",
     "backend:ecto.migrate": "cd apps/backend_elixir && mix ecto.migrate",
     "backend:release": "cd apps/backend_elixir && MIX_ENV=prod mix release",
-    "backend:snapshots:validate-static": "cd apps/backend_elixir && mix run --no-start -e 'case StonksBackend.Snapshots.validate_snapshot_tree(\"../../apps/web/public/public\") do :ok -> IO.puts(\"static snapshots ok\"); {:error, reason} -> raise to_string(reason) end'",
+    "backend:snapshots:validate-static": "node scripts/assert_no_baked_snapshots.mjs",
     "snapshot:report": "node scripts/snapshot_contract_report.mjs",
     "snapshot:diff": "node scripts/snapshot_diff.mjs",
     "audit:delivery": "node scripts/audit_live_delivery.mjs",

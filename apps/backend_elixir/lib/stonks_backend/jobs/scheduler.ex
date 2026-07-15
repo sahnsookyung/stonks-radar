@@ -6,7 +6,7 @@ defmodule StonksBackend.Jobs.Scheduler do
   @market_history_window_key "rolling_3y"
 
   def schedule_due_jobs(opts \\ []) do
-    enqueue = Keyword.get(opts, :enqueue_fun, &Jobs.enqueue/3)
+    enqueue = Keyword.get(opts, :enqueue_fun, &Jobs.enqueue_scheduled/3)
 
     leading_specs =
       snapshot_refresh_job_specs(opts) ++
@@ -147,7 +147,8 @@ defmodule StonksBackend.Jobs.Scheduler do
           job_group: "news",
           priority: 70,
           provider_key: source.rate_limit_provider_key,
-          run_after: run_after
+          run_after: run_after,
+          unique_states: [:available, :scheduled, :executing, :retryable, :completed]
         }
       end)
     else
@@ -522,7 +523,8 @@ defmodule StonksBackend.Jobs.Scheduler do
       provider_key: Map.get(spec, :provider_key),
       run_after: Map.get(spec, :run_after),
       depends_on_job_id: depends_on_job_id,
-      unique_states: Map.get(spec, :unique_states)
+      unique_states:
+        Map.get(spec, :unique_states, [:available, :scheduled, :executing, :retryable])
     ]
     |> Enum.reject(fn {_key, value} -> is_nil(value) end)
   end

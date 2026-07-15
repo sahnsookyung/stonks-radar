@@ -75,8 +75,8 @@ defmodule StonksBackend.News.SourceFetcherTest do
       assert SourceFetcher.profile_for("google_news_#{symbol_key}"),
              "#{symbol} should have a Google News discovery profile"
 
-      assert SourceFetcher.profile_for("yahoo_finance_#{symbol_key}"),
-             "#{symbol} should have a Yahoo Finance discovery profile"
+      refute SourceFetcher.profile_for("yahoo_finance_#{symbol_key}"),
+             "#{symbol} should not schedule the retired Yahoo Finance RSS endpoint"
 
       source_keys =
         profiles

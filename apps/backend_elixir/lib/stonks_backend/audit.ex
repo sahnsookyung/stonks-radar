@@ -3,6 +3,8 @@ defmodule StonksBackend.Audit do
 
   alias StonksBackend.Sql
 
+  require Logger
+
   def write(action, opts \\ []) do
     user = Keyword.get(opts, :user)
     target_table = Keyword.get(opts, :target_table)
@@ -12,7 +14,7 @@ defmodule StonksBackend.Audit do
     Sql.execute(
       """
       insert into audit_log(actor_user_id, actor_role, action, target_table, target_pk, after_json)
-      values ($1, $2, $3, $4, $5, $6::jsonb)
+      values ($1, $2, $3, $4, $5, $6::text::jsonb)
       """,
       [
         user && user[:id],
@@ -24,6 +26,8 @@ defmodule StonksBackend.Audit do
       ]
     )
   rescue
-    _ -> :ok
+    _ ->
+      Logger.error("Audit log persistence failed action=#{action}")
+      {:error, :storage_unavailable}
   end
 end

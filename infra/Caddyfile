@@ -35,7 +35,8 @@
 	}
 
 	handle /public/latest/manifest.json {
-		root * /srv/web
+		uri strip_prefix /public
+		root * /srv/published-public
 		header Cache-Control "no-cache, max-age=0, must-revalidate"
 		file_server
 	}
@@ -46,7 +47,8 @@
 	}
 
 	handle /public/* {
-		root * /srv/web
+		uri strip_prefix /public
+		root * /srv/published-public
 		header Cache-Control "public, max-age=60, stale-while-revalidate=300"
 		file_server
 	}

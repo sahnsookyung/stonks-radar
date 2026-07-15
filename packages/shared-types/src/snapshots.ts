@@ -69,6 +69,10 @@ export interface PublicEvent {
   longitude: number;
   affected_objects: string[];
   source_links: SourceLink[];
+  item_kind?: NewsItemKind;
+  claim_level?: NewsClaimLevel;
+  evidence_match_status?: EvidenceMatchStatus;
+  review_state?: "candidate" | "approved" | "reviewed" | "published";
   correction_status: string;
 }
 
@@ -151,6 +155,7 @@ export interface NewsEventListItem {
   item_kind: NewsItemKind;
   claim_level: NewsClaimLevel;
   evidence_match_status: EvidenceMatchStatus;
+  review_state?: "candidate" | "approved" | "reviewed" | "published";
   first_seen_at: string;
   last_seen_at: string;
   published_at: string;
@@ -190,6 +195,11 @@ export interface NewsMapPoint {
   geo_confidence: number;
   area_priority: number;
   score_reason_codes: string[];
+  item_kind?: NewsItemKind;
+  claim_level?: NewsClaimLevel;
+  evidence_match_status?: EvidenceMatchStatus;
+  review_state?: "candidate" | "approved" | "reviewed" | "published";
+  trust_tier?: NewsTrustTier;
 }
 
 export type WatchedRegionCoverageStatus = "active" | "quiet" | "coverage_gap";

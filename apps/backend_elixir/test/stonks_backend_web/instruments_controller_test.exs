@@ -23,7 +23,7 @@ defmodule StonksBackendWeb.InstrumentsControllerTest do
     end)
   end
 
-  test "instrument search preserves legacy autocomplete result shape" do
+  test "instrument search uses the tracked source-backed catalog without static seed rows" do
     conn =
       :get
       |> conn("/api/instruments/search?q=005930&limit=5")
@@ -31,12 +31,17 @@ defmodule StonksBackendWeb.InstrumentsControllerTest do
 
     assert conn.status == 200
     body = Jason.decode!(conn.resp_body)
-    assert body["dataFreshness"]["source"] == "local_scheduled_index"
+    assert body["dataFreshness"]["source"] == "source_backed_instrument_index"
     assert [first | _] = body["results"]
-    assert first["instrumentId"] == "005930.KS"
-    assert first["listingId"] == "KRX:005930"
+    assert first["instrumentId"] == "005930_KS"
+    assert first["listingId"] == "KRX:005930.KS"
     assert first["currency"] == "KRW"
-    assert "IDENTIFIER_EXACT" in first["matchedOn"]
+    assert "SYMBOL_CONTAINS" in first["matchedOn"]
+
+    refute Enum.any?(
+             body["dataFreshness"]["providerStatuses"],
+             &(&1["source"] == "local_static_seed")
+           )
   end
 
   test "instrument search includes shared tracked ticker watchlist entries" do
@@ -214,16 +219,16 @@ defmodule StonksBackendWeb.InstrumentsControllerTest do
     assert Enum.any?(
              body["dataFreshness"]["providerStatuses"],
              &(&1["source"] == "nasdaq_trader_symbol_directory" and
-                 &1["status"] == "configured")
+                 &1["status"] == "active")
            )
   end
 
-  test "instrument search hides advanced instruments unless requested" do
+  test "instrument search does not expose checked-in advanced-instrument examples" do
     hidden = Instruments.search("Apple")
     visible = Instruments.search("Apple warrant", include_advanced: true)
 
     refute Enum.any?(hidden.results, &(&1["instrumentId"] == "AAPL.WS"))
-    assert List.first(visible.results)["instrumentId"] == "AAPL.WS"
+    refute Enum.any?(visible.results, &(&1["instrumentId"] == "AAPL.WS"))
   end
 
   test "instrument search validates missing query with legacy-compatible shape" do
@@ -280,7 +285,7 @@ defmodule StonksBackendWeb.InstrumentsControllerTest do
     assert payload.status == "MATCHED"
     assert payload.confidence == "HIGH"
     assert [match] = payload.matches
-    assert match["listingId"] == "KRX:005930"
+    assert match["listingId"] == "KRX:005930.KS"
   end
 
   test "resolve accepts known atom-key payloads without creating atoms dynamically" do
@@ -293,7 +298,7 @@ defmodule StonksBackendWeb.InstrumentsControllerTest do
 
     assert payload.status == "MATCHED"
     assert [match] = payload.matches
-    assert match["listingId"] == "KRX:005930"
+    assert match["listingId"] == "KRX:005930.KS"
   end
 
   test "detail honors listing_id filter" do

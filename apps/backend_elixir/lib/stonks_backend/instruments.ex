@@ -4,7 +4,6 @@ defmodule StonksBackend.Instruments do
   alias StonksBackend.{InstrumentCache, Settings, Sql, TrackedTickers}
 
   @index_schema_version 1
-  @index_last_updated_at "2026-05-25T00:00:00Z"
   @contexts ["HOLDING_ENTRY", "TAX_LOT", "BUILDER", "IMPORT_RECONCILIATION", "CSV_IMPORT"]
   @reference_regex ~r/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/
   @provider_cache_table :stonks_backend_instrument_provider_cache
@@ -35,6 +34,15 @@ defmodule StonksBackend.Instruments do
     "ASX" => "Australia",
     "XETRA" => "Germany",
     "FWB" => "Germany",
+    "DUS" => "Germany",
+    "HAM" => "Germany",
+    "VIE" => "Austria",
+    "B3" => "Brazil",
+    "BME" => "Spain",
+    "TASE" => "Israel",
+    "AMS" => "Netherlands",
+    "BIT" => "Italy",
+    "SIX" => "Switzerland",
     "EPA" => "France",
     "HKEX" => "Hong Kong",
     "SSE" => "China",
@@ -317,7 +325,7 @@ defmodule StonksBackend.Instruments do
   end
 
   defp build_instrument_index do
-    (static_entries() ++ watchlist_entries() ++ db_entries())
+    (watchlist_entries() ++ db_entries())
     |> Enum.uniq_by(&normalize_symbol(&1.instrument_id <> ":" <> &1.listing_id))
   end
 
@@ -439,191 +447,6 @@ defmodule StonksBackend.Instruments do
     end
   end
 
-  defp static_entries do
-    [
-      entry(%{
-        instrument_id: "AAPL",
-        symbol: "AAPL",
-        name: "Apple Inc.",
-        listing_id: "NASDAQ:AAPL",
-        exchange: "NASDAQ",
-        country: "US",
-        currency: "USD",
-        asset_class: "Equity",
-        instrument_type: "stock",
-        sector: "Information Technology",
-        aliases: ["Apple", "Apple Computer"],
-        identifiers: [
-          %{"type" => "ISIN", "value" => "US0378331005"},
-          %{"type" => "FIGI", "value" => "BBG000B9XRY4"}
-        ]
-      }),
-      entry(%{
-        instrument_id: "MSFT",
-        symbol: "MSFT",
-        name: "Microsoft Corp.",
-        listing_id: "NASDAQ:MSFT",
-        exchange: "NASDAQ",
-        country: "US",
-        currency: "USD",
-        asset_class: "Equity",
-        instrument_type: "stock",
-        sector: "Information Technology",
-        aliases: ["Microsoft"],
-        identifiers: [%{"type" => "ISIN", "value" => "US5949181045"}]
-      }),
-      entry(%{
-        instrument_id: "NVDA",
-        symbol: "NVDA",
-        name: "NVIDIA Corporation",
-        listing_id: "NASDAQ:NVDA",
-        exchange: "NASDAQ",
-        country: "US",
-        currency: "USD",
-        asset_class: "Equity",
-        instrument_type: "stock",
-        sector: "Information Technology",
-        aliases: ["Nvidia", "NVIDIA Corp"],
-        identifiers: [%{"type" => "ISIN", "value" => "US67066G1040"}]
-      }),
-      entry(%{
-        instrument_id: "TSLA",
-        symbol: "TSLA",
-        name: "Tesla, Inc.",
-        listing_id: "NASDAQ:TSLA",
-        exchange: "NASDAQ",
-        country: "US",
-        currency: "USD",
-        asset_class: "Equity",
-        instrument_type: "stock",
-        sector: "Consumer Discretionary",
-        aliases: ["Tesla"],
-        identifiers: [%{"type" => "ISIN", "value" => "US88160R1014"}]
-      }),
-      entry(%{
-        instrument_id: "005930.KS",
-        symbol: "005930.KS",
-        name: "Samsung Electronics Co., Ltd.",
-        listing_id: "KRX:005930",
-        exchange: "KRX",
-        country: "Korea",
-        currency: "KRW",
-        asset_class: "Equity",
-        instrument_type: "stock",
-        sector: "Information Technology",
-        quality_level: "PARTIAL",
-        quality_message:
-          "Partial data: sector classification confirmed; holdings look-through not applicable.",
-        aliases: ["Samsung Electronics", "삼성전자"],
-        identifiers: [
-          %{"type" => "ISIN", "value" => "KR7005930003"},
-          %{"type" => "LOCAL_CODE", "value" => "005930"}
-        ]
-      }),
-      entry(%{
-        instrument_id: "VXUS",
-        symbol: "VXUS",
-        name: "Vanguard Total International Stock ETF",
-        listing_id: "NASDAQ:VXUS",
-        exchange: "NASDAQ",
-        country: "Global ex-US",
-        currency: "USD",
-        asset_class: "Equity",
-        instrument_type: "etf",
-        sector: "Multi-sector",
-        quality_level: "PARTIAL",
-        quality_message: "Partial data: latest fund holdings may be delayed.",
-        aliases: ["Vanguard VXUS", "Total International Stock ETF"]
-      }),
-      entry(%{
-        instrument_id: "TLT",
-        symbol: "TLT",
-        name: "iShares 20+ Year Treasury Bond ETF",
-        listing_id: "NASDAQ:TLT",
-        exchange: "NASDAQ",
-        country: "US",
-        currency: "USD",
-        asset_class: "Fixed Income",
-        instrument_type: "etf",
-        sector: "Government bonds",
-        aliases: ["20 Year Treasury Bond ETF"]
-      }),
-      entry(%{
-        instrument_id: "SGOV",
-        symbol: "SGOV",
-        name: "iShares 0-3 Month Treasury Bond ETF",
-        listing_id: "NYSE:SGOV",
-        exchange: "NYSE",
-        country: "US",
-        currency: "USD",
-        asset_class: "Cash & Cash Equivalents",
-        instrument_type: "etf",
-        sector: "Government bonds",
-        aliases: ["T-Bill ETF", "Short Treasury ETF"]
-      }),
-      entry(%{
-        instrument_id: "QQQ",
-        symbol: "QQQ",
-        name: "Invesco QQQ Trust",
-        listing_id: "NASDAQ:QQQ",
-        exchange: "NASDAQ",
-        country: "US",
-        currency: "USD",
-        asset_class: "Equity",
-        instrument_type: "etf",
-        sector: "Information Technology",
-        aliases: ["Nasdaq 100 ETF"]
-      }),
-      entry(%{
-        instrument_id: "BTC",
-        symbol: "BTC",
-        name: "Bitcoin",
-        listing_id: "Crypto:BTC",
-        exchange: "Crypto",
-        country: "Global",
-        currency: "USD",
-        asset_class: "Crypto / Digital Assets",
-        instrument_type: "crypto",
-        sector: "Crypto",
-        quality_level: "PROXY",
-        quality_message: "Proxy used: crypto reference price classification is approximate.",
-        aliases: ["Bitcoin BTC"]
-      }),
-      entry(%{
-        instrument_id: "TQQQ",
-        symbol: "TQQQ",
-        name: "ProShares UltraPro QQQ",
-        listing_id: "NASDAQ:TQQQ",
-        exchange: "NASDAQ",
-        country: "US",
-        currency: "USD",
-        asset_class: "Derivatives / Leveraged Products",
-        instrument_type: "leveraged",
-        sector: "Leveraged ETF",
-        leverage_flag: true,
-        quality_level: "PARTIAL",
-        quality_message:
-          "Partial data. This is a leveraged or inverse product. It may behave very differently from the underlying asset, especially over longer periods.",
-        aliases: ["3x QQQ ETF"]
-      }),
-      entry(%{
-        instrument_id: "AAPL.WS",
-        symbol: "AAPL.WS",
-        name: "Apple warrant",
-        listing_id: "NASDAQ:AAPL.WS",
-        exchange: "NASDAQ",
-        country: "US",
-        currency: "USD",
-        asset_class: "Derivatives / Leveraged Products",
-        instrument_type: "manual",
-        sector: "Warrant",
-        quality_level: "UNAVAILABLE",
-        quality_message: "Data unavailable: advanced instrument requires manual verification.",
-        aliases: ["Apple warrant"]
-      })
-    ]
-  end
-
   defp entry(attrs) do
     %{
       instrument_id: attrs.instrument_id,
@@ -643,14 +466,14 @@ defmodule StonksBackend.Instruments do
       inverse_flag: Map.get(attrs, :inverse_flag, false),
       aliases: Map.get(attrs, :aliases, []) |> Enum.reject(&blank?/1),
       identifiers: Map.get(attrs, :identifiers, []),
-      source_providers: Map.get(attrs, :source_providers, ["local_static_seed"]),
+      source_providers: Map.get(attrs, :source_providers, ["canonical_instrument_db"]),
       current_price: decimal_or_nil(Map.get(attrs, :current_price)),
       previous_close: decimal_or_nil(Map.get(attrs, :previous_close)),
       price_as_of: Map.get(attrs, :price_as_of),
       price_coverage: Map.get(attrs, :price_coverage, "unavailable"),
       calculation_eligible: Map.get(attrs, :calculation_eligible, false),
       requires_user_price: Map.get(attrs, :requires_user_price, true),
-      source_observed_at: Map.get(attrs, :source_observed_at, @index_last_updated_at),
+      source_observed_at: Map.get(attrs, :source_observed_at),
       stale_after: Map.get(attrs, :stale_after),
       hard_expires_at: Map.get(attrs, :hard_expires_at),
       staleness_state: Map.get(attrs, :staleness_state)
@@ -1467,7 +1290,7 @@ defmodule StonksBackend.Instruments do
           if(entry.quality_level in ["PARTIAL", "STALE"], do: "WARNING", else: "INFO"),
         "issueType" => entry.quality_level,
         "message" => entry.quality_message,
-        "detectedAt" => @index_last_updated_at,
+        "detectedAt" => entry.source_observed_at,
         "status" => "OPEN"
       }
     ]
@@ -1475,6 +1298,10 @@ defmodule StonksBackend.Instruments do
 
   defp response(query, results, warnings, opts \\ []) do
     watchlist_count = length(watchlist_entries())
+    observed_at = newest_result_observation(results)
+    age_seconds = observation_age_seconds(observed_at)
+    provider_active? = result_source_present?(results, @provider_source)
+    directory_active? = result_source_present?(results, @public_symbol_directory_source)
 
     %{
       query: query,
@@ -1483,44 +1310,79 @@ defmodule StonksBackend.Instruments do
       warnings: warnings,
       cache: Keyword.get(opts, :cache, "none"),
       dataFreshness: %{
-        instrumentIndexLastUpdatedAt: @index_last_updated_at,
-        observedAt: @index_last_updated_at,
-        status: "ACTIVE",
-        stalenessState: "active",
-        ageSeconds: 0,
+        instrumentIndexLastUpdatedAt: observed_at,
+        observedAt: observed_at,
+        status: if(observed_at, do: "ACTIVE", else: "REFERENCE_ONLY"),
+        stalenessState: if(observed_at, do: "active", else: "unavailable"),
+        ageSeconds: age_seconds,
         staleAfter: nil,
         hardExpiresAt: nil,
-        source: "local_scheduled_index",
+        source: "source_backed_instrument_index",
         schemaVersion: @index_schema_version,
         providerStatuses: [
           %{
-            source: "local_static_seed",
-            status: "loaded",
-            generated_at: @index_last_updated_at,
-            instrument_count: length(static_entries())
-          },
-          %{
             source: "ticker_watchlist",
             status: if(watchlist_count > 0, do: "loaded", else: "missing"),
-            generated_at: @index_last_updated_at,
+            generated_at: nil,
             instrument_count: watchlist_count
           },
           %{
             source: @provider_source,
-            status: if(provider_lookup_enabled?(), do: "configured", else: "disabled"),
-            generated_at: @index_last_updated_at,
+            status: provider_runtime_status(provider_lookup_enabled?(), provider_active?),
+            generated_at: if(provider_active?, do: observed_at),
             instrument_count: nil
           },
           %{
             source: @public_symbol_directory_source,
-            status: if(public_symbol_lookup_enabled?(), do: "configured", else: "disabled"),
-            generated_at: @index_last_updated_at,
+            status: provider_runtime_status(public_symbol_lookup_enabled?(), directory_active?),
+            generated_at: if(directory_active?, do: observed_at),
             instrument_count: nil
           }
         ]
       }
     }
   end
+
+  defp newest_result_observation(results) do
+    results
+    |> Enum.map(& &1["sourceObservedAt"])
+    |> Enum.reject(&blank?/1)
+    |> Enum.map(&datetime/1)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.max_by(&DateTime.to_unix/1, fn -> nil end)
+    |> case do
+      %DateTime{} = value -> DateTime.to_iso8601(value)
+      _ -> nil
+    end
+  end
+
+  defp observation_age_seconds(nil), do: nil
+
+  defp observation_age_seconds(value) do
+    case datetime(value) do
+      %DateTime{} = observed_at -> max(DateTime.diff(DateTime.utc_now(), observed_at, :second), 0)
+      _ -> nil
+    end
+  end
+
+  defp result_source_present?(results, source) do
+    Enum.any?(results, fn result -> source in List.wrap(result["sourceProviders"]) end)
+  end
+
+  defp provider_runtime_status(false, _active), do: "disabled"
+  defp provider_runtime_status(true, true), do: "active"
+  defp provider_runtime_status(true, false), do: "configured"
+
+  defp datetime(%DateTime{} = value), do: value
+
+  defp datetime(value) when is_binary(value) do
+    case DateTime.from_iso8601(value) do
+      {:ok, parsed, _offset} -> parsed
+      _ -> nil
+    end
+  end
+
+  defp datetime(_value), do: nil
 
   defp search_validation_warning(_query, normalized) do
     min_length = if likely_symbol_query?(normalized), do: 1, else: 2
@@ -1669,6 +1531,21 @@ defmodule StonksBackend.Instruments do
       String.ends_with?(symbol, ".KQ") -> "KRX"
       String.ends_with?(symbol, ".T") -> "TSE"
       String.ends_with?(symbol, ".TO") -> "TSX"
+      String.ends_with?(symbol, ".AX") -> "ASX"
+      String.ends_with?(symbol, ".L") -> "LSE"
+      String.ends_with?(symbol, ".HK") -> "HKEX"
+      String.ends_with?(symbol, ".PA") -> "EPA"
+      String.ends_with?(symbol, ".DE") -> "XETRA"
+      String.ends_with?(symbol, ".DU") -> "DUS"
+      String.ends_with?(symbol, ".F") -> "FWB"
+      String.ends_with?(symbol, ".HM") -> "HAM"
+      String.ends_with?(symbol, ".VI") -> "VIE"
+      String.ends_with?(symbol, ".SA") -> "B3"
+      String.ends_with?(symbol, ".MC") -> "BME"
+      String.ends_with?(symbol, ".TA") -> "TASE"
+      String.ends_with?(symbol, ".AS") -> "AMS"
+      String.ends_with?(symbol, ".MI") -> "BIT"
+      String.ends_with?(symbol, ".SW") -> "SIX"
       true -> "US"
     end
   end

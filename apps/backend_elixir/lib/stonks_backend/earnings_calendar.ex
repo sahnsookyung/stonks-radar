@@ -22,8 +22,9 @@ defmodule StonksBackend.EarningsCalendar do
 
   def enrich_snapshot_data(data, provider_rows) when is_map(data) and is_list(provider_rows) do
     data
+    |> filter_future_calendar_items("items")
+    |> filter_future_calendar_items("central_banks")
     |> update_calendar_items("items", provider_rows)
-    |> update_calendar_items("central_banks", provider_rows)
   end
 
   def enrich_home_snapshot_data(data) when is_map(data) do
@@ -34,7 +35,9 @@ defmodule StonksBackend.EarningsCalendar do
 
   def enrich_home_snapshot_data(data, provider_rows)
       when is_map(data) and is_list(provider_rows) do
-    update_calendar_items(data, "calendar_preview", provider_rows)
+    data
+    |> filter_future_calendar_items("calendar_preview")
+    |> update_calendar_items("calendar_preview", provider_rows)
   end
 
   def parse_alpha_vantage_csv(text, opts \\ []) do
@@ -83,13 +86,15 @@ defmodule StonksBackend.EarningsCalendar do
          {:ok, parsed} <- parse_alpha_vantage_csv(text, symbols: symbols, now: now) do
       rows = add_rollout_metadata(parsed.rows, now)
       persisted = persist_provider_rows(rows)
+      health_status = calendar_health_status(rows, persisted)
 
-      record_source_health("ready", %{
+      record_source_health(health_status, %{
         horizon: horizon,
         rows_seen: parsed.total_rows,
         rows_parsed: length(rows),
         persisted: persisted.persisted,
         persist_failed: persisted.failed,
+        reason: calendar_health_reason(rows, persisted),
         source_url: @alpha_vantage_source
       })
 
@@ -126,6 +131,22 @@ defmodule StonksBackend.EarningsCalendar do
         })
 
         {:error, reason}
+    end
+  end
+
+  defp filter_future_calendar_items(data, key) do
+    update_in(data, [key], fn items ->
+      items
+      |> List.wrap()
+      |> Enum.filter(&is_map/1)
+      |> Enum.filter(&future_calendar_item?/1)
+    end)
+  end
+
+  defp future_calendar_item?(item) do
+    case Date.from_iso8601(to_string(item["scheduled_local_date"] || "")) do
+      {:ok, date} -> Date.compare(date, Date.utc_today()) in [:gt, :eq]
+      _ -> false
     end
   end
 
@@ -518,6 +539,14 @@ defmodule StonksBackend.EarningsCalendar do
   rescue
     _ -> :ok
   end
+
+  defp calendar_health_status([], _persisted), do: "degraded"
+  defp calendar_health_status(_rows, %{failed: failed}) when failed > 0, do: "degraded"
+  defp calendar_health_status(_rows, _persisted), do: "ready"
+
+  defp calendar_health_reason([], _persisted), do: "no_valid_tracked_calendar_rows"
+  defp calendar_health_reason(_rows, %{failed: failed}) when failed > 0, do: "persistence_failed"
+  defp calendar_health_reason(_rows, _persisted), do: nil
 
   defp ingestion_run_id(now) do
     timestamp = now |> DateTime.truncate(:second) |> DateTime.to_iso8601()

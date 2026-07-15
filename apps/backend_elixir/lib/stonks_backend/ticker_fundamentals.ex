@@ -2,6 +2,7 @@ defmodule StonksBackend.TickerFundamentals do
   @moduledoc "Scheduled SEC CompanyFacts ingestion and normalized public fundamentals."
 
   alias StonksBackend.{Settings, Sql, TrackedTickers}
+  require Logger
 
   @sec_base "https://data.sec.gov/api/xbrl/companyfacts"
   @forms ~w(10-K 10-Q 20-F 40-F)
@@ -153,15 +154,18 @@ defmodule StonksBackend.TickerFundamentals do
   end
 
   defp persist(snapshot) do
-    row =
-      Sql.one(
+    result =
+      Sql.execute(
         """
         insert into ticker_fundamental_snapshot(
           symbol, cik, status, coverage_reason, metrics, provenance, period_end,
           form, filing_url, source_filed_at, fetched_at, stale_after
         )
-        values ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9, $10, $11, $12)
-        returning id
+        values (
+          $1, $2, $3, $4, $5::text::jsonb, $6::text::jsonb, $7::text::date,
+          $8, $9, $10::text::timestamptz, $11::text::timestamptz,
+          $12::text::timestamptz
+        )
         """,
         [
           snapshot.symbol,
@@ -179,7 +183,11 @@ defmodule StonksBackend.TickerFundamentals do
         ]
       )
 
-    if row, do: {:ok, snapshot.symbol}, else: {:error, :storage_unavailable}
+    if result.num_rows == 1, do: {:ok, snapshot.symbol}, else: {:error, :storage_unavailable}
+  rescue
+    error ->
+      Logger.error("Ticker fundamental persistence failed symbol=#{snapshot.symbol}")
+      {:error, {:storage_unavailable, error.__struct__}}
   end
 
   defp persist_unavailable(symbol, cik, reason) do

@@ -3,6 +3,7 @@ defmodule StonksBackend.Repo.Migrations.AddDataReliabilityRolloutIndexes do
   require Logger
 
   @disable_ddl_transaction true
+  @disable_migration_lock true
   @runtime_index_timeout 45_000
 
   def up do

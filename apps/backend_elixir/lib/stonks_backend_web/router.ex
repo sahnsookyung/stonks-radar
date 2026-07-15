@@ -65,7 +65,6 @@ defmodule StonksBackendWeb.Router do
       post "/corrections", AdminController, :create_correction
       get "/audit-log", AdminController, :audit_log
       post "/snapshots/build-now-local", AdminController, :snapshots_build_now_local
-      post "/snapshots/build-seed-local", AdminController, :snapshots_build_seed_local
     end
 
     scope "/instruments" do

@@ -12,6 +12,33 @@ defmodule StonksBackend.ShortsTest do
   File Creation Time: 202607022100
   """
 
+  @fractional_sample_file """
+  Date|Symbol|ShortVolume|ShortExemptVolume|TotalVolume|Market
+  20260714|AAPL|513401.055176|0|734668.693683|B,Q,N
+  """
+
+  @sample_short_interest_rows [
+    %{
+      "symbolCode" => "AAPL",
+      "issueName" => "Apple Inc. Common Stock",
+      "currentShortPositionQuantity" => 140_526_320,
+      "previousShortPositionQuantity" => 144_248_476,
+      "averageDailyVolumeQuantity" => 81_121_306,
+      "daysToCoverQuantity" => 1.73,
+      "changePercent" => -2.58,
+      "changePreviousNumber" => -3_722_156,
+      "settlementDate" => "2026-06-30",
+      "marketClassCode" => "NNM",
+      "issuerServicesGroupExchangeCode" => "R"
+    },
+    %{
+      "symbolCode" => "OTHER",
+      "currentShortPositionQuantity" => 100,
+      "settlementDate" => "2026-06-30"
+    },
+    %{"symbolCode" => "BROKEN", "settlementDate" => "2026-06-30"}
+  ]
+
   test "parses official FINRA daily short-sale volume rows for tracked symbols" do
     assert {:ok, parsed} =
              Shorts.parse_daily_short_volume(@sample_file,
@@ -50,6 +77,19 @@ defmodule StonksBackend.ShortsTest do
 
     assert parsed.rows == []
     assert parsed.malformed_count == 1
+  end
+
+  test "preserves fractional quantities from current official FINRA daily files" do
+    assert {:ok, parsed} =
+             Shorts.parse_daily_short_volume(@fractional_sample_file,
+               tracked_symbols: ["AAPL"]
+             )
+
+    assert [aapl] = parsed.rows
+    assert aapl.short_volume == 513_401.055176
+    assert aapl.short_exempt_volume == 0
+    assert aapl.total_volume == 734_668.693683
+    assert aapl.short_volume_ratio == 0.6988
   end
 
   test "daily file URLs and publication window use FINRA after-hours timing" do
@@ -112,6 +152,79 @@ defmodule StonksBackend.ShortsTest do
     assert Enum.map(result.attempts, & &1["status"]) == ["failed", "ready"]
   end
 
+  test "parses official FINRA consolidated short-interest rows without changing their cadence" do
+    parsed =
+      Shorts.parse_short_interest_rows(
+        @sample_short_interest_rows,
+        ~D[2026-06-30],
+        ["AAPL"]
+      )
+
+    assert parsed.total_rows == 3
+    assert parsed.unknown_symbol_count == 1
+    assert parsed.malformed_count == 1
+    assert [aapl] = parsed.rows
+    assert aapl.symbol == "AAPL"
+    assert aapl.short_interest == 140_526_320
+    assert aapl.previous_short_interest == 144_248_476
+    assert aapl.change_percent == -2.58
+    assert aapl.change_previous == -3_722_156
+    assert aapl.days_to_cover == 1.73
+    assert aapl.settlement_date == "2026-06-30"
+    assert aapl.provider_observation_key == "finra_short_interest:2026-06-30:AAPL"
+  end
+
+  test "short-interest ingestion discovers the latest FINRA partition and fetches tracked symbols" do
+    partition_fetch_fun = fn ->
+      {:ok,
+       %{
+         "availablePartitions" => [
+           %{"partitions" => ["2026-06-15"]},
+           %{"partitions" => ["2026-06-30"]}
+         ]
+       }}
+    end
+
+    data_fetch_fun = fn settlement_date, symbols ->
+      assert settlement_date == ~D[2026-06-30]
+      assert symbols == ["AAPL"]
+      {:ok, @sample_short_interest_rows}
+    end
+
+    assert {:ok, result} =
+             Shorts.fetch_short_interest_release(%{},
+               tracked_symbols: ["AAPL"],
+               partition_fetch_fun: partition_fetch_fun,
+               data_fetch_fun: data_fetch_fun
+             )
+
+    assert result.status == "ready"
+    assert result.settlement_date == "2026-06-30"
+    assert result.rows_seen == 3
+    assert result.rows_parsed == 1
+    assert result.unknown_symbol_count == 1
+    assert result.malformed_count == 1
+    assert result.cadence == "twice_monthly"
+    refute result.realtime
+  end
+
+  test "short-interest ingestion honors an explicit settlement date and reports upstream failure" do
+    partition_fetch_fun = fn -> flunk("explicit dates must not fetch FINRA partitions") end
+
+    data_fetch_fun = fn settlement_date, _symbols ->
+      assert settlement_date == ~D[2026-06-15]
+      {:error, :finra_down}
+    end
+
+    assert {:error, :finra_down} =
+             Shorts.fetch_short_interest_release(
+               %{"settlement_date" => "2026-06-15"},
+               tracked_symbols: ["AAPL"],
+               partition_fetch_fun: partition_fetch_fun,
+               data_fetch_fun: data_fetch_fun
+             )
+  end
+
   test "ingestion entrypoints honor the runtime kill switch" do
     fetch_fun = fn _url -> flunk("disabled shorts ingestion must not fetch FINRA files") end
 
@@ -132,7 +245,7 @@ defmodule StonksBackend.ShortsTest do
     assert metadata.status == "disabled"
   end
 
-  test "snapshot enrichment replaces placeholder shorts lanes with honest coverage gaps" do
+  test "snapshot enrichment leaves missing shorts observations visibly unavailable" do
     data = %{
       "generated_label" => "2026-07-02T23:00:00Z",
       "alternative_signals" => [
@@ -145,16 +258,13 @@ defmodule StonksBackend.ShortsTest do
     enriched = Shorts.enrich_home_snapshot_data(data)
     lanes = Map.new(enriched["alternative_signals"], &{&1["key"], &1})
 
-    assert lanes["short_volume_monitor"]["value"] == "coverage gap"
+    assert lanes["short_volume_monitor"]["value"] == "unavailable"
     assert lanes["short_volume_monitor"]["source"] == "FINRA daily short sale volume"
+    assert lanes["short_volume_monitor"]["items"] == []
 
-    assert lanes["short_volume_monitor"]["items"] |> hd() |> Map.get("detail") =~
-             "not live intraday short interest"
-
-    assert lanes["highest_short_interest"]["value"] == "twice monthly"
-
-    assert lanes["highest_short_interest"]["items"] |> hd() |> Map.get("detail") =~
-             "not a substitute for open short interest"
+    assert lanes["highest_short_interest"]["value"] == "unavailable"
+    assert lanes["highest_short_interest"]["freshness"] == "unsupported"
+    assert lanes["highest_short_interest"]["items"] == []
 
     assert lanes["other_lane"]["value"] == "unchanged"
   end

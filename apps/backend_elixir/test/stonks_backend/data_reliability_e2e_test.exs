@@ -116,6 +116,42 @@ defmodule StonksBackend.DataReliabilityE2ETest do
     assert persisted_release_id == context.release_id
     assert String.starts_with?(run_id, "ingestion:shorts:")
 
+    assert {:ok, %{persisted_count: 1, settlement_date: "2026-06-30"}} =
+             Shorts.fetch_short_interest_release(%{},
+               tracked_symbols: ["RKLB"],
+               partition_fetch_fun: fn ->
+                 {:ok, %{"availablePartitions" => [%{"partitions" => ["2026-06-30"]}]}}
+               end,
+               data_fetch_fun: fn ~D[2026-06-30], ["RKLB"] ->
+                 {:ok,
+                  [
+                    %{
+                      "symbolCode" => "RKLB",
+                      "issueName" => "Rocket Lab Corporation Common Stock",
+                      "currentShortPositionQuantity" => 42_599_639,
+                      "previousShortPositionQuantity" => 34_175_955,
+                      "averageDailyVolumeQuantity" => 33_547_558,
+                      "daysToCoverQuantity" => 1.27,
+                      "changePercent" => 24.65,
+                      "changePreviousNumber" => 8_423_684,
+                      "settlementDate" => "2026-06-30"
+                    }
+                  ]}
+               end
+             )
+
+    assert %{
+             "extraction_source" => "rule",
+             "object_json" => %{
+               "short_interest" => 42_599_639,
+               "release_id" => ^persisted_release_id
+             }
+           } =
+             Sql.one(
+               "select extraction_source, object_json from source_fact where fact_type = 'short_interest' and object_json->>'release_id' = $1",
+               [context.release_id]
+             )
+
     insert_market_bar!(context.release_id)
 
     assert {:ok, %{status: "ok", series: [%{points: points}]}} =

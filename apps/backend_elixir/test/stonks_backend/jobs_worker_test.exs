@@ -3,6 +3,12 @@ defmodule StonksBackend.JobsWorkerTest do
 
   alias StonksBackend.Jobs.Workers.GenericWorker
 
+  test "backoff ignores snooze-inflated attempts" do
+    job = %Oban.Job{attempt: 4_215, max_attempts: 4_219}
+
+    assert GenericWorker.backoff(job) in 16..18
+  end
+
   setup do
     original = Application.get_env(:stonks_backend, :settings)
 

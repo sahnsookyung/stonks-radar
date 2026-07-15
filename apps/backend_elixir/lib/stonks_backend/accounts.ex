@@ -265,7 +265,7 @@ defmodule StonksBackend.Accounts do
             )
             values (
               $1, $2, $3, true, false,
-              'google', $4, now(), $5::jsonb
+              'google', $4, now(), $5::text::jsonb
             )
             on conflict (email) do update set
               role = case
@@ -311,7 +311,7 @@ defmodule StonksBackend.Accounts do
             email, password_hash, role, active, totp_required,
             auth_provider, external_subject, last_login_at, auth_metadata
           )
-          values ($1, $2, 'member', true, false, 'google', $3, now(), $4::jsonb)
+          values ($1, $2, 'member', true, false, 'google', $3, now(), $4::text::jsonb)
           on conflict (email) do update set
             role = case
               when app_user.role in ('owner','admin','editor','viewer') then app_user.role

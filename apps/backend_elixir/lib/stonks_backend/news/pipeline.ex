@@ -383,6 +383,7 @@ defmodule StonksBackend.News.Pipeline do
 
   def cluster_documents(documents) do
     documents
+    |> Enum.filter(&(not is_nil(published_at(&1))))
     |> Enum.group_by(&cluster_key/1)
     |> Enum.map(fn {key, rows} ->
       timestamps = rows |> Enum.map(&published_at/1) |> Enum.reject(&is_nil/1)
@@ -455,7 +456,8 @@ defmodule StonksBackend.News.Pipeline do
       left join data_source ds on ds.id = d.source_id
       where d.metadata ? 'news_classified_at'
         and coalesce(ds.source_key, d.metadata->>'source_key') = any($1)
-      order by coalesce(d.source_published_at, d.fetched_at, d.created_at) desc
+        and d.source_published_at is not null
+      order by d.source_published_at desc
       limit $2
       """,
       [source_keys(), limit]
@@ -518,11 +520,14 @@ defmodule StonksBackend.News.Pipeline do
 
     Sql.execute(
       """
-      insert into source_health_status(source_key, status, last_checked_at, details)
-      values ($1, 'ready', now(), $2::text::jsonb)
+      insert into source_health_status(
+        source_key, status, last_checked_at, last_success_at, details
+      )
+      values ($1, 'ready', now(), now(), $2::text::jsonb)
       on conflict (source_key) do update
       set status = excluded.status,
           last_checked_at = excluded.last_checked_at,
+          last_success_at = excluded.last_success_at,
           details = excluded.details
       """,
       ["news_pipeline:#{stage}", Jason.encode!(details)]
@@ -610,8 +615,7 @@ defmodule StonksBackend.News.Pipeline do
       "canonical_url" => row["canonical_url"] || row["original_url"],
       "snippet" => metadata["snippet"] || "",
       "summary" => metadata["summary"] || "",
-      "published_at" =>
-        metadata["published_at"] || row["source_published_at"] || row["fetched_at"],
+      "published_at" => metadata["published_at"] || row["source_published_at"],
       "source_region" => metadata["source_region"],
       "market_region" => metadata["market_region"],
       "event_type" => event_type(metadata["news_topics"] || []),

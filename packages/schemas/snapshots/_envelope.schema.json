@@ -74,6 +74,10 @@
         "latitude": { "type": "number" },
         "longitude": { "type": "number" },
         "affected_objects": { "type": "array", "items": { "type": "string" } },
+        "item_kind": { "enum": ["source_discovery", "event_candidate", "reviewed_event", "filing_update", "official_update"] },
+        "claim_level": { "enum": ["source_only", "clustered_candidate", "reviewed", "published"] },
+        "evidence_match_status": { "enum": ["matched", "weak_match", "mismatch", "unverified"] },
+        "review_state": { "enum": ["candidate", "approved", "reviewed", "published"] },
         "source_links": {
           "type": "array",
           "items": {
@@ -265,7 +269,12 @@
         "source_count": { "type": "integer", "minimum": 0 },
         "geo_confidence": { "type": "number", "minimum": 0, "maximum": 1 },
         "area_priority": { "type": "integer", "minimum": 0, "maximum": 100 },
-        "score_reason_codes": { "type": "array", "items": { "type": "string" } }
+        "score_reason_codes": { "type": "array", "items": { "type": "string" } },
+        "item_kind": { "enum": ["source_discovery", "event_candidate", "reviewed_event", "filing_update", "official_update"] },
+        "claim_level": { "enum": ["source_only", "clustered_candidate", "reviewed", "published"] },
+        "evidence_match_status": { "enum": ["matched", "weak_match", "mismatch", "unverified"] },
+        "review_state": { "enum": ["candidate", "approved", "reviewed", "published"] },
+        "trust_tier": { "enum": ["T0_OFFICIAL", "T1_REGULATED_FILING", "T2_REPUTABLE_MEDIA", "T3_REVIEWED_PUBLIC_SOURCE", "T4_WEAK_SIGNAL", "T5_UNREVIEWED", "T6_BLOCKED"] }
       },
       "additionalProperties": false
     },

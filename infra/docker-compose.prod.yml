@@ -46,7 +46,7 @@ services:
     volumes:
       - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./apps/web/dist:/srv/web:ro
-      - published-snapshots:/srv/web/public:ro
+      - published-snapshots:/srv/published-public:ro
       - caddy-data:/data
       - caddy-config:/config
     security_opt:

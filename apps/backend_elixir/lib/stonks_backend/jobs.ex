@@ -3,12 +3,33 @@ defmodule StonksBackend.Jobs do
 
   alias StonksBackend.Jobs.{LegacyQueue, RuntimeLock}
   alias StonksBackend.Jobs.Workers.GenericWorker
-  alias StonksBackend.{ReleaseControls, Sql}
+  alias StonksBackend.{ReleaseControls, Repo, Sql}
 
   @legacy_uuid_re ~r/\A[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i
   @allowed_queues ~w(snapshots market_data news instruments disclosures maintenance default)
   @default_admin_status_limit 20
   @max_admin_status_limit 100
+  @default_periodic_backlog_seconds 7_200
+  @periodic_job_types ~w(
+    news.fetch_source
+    news.read_pages
+    news.normalize_document
+    news.classify_entities
+    news.cluster_events
+    news.score_events
+    news.purge_email_raw
+    news.prune_metadata
+    trump_disclosures_ingest
+    instrument_search_index_update
+    ticker_fundamentals_refresh
+    calendar.alpha_vantage_earnings
+    market_data.refresh_history
+    yield_curves.refresh_history
+    shorts.finra_daily_short_volume
+    shorts.finra_short_interest_release
+    shorts.short_research_metadata
+    ticker_alert_catch_up
+  )
 
   def enqueue(job_type, payload, opts \\ []) do
     job_type = to_string(job_type)
@@ -41,6 +62,38 @@ defmodule StonksBackend.Jobs do
     end
   end
 
+  def enqueue_scheduled(
+        "news.fetch_source" = job_type,
+        %{"source_key" => source_key} = payload,
+        opts
+      )
+      when is_binary(source_key) do
+    case Repo.transaction(fn ->
+           Ecto.Adapters.SQL.query!(
+             Repo,
+             "select pg_advisory_xact_lock(hashtextextended($1, 0))",
+             ["news.fetch_source:#{source_key}"]
+           )
+
+           discard_retryable_news_fetch_jobs(source_key)
+
+           case active_news_fetch_job_id(source_key) do
+             nil ->
+               enqueue(job_type, payload, opts)
+
+             job_id ->
+               {:ok, external_id(job_id)}
+           end
+         end) do
+      {:ok, result} -> result
+      {:error, _reason} -> {:error, :storage_unavailable}
+    end
+  rescue
+    _ -> {:error, :storage_unavailable}
+  end
+
+  def enqueue_scheduled(job_type, payload, opts), do: enqueue(job_type, payload, opts)
+
   def discard_stale_snapshot_refresh_jobs(current_idempotency_key)
       when is_binary(current_idempotency_key) do
     result =
@@ -55,6 +108,60 @@ defmodule StonksBackend.Jobs do
         """,
         [current_idempotency_key]
       )
+
+    result.num_rows
+  end
+
+  def discard_stale_periodic_jobs(
+        %DateTime{} = now,
+        max_age_seconds \\ @default_periodic_backlog_seconds
+      )
+      when is_integer(max_age_seconds) and max_age_seconds >= 0 do
+    cutoff = DateTime.add(now, -max_age_seconds, :second)
+
+    duplicate_news_jobs = discard_duplicate_news_fetch_jobs()
+
+    result =
+      Sql.execute(
+        """
+        update oban_jobs
+        set state = 'discarded',
+            discarded_at = coalesce(discarded_at, now())
+        where state in ('available', 'scheduled', 'retryable')
+          and inserted_at < $1
+          and args ->> 'job_type' = any($2::text[])
+        """,
+        [cutoff, @periodic_job_types]
+      )
+
+    result.num_rows + duplicate_news_jobs
+  end
+
+  def discard_duplicate_news_fetch_jobs do
+    result =
+      Sql.execute("""
+      with ranked as (
+        select id,
+               row_number() over (
+                 partition by args -> 'payload' ->> 'source_key'
+                 order by
+                   case state when 'executing' then 0 else 1 end,
+                   scheduled_at,
+                   id
+               ) as position
+        from oban_jobs
+        where args ->> 'job_type' = 'news.fetch_source'
+          and coalesce(args -> 'payload' ->> 'source_key', '') <> ''
+          and state in ('available', 'scheduled', 'executing', 'retryable')
+      )
+      update oban_jobs job
+      set state = 'discarded',
+          discarded_at = coalesce(discarded_at, now())
+      from ranked
+      where job.id = ranked.id
+        and ranked.position > 1
+        and job.state in ('available', 'scheduled', 'retryable')
+      """)
 
     result.num_rows
   end
@@ -74,6 +181,35 @@ defmodule StonksBackend.Jobs do
       %{"refresh_due" => false} -> false
       _query_succeeded_or_failed_open -> true
     end
+  end
+
+  defp active_news_fetch_job_id(source_key) do
+    Sql.scalar(
+      """
+      select id
+      from oban_jobs
+      where args ->> 'job_type' = 'news.fetch_source'
+        and args -> 'payload' ->> 'source_key' = $1
+        and state in ('available', 'scheduled', 'executing')
+      order by case state when 'executing' then 0 else 1 end, scheduled_at, id
+      limit 1
+      """,
+      [source_key]
+    )
+  end
+
+  defp discard_retryable_news_fetch_jobs(source_key) do
+    Sql.execute(
+      """
+      update oban_jobs
+      set state = 'discarded',
+          discarded_at = coalesce(discarded_at, now())
+      where args ->> 'job_type' = 'news.fetch_source'
+        and args -> 'payload' ->> 'source_key' = $1
+        and state = 'retryable'
+      """,
+      [source_key]
+    )
   end
 
   def replay(external_id) do

@@ -40,7 +40,7 @@ defmodule StonksBackend.PortfolioWorkspaces do
       Sql.execute(
         """
         insert into portfolio_workspace(user_id, portfolio_id, workspace)
-        values ($1, $2, $3::jsonb)
+        values ($1, $2, $3::text::jsonb)
         on conflict (user_id, portfolio_id) do update
         set workspace = excluded.workspace,
             updated_at = now()

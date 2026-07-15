@@ -216,11 +216,17 @@ defmodule StonksBackend.News do
 
     Sql.execute(
       """
-      insert into source_health_status(source_key, status, last_checked_at, details)
-      values ($1, $2, now(), $3::text::jsonb)
+      insert into source_health_status(
+        source_key, status, last_checked_at, last_success_at, details
+      )
+      values ($1, $2, now(), case when $2 = 'ready' then now() else null end, $3::text::jsonb)
       on conflict (source_key) do update
       set status = excluded.status,
           last_checked_at = excluded.last_checked_at,
+          last_success_at = case
+            when excluded.status = 'ready' then excluded.last_checked_at
+            else source_health_status.last_success_at
+          end,
           details = excluded.details
       """,
       [source_key, status, Jason.encode!(details)]

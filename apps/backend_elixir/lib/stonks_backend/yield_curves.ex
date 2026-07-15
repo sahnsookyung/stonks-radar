@@ -472,6 +472,7 @@ defmodule StonksBackend.YieldCurves do
       "source" => term.source,
       "source_url" => term.source_url,
       "freshness" => freshness(latest_date, today),
+      "coverage_status" => "active",
       "delay_label" => "official daily data, monthly sampled through #{latest_date}",
       "updated_at" => "#{latest_date}T21:00:00Z",
       "refresh_seconds" => 86_400,

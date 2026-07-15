@@ -62,6 +62,44 @@ defmodule StonksBackend.SnapshotReadinessTest do
     assert %{status: "unavailable", reason: "manifest_invalid"} = current(unsafe_root)
   end
 
+  test "reports degraded when a current snapshot exposes unavailable live data" do
+    root = temp_root!()
+
+    write_snapshot!(
+      root,
+      @now |> DateTime.add(-60, :second),
+      @now |> DateTime.add(60, :second),
+      @now |> DateTime.add(120, :second),
+      warnings: [
+        %{
+          "code" => "live_data_unavailable",
+          "message" => "No current source-backed data is available for this view.",
+          "severity" => "warning"
+        }
+      ]
+    )
+
+    assert %{status: "degraded", reason: "content_unavailable", version: 42} = current(root)
+  end
+
+  test "reports degraded when a current snapshot still contains a static seed source" do
+    root = temp_root!()
+
+    write_snapshot!(
+      root,
+      @now |> DateTime.add(-60, :second),
+      @now |> DateTime.add(60, :second),
+      @now |> DateTime.add(120, :second),
+      data: %{
+        "instruments" => [
+          %{"id" => "AAPL", "source_key" => "local_static_seed", "status" => "active"}
+        ]
+      }
+    )
+
+    assert %{status: "degraded", reason: "content_unavailable", version: 42} = current(root)
+  end
+
   defp current(root), do: SnapshotReadiness.current(root: root, now: @now)
 
   defp temp_root! do
@@ -84,7 +122,9 @@ defmodule StonksBackend.SnapshotReadinessTest do
         "snapshot_version" => Keyword.get(opts, :snapshot_version, 42),
         "generated_at" => DateTime.to_iso8601(generated_at),
         "stale_after" => DateTime.to_iso8601(stale_after),
-        "hard_expires_at" => DateTime.to_iso8601(hard_expires_at)
+        "hard_expires_at" => DateTime.to_iso8601(hard_expires_at),
+        "data" => Keyword.get(opts, :data, %{}),
+        "warnings" => Keyword.get(opts, :warnings, [])
       })
     )
   end

@@ -32,8 +32,10 @@ defmodule StonksBackend.Jobs.SchedulerRunner do
     state = %{
       enabled?: scheduler_enabled?(opts),
       interval_ms: tick_seconds(opts) * 1_000,
-      enqueue_fun: Keyword.get(opts, :enqueue_fun, &Jobs.enqueue/3),
+      enqueue_fun: Keyword.get(opts, :enqueue_fun, &Jobs.enqueue_scheduled/3),
       cleanup_fun: Keyword.get(opts, :cleanup_fun, &Jobs.discard_stale_snapshot_refresh_jobs/1),
+      periodic_cleanup_fun:
+        Keyword.get(opts, :periodic_cleanup_fun, &Jobs.discard_stale_periodic_jobs/1),
       settings: Keyword.get(opts, :settings),
       now_fun: Keyword.get(opts, :now_fun, &DateTime.utc_now/0)
     }
@@ -50,6 +52,7 @@ defmodule StonksBackend.Jobs.SchedulerRunner do
     started_at = System.monotonic_time()
     now = state.now_fun.()
     discard_stale_snapshot_refresh_jobs(state, now)
+    discard_stale_periodic_jobs(state, now)
 
     scheduled_ids =
       try do
@@ -82,6 +85,19 @@ defmodule StonksBackend.Jobs.SchedulerRunner do
     {:noreply, state}
   end
 
+  defp discard_stale_periodic_jobs(state, now) do
+    discarded = state.periodic_cleanup_fun.(now)
+
+    if is_integer(discarded) and discarded > 0 do
+      Logger.info("elixir_recurring_scheduler_discarded_stale_periodic count=#{discarded}")
+    end
+  rescue
+    exception ->
+      Logger.error(
+        "elixir_recurring_scheduler_periodic_cleanup_failed error=#{Exception.message(exception)}"
+      )
+  end
+
   defp discard_stale_snapshot_refresh_jobs(state, now) do
     refresh_seconds =
       state.settings
@@ -106,7 +122,7 @@ defmodule StonksBackend.Jobs.SchedulerRunner do
   defp scheduler_opts(opts) do
     [
       settings: Keyword.get(opts, :settings),
-      enqueue_fun: Keyword.get(opts, :enqueue_fun, &Jobs.enqueue/3),
+      enqueue_fun: Keyword.get(opts, :enqueue_fun, &Jobs.enqueue_scheduled/3),
       now: Keyword.get(opts, :now, DateTime.utc_now())
     ]
   end

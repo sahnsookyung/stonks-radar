@@ -295,7 +295,8 @@ The Elixir backend can:
 
 ```mermaid
 flowchart TD
-  Source["DB state and existing snapshot seed"]
+  Source["Authoritative DB state"]
+  Template["Schema and taxonomy template only"]
   Candidate["candidate under SNAPSHOT_ARTIFACT_DIR"]
   Validate["JSV schema validation"]
   Record["snapshot candidate rows"]
@@ -305,6 +306,7 @@ flowchart TD
   React["React public pages"]
 
   Source --> Candidate
+  Template --> Candidate
   Candidate --> Validate
   Validate --> Record
   Record --> Publish
@@ -314,8 +316,11 @@ flowchart TD
   Caddy --> React
 ```
 
-Public snapshot byte-for-byte equality is not the goal; semantic path/schema/
-cache parity is the goal. The manifest path remains stable.
+The checked-in baseline contains schema and taxonomy only. The publisher strips
+all observational template content before runtime materializers execute. A
+missing producer therefore publishes an explicit `live_data_unavailable`
+warning and empty observations instead of restamping an older value. The
+manifest path remains stable.
 
 ## Watched Regions And Map Coverage
 
@@ -443,8 +448,8 @@ The production flow is:
 7. run `StonksBackend.Release.migrate()`;
 8. start `api-elixir` and Caddy;
 9. refresh the `published-snapshots` volume through the Elixir DB-generated
-   snapshot publisher, seeding built public assets only when the volume is
-   empty;
+   snapshot publisher, installing the fail-closed empty baseline only when the
+   volume is empty;
 10. smoke `/api/public/health` and `/public/latest/manifest.json` through the
     production hostname.
 

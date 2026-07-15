@@ -477,13 +477,6 @@ defmodule StonksBackendWeb.AdminController do
         end
       end)
 
-  def snapshots_build_seed_local(conn, _params),
-    do:
-      with_csrf(conn, @editor_roles, fn _ ->
-        {:ok, result} = Snapshots.build_local_seed()
-        json(conn, result)
-      end)
-
   defp with_auth(conn, roles, fun) do
     case Accounts.require_role(conn, roles) do
       {:ok, user} ->

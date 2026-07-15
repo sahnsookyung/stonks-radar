@@ -82,6 +82,17 @@ defmodule StonksBackend.JobsSchedulerTest do
     assert Enum.all?(specs, &(&1.job_type == "news.fetch_source"))
     assert Enum.all?(specs, &(&1.job_group == "news"))
     assert Enum.all?(specs, &Map.has_key?(&1, :run_after))
+
+    assert Enum.all?(
+             specs,
+             &(&1.unique_states == [
+                 :available,
+                 :scheduled,
+                 :executing,
+                 :retryable,
+                 :completed
+               ])
+           )
   end
 
   test "news fetch specs can enable GDELT Doc API and disable RSS/public-health sources" do
@@ -128,7 +139,7 @@ defmodule StonksBackend.JobsSchedulerTest do
 
     assert by_key["sec_nvda_filings"].provider_key == "sec_edgar"
     assert by_key["google_news_NVDA"].provider_key == "google_news_rss"
-    assert by_key["yahoo_finance_NVDA"].provider_key == "yahoo_finance_rss"
+    refute Map.has_key?(by_key, "yahoo_finance_NVDA")
     assert by_key["google_news_NVDA"].payload["query"] =~ "NVIDIA Corporation"
   end
 
@@ -217,7 +228,7 @@ defmodule StonksBackend.JobsSchedulerTest do
     calls =
       for _ <- 1..7 do
         assert_receive {:enqueue, job_type, _payload, opts}
-        {job_type, opts[:depends_on_job_id]}
+        {job_type, opts[:depends_on_job_id], opts[:unique_states]}
       end
 
     assert length(ids) == 7
@@ -236,7 +247,12 @@ defmodule StonksBackend.JobsSchedulerTest do
 
     assert calls
            |> Enum.drop(1)
-           |> Enum.all?(fn {_job_type, depends_on} -> is_binary(depends_on) end)
+           |> Enum.all?(fn {_job_type, depends_on, _unique_states} -> is_binary(depends_on) end)
+
+    assert calls
+           |> Enum.all?(fn {_job_type, _depends_on, unique_states} ->
+             unique_states == [:available, :scheduled, :executing, :retryable]
+           end)
   end
 
   test "shorts specs schedule FINRA daily files after the official publication window" do

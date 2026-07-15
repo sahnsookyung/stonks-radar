@@ -30,7 +30,8 @@ config :stonks_backend, Oban,
     default: 5
   ],
   plugins: [
-    Oban.Plugins.Pruner
+    Oban.Plugins.Pruner,
+    {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(5)}
   ]
 
 config :phoenix, :json_library, Jason

@@ -1,6 +1,7 @@
 defmodule StonksBackend.Jobs.Workers.GenericWorker do
   @moduledoc "Oban worker dispatch surface for migrated backend job components."
-  use Oban.Worker, max_attempts: 5
+  @max_attempts 5
+  use Oban.Worker, max_attempts: @max_attempts
 
   alias StonksBackend.{
     EarningsCalendar,
@@ -59,6 +60,16 @@ defmodule StonksBackend.Jobs.Workers.GenericWorker do
 
   def perform(%Oban.Job{args: args}) do
     {:discard, "missing job_type in Oban args: #{inspect(args)}"}
+  end
+
+  @impl Oban.Worker
+  def backoff(%Oban.Job{} = job) do
+    corrected_attempt =
+      (@max_attempts - (job.max_attempts - job.attempt))
+      |> max(1)
+      |> min(@max_attempts)
+
+    Oban.Worker.backoff(%{job | attempt: corrected_attempt})
   end
 
   defp perform_ready(job, job_type, payload, args) do

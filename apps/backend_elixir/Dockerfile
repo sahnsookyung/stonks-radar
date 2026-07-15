@@ -18,14 +18,17 @@ COPY config/tracked_entities.json priv/news_sources/tracked_entities.json
 RUN mix deps.compile && mix compile && mix release
 
 FROM alpine:3.24 AS app
-RUN apk add --no-cache libstdc++ ncurses-libs openssl \
+RUN apk add --no-cache libstdc++ ncurses-libs openssl su-exec \
     && addgroup -S stonks \
     && adduser -S -G stonks -h /app -s /sbin/nologin stonks
 WORKDIR /app
 COPY --from=build --chown=stonks:stonks /app/apps/backend_elixir/_build/prod/rel/stonks_backend ./
 COPY --from=build --chown=stonks:stonks /app/packages/schemas /app/packages/schemas
 COPY --from=build --chown=stonks:stonks /app/packages/shared-config /app/packages/shared-config
+COPY --chown=root:root apps/backend_elixir/docker-entrypoint.sh /usr/local/bin/stonks-entrypoint
+RUN chmod 0755 /usr/local/bin/stonks-entrypoint
 
 ENV HOME=/app
-USER stonks
+USER root
+ENTRYPOINT ["/usr/local/bin/stonks-entrypoint"]
 CMD ["bin/stonks_backend", "start"]

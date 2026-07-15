@@ -35,7 +35,7 @@ The production compose path intentionally exposes only Caddy on `80/443`; use
 
 ## Required Credentials For Full Operation
 
-The app runs with seeded snapshots without provider credentials. The following are needed for live ingestion, private/admin production operation, or publication:
+The app ships a fail-closed snapshot baseline without observational data. The following are needed for live ingestion, private/admin production operation, or publication:
 
 - `ADMIN_BOOTSTRAP_PASSWORD`, `ADMIN_TOTP_SECRET`, `SESSION_SECRET`, `PASSWORD_PEPPER`
 - Google admin OAuth, optional but preferred for private/admin portfolio data: `GOOGLE_OAUTH_ADMIN_ENABLED`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_OAUTH_ALLOWED_EMAILS` and/or `GOOGLE_OAUTH_ALLOWED_DOMAINS`
@@ -44,7 +44,7 @@ The app runs with seeded snapshots without provider credentials. The following a
 - `SEC_USER_AGENT` with a real contact
 - Cloudflare Terraform requires `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`, and the OCI origin IPv4; object storage is not required
 
-Missing credentials are reported through provider budgets/status and keep the public snapshot app usable.
+Missing credentials are reported through provider budgets/status. Affected public views remain visibly unavailable rather than displaying seeded observations.
 Provider free-tier ceilings and refresh schedules are tracked in `docs/provider_rate_limits.md`.
 
 ## OGE Public Disclosure Use Warning

@@ -4,9 +4,9 @@ defmodule StonksBackend.Shorts do
   alias StonksBackend.{SafeFetch, Settings, Sql, TrackedTickers}
 
   @daily_short_volume_source "https://www.finra.org/finra-data/browse-catalog/short-sale-volume-data/daily-short-sale-volume-files"
-  @short_interest_source "https://www.finra.org/filing-reporting/regulatory-filing-systems/short-interest"
-  @short_interest_guardrail_source "https://www.finra.org/investors/insights/short-interest"
-  @nasdaq_short_interest_source "https://www.nasdaqtrader.com/Trader.aspx?id=ShortInterest"
+  @short_interest_source "https://www.finra.org/finra-data/browse-catalog/equity-short-interest"
+  @short_interest_partitions_url "https://api.finra.org/partitions/group/otcmarket/name/consolidatedShortInterest"
+  @short_interest_data_url "https://api.finra.org/data/group/otcmarket/name/consolidatedShortInterest"
   @short_research_sources [
     {"Muddy Waters", "https://www.muddywatersresearch.com/"},
     {"Viceroy Research", "https://viceroyresearch.org/"},
@@ -138,27 +138,95 @@ defmodule StonksBackend.Shorts do
 
   def fetch_short_interest_release(payload \\ %{}, opts \\ []) do
     if shorts_ingestion_enabled?(opts) do
-      do_fetch_short_interest_release(payload)
+      do_fetch_short_interest_release(payload, opts)
     else
       {:ok, disabled_result("finra_short_interest")}
     end
   end
 
-  defp do_fetch_short_interest_release(payload) do
-    record_source_health("finra_short_interest", "degraded", %{
-      requested_settlement_date: payload["settlement_date"],
-      reason: "official_short_interest_is_delayed_twice_monthly",
-      source_url: @short_interest_source
-    })
+  defp do_fetch_short_interest_release(payload, opts) do
+    tracked_symbols = Keyword.get(opts, :tracked_symbols, tracked_symbols())
 
-    {:ok,
-     %{
-       status: "coverage_gap",
-       source_key: "finra_short_interest",
-       source_url: @short_interest_source,
-       cadence: "twice_monthly",
-       realtime: false
-     }}
+    partition_fetch_fun =
+      Keyword.get(opts, :partition_fetch_fun, &fetch_short_interest_partitions/0)
+
+    data_fetch_fun = Keyword.get(opts, :data_fetch_fun, &fetch_short_interest_rows/2)
+
+    with {:ok, settlement_date} <- short_interest_settlement_date(payload, partition_fetch_fun),
+         {:ok, response_rows} <- data_fetch_fun.(settlement_date, tracked_symbols) do
+      parsed = parse_short_interest_rows(response_rows, settlement_date, tracked_symbols)
+      rows = add_rollout_metadata(parsed.rows, settlement_date)
+      persisted = persist_short_interest_rows(rows)
+
+      record_source_health("finra_short_interest", health_status(rows), %{
+        settlement_date: Date.to_iso8601(settlement_date),
+        fetched: parsed.total_rows,
+        parsed: length(rows),
+        malformed: parsed.malformed_count,
+        unknown_symbol: parsed.unknown_symbol_count,
+        persisted: persisted.persisted,
+        persist_failed: persisted.failed,
+        source_url: @short_interest_source
+      })
+
+      {:ok,
+       %{
+         status: if(rows == [], do: "coverage_gap", else: "ready"),
+         source_key: "finra_short_interest",
+         source_url: @short_interest_source,
+         settlement_date: Date.to_iso8601(settlement_date),
+         rows_seen: parsed.total_rows,
+         rows_parsed: length(rows),
+         malformed_count: parsed.malformed_count,
+         unknown_symbol_count: parsed.unknown_symbol_count,
+         persisted_count: persisted.persisted,
+         persist_failed_count: persisted.failed,
+         cadence: "twice_monthly",
+         realtime: false
+       }}
+    else
+      {:error, reason} ->
+        record_source_health("finra_short_interest", "failed", %{
+          requested_settlement_date: payload["settlement_date"],
+          reason: inspect(reason),
+          source_url: @short_interest_source
+        })
+
+        {:error, reason}
+    end
+  end
+
+  def parse_short_interest_rows(response_rows, settlement_date, tracked_symbols \\ nil)
+
+  def parse_short_interest_rows(response_rows, %Date{} = settlement_date, tracked_symbols)
+      when is_list(response_rows) do
+    tracked_symbols = normalize_tracked_symbols(tracked_symbols)
+
+    {rows, malformed_count, unknown_symbol_count} =
+      Enum.reduce(response_rows, {[], 0, 0}, fn response_row, {rows, malformed, unknown} ->
+        case parse_short_interest_row(response_row, settlement_date) do
+          {:ok, row} ->
+            if tracked_symbols == :all or MapSet.member?(tracked_symbols, row.symbol) do
+              {[row | rows], malformed, unknown}
+            else
+              {rows, malformed, unknown + 1}
+            end
+
+          :malformed ->
+            {rows, malformed + 1, unknown}
+        end
+      end)
+
+    %{
+      rows: Enum.reverse(rows),
+      malformed_count: malformed_count,
+      unknown_symbol_count: unknown_symbol_count,
+      total_rows: length(response_rows)
+    }
+  end
+
+  def parse_short_interest_rows(_response_rows, _settlement_date, _tracked_symbols) do
+    %{rows: [], malformed_count: 1, unknown_symbol_count: 0, total_rows: 0}
   end
 
   def refresh_short_research_metadata(payload \\ %{}, opts \\ []) do
@@ -301,6 +369,113 @@ defmodule StonksBackend.Shorts do
     )
   end
 
+  defp fetch_short_interest_partitions do
+    case Req.get(@short_interest_partitions_url,
+           headers: [{"accept", "application/json"}],
+           receive_timeout: 20_000,
+           retry: false
+         ) do
+      {:ok, %{status: status, body: body}} when status in 200..299 -> {:ok, body}
+      {:ok, %{status: status}} -> {:error, {:finra_http_status, status}}
+      {:error, reason} -> {:error, {:finra_unavailable, Exception.message(reason)}}
+    end
+  end
+
+  defp fetch_short_interest_rows(_settlement_date, []), do: {:ok, []}
+
+  defp fetch_short_interest_rows(%Date{} = settlement_date, tracked_symbols) do
+    request_body = %{
+      "compareFilters" => [
+        %{
+          "compareType" => "equal",
+          "fieldName" => "settlementDate",
+          "fieldValue" => Date.to_iso8601(settlement_date)
+        }
+      ],
+      "domainFilters" => [
+        %{"fieldName" => "symbolCode", "values" => Enum.map(tracked_symbols, &normalize_symbol/1)}
+      ],
+      "limit" => min(max(length(tracked_symbols) * 2, 100), 5_000)
+    }
+
+    case Req.post(@short_interest_data_url,
+           headers: [{"accept", "application/json"}],
+           json: request_body,
+           receive_timeout: 20_000,
+           retry: false
+         ) do
+      {:ok, %{status: status, body: body}} when status in 200..299 and is_list(body) ->
+        {:ok, body}
+
+      {:ok, %{status: status, body: body}} when status in 200..299 ->
+        {:error, {:finra_invalid_response, body}}
+
+      {:ok, %{status: status}} ->
+        {:error, {:finra_http_status, status}}
+
+      {:error, reason} ->
+        {:error, {:finra_unavailable, Exception.message(reason)}}
+    end
+  end
+
+  defp short_interest_settlement_date(%{"settlement_date" => value}, _partition_fetch_fun)
+       when not is_nil(value) do
+    case parse_date(value) do
+      %Date{} = date -> {:ok, date}
+      nil -> {:error, :invalid_settlement_date}
+    end
+  end
+
+  defp short_interest_settlement_date(_payload, partition_fetch_fun) do
+    with {:ok, response} <- partition_fetch_fun.(),
+         partitions when is_list(partitions) <- Map.get(response, "availablePartitions"),
+         dates when dates != [] <-
+           Enum.map(partitions, &partition_date/1) |> Enum.reject(&is_nil/1) do
+      {:ok, Enum.max(dates, Date)}
+    else
+      {:error, reason} -> {:error, reason}
+      _ -> {:error, :finra_partitions_unavailable}
+    end
+  end
+
+  defp partition_date(%{"partitions" => [value | _]}), do: parse_date(value)
+  defp partition_date(_partition), do: nil
+
+  defp parse_short_interest_row(row, fallback_date) when is_map(row) do
+    symbol = normalize_symbol(row["symbolCode"])
+    settlement_date = parse_date(row["settlementDate"]) || fallback_date
+    short_interest = parse_integer(row["currentShortPositionQuantity"])
+
+    if symbol == "" or is_nil(settlement_date) or is_nil(short_interest) do
+      :malformed
+    else
+      {:ok,
+       %{
+         symbol: symbol,
+         issue_name: present_string(row["issueName"]),
+         settlement_date: Date.to_iso8601(settlement_date),
+         as_of_date: Date.to_iso8601(settlement_date),
+         short_interest: short_interest,
+         previous_short_interest: parse_integer(row["previousShortPositionQuantity"]),
+         change_percent: parse_number(row["changePercent"]),
+         change_previous: parse_signed_integer(row["changePreviousNumber"]),
+         average_daily_volume: parse_integer(row["averageDailyVolumeQuantity"]),
+         days_to_cover: parse_number(row["daysToCoverQuantity"]),
+         revision_flag: present_string(row["revisionFlag"]),
+         market_class: present_string(row["marketClassCode"]),
+         exchange_code: present_string(row["issuerServicesGroupExchangeCode"]),
+         source: "FINRA consolidated short interest",
+         source_url: @short_interest_source,
+         dataset: "finra_short_interest",
+         provider_observation_key:
+           "finra_short_interest:#{Date.to_iso8601(settlement_date)}:#{symbol}",
+         retrieved_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.to_iso8601()
+       }}
+    end
+  end
+
+  defp parse_short_interest_row(_row, _fallback_date), do: :malformed
+
   defp add_rollout_metadata(rows, date) do
     ingestion_run_id = ingestion_run_id(date)
     release_id = release_id()
@@ -373,9 +548,10 @@ defmodule StonksBackend.Shorts do
 
         with {:ok, symbol} <- row_symbol(values, header),
              {:ok, date} <- row_date(values, header, fallback_date),
-             {:ok, short_volume} <- row_int(values, header, "shortvolume"),
-             {:ok, short_exempt_volume} <- row_int(values, header, "shortexemptvolume"),
-             {:ok, total_volume} <- row_int(values, header, "totalvolume") do
+             {:ok, short_volume} <- row_nonnegative_number(values, header, "shortvolume"),
+             {:ok, short_exempt_volume} <-
+               row_nonnegative_number(values, header, "shortexemptvolume"),
+             {:ok, total_volume} <- row_nonnegative_number(values, header, "totalvolume") do
           {:ok,
            %{
              symbol: symbol,
@@ -430,10 +606,10 @@ defmodule StonksBackend.Shorts do
   defp fallback_date_result(%Date{} = date), do: {:ok, date}
   defp fallback_date_result(_date), do: :error
 
-  defp row_int(values, header, key) do
-    case row_value(values, header, key) |> parse_integer() do
+  defp row_nonnegative_number(values, header, key) do
+    case row_value(values, header, key) |> parse_nonnegative_number() do
       nil -> :error
-      integer -> {:ok, integer}
+      number -> {:ok, number}
     end
   end
 
@@ -483,6 +659,52 @@ defmodule StonksBackend.Shorts do
     end
   end
 
+  defp parse_nonnegative_number(nil), do: nil
+
+  defp parse_nonnegative_number(value) do
+    case parse_integer(value) do
+      integer when is_integer(integer) ->
+        integer
+
+      nil ->
+        case parse_number(value) do
+          number when is_number(number) and number >= 0 -> number
+          _ -> nil
+        end
+    end
+  end
+
+  defp parse_signed_integer(nil), do: nil
+
+  defp parse_signed_integer(value) do
+    value = value |> to_string() |> String.replace(",", "") |> String.trim()
+
+    case Integer.parse(value) do
+      {integer, ""} -> integer
+      _ -> nil
+    end
+  end
+
+  defp parse_number(nil), do: nil
+  defp parse_number(value) when is_integer(value), do: value * 1.0
+  defp parse_number(value) when is_float(value), do: value
+
+  defp parse_number(value) do
+    case value |> to_string() |> String.replace(",", "") |> String.trim() |> Float.parse() do
+      {number, ""} -> number
+      _ -> nil
+    end
+  end
+
+  defp present_string(nil), do: nil
+
+  defp present_string(value) do
+    case value |> to_string() |> String.trim() do
+      "" -> nil
+      string -> string
+    end
+  end
+
   defp ratio(_numerator, 0), do: nil
   defp ratio(numerator, denominator), do: Float.round(numerator / denominator, 4)
 
@@ -510,6 +732,45 @@ defmodule StonksBackend.Shorts do
         %{acc | failed: acc.failed + 1}
       end
     end)
+  end
+
+  defp persist_short_interest_rows(rows) do
+    Enum.reduce(rows, %{persisted: 0, failed: 0}, fn row, acc ->
+      if persist_short_interest_row(row) do
+        %{acc | persisted: acc.persisted + 1}
+      else
+        %{acc | failed: acc.failed + 1}
+      end
+    end)
+  end
+
+  defp persist_short_interest_row(row) do
+    object_json = Jason.encode!(row)
+    time_reference = Jason.encode!(%{"settlement_date" => row.settlement_date})
+
+    Sql.execute(
+      """
+      insert into source_fact(
+        fact_type, predicate, object_json, time_reference, confidence,
+        extraction_source, review_status, public_allowed, dedupe_key
+      )
+      values (
+        'short_interest', 'reports', $1::text::jsonb, $2::text::jsonb, 1.0,
+        'rule', 'approved', true, $3
+      )
+      on conflict (dedupe_key) where dedupe_key is not null do update set
+        object_json = excluded.object_json,
+        time_reference = excluded.time_reference,
+        confidence = excluded.confidence,
+        review_status = excluded.review_status,
+        public_allowed = excluded.public_allowed
+      """,
+      [object_json, time_reference, row.provider_observation_key]
+    )
+
+    true
+  rescue
+    _ -> false
   end
 
   defp persist_short_volume_row(row) do
@@ -594,9 +855,9 @@ defmodule StonksBackend.Shorts do
     |> Enum.filter(&is_map/1)
   end
 
-  defp short_volume_lane(lane, [], updated_at) do
+  defp short_volume_lane(lane, [], _updated_at) do
     lane
-    |> Map.put("value", "coverage gap")
+    |> Map.put("value", "unavailable")
     |> Map.put("freshness", "unsupported")
     |> Map.put("severity", "medium")
     |> Map.put("source", "FINRA daily short sale volume")
@@ -605,21 +866,7 @@ defmodule StonksBackend.Shorts do
       "summary",
       "No tracked-symbol FINRA daily short-sale volume rows are available in this snapshot."
     )
-    |> Map.put("items", [
-      %{
-        "key" => "short_volume_monitor_coverage_gap",
-        "label" => "Official daily short-volume rows unavailable",
-        "value" => "coverage gap",
-        "detail" =>
-          "FINRA daily short-sale volume is same-day transaction flow after publication, not live intraday short interest.",
-        "source" => "FINRA",
-        "source_url" => @daily_short_volume_source,
-        "freshness" => "unsupported",
-        "severity" => "medium",
-        "updated_at" => updated_at,
-        "dataset" => "finra_daily_short_sale_volume"
-      }
-    ])
+    |> Map.put("items", [])
   end
 
   defp short_volume_lane(lane, rows, updated_at) do
@@ -645,10 +892,10 @@ defmodule StonksBackend.Shorts do
     |> Map.put("items", rows |> Enum.take(8) |> Enum.map(&short_volume_item(&1, updated_at)))
   end
 
-  defp short_interest_lane(lane, [], updated_at) do
+  defp short_interest_lane(lane, [], _updated_at) do
     lane
-    |> Map.put("value", "twice monthly")
-    |> Map.put("freshness", "watch")
+    |> Map.put("value", "unavailable")
+    |> Map.put("freshness", "unsupported")
     |> Map.put("severity", "medium")
     |> Map.put("source", "FINRA consolidated short interest")
     |> Map.put("source_url", @short_interest_source)
@@ -656,34 +903,7 @@ defmodule StonksBackend.Shorts do
       "summary",
       "Official short interest is delayed twice-monthly open-position data; no tracked rows are available in this snapshot."
     )
-    |> Map.put("items", [
-      %{
-        "key" => "highest_short_interest_release_lag",
-        "label" => "Official short interest is delayed",
-        "value" => "not realtime",
-        "detail" =>
-          "Use daily short-sale volume as same-day flow context only. It is not a substitute for open short interest.",
-        "source" => "FINRA",
-        "source_url" => @short_interest_guardrail_source,
-        "freshness" => "watch",
-        "severity" => "medium",
-        "updated_at" => updated_at,
-        "dataset" => "finra_short_interest"
-      },
-      %{
-        "key" => "highest_short_interest_nasdaq_fallback",
-        "label" => "Nasdaq Trader issue reference",
-        "value" => "fallback",
-        "detail" =>
-          "Nasdaq Trader can be used as a twice-monthly listed-issue reference where available.",
-        "source" => "Nasdaq Trader",
-        "source_url" => @nasdaq_short_interest_source,
-        "freshness" => "watch",
-        "severity" => "medium",
-        "updated_at" => updated_at,
-        "dataset" => "nasdaq_short_interest"
-      }
-    ])
+    |> Map.put("items", [])
   end
 
   defp short_interest_lane(lane, rows, updated_at) do
@@ -732,8 +952,8 @@ defmodule StonksBackend.Shorts do
           row["provider_observation_key"] || "finra_short_interest:#{settlement_date}:#{symbol}"
         ),
       "label" => "#{symbol} short interest",
-      "value" => to_string(row["short_interest"] || row["value"] || "official row"),
-      "detail" => "Official open short-interest row for settlement date #{settlement_date}.",
+      "value" => int_display(row["short_interest"] || row["value"]),
+      "detail" => short_interest_detail(row, settlement_date),
       "source" => "FINRA",
       "source_url" => to_string(row["source_url"] || @short_interest_source),
       "freshness" => freshness_for_date(settlement_date),
@@ -744,6 +964,21 @@ defmodule StonksBackend.Shorts do
       "as_of_date" => settlement_date,
       "provider_observation_key" => to_string(row["provider_observation_key"] || "")
     }
+  end
+
+  defp short_interest_detail(row, settlement_date) do
+    days_to_cover = row["days_to_cover"]
+    change_percent = row["change_percent"]
+
+    details =
+      [
+        "Official open short-interest position for settlement date #{settlement_date}",
+        if(is_number(days_to_cover), do: "#{days_to_cover} days to cover"),
+        if(is_number(change_percent), do: "#{change_percent}% versus the prior report")
+      ]
+      |> Enum.reject(&is_nil/1)
+
+    Enum.join(details, "; ") <> "."
   end
 
   defp freshness_for_date(nil), do: "watch"
@@ -760,6 +995,13 @@ defmodule StonksBackend.Shorts do
   end
 
   defp int_display(value) when is_integer(value), do: Integer.to_string(value)
+
+  defp int_display(value) when is_float(value) do
+    value
+    |> :erlang.float_to_binary(decimals: 3)
+    |> String.trim_trailing("0")
+    |> String.trim_trailing(".")
+  end
 
   defp int_display(value) do
     value
