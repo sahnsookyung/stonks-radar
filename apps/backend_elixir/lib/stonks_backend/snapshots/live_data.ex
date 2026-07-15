@@ -2,11 +2,11 @@ defmodule StonksBackend.Snapshots.LiveData do
   @moduledoc """
   Removes observational seed content before a snapshot is materialized.
 
-  The checked-in snapshot tree is a compatibility template only. Taxonomy,
-  labels, and source descriptions may be retained, but prices, events, dates,
-  counts, filings, holdings, and other observations must come from runtime
-  producers. When a producer has no data, the public snapshot stays visibly
-  unavailable instead of recycling a previous observation.
+  The publisher's schema-only catalog or the last published route structure may
+  supply taxonomy and labels, but prices, events, dates, counts, filings,
+  holdings, and other observations must come from runtime producers. When a
+  producer has no data, the public snapshot stays visibly unavailable instead
+  of recycling a previous observation.
   """
 
   @unavailable_warning %{

@@ -47,6 +47,11 @@ type CalendarSnapshot = {
   items?: Array<{ title?: string }>;
 };
 
+type ScenarioSnapshot = {
+  external_tracker_url?: string;
+  primary_source_url?: string;
+};
+
 test.beforeEach(async ({ page }) => {
   if (!process.env.STONKS_E2E_BASE_URL) {
     await page.clock.setFixedTime(new Date("2026-07-06T12:00:00Z"));
@@ -131,12 +136,24 @@ test("public routes render from snapshots", async ({ page, request }) => {
     await expect(page.getByText("No current source-backed data is available for this view.").first()).toBeVisible();
   }
   await page.goto("/en/scenario-baskets/ai-infra-capex");
+  const scenario = await getSnapshotData<ScenarioSnapshot>(
+    request,
+    "scenario_basket_ai-infra-capex",
+  );
   await expect(page.getByText("Scenario evidence")).toBeVisible();
   await expect(page.getByText("Illustrative methodology")).toHaveCount(0);
   await expect(page.getByText("equal-weight seed")).toHaveCount(0);
-  await expect(
-    page.getByRole("link", { name: /External tracker/ }),
-  ).toBeVisible();
+  if (scenario.external_tracker_url || scenario.primary_source_url) {
+    await expect(
+      page.getByRole("link", { name: /External tracker/ }),
+    ).toBeVisible();
+  } else {
+    await expect(
+      page.getByText(
+        "No current source-backed observations are available. Static example data is not displayed.",
+      ).first(),
+    ).toBeVisible();
+  }
   await page.goto("/en/news");
   await expect(page.getByText("Source-Linked News Radar")).toBeVisible();
   await page.goto("/en/portfolio");
@@ -278,6 +295,22 @@ test("news filters and detail routes render from snapshots", async ({
     request,
     "news_index",
   );
+  const titledEvents = newsIndex.events?.filter((candidate) => candidate.title) ?? [];
+
+  if (titledEvents.length === 0) {
+    await page.goto("/en/news");
+    await expect(page.getByText("Source-Linked News Radar")).toBeVisible();
+    await expect(
+      page.getByText(
+        "Current source-backed news is unavailable. Static example news is not displayed.",
+      ),
+    ).toBeVisible();
+    const tickerOptions = await page.getByLabel("Ticker").locator("option").allTextContents();
+    expect(tickerOptions.some((option) => option.includes("Rocket Lab") && option.includes("(0)"))).toBe(true);
+    expect(tickerOptions.some((option) => option.includes("Advanced Micro Devices") && option.includes("(0)"))).toBe(true);
+    return;
+  }
+
   const regionalEvent = newsIndex.events?.find(
     (candidate) =>
       candidate.title &&

@@ -4,7 +4,7 @@ defmodule StonksBackend.Snapshots do
   alias StonksBackend.{EarningsCalendar, Repo, Settings, Sql, TrackedTickers, WatchedRegions}
   alias StonksBackend.Disclosures.PublicProjection, as: DisclosureProjection
   alias StonksBackend.News.PublicProjection
-  alias StonksBackend.Snapshots.{LiveData, PublicGuards, SchemaResolver}
+  alias StonksBackend.Snapshots.{BootstrapTemplate, LiveData, PublicGuards, SchemaResolver}
 
   @manifest_filename "manifest.json"
   @latest_manifest_path Path.join(["latest", @manifest_filename])
@@ -57,10 +57,15 @@ defmodule StonksBackend.Snapshots do
     File.rm_rf!(candidate_root)
     File.mkdir_p!(candidate_root)
 
-    with :ok <- require_manifest(published_root()),
-         {:ok, seed_manifest} <- read_snapshot(published_manifest_path()),
+    with {:ok, seed_manifest, template_source} <- snapshot_template(),
          {:ok, files, manifest} <-
-           write_template_snapshot_tree(candidate_root, seed_manifest, version, generated_at),
+           write_template_snapshot_tree(
+             candidate_root,
+             seed_manifest,
+             template_source,
+             version,
+             generated_at
+           ),
          :ok <- write_manifest(candidate_root, manifest),
          :ok <- validate_snapshot_tree(candidate_root),
          :ok <-
@@ -76,7 +81,27 @@ defmodule StonksBackend.Snapshots do
     end
   end
 
-  defp write_template_snapshot_tree(candidate_root, seed_manifest, version, generated_at) do
+  defp snapshot_template do
+    case read_snapshot(published_manifest_path()) do
+      {:ok, manifest} ->
+        {:ok, manifest, :published}
+
+      {:error, reason} ->
+        if File.exists?(published_manifest_path()) do
+          {:error, reason}
+        else
+          {:ok, BootstrapTemplate.manifest(), :bootstrap}
+        end
+    end
+  end
+
+  defp write_template_snapshot_tree(
+         candidate_root,
+         seed_manifest,
+         template_source,
+         version,
+         generated_at
+       ) do
     locales = seed_manifest["locales"] || []
 
     news_events =
@@ -98,6 +123,7 @@ defmodule StonksBackend.Snapshots do
       news_events: news_events,
       seed_manifest: seed_manifest,
       stale_after: DateTime.add(generated_at, 12, :hour),
+      template_source: template_source,
       version: version
     }
 
@@ -228,7 +254,7 @@ defmodule StonksBackend.Snapshots do
        when is_map(locale_paths) do
     Enum.reduce_while(locale_paths, {:ok, files, manifest}, fn {locale, source_path},
                                                                {:ok, files, manifest} ->
-      with {:ok, snapshot} <- seed_snapshot(source_path, context),
+      with {:ok, snapshot} <- seed_snapshot(source_path, object_key, locale, context),
            {:ok, relative} <-
              versioned_snapshot_relative_path(context.version, locale, source_path),
            snapshot <- apply_template_runtime_data(snapshot, object_key, locale, context),
@@ -273,7 +299,11 @@ defmodule StonksBackend.Snapshots do
     end)
   end
 
-  defp seed_snapshot(source_path, context) do
+  defp seed_snapshot(_source_path, object_key, locale, %{template_source: :bootstrap} = context) do
+    BootstrapTemplate.snapshot(object_key, locale, context.version, context.generated_at)
+  end
+
+  defp seed_snapshot(source_path, _object_key, _locale, context) do
     with {:ok, relative} <- manifest_snapshot_relative_path(source_path),
          seed_path = Path.join(published_root(), relative),
          {:ok, snapshot} <- read_snapshot(seed_path) do

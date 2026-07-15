@@ -138,8 +138,27 @@ jobs:
       - run: npm run backend:check
       - run: npm run backend:test:db
       - run: npm run backend:snapshots:validate-static
+      - name: Generate schema-only E2E publication
+        run: |
+          set -euo pipefail
+          rm -rf apps/web/.generated-public /tmp/stonks-e2e-snapshots
+          mkdir -p apps/web/.generated-public
+          cp -a apps/web/public/. apps/web/.generated-public/
+          cd apps/backend_elixir
+          PUBLISHED_SNAPSHOT_DIR=../../apps/web/.generated-public/public \
+          SNAPSHOT_ARTIFACT_DIR=/tmp/stonks-e2e-snapshots \
+          MIX_ENV=test \
+          mix run -e '
+            {:ok, _} = StonksBackend.Repo.start_link()
+            case StonksBackend.Snapshots.refresh(%{"requested_by" => "playwright", "mode" => "empty_db_fixture"}) do
+              {:ok, _result} -> :ok
+              {:error, reason} -> raise "E2E snapshot publication failed: #{inspect(reason)}"
+            end
+          '
       - run: npx playwright install --with-deps chromium
       - run: npm run web:e2e
+        env:
+          STONKS_WEB_PUBLIC_DIR: .generated-public
       - name: Prepare web deploy artifact
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         run: |

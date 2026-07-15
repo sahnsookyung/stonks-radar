@@ -8,7 +8,7 @@ export default defineConfig({
   webServer: useExternalServer
     ? undefined
     : {
-        command: "npm run dev -- --host 127.0.0.1",
+        command: "npm run dev -- --host 127.0.0.1 --logLevel silent",
         url: baseURL,
         reuseExistingServer: false
       },

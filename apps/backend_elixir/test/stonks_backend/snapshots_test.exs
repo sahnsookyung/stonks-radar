@@ -47,6 +47,37 @@ defmodule StonksBackend.SnapshotsTest do
     assert is_binary(generated_at)
   end
 
+  test "first publication bootstraps schema-only snapshots from an empty volume", %{
+    published_root: root
+  } do
+    refute File.exists?(Path.join(root, "latest/manifest.json"))
+
+    assert {:ok, result} = Snapshots.build_candidate()
+    assert result.snapshot_version == 1
+    assert :ok = Snapshots.validate_snapshot_tree(result.destination)
+
+    manifest =
+      result.destination
+      |> Path.join("latest/manifest.json")
+      |> File.read!()
+      |> Jason.decode!()
+
+    assert manifest["current_version"] == 1
+    assert manifest["objects"]["home"]["en"] == "public/v1/en/home.json"
+    assert manifest["objects"]["news_index"]["ko"] == "public/v1/ko/news/index.json"
+    assert manifest["objects"]["map_events"]["en"] == "public/v1/en/map/events.json"
+
+    home =
+      result.destination
+      |> Path.join("v1/en/home.json")
+      |> File.read!()
+      |> Jason.decode!()
+
+    assert home["data"]["top_events"] == []
+    assert home["data"]["breaking_market_map"]["map_points"] == []
+    assert Enum.any?(home["warnings"], &(&1["code"] == "live_data_unavailable"))
+  end
+
   test "default candidate build refreshes the public snapshot template tree", %{
     published_root: root,
     artifact_root: artifact_root
